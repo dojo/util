@@ -1,0 +1,19 @@
+#!/bin/bash
+
+OUT_DIR=../usage
+
+rm -rf $OUT_DIR
+mkdir -p $OUT_DIR
+
+for file in $(ls ../src); do
+	part=`echo $file | sed 's/\.js//'`
+	if [ `echo -n $part | wc -m` = "0" ]; then
+		continue
+	else
+		./usage $part > $OUT_DIR/$part.txt
+	fi
+done
+
+cat $OUT_DIR/* | sort -g -r > $OUT_DIR/_all.txt
+
+exit 0

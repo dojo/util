@@ -1,0 +1,8 @@
+As a Dojo contributor, you should be a aware that code in this directory MAY
+NOT belong to the Dojo Foundation, and therefore MAY be goverened under
+licensing terms not determined by the Foundation. While your patches and
+contributions are governed under the terms of the CLA which you submitted in
+order to gain commit privledges, the licensing assurances made therein DO NOT
+apply to code in this directory.
+
+Modify code contained within at your own risk.

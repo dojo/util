@@ -1,0 +1,7 @@
+in order to get ant working w/ BSF, Rhino, and Jython on a fresh SuSE 9.2
+install, it was necessaray to invoke Ant w/ the following command line:
+
+	alex@linux:~/dojo/buildscripts> CLASSPATH="/home/alex/.ant/lib/js.jar:/home/alex/.ant/lib/jython.jar" ant testScripting
+
+I'm still investigating why this might be, but needless to say it throws into
+doubt the entire reason for the -check-config and -fix-config tasks. Grr.
