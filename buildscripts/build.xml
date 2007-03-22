@@ -4,26 +4,12 @@
 	Copyright (c) 2004-2006 The Dojo Foundation, Licensed under the Academic
 	Free License version 2.1 or BSD licenses
 -->
-<!--
-	TODO:
-		- single-file builds
-		- task for firing off jslink.pl against a set of "app files". TBD:
-		  should we support these as HTML? Or just JS files?
-		  NOTE: the following command issued from the top-level seems to work correctly:
-		  	perl buildscripts/jslink.pl -pre cat -i release/testUsage.js -l src/bootstrap1.js -l src/hostenv_browser.js -l src/io/IO.js -l src/io/BrowserIO.js -o - > release/minimal.js
-		  This correctly "links" the files together, but mangles some
-		  identifiers and places anonymous inner functions at the wrong places
-		  OTOH, running the linker over the pre-compressed version of the file doesn't seem to work at all
-		- a task for running the compressor across the user's files as well as our own
-		- doc generation (pending new mods to Rhino)
--->
 <project name="dojo" default="help" basedir=".">
-	<description>build the Dojo toolkit</description>
+	<description>Build the Dojo toolkit</description>
 
 	<!-- project properties -->
 	<!-- FIXME: use location instead of value where appropriate? -->
 	<property name="project" value="dojo"/>
-	<property name="build_dir" value="../build"/>
 	<property name="root" value=".."/>
 	<property name="src" value="src"/>
 	<property name="version" value="0.0.0.dev"/>
@@ -31,13 +17,6 @@
 	<property name="releaseName" value="${project}"/>
 	<property name="dojoLoader" value="default"/>
 	<property name="release_dir" location="${root}/release/${releaseName}"/>
-	<property name="docs_dir" value="${root}/documents"/>
-	<property name="articles_dir" value="${docs_dir}/articles"/>
-	<property name="release_docs_dir" value="${release_dir}/documents"/>
-	<property name="rest_style_sheet" value="${docs_dir}/styles/dojo.css"/>
-	<property name="rest_files" value=""/>
-	<property name="website_dir" value="${docs_dir}/website"/>
-	<property name="release_website_dir" value="/srv/www/htdocs"/>
 	<property name="profile" value=""/>
 	<property name="locales" value="en-gb,en-us,de-de,es-es,fr-fr,it-it,pt-br,ko-kr,zh-tw,zh-cn,ja-jp"/> 	<!-- FIXME: where should this list come from? -->
 	<property name="currencies" value="GBP,USD,CAD,AUD,EUR,CHF,HKD,JPY"/> 	<!-- FIXME: arbitrary list. Can be altered or eliminated for all currencies -->
@@ -48,77 +27,12 @@
 	<loadfile property="build_notice" srcFile="./build_notice.txt"/>
 
 	<!-- help task -->
-	<target name="help" depends="-fix-config">
+	<target name="help">
 		<echo>
-build targets:
-	clean - deletes all files in the ${release_dir} directory
-
-	website - copies website files into the correct location and sets
-		permissions correctly
-
-	compress - copies the files in ${root}/${src} to the
-		${release_dir}/${project}/${src} directory where it
-		compresses all the .js files with a set of regular
-		expressions and removes all non .js files
-
-	gen-strip-docs - Strips out most comments,line feeds,etc in ALL js found
-			in the genereated ${release_dir}.
-
-	src - Take ./${src} and build the ${release_dir}/${project}/${src}_src
-		directory. More or less a copy of the source files, documentation and
-		all.
-
-	docs - builds documentation in all formats from ./${src} and place it in ${release_docs_dir}
-
-	api - builds release (optimized) api reference application
-
-	cldr - transforms the CLDR localization repository into JSON in the source tree
-
-	test - builds and runs command line unit tests
-
-	testScripting - tests the JS integration in the build process
-
-	buildFlash - compiles a Flash ActionScript 2 file to use dojo.flash.comm; provide
-	relative path to file using -Ddojo.flash.file.
-
-	buildDojoFlash - compiles the dojo.flash package, including its testing
-	and example files.
-
-	buildDojoStorage - compiles the dojo.storage package
-
-	**** all following build types can take an optional parameter in the form of: -Dversion='currentVer'
-		where 'currentVer' is the version of ${project} being built, default is 'development'
-
-	zip - zips the ${release_dir}/${project} directory for distribution
-	tar - tars and gzips the ${release_dir}/${project} directory for distribution
-	release - creates a full release of ${project}
-
-	full build example:
-		ant -Dversion=0.3.0 clean release
-
-	build example with tarball:
-		ant -Dversion=0.3.0 clean compress tar
-
-	just generate documentation:
-		ant -Dversion=0.3.0 clean docs
-
-	full build, but without docs:
-		ant -Dversion=0.3.0 clean release gen-strip-docs
-
+See http://dojotoolkit.org/node/19 for more information.
 		</echo>
 	</target>
 	<!-- end help task -->
-
-	<!-- Defines the dojo test task. -->
-	<taskdef name="dojo-test" classname="org.dojotoolkit.ant.DojoTestTask" classpath="lib/ant-dojotest.jar" />
-
-	<!-- test task -->
-	<target name="test"
-		depends="-fix-config"
-		description="builds and runs unit tests for Dojo under Rhino and JUM">
-		<dojo-test dojosrc="../" testsrc="../tests"/>
-	</target>
-	<!-- end test task -->
 
 	<!-- test-scripting task -->
 	<target name="testScripting"
@@ -139,15 +53,6 @@ build targets:
 				parentTask.addTask(echo);
 				echo.setMessage(msg);
 			}
-
-			/*
-			function load(){
-				for(var x=0; x<arguments.length; x++){
-					var scriptTask = dojo.createTask("script");
-					scriptTask.setAttribute(); // FIXME: will this work?
-				}
-			}
-			*/
 
 			print("foo");
 			echo("JavaScript (Rhino) integration is working!", testScripting);
@@ -388,101 +293,6 @@ build targets:
 	</target>
 	<!-- end cldr task -->
 
-	<!-- clean task -->
-	<target name="clean"
-		description="removes release files">
-		<delete dir="${release_dir}"/>
-	</target>
-	<!-- end clean task -->
-
-	<!-- gen-strip-docs task -->
-	<target name="gen-strip-docs">
-
-		<!-- strip /* */ (multiline) comments -->
-		<replaceregexp match="\/\*(.*?)\*\/" replace="" byline="false" flags="sg">
-			<fileset dir="${release_dir}" includes="**/*.js"/>
-		</replaceregexp>
-
-		<!-- strip // comments -->
-		<replaceregexp match="^\/\/.*$" byline="true" replace="" flags="g">
-			<fileset dir="${release_dir}" includes="**/*.js" />
-		</replaceregexp>
-		<replaceregexp byline="false" flags="g">
-			<regexp pattern="([^:(&quot;.'\\-][^:C0-9&quot;(\\])(\/\/.*)" />
-			<substitution expression="\1" />
-			<fileset dir="${release_dir}" includes="**/*.js" />
-		</replaceregexp>
-		<replaceregexp match="\s\/\/.*$" byline="true" replace="" flags="g">
-			<fileset dir="${release_dir}" includes="**/*.js" />
-		</replaceregexp>
-		
-		<replaceregexp match="^[ \t]+|[ \t]+$" replace="" byline="false" flags="mg">
-			<fileset dir="${release_dir}" includes="**/*.js" />
-		</replaceregexp>
-
-		<!-- clobber leading and trailing DocBook comment -->
-		<replaceregexp match="^&lt;\!--" replace="" byline="false" flags="g">
-			<fileset dir="${release_dir}" includes="**/*.js"/>
-		</replaceregexp>
-		<replaceregexp match="--&gt;$" replace="" byline="false" flags="g">
-			<fileset dir="${release_dir}" includes="**/*.js"/>
-		</replaceregexp>
-
-		<replaceregexp match="(\r)" replace="" byline="false" flags="g">
-			<fileset dir="${release_dir}" includes="**/*.js"/>
-		</replaceregexp>
-
-		<replaceregexp match="\n+" replace="NWNEWLINEHERE" byline="false" flags="g">
-			<fileset dir="${release_dir}" includes="**/*.js"/>
-		</replaceregexp>
-
-		<!-- add copyright notice -->
-		<!--
-		<replaceregexp match="^" byline="false" replace="${copyright}">
-			<fileset dir="${destdir}">
-				<include name="**/*.js" />
-				<include name="**/*.as" />
-				<not>
-					<contains text="copyright" casesensitive="no"  />
-				</not>
-			</fileset>
-		</replaceregexp>
-		-->
-
-		<replace dir="${release_dir}">
-			<include name="**/*.js"/>
-			<replacetoken>NWNEWLINEHERE</replacetoken>
-			<replacevalue>
-				<![CDATA[
-]]>
-			</replacevalue>
-		</replace>
-
-		<replaceregexp match=";\n*" replace=";" byline="false" flags="g">
-			<fileset dir="${release_dir}" includes="**/*.js"/>
-		</replaceregexp>
-		<replaceregexp match="\{(\s*)\n" replace="\{" byline="false" flags="g">
-			<fileset dir="${release_dir}" includes="**/*.js"/>
-		</replaceregexp>
-		<replaceregexp match=",(\n)" replace="," byline="false" flags="g">
-			<fileset dir="${release_dir}" includes="**/*.js"/>
-		</replaceregexp>
-		<replaceregexp match="}(\n*)(\t*)\s*}" replace="}}" byline="false" flags="g">
-			<fileset dir="${release_dir}" includes="**/*.js"/>
-		</replaceregexp>
-		<replaceregexp match="\n*}" replace="}" byline="false" flags="g">
-			<fileset dir="${release_dir}" includes="**/*.js"/>
-		</replaceregexp>
-		<replaceregexp match="\n\n" replace="" byline="false" flags="g">
-			<fileset dir="${release_dir}" includes="**/*.js"/>
-		</replaceregexp>
-		
-		<replaceregexp match="\t" replace="" byline="false" flags="g">
-			<fileset dir="${release_dir}" includes="**/*.js"/>
-		</replaceregexp>
-	</target>
-	<!-- end gen-strip-docs task -->
-
 	<!-- strip-resource-comments -->
 		<target name="strip-resource-comments">
 		<java jar="./lib/custom_rhino.jar" failonerror="true" fork="true" 
@@ -492,33 +302,6 @@ build targets:
 		</java>
 	</target>
 	<!-- end strip-resource-comments -->
-
-	<!-- src task -->
-	<target name="src"
-		depends="-fix-config"
-		unless="nosrc"
-		description="creates a copy of the source files for distribution">
-
-		<property name="ddir" value="${release_dir}/${project}/${src}_src"/>
-		<!-- make sure our dir structure is right -->
-		<delete dir="${ddir}" />
-		<mkdir dir="${ddir}" />
-
-		<copy todir="${ddir}" preservelastmodified="true">
-			<fileset dir="./${src}" includes="**" />
-		</copy>
-
-		<!-- make sure we're dealing with unix newlines -->
-		<fixcrlf srcdir="${ddir}"
-			eol="lf" eof="remove"
-			includes="**/*.js" />
-
-		<!-- ensure everyone can read -->
-		<chmod perm="ugo+rx" type="dir" dir="${release_dir}" includes="**" />
-		<chmod perm="ugo+r" type="file" dir="${release_dir}" includes="**/*.*" />
-	</target>
-	<!-- end src task -->
-
 
 	<!-- -set-profileFile task -->
 	<target name="-set-profileFile" depends="-fix-config"
@@ -553,6 +336,52 @@ build targets:
 		</java>
 	</target>
 	<!-- end list-profile-deps task -->
+
+	<!-- clean task -->
+	<target name="clean"
+		description="removes release files">
+		<delete dir="${release_dir}"/>
+	</target>
+	<!-- end clean task -->
+
+	<!-- release task -->
+	<target name="release" depends="-fix-config"
+		description="builds a release">
+
+		<echo level="info" taskName="release" message="Using version number: ${version} for the release."/>
+
+		<antcall target="clean" />
+
+		<copy todir="${release_dir}/${src}" includeEmptyDirs="false" preservelastmodified="true">
+			<fileset dir="${root}/${src}">
+				<include name="**" />
+				<exclude name="**/*.swp" />
+				<exclude name="**/.svn*" />
+			</fileset>
+		</copy>
+
+		<copy todir="${release_dir}/tests" includeEmptyDirs="false" preservelastmodified="true">
+			<fileset dir="${root}/tests">
+				<include name="**" />
+				<exclude name="**/*.swp" />
+				<exclude name="**/.svn*" />
+			</fileset>
+		</copy>
+
+		<antcall target="compress" />
+
+		<!-- Run xdgen if it xdomain loading is wanted. -->
+		<condition property="xdgenRun">
+			<equals arg1="xdomain" arg2="${dojoLoader}"/>
+		</condition>
+		<antcall target="xdgenRelease"/>
+
+		<copy overwrite="true" file="../iframe_history.html" todir="${release_dir}/"  preservelastmodified="true" />
+
+		<copy file="${root}/LICENSE" todir="${release_dir}/"  preservelastmodified="true" />
+		<copy file="${root}/README" todir="${release_dir}/"  preservelastmodified="true" />
+	</target>
+	<!-- end release task -->
 
 	<!-- compress task -->
 	<target name="compress" depends="-fix-config, -set-profileFile"
@@ -697,237 +526,6 @@ build targets:
 		</java>
 	</target>
 	<!-- end intern-strings task -->
-
-	<!-- release task -->
-	<target name="release" depends="-fix-config"
-		description="builds a release">
-
-		<echo level="info" taskName="release" message="Using version number: ${version} for the release."/>
-
-		<antcall target="clean" />
-		<!--
-		<antcall target="src" />
-		-->
-		<copy todir="${release_dir}/${src}" includeEmptyDirs="false" preservelastmodified="true">
-			<fileset dir="${root}/${src}">
-				<include name="**" />
-				<exclude name="**/*.swp" />
-				<exclude name="**/.svn*" />
-			</fileset>
-		</copy>
-
-		<copy todir="${release_dir}/demos" includeEmptyDirs="false" preservelastmodified="true">
-			<fileset dir="${root}/demos">
-				<include name="**" />
-				<exclude name="**/*.swp" />
-				<exclude name="**/.svn*" />
-			</fileset>
-		</copy>
-
-		<copy todir="${release_dir}/tests" includeEmptyDirs="false" preservelastmodified="true">
-			<fileset dir="${root}/tests">
-				<include name="**" />
-				<exclude name="**/*.swp" />
-				<exclude name="**/.svn*" />
-			</fileset>
-		</copy>
-
-		<!--
-			Call our Dojo Flash and Storage tasks
-			in such a way that they won't cause the
-			entire release task to fail if mtasc is not
-			available - make mtasc optional.
-		-->
-		<script language="javascript" taskName="release">
-			<![CDATA[
-			function echo(msg){
-				var echo = dojo.createTask("echo");
-				echo.setMessage(msg);
-				echo.setTaskName("release");
-				echo.execute();
-			}
-
-			function antCall(target){
-				var antCall = dojo.createTask("antcall");
-				antCall.setTarget(target);
-				antCall.execute();
-			}
-
-			try{
-				antCall("buildDojoFlash");
-				antCall("buildDojoStorage");
-			}catch(exp){
-				echo("WARNING: buildDojoFlash and buildDojoStorage could not run.");
-				echo("Please download and install mtasc from http://www.mtasc.org and place it in your path.");
-			}
-		]]>
-		</script>
-
-		<!-- 
-			Generate optional Java class needed for Safari and Opera
-			for dojo.storage.browser.FileStorageProvider
-		-->
-		<antcall target="buildFileStorageProvider" />
-
-		<antcall target="compress" />
-		<!-- <antcall target="intern-strings" /> -->
-
-		<!-- Run xdgen if it xdomain loading is wanted. -->
-		<condition property="xdgenRun">
-			<equals arg1="xdomain" arg2="${dojoLoader}"/>
-		</condition>
-		<antcall target="xdgenRelease"/>
-
-		<copy overwrite="true" file="../iframe_history.html" todir="${release_dir}/"  preservelastmodified="true" />
-
-		<copy file="${root}/LICENSE" todir="${release_dir}/"  preservelastmodified="true" />
-		<copy file="${root}/README" todir="${release_dir}/"  preservelastmodified="true" />
-	</target>
-	<!-- end release task -->
-
-	<target name="api-prep"
-		description="Constructs API outlines">
-		<copy todir="${release_dir}/apis" includeEmptyDirs="false" preservelastmodified="true">
-			<fileset dir="${root}/documents/apis">
-				<include name="**" />
-				<exclude name="**/*.swp" />
-				<exclude name="**/.svn*" />
-			</fileset>
-		</copy>
-	</target>
-
-	<!-- zip task -->
-	<target name="zip"
-		description="builds zip file of release files">
-		<zip destfile="${root}/release/${project}_${version}.zip" basedir="${root}/release/${project}"/>
-	</target>
-	<!-- end zip task -->
-
-	<!-- tar task -->
-	<target name="tar"
-		description="builds tarball of release files">
-		<tar tarfile="${root}/release/${project}_${version}.tar" basedir="${root}/release" includes="${project}/**"/>
-		<gzip zipfile="${root}/release/${project}_${version}.tar.gz" src="${root}/release/${project}_${version}.tar"/>
-		<delete file="${root}/release/${project}_${version}.tar"/>
-	</target>
-	<!-- end tar task -->
-
-	<!-- buildFileStorageProvider task -->
-	<target name="buildFileStorageProvider"
-			description="Builds a Java class needed by dojo.storage.browser.FileStorageProvider">
-		<echo level="info" taskName="buildFileStorageProvider">Building optional Java class for dojo.storage.browser.FileStorageProvider. Don't
-worry if this fails; the generated class file is checked into Subversion and is
-available in src/storage/java/ without rebuilding it.</echo>
-
-		<javac	srcdir="${root}/src/storage/java/"
-				destdir="${root}/src/storage/java/"
-				debug="on"
-				target="1.1"
-				source="1.1"
-				failonerror="false"/>
-
-		<jar destfile="${root}/DojoFileStorageProvider.jar">
-			<fileset dir="${root}/src/storage/java/" includes="*.class"/>
-		</jar>
-	</target>
-	<!-- end buildFileStorageProvider task -->
-
-	<!-- buildDojoFlash task -->
-	<target name="buildDojoFlash"
-					description="builds the Dojo Flash package and its testing files">
-		<antcall target="buildFlash">
-			<param name="dojo.flash.file" value="${root}/tests/flash/HelloWorld.as"/>
-		</antcall>
-
-		<antcall target="buildFlash">
-			<param name="dojo.flash.file" value="${root}/tests/flash/UnitTestsComm.as"/>
-		</antcall>
-
-		<move todir="${root}/tests/flash/resources">
-			<fileset dir="${root}/tests/flash/">
-				<include name="*.swf"/>
-			</fileset>
-		</move>
-	</target>
-	<!-- end buildDojoFlash task -->
-
-	<!-- buildDojoStorage task -->
-	<target name="buildDojoStorage"
-					description="builds the Dojo Storage package">
-		<antcall target="buildFlash">
-			<param name="dojo.flash.file" value="${root}/${src}/storage/Storage.as"/>
-		</antcall>
-
-		<move todir="${root}">
-			<fileset dir="${root}/${src}/storage/">
-				<include name="*.swf"/>
-			</fileset>
-		</move>
-	</target>
-	<!-- end buildDojoStorage task -->
-
-	<!-- buildFlash task -->
-	<target name="buildFlash"
-					description="builds Flash ActionScript class to use dojo.flash.comm">
-		<!-- extract the ActionScript class name and path -->
-		<script language="javascript">
-			<![CDATA[
-			var flashFile = dojo.getProperty("dojo.flash.file");
-
-			var matches = flashFile.match(/([A-Za-z0-9_]*)\.as$/);
-			var flashClass = matches[1];
-			dojo.setNewProperty("flashClass", flashClass);
-
-			var flashFileName = matches[0];
-			var endCut = new String(flashFile).length - flashFileName.length;
-			var flashPath = flashFile.substring(0, endCut);
-			dojo.setNewProperty("flashPath", flashPath);
-		]]>
-		</script>
-
-		<!-- generate the Flash 6 SWF -->
-		<echo level="info" taskName="buildFlash" message="Flash 6: Compiling ${dojo.flash.file}..."/>
-
-		<exec executable="mtasc">
-			<arg value="-version"/>
-			<arg value="6"/>
-
-			<arg value="-cp"/>
-			<arg value="${root}/${src}/flash/flash6"/>
-
-			<arg value="-swf"/>
-			<arg value="${flashPath}/${flashClass}_version6.swf"/>
-
-			<arg value="-main"/>
-
-			<arg value="-header"/>
-			<arg value="215:138:10"/>
-
-			<arg value="${dojo.flash.file}"/>
-		</exec>
-
-		<!-- generate the Flash 8 SWF -->
-		<echo message="Flash 8: Compiling ${dojo.flash.file}..."/>
-
-		<exec executable="mtasc">
-			<arg value="-version"/>
-			<arg value="8"/>
-
-			<arg value="-cp"/>
-			<arg value="${root}/${src}/flash/flash8"/>
-
-			<arg value="-swf"/>
-			<arg value="${flashPath}/${flashClass}_version8.swf"/>
-
-			<arg value="-main"/>
-
-			<arg value="-header"/>
-			<arg value="215:138:10"/>
-
-			<arg value="${dojo.flash.file}"/>
-		</exec>
-	</target>
-	<!-- end buildFlash task -->
 
 	<!-- xd-dojo-config task -->
 	<target name="xd-dojo-config" depends="-fix-config"
