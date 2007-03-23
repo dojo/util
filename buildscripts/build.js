@@ -11,7 +11,7 @@ var kwArgs = buildUtil.convertArrayToObject(arguments);
 kwArgs.releaseName = kwArgs["releaseName"] || "dojo";
 kwArgs.releaseDir = "release/" + kwArgs["releaseName"] || "dojo";
 kwArgs.version = kwArgs["version"] || "0.0.0.dev";
-kwArgs.actions = (kwArgs["action"] || "release").split(",");
+kwArgs.action = (kwArgs["action"] || "release").split(",");
 kwArgs.loader = kwArgs["loader"] || "default";
 if(!kwArgs["profileFile"] && kwArgs["profile"]){
 	kwArgs.profileFile = "profiles/" + kwArgs.profile + ".profile.js";
@@ -19,13 +19,20 @@ if(!kwArgs["profileFile"] && kwArgs["profile"]){
 if(kwArgs["log"]){
 	logger.level = logger[kwArgs["log"]];
 }
-if(typeof kwArgs["copyTests"] == "undefined")
+if(typeof kwArgs["copyTests"] == "undefined"){
 	kwArgs.copyTests = true;	
 }
 
+//Execute the requested build actions
+var action = kwArgs.action;
+for(var i = 0; i < action.length; i ++){
+	this[action[i]]();
+}
+
+
 //********* Start clean ************
 function clean(){
-	fileUtil.deleteFile(releaseDir);
+	fileUtil.deleteFile(kwArgs.releaseDir);
 }
 //********* End clean *********
 
@@ -38,9 +45,13 @@ function release(){
 	
 	//Get the list of module directories we need to process.
 	//They will be in the dependencies.prefixes array.
-	var dependencies = buildUtil.evalProfile(kwArgs.profileFile);
+	var profileProperties = buildUtil.evalProfile(kwArgs.profileFile);
+	var dependencies = profileProperties.dependencies;
 	var prefixes = dependencies.prefixes;
 	var dojoPrefixPath = null;
+	
+	//Copy each prefix dir to the releases and
+	//operate on that copy.
 	for(var i = 0; i < prefixes.length; i++){
 		var prefixName = prefixes[i][0];
 		var prefixPath = prefixes[i][1];
@@ -49,10 +60,10 @@ function release(){
 		if(prefixName == "dojo"){
 			dojoPrefixPath = prefixPath;
 		}else{
-			_releasePrefixPath(prefixName, prefixPath, kwArgs);
+			_prefixPathRelease(prefixName, prefixPath, kwArgs);
 		}
 	}
-	
+
 	//Now process Dojo core. Special things for that one.
 	if(dojoPrefixPath){
 		//xxx
@@ -72,14 +83,21 @@ function release(){
 //********* End release *********
 
 //********* Start _releasePrefixPath *********
-function _releasePrefixPath(prefixName, prefixPath, kwArgs){
-	//Copy prefixPath to release dir.
-	//Skip tests if requested.
-	//xxx
+function _prefixPathRelease(prefixName, prefixPath, kwArgs){
+	var releasePath = kwArgs.releaseDir + "/"  + prefixName;
+	var copyRegExp = /./;
+	
+	//Use the copyRegExp to filter out tests if requested.
+	if(kwArgs.copyTests){
+		copyRegExp = new RegExp(prefixName.replace(/\\/g, "/") + "/(?!tests/)");
+	}
+
+	fileUtil.copyDir(prefixPath, releasePath, copyRegExp);
 	
 	//makeDojoJs.js
 	//xxx
 	
+	//flatten 
 	//Run xdgen if an xdomain build.
 	//xxx
 }

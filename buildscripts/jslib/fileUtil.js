@@ -8,9 +8,9 @@ fileUtil.getLineSeparator = function(){
 	return java.lang.System.getProperty("line.separator"); //Java String
 }
 
-//Recurses startDir and finds matches to the files that match regExpFilter.
-//Ignores files/directories that start with a period (.).
-fileUtil.getFilteredFileList = function(startDir, regExpFilter, makeUnixPaths, startDirIsJavaObject){
+fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilter, /*boolean?*/makeUnixPaths, /*boolean?*/startDirIsJavaObject){
+	//summary: Recurses startDir and finds matches to the files that match regExpFilter.
+	//Ignores files/directories that start with a period (.).
 	var files = [];
 
 	var topDir = startDir;
@@ -41,10 +41,42 @@ fileUtil.getFilteredFileList = function(startDir, regExpFilter, makeUnixPaths, s
 		}
 	}
 
-	return files;
+	return files; //Array
+}
+
+
+fileUtil.copyDir = function(/*String*/srcDir, /*String*/destDir, /*RegExp*/regExpFilter){
+	//summary: copies files from srcDir to destDir using the regExpFilter to determine if the
+	//file should be copied.
+	var fileNames = fileUtil.getFilteredFileList(srcDir, regExpFilter, true);
+	
+	for(var i = 0; i < fileNames.length; i++){
+		var srcFileName = fileNames[i];
+		var destFileName = srcFileName.replace(srcDir, destDir);
+
+		logger.trace("Src filename: " + srcFileName);
+		logger.trace("Dest filename: " + destFileName);
+
+		//Make sure destination dir exists.
+		var destFile = new java.io.File(destFileName);
+		var parentDir = destFile.getParentFile();
+		if(!parentDir.exists()){
+			if(!parentDir.mkdirs()){
+				throw "Could not create directory: " + parentDir.getAbsolutePath();
+			}
+		}
+
+		//Java's version of copy file.
+		var srcChannel = new java.io.FileInputStream(srcFileName).getChannel();
+		var destChannel = new java.io.FileOutputStream(destFileName).getChannel();
+		destChannel.transferFrom(srcChannel, 0, srcChannel.size());
+		srcChannel.close();
+		destChannel.close();
+	}
 }
 
 fileUtil.readFile = function(/*String*/path, /*String?*/encoding){
+	//summary: reads a file and returns a string
 	encoding = encoding || "utf-8";
 	var file = new java.io.File(path);
 	var lineSeparator = fileUtil.getLineSeparator();
@@ -56,17 +88,19 @@ fileUtil.readFile = function(/*String*/path, /*String?*/encoding){
 			stringBuffer.append(line);
 			stringBuffer.append(lineSeparator);
 		}
-		return stringBuffer.toString();
+		return stringBuffer.toString(); //Java String
 	} finally {
 		input.close();
 	}
 }
 
 fileUtil.saveUtf8File = function(/*String*/fileName, /*String*/fileContents){
+	//summary: saves a file using UTF-8 encoding.
 	fileUtil.saveFile(fileName, fileContents, "utf-8");
 }
 
 fileUtil.saveFile = function(/*String*/fileName, /*String*/fileContents, /*String?*/encoding){
+	//summary: saves a file.
 	var outFile = new java.io.File(fileName);
 	var outWriter;
 	if(encoding){
@@ -84,6 +118,7 @@ fileUtil.saveFile = function(/*String*/fileName, /*String*/fileContents, /*Strin
 }
 
 fileUtil.deleteFile = function(fileName){
+	//summary: deletes a file if it exists.
 	var file = new java.io.File(fileName);
 	if(file.exists()){
 		file["delete"]();

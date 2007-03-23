@@ -31,6 +31,6 @@ var logger = {
 	},
 
 	_print: function(message){
-		print((this.logPrefix ? this.logPrefix + " ") : "") + message);
+		print((this.logPrefix ? (this.logPrefix + " ") : "") + message);
 	}
 }

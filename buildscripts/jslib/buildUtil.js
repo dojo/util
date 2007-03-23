@@ -295,22 +295,25 @@ buildUtil.evalProfile = function(/*String*/ profileFile){
 	
 	//Find prefixes that are used.
 	var usedPrefixes = ["dojo"];
-	usePrefixes._entries { dojo: true };
+	usedPrefixes._entries = { dojo: true };
 	
 	//Check normal dependencies.
 	buildUtil.addPrefixesFromDependencies(usedPrefixes, dependencies);
 
 	//Check layer dependencies
 	var layerDeps = dependencies.layers;
-	for(var i = 0; i < layerDeps.length; i++){
-		buildUtil.addPrefixesFromDependencies(usedPrefixes, layerDeps[i].dependencies);
+	
+	if(layerDeps){
+		for(var i = 0; i < layerDeps.length; i++){
+			buildUtil.addPrefixesFromDependencies(usedPrefixes, layerDeps[i].dependencies);
+		}
 	}
 
 	//Now add to the real prefix array.
 	//If not already in the prefix array, assume the default
 	//location, as a sibling to dojo (and util).
 	for(var i = 0; i < usedPrefixes.length; i++){
-		if(!buildUtil.isValueInArray(usedPrefixes[i], dependencies.prefixes){
+		if(!buildUtil.isValueInArray(usedPrefixes[i], dependencies.prefixes)){
 			dependencies.prefixes.push([usedPrefixes[i], "../../" + usedPrefixes[i]]);
 		}
 	}
