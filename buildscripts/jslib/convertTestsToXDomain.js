@@ -4,13 +4,14 @@
 var startDir = arguments[0];
 var xdDojoUrl = arguments[1];
 
+load("fileUtil.js");
 load("buildUtil.js");
 
-var fileList = buildUtil.getFilteredFileList(startDir, /\.(html|htm)$/, true);
+var fileList = fileUtil.getFilteredFileList(startDir, /\.(html|htm)$/, true);
 
 for(var i = 0; i < fileList.length; i++){
 	var fileName = fileList[i];	
-	var fileContents = String(buildUtil.readFile(fileName));
+	var fileContents = String(fileUtil.readFile(fileName));
 	fileContents = fileContents.replace(/src\=\".*dojo.js"/, 'src="' + xdDojoUrl + '"');
-	buildUtil.saveUtf8File(fileName, fileContents);
+	fileUtil.saveUtf8File(fileName, fileContents);
 }

@@ -32,6 +32,7 @@ load('../dojo.js');
 dojo.require("dojo.string.extras");
 dojo.require("dojo.i18n.common");
 dojo.require("dojo.json");
+load("fileUtil.js");
 load("buildUtil.js");
 
 var djLoadedBundles = [];
@@ -93,7 +94,7 @@ for (jsLocale in djBundlesByLocale){
 
 //Flatten all bundles and modifying dojo.requireLocalization calls.
 var prefixes = buildUtil.configPrefixes(profileFile);
-var fileList = buildUtil.getFilteredFileList(releaseDir + "/src", /\.js$/, true);
+var fileList = fileUtil.getFilteredFileList(releaseDir + "/src", /\.js$/, true);
 
 for(var i= 0; i < fileList.length; i++){
 	//Use new String so we get a JS string and not a Java string.
@@ -109,7 +110,7 @@ for(var i= 0; i < fileList.length; i++){
 	}
 	
 	if(fileContents){
-		buildUtil.saveUtf8File(jsFileName, fileContents);
+		fileUtil.saveUtf8File(jsFileName, fileContents);
 	}
 }
 

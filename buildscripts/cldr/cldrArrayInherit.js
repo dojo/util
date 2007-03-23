@@ -43,10 +43,11 @@ dojo.require("dojo.lang.common");
 dojo.require("dojo.i18n.loader");
 dojo.require("dojo.json");
 
+load("fileUtil.js");
 load("buildUtil.js");
 
 // limit search to gregorian.js files, which are the only ones to use Array as data type
-var fileList = buildUtil.getFilteredFileList(dir, /\/gregorian\.js$/, true);
+var fileList = fileUtil.getFilteredFileList(dir, /\/gregorian\.js$/, true);
 
 for(var i= 0; i < fileList.length; i++){
 	//Use new String so we get a JS string and not a Java string.
@@ -99,6 +100,6 @@ for(var i= 0; i < fileList.length; i++){
 		return isComplete;
 	});
 	if(hasChanged){
-		buildUtil.saveUtf8File(jsFileName, dojo.json.serialize(data));
+		fileUtil.saveUtf8File(jsFileName, dojo.json.serialize(data));
 	}
 }

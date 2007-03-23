@@ -6,7 +6,7 @@
 
 //Define some methods that are defined in Rhino, but we need web equivalents
 //in order for the build scripts to work.
-buildUtil.readFile = readText = readFile = function(uri){
+fileUtil.readFile = readText = readFile = function(uri){
 	return dojo.hostenv.getText(uri);
 }
 
@@ -15,7 +15,7 @@ load = function(uri){
 }
 
 //Define some overrides for the buildUtil functions.
-buildUtil.getLineSeparator = function(){
+fileUtil.getLineSeparator = function(){
 	//summary: Gives the line separator for the platform.
 	//For web builds override this function.
 	return "\n";

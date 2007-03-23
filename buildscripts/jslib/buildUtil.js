@@ -1,11 +1,5 @@
 var buildUtil = {};
 
-buildUtil.getLineSeparator = function(){
-	//summary: Gives the line separator for the platform.
-	//For web builds override this function.
-	return java.lang.System.getProperty("line.separator");
-}
-
 buildUtil.getDojoLoader = function(/*Object?*/dependencies){
 	//summary: gets the type of Dojo loader for the build. For example default or
 	//xdomain loading. Override for web builds.
@@ -287,11 +281,22 @@ buildUtil.determineUriList = function(/*Array*/dependencies, /*Array*/layerUris,
 buildUtil.evalProfile = function(/*String*/ profileFile){
 	var dependencies = null;
 	var hostenvType = null;
-	var profileText = new String(buildUtil.readFile(profileFile));
+	var profileText = new String(fileUtil.readFile(profileFile));
 	
-	//Remove the call to getDependencyList.js because we want to call it manually.
+	//Remove the call to getDependencyList.js because it is not supported anymore.
 	profileText = profileText.replace(/load\(("|')getDependencyList.js("|')\)/, "");
 	eval(profileText);
+	
+	//Build up the prefixes so the rest of the scripts
+	//do not have to guess where things are at.
+	if(!dependencies["prefixes"]){
+		dependencies.prefixes = [];
+	}
+	
+	//Find prefixes that are used.
+	var usedPrefixes = ["dojo"];
+	xxx
+	
 	return {
 		dependencies: dependencies,
 		hostenvType: hostenvType
@@ -317,13 +322,13 @@ buildUtil.createLayerContents = function(/*Array*/depList, /*Array*/provideList,
 	var dojoContents = "";
 	for(var i = 0; i < depList.length; i++){
 		//Make sure we have a JS string and not a Java string by using new String().
-		dojoContents += new String(buildUtil.readFile(depList[i])) + "\r\n";
+		dojoContents += new String(fileUtil.readFile(depList[i])) + "\r\n";
 	}
 	
 	// dojo.requireLocalization is a special case as it pulls in dojo.i18n.loader at runtime
 	if(dojoContents.match(buildUtil.globalRequireLocalizationRegExp)){
 		depList.push("../src/i18n/loader.js");
-		dojoContents += new String(readFile(depList[depList.length-1]));
+		dojoContents += new String(fileUtil.readFile(depList[depList.length-1]));
 	}
 
 	//Construct a string of all the dojo.provide statements.
@@ -386,7 +391,7 @@ buildUtil.makeDojoJs = function(/*Object*/dependencyResult, /*String*/version){
 	//summary: Makes the uncompressed contents for dojo.js using the object
 	//returned from buildUtil.getDependencyList()
 
-	var lineSeparator = buildUtil.getLineSeparator();
+	var lineSeparator = fileUtil.getLineSeparator();
 
 	//Cycle through the layers to create the content for each layer.
 	for(var i = 0; i< dependencyResult.length; i++){
@@ -551,7 +556,7 @@ buildUtil.getLocalesForBundle = function(moduleName, bundleName, baseRelativePat
 	var filePath = this.mapResourceToPath(moduleName, baseRelativePath, prefixes);
 	
 	var bundleRegExp = new RegExp("nls[/]?([\\w\\-]*)/" + bundleName + ".js$");
-	var bundleFiles = buildUtil.getFilteredFileList(filePath + "nls/", bundleRegExp, true);
+	var bundleFiles = fileUtil.getFilteredFileList(filePath + "nls/", bundleRegExp, true);
 	
 	//Find the list of locales supported by looking at the path names.
 	var locales = [];
@@ -743,7 +748,6 @@ buildUtil.internTemplateStrings = function(profileFile, loader, releaseDir, srcR
 	var prefixes = dependencies["prefixes"] || [];
 	//Make sure dojo is in the list.
 	var dojoPath = releaseDir.replace(/^.*(\/|\\)release(\/|\\)/, "release/");
-	prefixes.push(["dojo", dojoPath + "/src"]);
 
 	var skiplist = dependencies["internSkipList"] || [];
 	
@@ -759,7 +763,7 @@ buildUtil.internTemplateStrings = function(profileFile, loader, releaseDir, srcR
 	}
 
 	//Intern strings for all files in widget dir (xdomain and regular files)
-	var fileList = buildUtil.getFilteredFileList(releaseDir + "/src/widget",
+	var fileList = fileUtil.getFilteredFileList(releaseDir + "/src/widget",
 		/\.js$/, true);
 
 	if(fileList){
@@ -772,7 +776,7 @@ buildUtil.internTemplateStrings = function(profileFile, loader, releaseDir, srcR
 buildUtil.internTemplateStringsInFile = function(loader, resourceFile, srcRoot, prefixes, skiplist){
 	var resourceContent = new String(readText(resourceFile));
 	resourceContent = buildUtil.interningRegexpMagic(loader, resourceContent, srcRoot, prefixes, skiplist);
-	buildUtil.saveUtf8File(resourceFile, resourceContent);
+	fileUtil.saveUtf8File(resourceFile, resourceContent);
 }
 
 buildUtil.interningDojoUriRegExpString = "(((templatePath|templateCssPath)\\s*(=|:)\\s*)|dojo\\.uri\\.cache\\.allow\\(\\s*)dojo\\.uri\\.(dojo|module)?Uri\\(\\s*?[\\\"\\']([\\w\\.\\/]+)[\\\"\\'](([\\,\\s]*)[\\\"\\']([\\w\\.\\/]*)[\\\"\\'])?\\s*\\)";
@@ -851,103 +855,30 @@ buildUtil.interningRegexpMagic = function(loader, resourceContent, srcRoot, pref
 	});
 }
 
-buildUtil.isValueInArray = function(value, ary){
+buildUtil.isValueInArray = function(/*Object*/value, /*Array*/ary){
+	//summary: sees if value is in the ary array. Uses == to see if the
+	//array item matches value.
 	for(var i = 0; i < ary.length; i++){
 		if(ary[i] == value){
-			return true;
+			return true; //boolean
 		}
 	}
-	return false;
+	return false; //boolean
 }
 
-
-//Recurses startDir and finds matches to the files that match regExpFilter.
-//Ignores files/directories that start with a period (.).
-buildUtil.getFilteredFileList = function(startDir, regExpFilter, makeUnixPaths, startDirIsJavaObject){
-	var files = [];
-
-	var topDir = startDir;
-	if(!startDirIsJavaObject){
-		topDir = new java.io.File(startDir);
-	}
-
-	if(topDir.exists()){
-		var dirFileArray = topDir.listFiles();
-		for (var i = 0; i < dirFileArray.length; i++){
-			var file = dirFileArray[i];
-			if(file.isFile()){
-				var filePath = file.getPath();
-				if(makeUnixPaths){
-					//Make sure we have a JS string.
-					filePath = String(filePath);
-					if(filePath.indexOf("/") == -1){
-						filePath = filePath.replace(/\\/g, "/");
-					}
-				}
-				if(!file.getName().match(/^\./) && filePath.match(regExpFilter)){
-					files.push(filePath);
-				}
-			}else if(file.isDirectory() && !file.getName().match(/^\./)){
-				var dirFiles = this.getFilteredFileList(file, regExpFilter, makeUnixPaths, true);
-				files.push.apply(files, dirFiles);
-			}
+buildUtil.convertArrayToObject = function(/*Array*/ary){
+	//summary: converts an array that has String members of "name=value"
+	//into an object, where the properties on the object are the names in the array
+	//member name/value pairs.
+	var result = {};
+	for(var i = 0; i < ary.length; i++){
+		var parts = ary[i].split("=");
+		if(parts.length != 2){
+			throw "Malformed name/value pair: [" + ary[i] + "]. Format should be name=value";
 		}
+		result[parts[0]] = parts[1];
 	}
-
-	return files;
-}
-
-buildUtil.ensureEndSlash = function(path){
-	if(path.charAt(path.length) != '/' || path.charAt(path.length) != '\\'){
-		path += "/";
-	}
-	return path;
-}
-
-buildUtil.readFile = function(/*String*/path, /*String?*/encoding){
-	encoding = encoding || "utf-8";
-	var file = new java.io.File(path);
-	var lineSeparator = buildUtil.getLineSeparator();
-	var input = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(file), encoding));
-	try {
-		var stringBuffer = new java.lang.StringBuffer();
-		var line = "";
-		while((line = input.readLine()) !== null){
-			stringBuffer.append(line);
-			stringBuffer.append(lineSeparator);
-		}
-		return stringBuffer.toString();
-	} finally {
-		input.close();
-	}
-}
-
-buildUtil.saveUtf8File = function(/*String*/fileName, /*String*/fileContents){
-	buildUtil.saveFile(fileName, fileContents, "utf-8");
-}
-
-buildUtil.saveFile = function(/*String*/fileName, /*String*/fileContents, /*String?*/encoding){
-	var outFile = new java.io.File(fileName);
-	var outWriter;
-	if(encoding){
-		outWriter = new java.io.OutputStreamWriter(new java.io.FileOutputStream(outFile), encoding);
-	}else{
-		outWriter = new java.io.OutputStreamWriter(new java.io.FileOutputStream(outFile));
-	}
-
-	var os = new java.io.BufferedWriter(outWriter);
-	try{
-		os.write(fileContents);
-	}finally{
-		os.close();
-	}
-}
-
-buildUtil.deleteFile = function(fileName){
-	var file = new java.io.File(fileName);
-	if(file.exists()){
-		file["delete"]();
-	}
+	return result; //Object
 }
 
 buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileContents, /*String*/copyright, /*boolean*/doCompression){
@@ -973,7 +904,7 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 			if(singleLineMatches && singleLineMatches.length > 0){
 				copyrightText += singleLineMatches.join("\r\n");
 			}
-			copyrightText += buildUtil.getLineSeparator();
+			copyrightText += fileUtil.getLineSeparator();
 		}else{
 			copyrightText = copyright;
 		}
@@ -1011,8 +942,8 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 
 buildUtil.stripComments = function(/*String*/startDir, /*boolean*/suppressDojoCopyright){
 	//summary: strips the JS comments from all the files in "startDir", and all subdirectories.
-	var copyright = suppressDojoCopyright ? "" : (new String(buildUtil.readFile("copyright.txt")) + buildUtil.getLineSeparator());
-	var fileList = buildUtil.getFilteredFileList(startDir, /\.js$/, true);
+	var copyright = suppressDojoCopyright ? "" : (new String(fileUtil.readFile("copyright.txt")) + fileUtil.getLineSeparator());
+	var fileList = fileUtil.getFilteredFileList(startDir, /\.js$/, true);
 	if(fileList){
 		for(var i = 0; i < fileList.length; i++){
 			//Don't process dojo.js since it has already been processed.
@@ -1025,7 +956,7 @@ buildUtil.stripComments = function(/*String*/startDir, /*boolean*/suppressDojoCo
 				print("Stripping comments from file: " + fileList[i]);
 				
 				//Read in the file. Make sure we have a JS string.
-				var fileContents = new String(buildUtil.readFile(fileList[i]));
+				var fileContents = new String(fileUtil.readFile(fileList[i]));
 
 				//Do comment removal.
 				try{
@@ -1035,7 +966,7 @@ buildUtil.stripComments = function(/*String*/startDir, /*boolean*/suppressDojoCo
 				}
 
 				//Write out the file with appropriate copyright.
-				buildUtil.saveUtf8File(fileList[i], fileContents);
+				fileUtil.saveUtf8File(fileList[i], fileContents);
 			}
 		}
 	}

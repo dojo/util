@@ -43,10 +43,11 @@ djConfig={
 load('../../dojo.js');
 dojo.require("dojo.json");
 
+load("../fileUtil.js");
 load("../buildUtil.js");
 
 //Get a list of files that might be modules.
-var fileList = buildUtil.getFilteredFileList(srcRoot, /\.js$/, true);
+var fileList = fileUtil.getFilteredFileList(srcRoot, /\.js$/, true);
 
 var provideRegExp = /dojo\.provide\(\".*\"\)/g;
 
@@ -56,7 +57,7 @@ var provideRegExp = /dojo\.provide\(\".*\"\)/g;
 var provideList = [];
 for(var i = 0; i < fileList.length; i++){
 	var fileName = fileList[i];
-	var fileContents = new String(buildUtil.readFile(fileName));
+	var fileContents = new String(fileUtil.readFile(fileName));
 
 	var matches = fileContents.match(provideRegExp);
 	if(matches){
@@ -90,5 +91,5 @@ for(var i = 0; i < provideList.length; i++){
 var treeData = buildTreeData(moduleHolder, "Dojo Modules");
 
 //Output the results.
-buildUtil.saveFile(outputFileName, "var treeData = " + dojo.json.serialize(treeData) + ";");
+fileUtil.saveFile(outputFileName, "var treeData = " + dojo.json.serialize(treeData) + ";");
 

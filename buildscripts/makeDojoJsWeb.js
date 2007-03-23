@@ -74,8 +74,8 @@ if(isInputOk){
 		compressedContents = buildUtil.optimizeJs("dojo.js", contents, "", true);
 
 		//Add copyright
-		var copyright = new String(buildUtil.readFile("copyright.txt"));
-		var buildNotice = new String(buildUtil.readFile("build_notice.txt"));
+		var copyright = new String(fileUtil.readFile("copyright.txt"));
+		var buildNotice = new String(fileUtil.readFile("build_notice.txt"));
 		contents = copyright + buildNotice + contents;
 		compressedContents = copyright + buildNotice + compressedContents;
 		
@@ -92,9 +92,9 @@ if(isInputOk){
 		var buildContents = dependencyResult.provideList.sort().join("\n");
 
 		//Save files to disk
-		buildUtil.saveUtf8File(buildCachePath + "dojo.js", contents);
-		buildUtil.saveUtf8File(buildCachePath + "compressed/dojo.js", compressedContents);
-		buildUtil.saveUtf8File(buildCachePath + "build.txt", buildContents);
+		fileUtil.saveUtf8File(buildCachePath + "dojo.js", contents);
+		fileUtil.saveUtf8File(buildCachePath + "compressed/dojo.js", compressedContents);
+		fileUtil.saveUtf8File(buildCachePath + "build.txt", buildContents);
 		
 		result = "OK";
 	}catch(e){

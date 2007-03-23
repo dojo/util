@@ -6,7 +6,7 @@ load("buildUtilXd.js");
 findJsFiles = function(srcDirs, filePathRegExp){
 	var jsFileNames = [];
 	for(var i = 0; i < srcDirs.length; i++){
-		var fileList = buildUtil.getFilteredFileList(srcDirs[i].prefixPath, filePathRegExp, true);
+		var fileList = fileUtil.getFilteredFileList(srcDirs[i].prefixPath, filePathRegExp, true);
 		if(fileList){
 			for(var j = 0; j < fileList.length; j++){
 				jsFileNames.push({prefix: srcDirs[i].prefix, prefixPath: srcDirs[i].prefixPath, path: fileList[j]});
@@ -35,6 +35,7 @@ dojo.require("dojo.i18n.common");
 dojo.require("dojo.json");
 
 //Find the bundles that need to be flattened.
+load("fileUtil.js");
 load("buildUtil.js");
 
 //Define array used to store the source directories that need to be
@@ -44,6 +45,7 @@ var srcDirs = [];
 
 //Any other arguments to this file are directories to search.
 for(var i = 3; i < arguments.length; i++){
+xxx broken
 	srcDirs.push({prefix: "dojo", prefixPath: arguments[i]});
 }
 
@@ -74,7 +76,7 @@ if(action == "xdgen"){
 		}else{
 			var xdContents = buildUtilXd.makeXdContents(readText(jsFileName), djConfig.baseRelativePath, prefixes);
 		}
-		buildUtil.saveUtf8File(xdFileName, xdContents);
+		fileUtil.saveUtf8File(xdFileName, xdContents);
 	}
 }else if(action == "xdremove"){
 	//Build master list of files to process.
@@ -82,7 +84,7 @@ if(action == "xdgen"){
 	
 	//Run makeXdContents on each file and save the XD file contents to a xd.js file.
 	for(j = 0; j < jsFileNames.length; j++){
-		buildUtil.deleteFile(jsFileNames[j].path);
+		fileUtil.deleteFile(jsFileNames[j].path);
 	}
 }
 

@@ -3,11 +3,12 @@
 var dojoFile = arguments[0];
 var xdUrl = arguments[1];
 
+load("fileUtil.js");
 load("buildUtil.js");
 load("buildUtilXd.js");
 
-var fileContents = new String(buildUtil.readFile(dojoFile));
+var fileContents = new String(fileUtil.readFile(dojoFile));
 fileContents = buildUtilXd.setXdDojoConfig(fileContents, xdUrl);
-buildUtil.saveFile(dojoFile, fileContents);
+fileUtil.saveFile(dojoFile, fileContents);
 
 
