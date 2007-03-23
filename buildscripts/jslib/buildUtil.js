@@ -295,12 +295,42 @@ buildUtil.evalProfile = function(/*String*/ profileFile){
 	
 	//Find prefixes that are used.
 	var usedPrefixes = ["dojo"];
-	xxx
+	usePrefixes._entries { dojo: true };
 	
+	//Check normal dependencies.
+	buildUtil.addPrefixesFromDependencies(usedPrefixes, dependencies);
+
+	//Check layer dependencies
+	var layerDeps = dependencies.layers;
+	for(var i = 0; i < layerDeps.length; i++){
+		buildUtil.addPrefixesFromDependencies(usedPrefixes, layerDeps[i].dependencies);
+	}
+
+	//Now add to the real prefix array.
+	//If not already in the prefix array, assume the default
+	//location, as a sibling to dojo (and util).
+	for(var i = 0; i < usedPrefixes.length; i++){
+		if(!buildUtil.isValueInArray(usedPrefixes[i], dependencies.prefixes){
+			dependencies.prefixes.push([usedPrefixes[i], "../../" + usedPrefixes[i]]);
+		}
+	}
+
 	return {
 		dependencies: dependencies,
 		hostenvType: hostenvType
 	};
+}
+
+buildUtil.addPrefixesFromDependencies = function(/*Array*/prefixStore, /*Array*/dependencies){
+	//summary: finds the top level prefixes in the build process that
+	//we need to track for the build process. 
+	for(var i = 0; i < dependencies.length; i++){
+		var topPrefix = dependencies[i].split(".")[0];
+		if(!prefixStore._entries[topPrefix]){
+			prefixStore.push(topPrefix);
+			prefixStore._entries[topPrefix] = true;
+		}
+	}
 }
 
 buildUtil.loadDependencyList = function(/*String*/profileFile){
@@ -872,11 +902,11 @@ buildUtil.convertArrayToObject = function(/*Array*/ary){
 	//member name/value pairs.
 	var result = {};
 	for(var i = 0; i < ary.length; i++){
-		var parts = ary[i].split("=");
-		if(parts.length != 2){
+		var separatorIndex = ary[i].indexOf("=");
+		if(separatorIndex == -1){
 			throw "Malformed name/value pair: [" + ary[i] + "]. Format should be name=value";
 		}
-		result[parts[0]] = parts[1];
+		result[ary[i].substring(0, separatorIndex)] = ary[i].substring(separatorIndex + 1, ary[i].length);
 	}
 	return result; //Object
 }
