@@ -54,8 +54,8 @@ fileUtil.copyDir = function(/*String*/srcDir, /*String*/destDir, /*RegExp*/regEx
 		var srcFileName = fileNames[i];
 		var destFileName = srcFileName.replace(srcDir, destDir);
 
-		logger.trace("Src filename: " + srcFileName);
-		logger.trace("Dest filename: " + destFileName);
+		//logger.trace("Src filename: " + srcFileName);
+		//logger.trace("Dest filename: " + destFileName);
 
 		//Make sure destination dir exists.
 		var destFile = new java.io.File(destFileName);
@@ -117,10 +117,16 @@ fileUtil.saveFile = function(/*String*/fileName, /*String*/fileContents, /*Strin
 	}
 }
 
-fileUtil.deleteFile = function(fileName){
-	//summary: deletes a file if it exists.
+fileUtil.deleteFile = function(/*String*/fileName){
+	//summary: deletes a file or directory if it exists.
 	var file = new java.io.File(fileName);
 	if(file.exists()){
+		if(file.isDirectory()){
+			var files = file.listFiles();
+			for(var i = 0; i < files.length; i++){
+				this.deleteFile(files[i]);
+			}
+		}
 		file["delete"]();
 	}
 }

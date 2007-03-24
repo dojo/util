@@ -9,7 +9,7 @@ buildUtil.getDojoLoader = function(/*Object?*/dependencies){
 buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array*/hostenvType, /*boolean?*/isWebBuild){
 	if(!isWebBuild){
 		djConfig = {
-			baseRelativePath: "../"
+			baseRelativePath: "../../dojo/"
 			// isDebug: true
 		};
 	}
@@ -31,27 +31,23 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		dojoLoader = "default";
 	}
 
-	if(!isWebBuild){
-		dj_global = {};
-		
-		load("../src/bootstrap1.js");
-		load("../src/loader.js");
-		load("../src/hostenv_rhino.js");
-	
-		// FIXME: is this really what we want to say?
-		dojo.render.html.capable = true;
+	if(!isWebBuild){		
+		load("../../dojo/_base/_loader/bootstrap.js");
+		load("../../dojo/_base/_loader/loader.js");
+		load("../../dojo/_base/_loader/hostenv_rhino.js");
+		dojo._currentContext = {};
 	}
 
-	dojo.hostenv.loadedUris.push("dojoGuardStart.js");
-	dojo.hostenv.loadedUris.push("../src/bootstrap1.js");
+	dojo._loadedUrls.push("jslib/dojoGuardStart.js");
+	dojo._loadedUrls.push("../../dojo/_base/_loader/bootstrap.js");
 	
 	if(dojoLoader == "default"){
-		dojo.hostenv.loadedUris.push("../src/loader.js");
+		dojo._loadedUrls.push("../../dojo/_base/_loader/loader.js");
 	}else if(dojoLoader=="xdomain"){
-		dojo.hostenv.loadedUris.push("../src/loader.js");
-		dojo.hostenv.loadedUris.push("../src/loader_xd.js");
+		dojo._loadedUrls.push("../../dojo/_base/_loader/loader.js");
+		dojo._loadedUrls.push("../../dojo/_base/_loader/loader_xd.js");
 	}
-	dojo.hostenv.loadedUris.push("dojoGuardEnd.js");
+	dojo._loadedUrls.push("jslib/dojoGuardEnd.js");
 	
 	if(!hostenvType){
 		hostenvType = "browser";
@@ -59,11 +55,11 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 	
 	if(hostenvType.constructor == Array){
 		for(var x=0; x<hostenvType.length; x++){
-			dojo.hostenv.loadedUris.push("../src/hostenv_"+hostenvType[x]+".js");
+			dojo._loadedUrls.push("../../dojo/_base/_loader/hostenv_"+hostenvType[x]+".js");
 		}
 		hostenvType = hostenvType.pop();
 	}else{
-		dojo.hostenv.loadedUris.push("../src/hostenv_"+hostenvType+".js");
+		dojo._loadedUrls.push("../../dojo/_base/_loader/hostenv_"+hostenvType+".js");
 	}
 	
 	if(dependencies["prefixes"]){
@@ -73,7 +69,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		}
 	}
 	
-	dojo.hostenv.name_ = hostenvType;
+	dojo._name = hostenvType;
 	
 	//Override dojo.provide to get a list of resource providers.
 	var currentProvideList = [];
@@ -95,18 +91,18 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		return contents.replace( /__DOJONEWLINE/mg , "\n");
 	}
 	
-	// over-write dj_eval to prevent actual loading of subsequent files
-	var old_eval = dj_eval;
-	dj_eval = function(){ return true; }
+	// over-write dojo.eval to prevent actual loading of subsequent files
+	dojo._oldEval = dojo["eval"];
+	dojo["eval"] = function(){ return true; }
 	var old_load = load;
 	load = function(uri){
 		try{
-			var text = removeComments((isWebBuild ? dojo.hostenv.getText(uri) : readText(uri)));
-			var requires = dojo.hostenv.getRequiresAndProvides(text);
+			var text = removeComments((isWebBuild ? dojo._getText(uri) : readText(uri)));
+			var requires = dojo._getRequiresAndProvides(text);
 			eval(requires.join(";"));
-			dojo.hostenv.loadedUris.push(uri);
-			dojo.hostenv.loadedUris[uri] = true;
-			var delayRequires = dojo.hostenv.getDelayRequiresAndProvides(text);
+			dojo._loadedUrls.push(uri);
+			dojo._loadedUrls[uri] = true;
+			var delayRequires = dojo._getDelayRequiresAndProvides(text);
 			eval(delayRequires.join(";"));
 		}catch(e){
 			if(isWebBuild){
@@ -120,11 +116,11 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 	}
 	
 	if(isWebBuild){
-		dojo.hostenv.oldLoadUri = dojo.hostenv.loadUri;
-		dojo.hostenv.loadUri = load;
+		dojo._oldLoadUri = dojo._loadUri;
+		dojo._loadUri = load;
 	}
 	
-	dojo.hostenv.getRequiresAndProvides = function(contents){
+	dojo._getRequiresAndProvides = function(contents){
 		// FIXME: should probably memoize this!
 		if(!contents){ return []; }
 	
@@ -132,14 +128,14 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		var deps = [];
 		var tmp;
 		RegExp.lastIndex = 0;
-		var testExp = /dojo.(hostenv.loadModule|hostenv.require|require|kwCompoundRequire|hostenv.conditionalLoadModule|hostenv.startPackage|provide)\([\w\W]*?\)/mg;
+		var testExp = /dojo.(require|platformRequire|provide)\([\w\W]*?\)/mg;
 		while((tmp = testExp.exec(contents)) != null){
 			deps.push(tmp[0]);
 		}
 		return deps;
 	}
 	
-	dojo.hostenv.getDelayRequiresAndProvides = function(contents){
+	dojo._getDelayRequiresAndProvides = function(contents){
 		// FIXME: should probably memoize this!
 		if(!contents){ return []; }
 	
@@ -212,14 +208,15 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 	}
 
 	if(isWebBuild){
-		dojo.hostenv.loadUri = dojo.hostenv.oldLoadUri;
+		dojo._loadUri = dojo._oldLoadUri;
 	}else{
 		load = old_load; // restore the original load function
-		dj_eval = old_eval; // restore the original dj_eval function
+		dojo["eval"] = dojo._oldEval; // restore the original dojo.eval function
 
-		dj_global['dojo'] = undefined;
-		dj_global['djConfig'] = undefined;
-		delete dj_global;
+		var djGlobal = dojo._currentContext;
+		djGlobal['djConfig'] = undefined;
+
+		delete dojo;
 	}
 
 	return result; //Object with properties: name (String), depList (Array) and provideList (Array)
@@ -230,14 +227,12 @@ buildUtil.determineUriList = function(/*Array*/dependencies, /*Array*/layerUris,
 	for(var x=0; x<dependencies.length; x++){
 		try{
 			var dep = dependencies[x];
-			if(dep.indexOf("(") != -1){
-				dep = dojo.hostenv.getDepsForEval(dep)[0];
-			}
+
 			//Don't process loader_xd.js since it has some regexps 
 			//and mentions of dojo.require/provide, which will cause 
-			//havoc in the dojo.hostenv.loadModule() method.
+			//havoc in the dojo._loadModule() method.
 			if(dep.indexOf("loader_xd.js") == -1){
-				dojo.hostenv.loadModule(dep, null, true);
+				dojo._loadModule(dep, null, true);
 			}
 		}catch(e){
 			java.lang.System.err.println("Error loading module!" + e);
@@ -247,8 +242,8 @@ buildUtil.determineUriList = function(/*Array*/dependencies, /*Array*/layerUris,
 
 	var depList = [];
 	var seen = {};
-	uris: for(var x=0; x<dojo.hostenv.loadedUris.length; x++){
-		var curi = dojo.hostenv.loadedUris[x];
+	uris: for(var x=0; x<dojo._loadedUrls.length; x++){
+		var curi = dojo._loadedUrls[x];
 		if(!seen[curi]){
 			seen[curi] = true;
 			if(filters){
@@ -273,7 +268,7 @@ buildUtil.determineUriList = function(/*Array*/dependencies, /*Array*/layerUris,
 	}
 	
 	//Clear out the loadedUris for the next run. 
-	dojo.hostenv.loadedUris = []; 
+	dojo._loadedUrls = []; 
 	return depList; 
 }
 
@@ -360,7 +355,8 @@ buildUtil.createLayerContents = function(/*Array*/depList, /*Array*/provideList,
 	
 	// dojo.requireLocalization is a special case as it pulls in dojo.i18n.loader at runtime
 	if(dojoContents.match(buildUtil.globalRequireLocalizationRegExp)){
-		depList.push("../src/i18n/loader.js");
+		//FIXME: Uncomment this line with i18n gets ported to 0.9
+		//depList.push("../src/i18n/loader.js");
 		dojoContents += new String(fileUtil.readFile(depList[depList.length-1]));
 	}
 
@@ -507,7 +503,7 @@ buildUtil.configPrefixes = function(profileFile){
 }
 
 //The regular expressions that will help find dependencies in the file contents.
-buildUtil.masterDependencyRegExpString = "dojo.(requireLocalization|require|requireIf|requireAll|provide|requireAfterIf|requireAfter|kwCompoundRequire|conditionalRequire|hostenv\\.conditionalLoadModule|.hostenv\\.loadModule|hostenv\\.moduleLoaded)\\(([\\w\\W]*?)\\)";
+buildUtil.masterDependencyRegExpString = "dojo.(requireLocalization|require|requireIf|provide|requireAfterIf|requireAfter|platformRequire)\\(([\\w\\W]*?)\\)";
 buildUtil.globalDependencyRegExp = new RegExp(buildUtil.masterDependencyRegExpString, "mg");
 buildUtil.dependencyPartsRegExp = new RegExp(buildUtil.masterDependencyRegExpString);
 

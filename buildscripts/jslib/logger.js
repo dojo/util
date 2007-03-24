@@ -7,25 +7,25 @@ var logger = {
 	logPrefix: "",
 
 	trace: function(message){
-		if(this.level >= this.TRACE){
+		if(this.level <= this.TRACE){
 			this._print(message);
 		}
 	},
 
 	info: function(message){
-		if(this.level >= this.INFO){
+		if(this.level <= this.INFO){
 			this._print(message);
 		}
 	},
 
 	warn: function(message){
-		if(this.level >= this.WARN){
+		if(this.level <= this.WARN){
 			this._print(message);
 		}
 	},
 
 	error: function(message){
-		if(this.level >= this.ERROR){
+		if(this.level <= this.ERROR){
 			this._print(message);
 		}
 	},

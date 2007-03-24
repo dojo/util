@@ -26,12 +26,15 @@ if(typeof kwArgs["copyTests"] == "undefined"){
 //Execute the requested build actions
 var action = kwArgs.action;
 for(var i = 0; i < action.length; i ++){
+	logger.logPrefix = action[i] + ": ";
 	this[action[i]]();
+	logger.logPrefix = "";
 }
 
 
 //********* Start clean ************
 function clean(){
+	logger.info("Deleting: " + kwArgs.releaseDir);
 	fileUtil.deleteFile(kwArgs.releaseDir);
 }
 //********* End clean *********
@@ -49,7 +52,8 @@ function release(){
 	var dependencies = profileProperties.dependencies;
 	var prefixes = dependencies.prefixes;
 	var dojoPrefixPath = null;
-	
+	var lineSeparator = fileUtil.getLineSeparator();
+
 	//Copy each prefix dir to the releases and
 	//operate on that copy.
 	for(var i = 0; i < prefixes.length; i++){
@@ -66,8 +70,31 @@ function release(){
 
 	//Now process Dojo core. Special things for that one.
 	if(dojoPrefixPath){
-		//xxx
+		 _prefixPathRelease("dojo", dojoPrefixPath, kwArgs);
 		
+		//FIXME: loadDependency list reparses profile file, but we've already done that.
+		var result = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileFile), kwArgs.version);
+
+		//Save the dojo.js contents. It is always the first result.
+		fileUtil.saveFile(kwArgs.releaseDir + "/dojo/dojo.js", result[0].contents);
+
+		//Save the other layers, if there are any.
+		for(var i = 1; i < result.length; i++){
+			fileUtil.saveFile(kwArgs.releaseDir + "/dojo/" + result[i].layerName, result[i].contents);
+		}
+
+		//Save the dependency list to build.txt
+		var buildText = "Files baked into this build:" + lineSeparator;
+		for(var i = 0; i < result.length; i++){
+			buildText += lineSeparator + result[i].layerName + ":" + lineSeparator;
+			buildText += result[i].depList.join(lineSeparator) + lineSeparator;
+		}
+
+		fileUtil.saveFile(kwArgs.releaseDir + "/dojo/build.txt", buildText);
+
+		logger.info(buildText);
+
+
 		//-flatten-resources
 		//		<replaceregexp match="/\*\*\*BUILD:localesGenerated\*\*\*/" byline="false" replace="=${generatedLocales}"
 		//	file="${dstFile}"/>
@@ -88,8 +115,8 @@ function _prefixPathRelease(prefixName, prefixPath, kwArgs){
 	var copyRegExp = /./;
 	
 	//Use the copyRegExp to filter out tests if requested.
-	if(kwArgs.copyTests){
-		copyRegExp = new RegExp(prefixName.replace(/\\/g, "/") + "/(?!tests/)");
+	if(!kwArgs.copyTests){
+		copyRegExp = new RegExp(prefixName.replace(/\\/g, "/") + "/(?!tests)");
 	}
 
 	fileUtil.copyDir(prefixPath, releasePath, copyRegExp);
