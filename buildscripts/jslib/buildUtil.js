@@ -97,7 +97,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 	var old_load = load;
 	load = function(uri){
 		try{
-			var text = removeComments((isWebBuild ? dojo._getText(uri) : readText(uri)));
+			var text = removeComments((isWebBuild ? dojo._getText(uri) : fileUtil.readFile(uri)));
 			var requires = dojo._getRequiresAndProvides(text);
 			eval(requires.join(";"));
 			dojo._loadedUrls.push(uri);
@@ -466,8 +466,7 @@ buildUtil.getDependencyPropertyFromProfile = function(/*String*/profileFile, /*S
 	//but it may be an empty array.
 
 	//Use new String to make sure we have a JS string (not a Java string)
-	//readText is from hostenv_rhino.js, so be sure to load Dojo before calling this function.
-	var profileText = new String(readText(profileFile));
+	var profileText = new String(fileUtil.readFile(profileFile));
 	//Get rid of CR and LFs since they seem to mess with the regexp match.
 	//Using the "m" option on the regexp was not enough.
 	profileText = profileText.replace(/\r/g, "");
@@ -686,11 +685,6 @@ buildUtil.mapResourceToPath = function(resourceName, baseRelativePath, prefixes)
 		}
 	}
 
-	if(bestPrefixPath == "" && resourceName.indexOf("dojo.") == 0){
-		bestPrefix = "dojo";
-		bestPrefixPath = "src/";
-	}
-	
 	//Get rid of matching prefix from resource name.
 	resourceName = resourceName.replace(bestPrefix, "");
 	
@@ -711,8 +705,7 @@ buildUtil.mapResourceToPath = function(resourceName, baseRelativePath, prefixes)
 	return finalPath;
 }
 
-
-function makeResourceUri(resourceName, templatePath, srcRoot, prefixes){
+buildUtil.makeResourceUri = function(resourceName, templatePath, srcRoot, prefixes){
 	var bestPrefix = "";
 	var bestPrefixPath = ""
 	if(prefixes){
@@ -750,101 +743,46 @@ function makeResourceUri(resourceName, templatePath, srcRoot, prefixes){
 	return srcRoot + templatePath;
 }
 
-buildUtil.internTemplateStrings = function(profileFile, loader, releaseDir, srcRoot){
-	loader = loader || "default";
-	releaseDir = releaseDir || "../release/dojo";
-	srcRoot = srcRoot || "../";
-	
-	print("loader: " + loader);
-	print("releaseDir - " + releaseDir);
-
-	//Load Dojo so we can use readText() defined in hostenv_rhino.js.
-	//Also gives us the ability to use all the neato toolkit features.
-	djConfig={
-		baseRelativePath: "../"
-	};
-	load('../dojo.js');
-	dojo.require("dojo.string.extras");
-	dojo.require("dojo.i18n.common");
-	dojo.require("dojo.json");
-	
-	//Find the bundles that need to be flattened.
-	load("buildUtil.js");
-
-	var profile = buildUtil.evalProfile(profileFile);
-	var dependencies = profileFile.dependencies;
-
+buildUtil.internTemplateStrings = function(dependencies, srcRoot){
 	var prefixes = dependencies["prefixes"] || [];
-	//Make sure dojo is in the list.
-	var dojoPath = releaseDir.replace(/^.*(\/|\\)release(\/|\\)/, "release/");
-
 	var skiplist = dependencies["internSkipList"] || [];
-	
-	//Intern strings for dojo.js
-	buildUtil.internTemplateStringsInFile(loader, releaseDir + "/dojo.js", srcRoot, prefixes, skiplist);
-	buildUtil.internTemplateStringsInFile(loader, releaseDir + "/dojo.js.uncompressed.js", srcRoot, prefixes, skiplist);
-
-	//Intern strings for any other layer files.
-	if(dependencies["layers"] && dependencies.layers.length > 0){
-		for(var i = 0; i < dependencies.layers.length; i++){
-			buildUtil.internTemplateStringsInFile(loader, releaseDir + "/" + dependencies.layers[i].name, srcRoot, prefixes, skiplist);
-		}
-	}
 
 	//Intern strings for all files in widget dir (xdomain and regular files)
-	var fileList = fileUtil.getFilteredFileList(releaseDir + "/src/widget",
-		/\.js$/, true);
-
+	var fileList = fileUtil.getFilteredFileList(srcRoot, /\.js$/, true);
 	if(fileList){
 		for(var i = 0; i < fileList.length; i++){
-			buildUtil.internTemplateStringsInFile(loader, fileList[i], srcRoot, prefixes, skiplist)
+			buildUtil.internTemplateStringsInFile(fileList[i], srcRoot, prefixes, skiplist);
 		}
 	}
 }
 
-buildUtil.internTemplateStringsInFile = function(loader, resourceFile, srcRoot, prefixes, skiplist){
-	var resourceContent = new String(readText(resourceFile));
-	resourceContent = buildUtil.interningRegexpMagic(loader, resourceContent, srcRoot, prefixes, skiplist);
-	fileUtil.saveUtf8File(resourceFile, resourceContent);
+buildUtil.internTemplateStringsInFile = function(resourceFile, srcRoot, prefixes, skiplist){
+	var resourceContent = String(fileUtil.readFile(resourceFile));
+	resourceContent = buildUtil.interningRegexpMagic(resourceContent, srcRoot, prefixes, skiplist);
+	fileUtil.saveFile(resourceFile, resourceContent);
 }
 
-buildUtil.interningDojoUriRegExpString = "(((templatePath|templateCssPath)\\s*(=|:)\\s*)|dojo\\.uri\\.cache\\.allow\\(\\s*)dojo\\.uri\\.(dojo|module)?Uri\\(\\s*?[\\\"\\']([\\w\\.\\/]+)[\\\"\\'](([\\,\\s]*)[\\\"\\']([\\w\\.\\/]*)[\\\"\\'])?\\s*\\)";
+buildUtil.interningDojoUriRegExpString = "(((templatePath|templateCssPath)\\s*(=|:)\\s*)|dojo\\.uri\\.cache\\.allow\\(\\s*)dojo\\.(module)?Uri\\(\\s*?[\\\"\\']([\\w\\.\\/]+)[\\\"\\'](([\\,\\s]*)[\\\"\\']([\\w\\.\\/]*)[\\\"\\'])?\\s*\\)";
 buildUtil.interningGlobalDojoUriRegExp = new RegExp(buildUtil.interningDojoUriRegExpString, "g");
 buildUtil.interningLocalDojoUriRegExp = new RegExp(buildUtil.interningDojoUriRegExpString);
 
-//WARNING: This function assumes dojo.string.escapeString() has been loaded.
-buildUtil.interningRegexpMagic = function(loader, resourceContent, srcRoot, prefixes, skiplist, isSilent){
+buildUtil.interningRegexpMagic = function(resourceContent, srcRoot, prefixes, skiplist){
 	return resourceContent.replace(buildUtil.interningGlobalDojoUriRegExp, function(matchString){
 		var parts = matchString.match(buildUtil.interningLocalDojoUriRegExp);
 
 		var filePath = "";
 		var resourceNsName = "";
-		if(parts[5] == "dojo"){
-			if(parts[6].match(/(\.htm|\.html|\.css)$/)){
-				if(!isSilent){
-					print("Dojo match: " + parts[6]);
-				}
-				filePath = srcRoot + parts[6]
-				resourceNsName = "dojo:" + parts[6];
-			}
-		}else{
-			if(!isSilent){
-				print("Module match: " + parts[6] + " and " + parts[9]);
-			}
-			filePath = makeResourceUri(parts[6], parts[9], srcRoot, prefixes);
-			resourceNsName = parts[6] + ':' + parts[9];		
-		}
+
+		logger.trace("Module match: " + parts[6] + " and " + parts[9]);
+		filePath = buildUtil.makeResourceUri(parts[6], parts[9], srcRoot, prefixes);
+		resourceNsName = parts[6] + ':' + parts[9];		
 
 		if(!filePath || buildUtil.isValueInArray(resourceNsName, skiplist)){
-			if(filePath && !isSilent){
-				print("Skip intern resource: " + filePath);
-			}
+			logger.trace("Skip intern resource: " + filePath);
 		}else{
-			if(!isSilent){
-				print("Interning resource path: " + filePath);
-			}
-			//dojo.string.escapeString will add starting and ending double-quotes.
-			var jsEscapedContent = dojo.string.escapeString(new String(readText(filePath)));
+			logger.trace("Interning resource path: " + filePath);
+			//buildUtil.jsEscape will add starting and ending double-quotes.
+			var jsEscapedContent = buildUtil.jsEscape(new String(fileUtil.readFile(filePath)));
 			if(jsEscapedContent){
 				if(matchString.indexOf("dojo.uri.cache.allow") != -1){
 					//Handle dojo.uri.cache-related interning.
@@ -882,6 +820,20 @@ buildUtil.interningRegexpMagic = function(loader, resourceContent, srcRoot, pref
 
 		return matchString;
 	});
+}
+
+buildUtil.jsEscape = function(/*string*/str){
+//summary:
+//	Adds escape sequences for non-visual characters, double quote and backslash
+//	and surrounds with double quotes to form a valid string literal.
+//	Take from the old dojo.string.escapeString code.
+//	Include it here so we don't have to load dojo.
+	return ('"' + str.replace(/(["\\])/g, '\\$1') + '"'
+		).replace(/[\f]/g, "\\f"
+		).replace(/[\b]/g, "\\b"
+		).replace(/[\n]/g, "\\n"
+		).replace(/[\t]/g, "\\t"
+		).replace(/[\r]/g, "\\r"); // string
 }
 
 buildUtil.isValueInArray = function(/*Object*/value, /*Array*/ary){
