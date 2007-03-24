@@ -116,7 +116,6 @@ See http://dojotoolkit.org/node/19 for more information.
 			<param name="profileFile" location="${root}/api/api.profile.js" />
 			<target name="clean" />
 			<target name="release" />
-			<target name="intern-strings" />
 		</antcall>
 		<copy todir="${release_dir}/api" includeEmptyDirs="false" preservelastmodified="true">
 			<fileset dir="${root}/api" />
@@ -372,20 +371,6 @@ See http://dojotoolkit.org/node/19 for more information.
 		<replaceregexp match="/\*\*\*BUILD:localesGenerated\*\*\*/" byline="false" replace="=${generatedLocales}"
 			file="${dstFile}"/>
 	</target>
-
-	<!-- intern-strings task -->
-	<target name="intern-strings" depends="-fix-config, -set-profileFile"
-		description="pulls template paths specified in prototypes into templateStrings which can be used to speed up widget construction">
-
-		<java jar="./lib/custom_rhino.jar" failonerror="true" fork="true"
-			logError="true">
-			<arg value="internStrings.js" />
-			<arg value="${profileFile}" />
-			<arg value="${dojoLoader}" />
-			<arg value="${release_dir}" />
-		</java>
-	</target>
-	<!-- end intern-strings task -->
 
 	<!-- xd-dojo-config task -->
 	<target name="xd-dojo-config" depends="-fix-config"
