@@ -41,8 +41,9 @@ function clean(){
 
 //********* Start release *********
 function release(){
+	logger.info("Using profile: " + kwArgs.profileFile);
+
 	logger.info("Using version number: " + kwArgs.version + " for the release.");
-	logger.info("profileFile: " + kwArgs.profileFile);
 	
 	clean();
 	
@@ -53,7 +54,9 @@ function release(){
 	var prefixes = dependencies.prefixes;
 	var dojoPrefixPath = null;
 	var lineSeparator = fileUtil.getLineSeparator();
-
+	var copyrightText = String(fileUtil.readFile("copyright.txt"));
+	var buildNoticeText = String(fileUtil.readFile("build_notice.txt"));
+	
 	//Copy each prefix dir to the releases and
 	//operate on that copy.
 	for(var i = 0; i < prefixes.length; i++){
@@ -71,40 +74,42 @@ function release(){
 	//Now process Dojo core. Special things for that one.
 	if(dojoPrefixPath){
 		 _prefixPathRelease("dojo", dojoPrefixPath, kwArgs);
-		
+
 		//FIXME: loadDependency list reparses profile file, but we've already done that.
 		var result = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileFile), kwArgs.version);
 
-		//Save the dojo.js contents. It is always the first result.
-		fileUtil.saveFile(kwArgs.releaseDir + "/dojo/dojo.js", result[0].contents);
+		//Save the build layers. The first layer is dojo.js.
+		var layerLegalText = copyrightText + buildNoticeText;
+		for(var i = 0; i < result.length; i++){
+			var fileName = kwArgs.releaseDir + "/dojo/" + result[i].layerName;
+			var fileContents = result[i].contents;
+			
+			//FIXME: Flatten resources. Only do the top level flattening for bundles
+			//in the layer files. How to do this for layers? only do one nls file for
+			//all layers, or a different one for each layer?
+			//		<replaceregexp match="/\*\*\*BUILD:localesGenerated\*\*\*/" byline="false" replace="=${generatedLocales}"
+			//	file="${dstFile}"/>
+			//remove dojo.requireLocalization calls.
 
-		//Save the other layers, if there are any.
-		for(var i = 1; i < result.length; i++){
-			fileUtil.saveFile(kwArgs.releaseDir + "/dojo/" + result[i].layerName, result[i].contents);
+			//Save uncompressed file.
+			fileUtil.saveFile(fileName + ".uncompressed.js", layerLegalText + fileContents);
+
+			//Save compressed file.
+			//FIXME: this probably breaks with multiple layers -- it seems like an issue
+			//inside the compressor.
+			var compresedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, true);
+			fileUtil.saveFile(fileName, compresedContents);
 		}
 
-		//Save the dependency list to build.txt
+		//Save the dependency lists to build.txt
 		var buildText = "Files baked into this build:" + lineSeparator;
 		for(var i = 0; i < result.length; i++){
 			buildText += lineSeparator + result[i].layerName + ":" + lineSeparator;
 			buildText += result[i].depList.join(lineSeparator) + lineSeparator;
 		}
-
 		fileUtil.saveFile(kwArgs.releaseDir + "/dojo/build.txt", buildText);
 
 		logger.info(buildText);
-
-
-		//-flatten-resources
-		//		<replaceregexp match="/\*\*\*BUILD:localesGenerated\*\*\*/" byline="false" replace="=${generatedLocales}"
-		//	file="${dstFile}"/>
-		
-		//remove dojo.requireLocalization calls.
-		
-		//Make a compressed and uncompressed version of the layer files.
-		
-		//add build_notice and copyright to module files.
-
 	}
 }
 //********* End release *********
@@ -120,13 +125,10 @@ function _prefixPathRelease(prefixName, prefixPath, kwArgs){
 	}
 
 	fileUtil.copyDir(prefixPath, releasePath, copyRegExp);
-	
-	//makeDojoJs.js
-	//xxx
-	
-	//flatten 
-	//Run xdgen if an xdomain build.
-	//xxx
+
+	//FIXME: flatten bundles inside the directory
+
+	//FIXME: Run xdgen if an xdomain build.
 }
 //********* End _releasePrefixPath *********
 
