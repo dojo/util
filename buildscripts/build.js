@@ -5,27 +5,55 @@ load("jslib/logger.js");
 load("jslib/fileUtil.js");
 load("jslib/buildUtil.js");
 
-//Convert arguments to keyword arguments.
-var kwArgs = buildUtil.convertArrayToObject(arguments);
+var DojoBuildOptions = {
+	"profile": {
+		defaultValue: "base",
+		helpText: "The name of the profile to use for the build. It must be the first part of "
+			+ "the profile file name in the profiles/ directory. For instance, to use base.profile.js, "
+			+ "specify profile=base."
+	},
+	"profileFile": {
+		defaultValue: "",
+		helpText: "A file path to the the profile file. Use this if your profile is outside of the profiles "
+			+ "directory. Do not specify the \"profile\" build option if you use \"profileFile\"."
+	},
+	"action": {
+		defaultValue: "help",
+		helpText: "The build action(s) to run. Can be a comma-separated list, like action=clean,release. "
+			+ "The possible build actions are: clean, release."
+	},
+	"version": {
+		defaultValue: "0.0.0.dev",
+		helpText: "The build will be stamped with this version string."
+	},
+	"releaseName": {
+		defaultValue: "dojo",
+		helpText: "The name of the release directory."
+	},
+	"loader": {
+		defaultValue: "default",
+		helpText: "The type of dojo loader to use. \"default\" or \"xdomain\" are acceptable values."		
+	},
+	"internStrings": {
+		defaultValue: true,
+		helpText: "Turn on or off widget template/dojo.uri.cache() file interning."
+	},
+	"copyTests": {
+		defaultValue: true,
+		helpText: "Turn on or off copying of test files."
+	},
+	"log": {
+		defaultValue: logger.TRACE,
+		helpText: "Sets the logging verbosity. See jslib/logger.js for possible integer values."
+	}
+};
 
-//Set some defaults for some args if they are missing.
-kwArgs.releaseName = kwArgs["releaseName"] || "dojo";
-kwArgs.releaseDir = "release/" + kwArgs["releaseName"] || "dojo";
-kwArgs.version = kwArgs["version"] || "0.0.0.dev";
-kwArgs.action = (kwArgs["action"] || "release").split(",");
-kwArgs.loader = kwArgs["loader"] || "default";
-if(!kwArgs["profileFile"] && kwArgs["profile"]){
-	kwArgs.profileFile = "profiles/" + kwArgs.profile + ".profile.js";
-}
-if(typeof kwArgs["internStrings"] == "undefined"){
-	kwArgs.internStrings = true;	
-}
-if(kwArgs["log"]){
-	logger.level = logger[kwArgs["log"]];
-}
-if(typeof kwArgs["copyTests"] == "undefined"){
-	kwArgs.copyTests = true;	
-}
+//*****************************************************************************
+//Convert arguments to keyword arguments.
+var kwArgs = _makeBuildOptions(arguments);
+
+//Set logging level.
+logger.level = kwArgs["log"];
 
 //Execute the requested build actions
 var action = kwArgs.action;
@@ -37,6 +65,27 @@ for(var i = 0; i < action.length; i ++){
 
 var buildTime = ((new Date().getTime() - buildTimerStart) / 1000);
 logger.info("Build time: " + buildTime + " seconds");
+//*****************************************************************************
+
+//********* Start help ************
+function help(){
+	var buildOptionText = "";
+	for(var param in DojoBuildOptions){
+		buildOptionText += param + "=" + DojoBuildOptions[param].defaultValue + "\n"
+			+ DojoBuildOptions[param].helpText + "\n\n";
+	}
+
+	var helpText = "To run the build, you must have Java 1.4.2 or later installed.\n"
+		+ "To run a build run the following command from this directory:\n\n"
+		+ "> java -jar lib/custom_rhino.jar build.js [name=value...]\n\n"
+		+ "Here is an example of a typical release build:\n\n"
+		+ "> java -jar lib/custom_rhino.jar build.js profile=base action=release\n\n"
+		+ "The possible name=value build options are shown below with the defaults as their values:\n\n"
+		+ buildOptionText;
+	
+	print(helpText);
+}
+//********* End help *********
 
 //********* Start clean ************
 function clean(){
@@ -48,14 +97,10 @@ function clean(){
 //********* Start release *********
 function release(){
 	logger.info("Using profile: " + kwArgs.profileFile);
-
 	logger.info("Using version number: " + kwArgs.version + " for the release.");
 	
 	clean();
-	
-	//Get the list of module directories we need to process.
-	//They will be in the dependencies.prefixes array.
-	kwArgs.profileProperties = buildUtil.evalProfile(kwArgs.profileFile);
+
 	var dependencies = kwArgs.profileProperties.dependencies;
 	var prefixes = dependencies.prefixes;
 	var dojoPrefixPath = null;
@@ -63,6 +108,8 @@ function release(){
 	var copyrightText = String(fileUtil.readFile("copyright.txt"));
 	var buildNoticeText = String(fileUtil.readFile("build_notice.txt"));
 	
+	//Get the list of module directories we need to process.
+	//They will be in the dependencies.prefixes array.
 	//Copy each prefix dir to the releases and
 	//operate on that copy.
 	for(var i = 0; i < prefixes.length; i++){
@@ -158,6 +205,52 @@ function _prefixPathRelease(prefixName, prefixPath, kwArgs){
 	//FIXME: flatten bundles inside the directory
 
 	//FIXME: Run xdgen if an xdomain build.
+	if(kwArgs.loader == "xdomain"){
+
+	}
 }
 //********* End _releasePrefixPath *********
+
+//********* Start _makeBuildOptions *********
+function _makeBuildOptions(/*Array*/scriptArgs){
+	var kwArgs = {};
+
+	//Parse the command line arguments
+	var kwArgs = buildUtil.convertArrayToObject(scriptArgs);
+	if(!kwArgs["profileFile"] && kwArgs["profile"]){
+		kwArgs.profileFile = "profiles/" + kwArgs.profile + ".profile.js";
+	}
+
+	//Load dependencies object from profile file, if there is one.
+	var dependencies = {};
+	if(kwArgs["profileFile"]){
+		var profileProperties = buildUtil.evalProfile(kwArgs.profileFile);
+		if(profileProperties){
+			kwArgs.profileProperties = profileProperties;
+			dependencies = kwArgs.profileProperties.dependencies;
+			
+			//Allow setting build options from on the profile's dependencies object
+			for(var param in DojoBuildOptions){
+				if(typeof dependencies[param] != "undefined"){
+					kwArgs[param] = dependencies[param];
+				}
+			}
+		}
+	}
+
+	//Set up default options
+	for(var param in DojoBuildOptions){
+		//Only use default if there is no value so far.
+		if(typeof kwArgs[param] == "undefined"){
+			kwArgs[param] = DojoBuildOptions[param].defaultValue;
+		}
+	}
+
+	//Set up some compound values
+	kwArgs.releaseDir = "release/" + kwArgs["releaseName"];
+	kwArgs.action = kwArgs.action.split(",");
+	
+	return kwArgs;
+}
+//********* End _makeBuildOptions *********
 

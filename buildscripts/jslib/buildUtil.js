@@ -1,5 +1,6 @@
 var buildUtil = {};
 
+//FIXME: This should take the build kwArgs now instead.
 buildUtil.getDojoLoader = function(/*Object?*/dependencies){
 	//summary: gets the type of Dojo loader for the build. For example default or
 	//xdomain loading. Override for web builds.
@@ -353,10 +354,9 @@ buildUtil.createLayerContents = function(/*Array*/depList, /*Array*/provideList,
 		dojoContents += new String(fileUtil.readFile(depList[i])) + "\r\n";
 	}
 	
-	// dojo.requireLocalization is a special case as it pulls in dojo.i18n.loader at runtime
+	// dojo.requireLocalization is a special case as it pulls in dojo.i18n at runtime
 	if(dojoContents.match(buildUtil.globalRequireLocalizationRegExp)){
-		//FIXME: Uncomment this line with i18n gets ported to 0.9
-		//depList.push("../src/i18n/loader.js");
+		depList.push("../../dojo/i18n.js");
 		dojoContents += new String(fileUtil.readFile(depList[depList.length-1]));
 	}
 
