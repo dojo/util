@@ -1,4 +1,4 @@
-#@!/**
+!#@!/**
  *  The CLDR represents some lists, like month names, as separate entries, and our JSON uses arrays to express them.
  *  For some variants, the best our XSLT can do is translate this to a sparse array with 'undefined' entries.
  *  These entries need to be picked up from the parent locale(s) and copied into the array as necessary.
