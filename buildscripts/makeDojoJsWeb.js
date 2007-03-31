@@ -74,8 +74,8 @@ if(isInputOk){
 		compressedContents = buildUtil.optimizeJs("dojo.js", contents, "", true);
 
 		//Add copyright
-		var copyright = new String(fileUtil.readFile("copyright.txt"));
-		var buildNotice = new String(fileUtil.readFile("build_notice.txt"));
+		var copyright = fileUtil.readFile("copyright.txt");
+		var buildNotice = fileUtil.readFile("build_notice.txt");
 		contents = copyright + buildNotice + contents;
 		compressedContents = copyright + buildNotice + compressedContents;
 		

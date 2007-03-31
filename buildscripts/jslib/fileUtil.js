@@ -88,7 +88,8 @@ fileUtil.readFile = function(/*String*/path, /*String?*/encoding){
 			stringBuffer.append(line);
 			stringBuffer.append(lineSeparator);
 		}
-		return stringBuffer.toString(); //Java String
+		//Make sure we return a JavaScript string and not a Java string.
+		return new String(stringBuffer.toString()); //String
 	} finally {
 		input.close();
 	}

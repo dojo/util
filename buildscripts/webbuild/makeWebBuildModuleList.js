@@ -57,7 +57,7 @@ var provideRegExp = /dojo\.provide\(\".*\"\)/g;
 var provideList = [];
 for(var i = 0; i < fileList.length; i++){
 	var fileName = fileList[i];
-	var fileContents = new String(fileUtil.readFile(fileName));
+	var fileContents = new fileUtil.readFile(fileName);
 
 	var matches = fileContents.match(provideRegExp);
 	if(matches){

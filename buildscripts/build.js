@@ -4,6 +4,7 @@ var buildTimerStart = (new Date()).getTime();
 load("jslib/logger.js");
 load("jslib/fileUtil.js");
 load("jslib/buildUtil.js");
+load("jslib/i18nUtil.js");
 
 var DojoBuildOptions = {
 	"profile": {
@@ -25,6 +26,10 @@ var DojoBuildOptions = {
 	"version": {
 		defaultValue: "0.0.0.dev",
 		helpText: "The build will be stamped with this version string."
+	},
+	"localeList": {
+		defaultValue: "en-gb,en-us,de-de,es-es,fr-fr,it-it,pt-br,ko-kr,zh-tw,zh-cn,ja-jp",
+		helpText: "The set of locales to use when flattening i18n bundles."
 	},
 	"releaseName": {
 		defaultValue: "dojo",
@@ -105,33 +110,40 @@ function release(){
 	var prefixes = dependencies.prefixes;
 	var dojoPrefixPath = null;
 	var lineSeparator = fileUtil.getLineSeparator();
-	var copyrightText = String(fileUtil.readFile("copyright.txt"));
-	var buildNoticeText = String(fileUtil.readFile("build_notice.txt"));
+	var copyrightText = fileUtil.readFile("copyright.txt");
+	var buildNoticeText = fileUtil.readFile("build_notice.txt");
 	
 	//Get the list of module directories we need to process.
 	//They will be in the dependencies.prefixes array.
 	//Copy each prefix dir to the releases and
 	//operate on that copy.
-	for(var i = 0; i < prefixes.length; i++){
-		var prefixName = prefixes[i][0];
-		var prefixPath = prefixes[i][1];
-		
-		//Set prefix path to the release location, so that
-		//build operations that depend/operate on it are using
-		//the release location.
-		prefixes[i][1] = kwArgs.releaseDir + "/"  + prefixName;
-
-		//Save dojo for last.
-		if(prefixName == "dojo"){
-			dojoPrefixPath = prefixPath;
-		}else{
-			_prefixPathRelease(prefixName, prefixPath, kwArgs);
+	if(prefixes && prefixes.length > 0){
+		for(var i = 0; i < prefixes.length; i++){
+			var prefixName = prefixes[i][0];
+			var prefixPath = prefixes[i][1];
+			
+			//Set prefix path to the release location, so that
+			//build operations that depend/operate on it are using
+			//the release location.
+			prefixes[i][1] = kwArgs.releaseDir + "/"  + prefixName;
+	
+			//Save dojo for last.
+			if(prefixName == "dojo"){
+				dojoPrefixPath = prefixPath;
+			}else{
+				_prefixPathRelease(prefixName, prefixPath, kwArgs);
+			}
 		}
 	}
 
 	//Now process Dojo core. Special things for that one.
 	if(dojoPrefixPath){
 		 _prefixPathRelease("dojo", dojoPrefixPath, kwArgs);
+
+		//Make sure dojo is clear before trying to map dependencies.
+		if(typeof dojo != "undefined"){
+			dojo = undefined;
+		}
 
 		//FIXME: loadDependency list reparses profile file, but we've already done that.
 		logger.trace("Building dojo.js and layer files");
@@ -144,12 +156,13 @@ function release(){
 			var fileName = dojoReleaseDir + result[i].layerName;
 			var fileContents = result[i].contents;
 			
+			//Flatten resources 
 			//FIXME: Flatten resources. Only do the top level flattening for bundles
 			//in the layer files. How to do this for layers? only do one nls file for
 			//all layers, or a different one for each layer?
-			//		<replaceregexp match="/\*\*\*BUILD:localesGenerated\*\*\*/" byline="false" replace="=${generatedLocales}"
-			//	file="${dstFile}"/>
-			//remove dojo.requireLocalization calls.
+			if(fileName == "dojo.js"){
+				i18n.flattenLayerFileBundles(fileName, dojoReleaseDir + "nls", "nls", kwArgs);
+			}
 
 			//Save uncompressed file.
 			var uncompressedFileName = fileName + ".uncompressed.js";
@@ -202,7 +215,9 @@ function _prefixPathRelease(prefixName, prefixPath, kwArgs){
 		buildUtil.internTemplateStrings(kwArgs.profileProperties.dependencies, releasePath);
 	}
 
-	//FIXME: flatten bundles inside the directory
+	//Flatten bundles inside the directory
+	//FIXME: Is baseRelativePath now obsolete?
+	i18nUtil.flattenDirBundles(prefixName, prefixPath, /*baseRelativePath*/"", kwArgs);
 
 	//FIXME: Run xdgen if an xdomain build.
 	if(kwArgs.loader == "xdomain"){
@@ -249,6 +264,7 @@ function _makeBuildOptions(/*Array*/scriptArgs){
 	//Set up some compound values
 	kwArgs.releaseDir = "release/" + kwArgs["releaseName"];
 	kwArgs.action = kwArgs.action.split(",");
+	kwArgs.localeList = kwArgs.localeList.split(",");
 	
 	return kwArgs;
 }
