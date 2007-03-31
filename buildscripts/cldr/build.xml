@@ -15,8 +15,7 @@
 	<property name="dojoLoader" value="default"/>
 	<property name="currencies" value="GBP,USD,CAD,AUD,EUR,CHF,HKD,JPY"/> 	<!-- FIXME: arbitrary list. Can be altered or eliminated for all currencies -->
 	<property name="ldml" location="ldml"/>
-	<property name="json" location="${root}/dojo/src/i18n/
-		nls"/>
+	<property name="json" location="${root}/dojo/cldr/nls"/>
 
 	<!-- -check-config task -->
 	<target name="-check-config"
