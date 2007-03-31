@@ -10,7 +10,7 @@
  *  
  *   E.g.(Just for example, the contents are not applicable)
  *   parent locale - "en":
- *    // generated from cldr/ldml/main/*.xml, xpath: ldml/calendars/calendar-ethiopic
+ *    // generated from ldml/main/*.xml, xpath: ldml/calendars/calendar-ethiopic
  *    ({
  *    	'months-format-abbr':["1","2","3","4","5","6","7","8","9","10","11","12"],
  *    	'dateFormat-long': "yyyy MMMM d",
@@ -18,7 +18,7 @@
  *    })
  *    
  *   child locale - "en-us":
- *    // generated from cldr/ldml/main/*.xml, xpath: ldml/calendars/calendar-ethiopic
+ *    // generated from ldml/main/*.xml, xpath: ldml/calendars/calendar-ethiopic
  *    ({
  *    	'months-format-abbr':[undefined,undefined,"March",undefined,undefined,"June"],
  *    	'dateFormat-long': "yyyy-MMMM-d"
@@ -26,7 +26,7 @@
  *    
  *   After process, the reuslt will be:
  *    child locale - "en-us":
- *    // generated from cldr/ldml/main/*.xml, xpath: ldml/calendars/calendar-ethiopic
+ *    // generated from ldml/main/*.xml, xpath: ldml/calendars/calendar-ethiopic
  *    ({
  *    	'months-format-abbr':["1","2","March","4","5","June","7","8","9","10","11","12"],
  *    	'dateFormat-long': "yyyy-MMMM-d"
@@ -35,16 +35,12 @@
 
 var dir = arguments[0];
 
-//importPackage(java.io);
-djConfig={baseRelativePath: "../"};
-load("../dojo.js");
-dojo.require("dojo.lang.array");
-dojo.require("dojo.lang.common");
-dojo.require("dojo.i18n.loader");
-dojo.require("dojo.json");
+djConfig={baseUrl: "../../../dojo/"};
+load("../../../dojo/dojo.js");
+dojo.require("dojo.i18n");
 
-load("fileUtil.js");
-load("buildUtil.js");
+load("../jslib/fileUtil.js");
+load("../jslib/buildUtil.js");
 
 // limit search to gregorian.js files, which are the only ones to use Array as data type
 var fileList = fileUtil.getFilteredFileList(dir, /\/gregorian\.js$/, true);
@@ -72,16 +68,16 @@ for(var i= 0; i < fileList.length; i++){
 		}catch(e){
 			return false;
 		}
-		var variantData = dojo.json.evalJson(contents);
+		var variantData = dojo.fromJson(contents);
 		if(!data){
 			data = variantData;
 		}else{
 			isComplete = true;
 			for(prop in data){
-				if(dojo.lang.isArray(data[prop])){
+				if(dojo.isArray(data[prop])){
 					var variantArray = variantData[prop];
-					dojo.lang.forEach(data[prop], function(element, index, list){
-						if(typeof element == "undefined" && dojo.lang.isArray(variantArray)){
+					dojo.forEach(data[prop], function(element, index, list){
+						if(typeof element == "undefined" && dojo.isArray(variantArray)){
 							list[index] = variantArray[index];
 							hasChanged = true;
 							if(typeof list[index] == "undefined"){
@@ -89,7 +85,7 @@ for(var i= 0; i < fileList.length; i++){
 							}
 						}
 					});
-					if(dojo.lang.isArray(variantArray) && variantArray.length > data[prop].length){
+					if(dojo.isArray(variantArray) && variantArray.length > data[prop].length){
 						data[prop] = data[prop].concat(variantArray.slice(data[prop].length));
 						hasChanged = true;
 
@@ -100,6 +96,6 @@ for(var i= 0; i < fileList.length; i++){
 		return isComplete;
 	});
 	if(hasChanged){
-		fileUtil.saveUtf8File(jsFileName, dojo.json.serialize(data));
+		fileUtil.saveUtf8File(jsFileName, dojo.toJson(data));
 	}
 }

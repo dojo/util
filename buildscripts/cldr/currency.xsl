@@ -32,7 +32,7 @@
         <xsl:otherwise>
             <xsl:choose>
                 <xsl:when test="name()='currencies'">
-                    <xsl:result-document href="currency.js" encoding="UTF-8">// generated from cldr/ldml/main/*.xml, xpath: ldml/numbers/currencies
+                    <xsl:result-document href="currency.js" encoding="UTF-8">// generated from ldml/main/*.xml, xpath: ldml/numbers/currencies
 ({<xsl:choose><xsl:when test="string-length(string($currencyList))>0">                            
                                  <xsl:for-each select="currency">
                                      <xsl:if test="contains($currencyList,@type)">

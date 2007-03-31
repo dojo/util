@@ -30,7 +30,7 @@
                 <xsl:if test="name()='ldml'">
                     <!-- numbers -->
                     <xsl:for-each select="numbers">
-                        <xsl:result-document href="number.js" encoding="UTF-8"><!--<xsl:value-of select="codepoints-to-string(65279)"/>-->// generated from cldr/ldml/main/*.xml, xpath: ldml/numbers
+                        <xsl:result-document href="number.js" encoding="UTF-8"><!--<xsl:value-of select="codepoints-to-string(65279)"/>-->// generated from ldml/main/*.xml, xpath: ldml/numbers
 ({<xsl:call-template name="numbers"></xsl:call-template>
 })
 </xsl:result-document>

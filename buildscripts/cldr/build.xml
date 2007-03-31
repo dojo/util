@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<!--
+	Copyright (c) 2004-2007 The Dojo Foundation, Licensed under the Academic
+	Free License version 2.1 or BSD licenses
+-->
+<project name="dojo" default="cldr" basedir=".">
+	<description>Build the Dojo toolkit</description>
+
+	<!-- project properties -->
+	<!-- FIXME: use location instead of value where appropriate? -->
+	<property name="project" value="dojo"/>
+	<property name="root" value="../../.."/>
+	<property name="lang" value="en"/>
+	<property name="dojoLoader" value="default"/>
+	<property name="currencies" value="GBP,USD,CAD,AUD,EUR,CHF,HKD,JPY"/> 	<!-- FIXME: arbitrary list. Can be altered or eliminated for all currencies -->
+	<property name="ldml" location="ldml"/>
+	<property name="json" location="${root}/dojo/src/i18n/
+		nls"/>
+
+	<!-- -check-config task -->
+	<target name="-check-config"
+		description="checks to make sure than we're sane before doing anything else">
+		<available property="bsf_ok" file="${user.home}/.ant/lib/bsf.jar" />
+		<available property="ant_bsf_ok" file="${user.home}/.ant/lib/ant-apache-bsf.jar" />
+
+		<condition property="config_ok">
+			<and>
+				<isset property="bsf_ok" />
+				<isset property="ant_bsf_ok" />
+			</and>
+		</condition>
+
+	</target>
+	<!-- end -check-config task -->
+
+	<!-- -fix-config task -->
+	<target name="-fix-config"
+		depends="-check-config"
+		unless="config_ok"
+		description="fixes our ant classpath (if possible)">
+		<copy todir="${user.home}/.ant/lib"
+			preservelastmodified="true">
+			<fileset dir="lib/">
+				<include name="bsf.jar"/>
+				<include name="js.jar"/>
+				<include name="ant-apache-bsf.jar"/>
+			</fileset>
+		</copy>
+
+		<echo message=""/>
+		<echo message="+--------------------------------------------------------+" />
+		<echo message="| Due to some horrendous design decisions by the authors |" />
+		<echo message="| of Ant, it has been necessary to install some jar     |" />
+		<echo message="| files to your ~/.ant/ directory. Given the nature of   |" />
+		<echo message="| the problem, it will be necessary for you to re-run   |" />
+		<echo message="| your build command.                                    |" />
+		<echo message="|                                                        |" />
+		<echo message="| The Dojo team apologies for this inconvenience.        |" />
+		<echo message="|                                                        |" />
+		<echo message="| The system will now exit.                              |" />
+		<echo message="+--------------------------------------------------------+" />
+		<echo message=""/>
+
+		<fail message="Sorry, please re-run your build command, it should work now"/>
+	</target>
+	<!-- end -fix-config task -->
+
+	<!-- ldml task -->
+	<target name="ldml" depends="-ldml-check" unless="ldmlUnpacked"
+		description="Unpack LDML (CLDR repository XML markup)">
+		<mkdir dir="${ldml}/core" />
+		<unzip src="${ldml}/core.zip" dest="${ldml}/core" />
+	</target>
+	<target name="-ldml-check">
+		<available property="ldmlUnpacked" file="${ldml}/core" type="dir" />
+	</target>
+	<!-- end ldml task -->
+
+	<!-- cldr task -->
+	<target name="cldr" depends="-fix-config, ldml"
+		description="Transforms LDML from the CLDR into JSON">
+
+		<scriptdef name="removeEmptyOutput" language="javascript">
+			<attribute name="dir"/>
+			<![CDATA[
+		function isEmpty(o){
+			for(x in o){
+				return false;
+			}
+			return true;
+		}
+		
+		var delTask = project.createTask("delete");
+		function deleteResource(f){
+			f.isDirectory() ? delTask.setDir(f) : delTask.setFile(f);
+			delTask.perform();
+		}
+
+	var fs = project.createDataType("fileset");
+	var dir = new java.io.File(attributes.get("dir"));
+	fs.setDir(dir);
+	fs.setIncludes("*.js");
+	ds = fs.getDirectoryScanner(project);
+	jsFiles = ds.getIncludedFiles();
+
+	var load = project.createTask("loadfile");
+	load.setEncoding("UTF8");
+	for (var i=0; i<jsFiles.length; i++) {
+		var srcFile = java.io.File(dir, jsFiles[i]);
+		load.setSrcFile(srcFile);
+		//FIXME: spawn task as separate ant process to avoid stale properties, collisions?
+		var uniqueId = "removeEmptyOutput.json."+dir+"."+i;
+		load.setProperty(uniqueId);
+		load.perform();
+	
+		var contents = String(project.getProperty(uniqueId));
+		if(contents.charCodeAt(0) == 0xfeff){ contents = contents.substring(1); } // JDK bug workaround
+
+		try{
+			var value = eval(contents);
+		}catch(e){
+			java.lang.System.out.print("Syntax error in "+srcFile.getCanonicalPath());
+			throw e;
+		}
+		if(isEmpty(value)){
+			deleteResource(srcFile);
+		}
+	}
+
+	// delete the directory if empty
+	ds.scan();
+	if(!ds.getIncludedFilesCount()){
+		deleteResource(dir);
+	}
+			]]>
+		</scriptdef>
+
+		<macrodef name="processLdml">
+			<attribute name="in"/>
+			<attribute name="destdir"/>
+
+			<sequential>
+				<mkdir dir="@{destdir}"/>
+				<saxon in="@{in}" style="calendar.xsl" destdir="@{destdir}"/>
+				<saxon in="@{in}" style="number.xsl" destdir="@{destdir}"/>
+				<saxon in="@{in}" style="currency.xsl" destdir="@{destdir}"/>
+				<echo level="info" message="Transformed @{in} to @{destDir}" taskName="cldr"/>
+				<removeEmptyOutput dir="@{destdir}" />
+			</sequential>
+		</macrodef>
+		<macrodef name="saxon">
+			<!-- XSLT ant tasks run for a while, then hang. Perhaps there's a file handle leak?
+				 Kludge: Run as separate JVM processes instead to be safe. -->
+			<attribute name="in"/>
+			<attribute name="style"/>
+			<attribute name="destdir"/>
+
+			<sequential>
+				<java fork="true" dir="@{destdir}" jar="lib/saxon8.jar">
+					<!-- Reference the DTD locally to speed things up -->
+					<!-- resolver and CatalogManager.properties have to be on the bootclasspath, apparently
+						 in order for JAXP to find them -->
+					<jvmarg value="-Xbootclasspath/a:${ldml}/../lib/resolver.jar"/>
+					<jvmarg value="-Xbootclasspath/a:${ldml}"/>
+					<arg value="-r"/>
+					<arg value="org.apache.xml.resolver.tools.CatalogResolver"/>
+					<arg value="-x"/>
+					<arg value="org.apache.xml.resolver.tools.ResolvingXMLReader"/>
+					<arg value="-y"/>
+					<arg value="org.apache.xml.resolver.tools.ResolvingXMLReader"/>
+					<arg file="@{in}"/>
+					<arg file="@{style}"/>
+					<arg value="currencyList=${currencies}"/>
+				</java>
+			</sequential>
+		</macrodef>
+
+		<scriptdef name="transformCldr" language="javascript">
+			<attribute name="destdir"/>
+			<element name="fileset" type="fileset"/>
+			<![CDATA[
+	var fs = elements.get("fileset").get(0);
+	ds = fs.getDirectoryScanner(project);
+	srcFiles = ds.getIncludedFiles();
+	var basedir = fs.getDir(project);
+	var destDir = attributes.get("destdir");
+
+	for (i=0; i<srcFiles.length; i++) {
+		var filename = srcFiles[i];
+		var locale = filename.substring(0, filename.indexOf(".")).replace("_","-").toLowerCase();
+		var outDir = new java.io.File(locale == "root" ? destDir : destDir+"/"+locale);
+
+		var ldml = project.createTask("processLdml");
+		ldml.setDynamicAttribute("in", new java.io.File(basedir+"/"+filename));
+		ldml.setDynamicAttribute("destdir", outDir);
+		ldml.perform();
+	}
+			]]>
+		</scriptdef>
+
+		<!-- kludge to fix the "Fail to load **.xml" exception which occurs in IBM JDK 1.4.2
+			where saxon uses wrong base with relative URIs. AP: Sun Java 1.5 also? -->
+		<copy todir="${ldml}/core/main">
+		   <fileset dir=".">
+		     <include name="**/*.xsl"/>
+		   </fileset>
+		</copy>
+
+		<delete dir="${json}" />
+		<mkdir dir="${json}" />
+		<transformCldr destdir="${json}">
+			<fileset dir="${ldml}/core/main" includes="**/*.xml" />
+		</transformCldr>
+		<java jar="lib/js.jar" failonerror="true" fork="true" logError="true" >
+			<arg value="arrayInherit.js" />
+			<arg value="${json}" />
+			<sysproperty key="DOJO_LOADER" value="${dojoLoader}" />
+		</java>
+	</target>
+	<!-- end cldr task -->
+</project>

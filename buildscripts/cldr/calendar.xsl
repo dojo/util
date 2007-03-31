@@ -31,7 +31,7 @@
                     <!-- calendars -->
                     <xsl:for-each select="calendar">
                         <saxon:assign name="first" select="true()"/>
-                        <xsl:result-document href="{concat(@type,'.js')}" encoding="UTF-8"><!--<xsl:value-of select="codepoints-to-string(65279)"/>-->// generated from cldr/ldml/main/*.xml, xpath: ldml/calendars/calendar-<xsl:value-of select="./@type"/>
+                        <xsl:result-document href="{concat(@type,'.js')}" encoding="UTF-8"><!--<xsl:value-of select="codepoints-to-string(65279)"/>-->// generated from ldml/main/*.xml, xpath: ldml/calendars/calendar-<xsl:value-of select="./@type"/>
 ({<xsl:call-template name="calendar"></xsl:call-template>
 })
                         </xsl:result-document>
