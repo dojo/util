@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:saxon="http://saxon.sf.net/" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" extension-element-prefixes="saxon" version="2.0">
+<xsl:import href="util.xsl"/>
 <xsl:output method="text" indent="yes"/>
 <!-- list the data elements whose spaces should be preserved
        it seems listing only the parent node doesn't work -->
@@ -10,7 +11,6 @@
         if it is provided, only those currencies in this list will be extracted,
         otherwise all the currencies will be extracted by default-->
 <xsl:param name="currencyList"></xsl:param>
-<xsl:variable name="first" select="true()" saxon:assignable="yes"/>
 
 <xsl:template match="/">
      <xsl:apply-templates/>
@@ -104,42 +104,13 @@
          </xsl:otherwise>   
         </xsl:choose>
     </xsl:template>
-    
-    <!-- recursive process for alias -->
-    <xsl:template name="alias_template">
-        <xsl:param name="templateToCall"></xsl:param>
-        <xsl:param name="source"></xsl:param>
-        <xsl:param name="xpath"></xsl:param>
-        <xsl:variable name="cur_width" select="../@type"></xsl:variable>
-        
-        <xsl:choose>            
-            <xsl:when test="compare($source,'locale')=0">
-                <!-- source="locale" -->
-                <xsl:for-each select="saxon:evaluate(concat('../',$xpath))">   
-                    <xsl:call-template name="invoke_template_by_name">
-                        <xsl:with-param name="templateName" select="$templateToCall"></xsl:with-param>
-                    </xsl:call-template>
-                </xsl:for-each>
-            </xsl:when>
-            <xsl:otherwise>
-                <!-- source is an external xml file -->
-                <xsl:if test="string-length($xpath)>0">
-	                <xsl:for-each select="doc(concat('ldml/core/main/',concat($source,'.xml')))"> 
-                        <xsl:for-each select="saxon:evaluate($xpath)">
-                            <xsl:call-template name="invoke_template_by_name">
-                                <xsl:with-param name="templateName" select="$templateToCall"></xsl:with-param>
-                            </xsl:call-template>
-                        </xsl:for-each>
-                    </xsl:for-each>
-                </xsl:if>            
-            </xsl:otherwise>
-        </xsl:choose>
-    </xsl:template>   
-    
+
     <!-- too bad that can only use standard xsl:call-template(name can not be variable) 
          error occurs if use <saxson:call-templates($templateToCall)  /> -->
     <xsl:template name="invoke_template_by_name">
         <xsl:param name="templateName"></xsl:param>
+        <xsl:param name="name"></xsl:param> 
+        <xsl:param name="width"></xsl:param>
         <xsl:if test="$templateName='top'">
             <xsl:call-template name="top"></xsl:call-template>
         </xsl:if>
@@ -147,16 +118,4 @@
             <xsl:call-template name="currency"></xsl:call-template>
         </xsl:if>
     </xsl:template>   
-
-    <xsl:template name="insert_comma">
-        <xsl:choose>
-            <xsl:when test="$first">
-                <saxon:assign name="first" select="false()"/>
-            </xsl:when>
-            <xsl:otherwise>
-                <xsl:text>,</xsl:text>
-            </xsl:otherwise>
-        </xsl:choose>
-    </xsl:template>
-    
 </xsl:stylesheet>

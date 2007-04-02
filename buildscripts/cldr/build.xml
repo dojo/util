@@ -13,7 +13,7 @@
 	<property name="dojoLoader" value="default"/>
 	<property name="currencies" value="GBP,USD,CAD,AUD,EUR,CHF,HKD,JPY"/> 	<!-- FIXME: arbitrary list. Property can be altered or eliminated to build all currencies -->
 	<property name="ldml" location="ldml"/>
-	<property name="json" location="${root}/dojo/cldr/nls"/>
+	<property name="json" location="${root}/dojo/_cldr/nls"/>
 
 	<!-- -check-config task -->
 	<target name="-check-config"
@@ -154,13 +154,13 @@
 			<attribute name="style"/>
 			<attribute name="basedir"/>
 			<attribute name="destdir"/>
-
 			<sequential>
 				<xslt includes="@{in}" style="@{style}" destdir="@{destdir}" basedir="@{basedir}" extension=".tmp">
 					<factory name="net.sf.saxon.TransformerFactoryImpl" />
 					<xmlcatalog>
 						<catalogpath path="ldml/catalog" />
 					</xmlcatalog>
+					<param name="basedir" expression="@{basedir}/" />
 					<param name="currencyList" expression="${currencies}" />
 				</xslt>
 				<delete>
