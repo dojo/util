@@ -49,7 +49,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		dojo._currentContext = {};
 	}
 
-	dojo._loadedUrls.push("jslib/dojoGuardStart.js");
+	dojo._loadedUrls.push("jslib/dojoGuardStart.jsfrag");
 	dojo._loadedUrls.push("../../dojo/_base/_loader/bootstrap.js");
 	
 	if(dojoLoader == "default"){
@@ -58,7 +58,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		dojo._loadedUrls.push("../../dojo/_base/_loader/loader.js");
 		dojo._loadedUrls.push("../../dojo/_base/_loader/loader_xd.js");
 	}
-	dojo._loadedUrls.push("jslib/dojoGuardEnd.js");
+	dojo._loadedUrls.push("jslib/dojoGuardEnd.jsfrag");
 	
 	if(!hostenvType){
 		hostenvType = "browser";
