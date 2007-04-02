@@ -8,12 +8,10 @@
 	<description>Build the Dojo toolkit</description>
 
 	<!-- project properties -->
-	<!-- FIXME: use location instead of value where appropriate? -->
 	<property name="project" value="dojo"/>
-	<property name="root" value="../../.."/>
-	<property name="lang" value="en"/>
+	<property name="root" location="../../.."/>
 	<property name="dojoLoader" value="default"/>
-	<property name="currencies" value="GBP,USD,CAD,AUD,EUR,CHF,HKD,JPY"/> 	<!-- FIXME: arbitrary list. Can be altered or eliminated for all currencies -->
+	<property name="currencies" value="GBP,USD,CAD,AUD,EUR,CHF,HKD,JPY"/> 	<!-- FIXME: arbitrary list. Property can be altered or eliminated to build all currencies -->
 	<property name="ldml" location="ldml"/>
 	<property name="json" location="${root}/dojo/cldr/nls"/>
 
@@ -44,6 +42,8 @@
 				<include name="bsf.jar"/>
 				<include name="js.jar"/>
 				<include name="ant-apache-bsf.jar"/>
+				<include name="saxon8.jar"/>
+				<include name="resolver.jar"/>
 			</fileset>
 		</copy>
 
@@ -89,7 +89,7 @@
 			}
 			return true;
 		}
-		
+
 		var delTask = project.createTask("delete");
 		function deleteResource(f){
 			f.isDirectory() ? delTask.setDir(f) : delTask.setFile(f);
@@ -112,7 +112,7 @@
 		var uniqueId = "removeEmptyOutput.json."+dir+"."+i;
 		load.setProperty(uniqueId);
 		load.perform();
-	
+
 		var contents = String(project.getProperty(uniqueId));
 		if(contents.charCodeAt(0) == 0xfeff){ contents = contents.substring(1); } // JDK bug workaround
 
@@ -137,41 +137,35 @@
 
 		<macrodef name="processLdml">
 			<attribute name="in"/>
+			<attribute name="basedir"/>
 			<attribute name="destdir"/>
 
 			<sequential>
 				<mkdir dir="@{destdir}"/>
-				<saxon in="@{in}" style="calendar.xsl" destdir="@{destdir}"/>
-				<saxon in="@{in}" style="number.xsl" destdir="@{destdir}"/>
-				<saxon in="@{in}" style="currency.xsl" destdir="@{destdir}"/>
+				<transform in="@{in}" style="calendar.xsl" basedir="@{basedir}" destdir="@{destdir}"/>
+				<transform in="@{in}" style="number.xsl" basedir="@{basedir}" destdir="@{destdir}"/>
+				<transform in="@{in}" style="currency.xsl" basedir="@{basedir}" destdir="@{destdir}"/>
 				<echo level="info" message="Transformed @{in} to @{destDir}" taskName="cldr"/>
 				<removeEmptyOutput dir="@{destdir}" />
 			</sequential>
 		</macrodef>
-		<macrodef name="saxon">
-			<!-- XSLT ant tasks run for a while, then hang. Perhaps there's a file handle leak?
-				 Kludge: Run as separate JVM processes instead to be safe. -->
+		<macrodef name="transform">
 			<attribute name="in"/>
 			<attribute name="style"/>
+			<attribute name="basedir"/>
 			<attribute name="destdir"/>
 
 			<sequential>
-				<java fork="true" dir="@{destdir}" jar="lib/saxon8.jar">
-					<!-- Reference the DTD locally to speed things up -->
-					<!-- resolver and CatalogManager.properties have to be on the bootclasspath, apparently
-						 in order for JAXP to find them -->
-					<jvmarg value="-Xbootclasspath/a:${ldml}/../lib/resolver.jar"/>
-					<jvmarg value="-Xbootclasspath/a:${ldml}"/>
-					<arg value="-r"/>
-					<arg value="org.apache.xml.resolver.tools.CatalogResolver"/>
-					<arg value="-x"/>
-					<arg value="org.apache.xml.resolver.tools.ResolvingXMLReader"/>
-					<arg value="-y"/>
-					<arg value="org.apache.xml.resolver.tools.ResolvingXMLReader"/>
-					<arg file="@{in}"/>
-					<arg file="@{style}"/>
-					<arg value="currencyList=${currencies}"/>
-				</java>
+				<xslt includes="@{in}" style="@{style}" destdir="@{destdir}" basedir="@{basedir}" extension=".tmp">
+					<factory name="net.sf.saxon.TransformerFactoryImpl" />
+					<xmlcatalog>
+						<catalogpath path="ldml/catalog" />
+					</xmlcatalog>
+					<param name="currencyList" expression="${currencies}" />
+				</xslt>
+				<delete>
+					<fileset dir="@{destdir}" includes="*.tmp" />
+				</delete>
 			</sequential>
 		</macrodef>
 
@@ -191,20 +185,13 @@
 		var outDir = new java.io.File(locale == "root" ? destDir : destDir+"/"+locale);
 
 		var ldml = project.createTask("processLdml");
-		ldml.setDynamicAttribute("in", new java.io.File(basedir+"/"+filename));
+		ldml.setDynamicAttribute("in", new java.io.File(filename));
 		ldml.setDynamicAttribute("destdir", outDir);
+		ldml.setDynamicAttribute("basedir", basedir);
 		ldml.perform();
 	}
 			]]>
 		</scriptdef>
-
-		<!-- kludge to fix the "Fail to load **.xml" exception which occurs in IBM JDK 1.4.2
-			where saxon uses wrong base with relative URIs. AP: Sun Java 1.5 also? -->
-		<copy todir="${ldml}/core/main">
-		   <fileset dir=".">
-		     <include name="**/*.xsl"/>
-		   </fileset>
-		</copy>
 
 		<delete dir="${json}" />
 		<mkdir dir="${json}" />
