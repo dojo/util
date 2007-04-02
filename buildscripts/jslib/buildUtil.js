@@ -733,7 +733,7 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 	return copyrightText + fileContents;
 }
 
-buildUtil.stripComments = function(/*String*/startDir, /*boolean*/suppressDojoCopyright){
+buildUtil.stripComments = function(/*String*/startDir, /*boolean*/suppressDojoCopyright, /*boolean*/doCompress){
 	//summary: strips the JS comments from all the files in "startDir", and all subdirectories.
 	var copyright = suppressDojoCopyright ? "" : (fileUtil.readFile("copyright.txt") + fileUtil.getLineSeparator());
 	var fileList = fileUtil.getFilteredFileList(startDir, /\.js$/, true);
@@ -753,7 +753,7 @@ buildUtil.stripComments = function(/*String*/startDir, /*boolean*/suppressDojoCo
 
 				//Do comment removal.
 				try{
-					fileContents = buildUtil.optimizeJs(fileList[i], fileContents, copyright, false);
+					fileContents = buildUtil.optimizeJs(fileList[i], fileContents, copyright, doCompress);
 				}catch(e){
 					print("Could not strip comments for file: " + fileList[i] + ", error: " + e);
 				}

@@ -169,8 +169,6 @@ function release(){
 			fileUtil.saveFile(uncompressedFileName, layerLegalText + fileContents);
 
 			//Save compressed file.
-			//FIXME: this probably breaks with multiple layers -- it seems like an issue
-			//inside the compressor.
 			var compresedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, true);
 			fileUtil.saveFile(fileName, compresedContents);
 
@@ -223,6 +221,8 @@ function _prefixPathRelease(prefixName, prefixPath, kwArgs){
 	if(kwArgs.loader == "xdomain"){
 
 	}
+	
+	//FIXME: call stripComments. Maybe rename, inline with optimize? need build options too.
 }
 //********* End _releasePrefixPath *********
 
