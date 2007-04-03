@@ -7,15 +7,16 @@
 <project name="dojo" default="cldr" basedir=".">
 	<description>Build the Dojo toolkit</description>
 
-	<!-- project properties -->
 	<property name="project" value="dojo"/>
 	<property name="root" location="../../.."/>
 	<property name="dojoLoader" value="default"/>
-	<property name="currencies" value="GBP,USD,CAD,AUD,EUR,CHF,HKD,JPY"/> 	<!-- FIXME: arbitrary list. Property can be altered or eliminated to build all currencies -->
 	<property name="ldml" location="ldml"/>
 	<property name="json" location="${root}/dojo/_cldr/nls"/>
 
-	<!-- -check-config task -->
+	<!-- Arbitrary defaults. locales and currencies properties can be altered or eliminated to build the entire set -->
+	<property name="locales" value="en-au,en-ca,en-gb,en-us,de-de,es-es,fr-fr,it-it,pt-br,ko-kr,zh-tw,zh-cn,ja-jp"/>
+	<property name="currencies" value="GBP,USD,CAD,AUD,EUR,CHF,HKD,JPY"/>
+
 	<target name="-check-config"
 		description="checks to make sure than we're sane before doing anything else">
 		<available property="bsf_ok" file="${user.home}/.ant/lib/bsf.jar" />
@@ -27,11 +28,8 @@
 				<isset property="ant_bsf_ok" />
 			</and>
 		</condition>
-
 	</target>
-	<!-- end -check-config task -->
 
-	<!-- -fix-config task -->
 	<target name="-fix-config"
 		depends="-check-config"
 		unless="config_ok"
@@ -63,9 +61,7 @@
 
 		<fail message="Sorry, please re-run your build command, it should work now"/>
 	</target>
-	<!-- end -fix-config task -->
 
-	<!-- ldml task -->
 	<target name="ldml" depends="-ldml-check" unless="ldmlUnpacked"
 		description="Unpack LDML (CLDR repository XML markup)">
 		<mkdir dir="${ldml}/core" />
@@ -74,9 +70,13 @@
 	<target name="-ldml-check">
 		<available property="ldmlUnpacked" file="${ldml}/core" type="dir" />
 	</target>
-	<!-- end ldml task -->
 
-	<!-- cldr task -->
+	<target name="clean">
+		<delete dir="${ldml}/core" />
+		<delete dir="${json}" />
+		<mkdir dir="${json}" />
+	</target>
+
 	<target name="cldr" depends="-fix-config, ldml"
 		description="Transforms LDML from the CLDR into JSON">
 
@@ -174,27 +174,56 @@
 			<element name="fileset" type="fileset"/>
 			<![CDATA[
 	var fs = elements.get("fileset").get(0);
+	var basedir = fs.getDir(project);
+
+	var filter = project.getProperty("locales");
+	if(filter){
+		filter = String(filter).replace(/-/g,'_').split(",");
+		for(var i in filter){
+			var variants = filter[i].split("_");
+			for(var j = 1; j <= variants.length - 1; j++){
+				var partial = variants.slice(0, j).join("_");
+				for(var k = 0; k < filter.length; k++){
+					if(filter[k]==partial){
+						partial=null; continue;
+					}
+				}
+				if(partial){filter.push(partial)};
+			}
+		}
+		filter.push("root");
+		var fs = project.createDataType("fileset");
+		fs.setDir(basedir);
+		fs.setCaseSensitive(false);
+		var orSelector = new Packages.org.apache.tools.ant.types.selectors.OrSelector();
+		for(i in filter){
+			var locale=filter[i];
+			var selector = new Packages.org.apache.tools.ant.types.selectors.FilenameSelector();
+			selector.setName(locale + ".xml");
+			selector.setCasesensitive(false);
+			orSelector.addFilename(selector);
+		}
+		fs.addOr(orSelector);
+	}
+		
 	ds = fs.getDirectoryScanner(project);
 	srcFiles = ds.getIncludedFiles();
-	var basedir = fs.getDir(project);
-	var destDir = attributes.get("destdir");
+	var destdir = attributes.get("destdir");
 
 	for (i=0; i<srcFiles.length; i++) {
 		var filename = srcFiles[i];
 		var locale = filename.substring(0, filename.indexOf(".")).replace("_","-").toLowerCase();
-		var outDir = new java.io.File(locale == "root" ? destDir : destDir+"/"+locale);
+		var outdir = new java.io.File(locale == "root" ? destdir : destdir+"/"+locale);
 
 		var ldml = project.createTask("processLdml");
 		ldml.setDynamicAttribute("in", new java.io.File(filename));
-		ldml.setDynamicAttribute("destdir", outDir);
+		ldml.setDynamicAttribute("destdir", outdir);
 		ldml.setDynamicAttribute("basedir", basedir);
 		ldml.perform();
 	}
 			]]>
 		</scriptdef>
 
-		<delete dir="${json}" />
-		<mkdir dir="${json}" />
 		<transformCldr destdir="${json}">
 			<fileset dir="${ldml}/core/main" includes="**/*.xml" />
 		</transformCldr>
@@ -204,5 +233,4 @@
 			<sysproperty key="DOJO_LOADER" value="${dojoLoader}" />
 		</java>
 	</target>
-	<!-- end cldr task -->
 </project>
