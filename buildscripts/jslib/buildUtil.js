@@ -676,32 +676,7 @@ buildUtil.convertArrayToObject = function(/*Array*/ary){
 
 buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileContents, /*String*/copyright, /*boolean*/doCompression){
 	//summary: either strips comments from string or compresses it.
-
-	//Look for copyright. If so, maintain it.
-	//If no copyright text passed in, assume want a really stripped
-	//version.
 	copyright = copyright || "";
-	var copyrightText = "";
-	if(copyright){
-		var singleLineMatches = fileContents.match(/\/\/.*copyright.*$/gi);
-		
-		//Get rid of cr, lf, since it messes up matching.
-		var copyrightFileContents = fileContents.replace(/\r/g, "__DOJOCARRIAGERETURN__").replace(/\n/g, "__DOJONEWLINE__");
-		var multiLineMatches = copyrightFileContents.match(/\/\*.*?copyright.*?\*\//gi);
-	
-		//Finalize copyright notice.
-		if((multiLineMatches && multiLineMatches.length > 0) || (singleLineMatches && singleLineMatches.length > 0)){
-			if(multiLineMatches && multiLineMatches.length > 0){
-				copyrightText += multiLineMatches.join("\r\n").replace(/__DOJOCARRIAGERETURN__/g, "\r").replace(/__DOJONEWLINE__/g, "\n");
-			}					
-			if(singleLineMatches && singleLineMatches.length > 0){
-				copyrightText += singleLineMatches.join("\r\n");
-			}
-			copyrightText += fileUtil.getLineSeparator();
-		}else{
-			copyrightText = copyright;
-		}
-	}
 
 	//Use rhino to help do minifying/compressing.
 	var context = Packages.org.mozilla.javascript.Context.enter();
@@ -730,7 +705,7 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 		Packages.org.mozilla.javascript.Context.exit();
 	}
 
-	return copyrightText + fileContents;
+	return copyright + fileContents;
 }
 
 buildUtil.stripComments = function(/*String*/startDir, /*boolean*/suppressDojoCopyright, /*boolean*/doCompress){
