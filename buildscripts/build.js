@@ -167,19 +167,25 @@ function release(){
 			//Save uncompressed file.
 			var uncompressedFileName = fileName + ".uncompressed.js";
 			fileUtil.saveFile(uncompressedFileName, layerLegalText + fileContents);
-
-			//Save compressed file.
-			var compresedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, true);
-			fileUtil.saveFile(fileName, compresedContents);
-
-			//Intern strings if desired.
+			
+			//Intern strings if desired. Do this before compression, since, in the xd case,
+			//"dojo" gets converted to a shortened name.
 			if(kwArgs.internStrings){
 				logger.info("Interning strings for file: " + fileName);
 				var prefixes = dependencies["prefixes"] || [];
 				var skiplist = dependencies["internSkipList"] || [];
 				buildUtil.internTemplateStringsInFile(uncompressedFileName, dojoReleaseDir, prefixes, skiplist);
-				buildUtil.internTemplateStringsInFile(fileName, dojoReleaseDir, prefixes, skiplist);
+
+				//Load the file contents after string interning, to pick up interned strings.
+				fileContents = fileUtil.readFile(uncompressedFileName);
 			}
+
+			//Save compressed file.
+			var compresedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, true);
+			fileUtil.saveFile(fileName, compresedContents);
+
+			
+			//FIXME: generate xd contents for layer files.
 		}
 
 		//Save the dependency lists to build.txt
