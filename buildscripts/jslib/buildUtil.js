@@ -46,7 +46,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		load("../../dojo/_base/_loader/bootstrap.js");
 		load("../../dojo/_base/_loader/loader.js");
 		load("../../dojo/_base/_loader/hostenv_rhino.js");
-		dojo._currentContext = {};
+		dojo.global = {};
 	}
 
 	dojo._loadedUrls.push("jslib/dojoGuardStart.jsfrag");
@@ -229,7 +229,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		load = old_load; // restore the original load function
 		dojo["eval"] = dojo._oldEval; // restore the original dojo.eval function
 
-		var djGlobal = dojo._currentContext;
+		var djGlobal = dojo.global;
 		djGlobal['djConfig'] = undefined;
 
 		delete dojo;
