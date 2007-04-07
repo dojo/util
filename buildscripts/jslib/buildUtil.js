@@ -567,7 +567,11 @@ buildUtil.internTemplateStrings = function(dependencies, srcRoot){
 	var fileList = fileUtil.getFilteredFileList(srcRoot, /\.js$/, true);
 	if(fileList){
 		for(var i = 0; i < fileList.length; i++){
-			buildUtil.internTemplateStringsInFile(fileList[i], srcRoot, prefixes, skiplist);
+			//Skip nls directories.
+			var fileName = fileList[i];
+			if(!fileName.match(/\/nls\//)){
+				buildUtil.internTemplateStringsInFile(fileList[i], srcRoot, prefixes, skiplist);
+			}
 		}
 	}
 }

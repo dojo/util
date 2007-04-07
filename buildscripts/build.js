@@ -264,6 +264,9 @@ function _makeBuildOptions(/*Array*/scriptArgs){
 		//Only use default if there is no value so far.
 		if(typeof kwArgs[param] == "undefined"){
 			kwArgs[param] = DojoBuildOptions[param].defaultValue;
+		}else if(kwArgs[param] === "false"){
+			//Make sure "false" strings get translated to proper false value.
+			kwArgs[param] = false;
 		}
 	}
 
