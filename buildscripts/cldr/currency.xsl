@@ -85,21 +85,20 @@
         <xsl:otherwise>
         <xsl:if test="count(./* [(not(@draft) or @draft!='provisional' and @draft!='unconfirmed')]) > 0">
             <xsl:call-template name="insert_comma"/>
-            <xsl:text>
-        </xsl:text>
-            <xsl:value-of select="@type"></xsl:value-of>
-            <xsl:text>:{</xsl:text>
-             <xsl:for-each select="*[not(@draft)] | *[@draft!='provisional' and @draft!='unconfirmed']">
-                    <xsl:value-of select="name()"></xsl:value-of>
-                    <xsl:text>:"</xsl:text> 
-                    <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"></xsl:value-of>                
-                    <xsl:text>"</xsl:text>
-                    <xsl:if test="count((following-sibling::node())[not(@draft)] 
-                               | *[@draft!='provisional' and @draft!='unconfirmed']) > 0 ">
-                    <xsl:text>, </xsl:text>
-                    </xsl:if>
-             </xsl:for-each>
-            <xsl:text>}</xsl:text>
+            <xsl:for-each select="*[not(@draft)] | *[@draft!='provisional' and @draft!='unconfirmed']">
+                <xsl:text>
+	</xsl:text>
+		        <xsl:value-of select="$width"></xsl:value-of>
+                <xsl:text>_</xsl:text>
+                <xsl:value-of select="name()"></xsl:value-of>
+                <xsl:text>:"</xsl:text>
+                <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"></xsl:value-of>                
+                <xsl:text>"</xsl:text>
+                <xsl:if test="count((following-sibling::node())[not(@draft)] 
+                            | *[@draft!='provisional' and @draft!='unconfirmed']) > 0 ">
+                    <xsl:text>,</xsl:text>
+                </xsl:if>
+            </xsl:for-each>
             </xsl:if>
          </xsl:otherwise>   
         </xsl:choose>
