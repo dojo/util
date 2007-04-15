@@ -184,6 +184,9 @@ function release(){
 			var compresedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, true);
 			fileUtil.saveFile(fileName, compresedContents);
 
+			//Remove _base from the release.
+			fileUtil.deleteFile(dojoReleaseDir + "_base");
+			fileUtil.deleteFile(dojoReleaseDir + "_base.js");
 			
 			//FIXME: generate xd contents for layer files.
 		}
@@ -202,7 +205,10 @@ function release(){
 //********* End release *********
 
 //********* Start _releasePrefixPath *********
-function _prefixPathRelease(prefixName, prefixPath, kwArgs){
+function _prefixPathRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kwArgs){
+	//summary: copies modules and supporting files from the prefix path to the release
+	//directory. Also runs intern strings, i18n bundle flattening and xdomain file generation
+	//on the files in directory, if those options are enabled.
 	var releasePath = kwArgs.releaseDir + "/"  + prefixName;
 	var copyRegExp = /./;
 	
