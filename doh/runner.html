@@ -5,25 +5,49 @@
 	-->
 	<!--
 		// TODO: need to provide UI controls for turning audio on and off
-		// TODO: implement global scrollbarl
+		// TODO: implement global progress bar
 		// TODO: ensure that test groups are "folded up" by default but can be opened on a click
-		// TODO: provide way to extract this system from the rest of Dojo easily
 	-->
 	<head>
 		<title>The Dojo Unit Test Harness, $Rev$</title>
-		<script type="text/javascript" src="../dojo.js"  
-			djConfig="isDebug: true"></script>
+		<script type="text/javascript">
+			var dojoUrl = "../../dojo/dojo.js";
+			var testUrl = "";
+			var testModule = "";
+
+			// parse out our test URL and our Dojo URL from the query string
+			var qstr = window.location.search.substr(1);
+			if(qstr.length){
+				var qparts = qstr.split("&");
+				for(var x=0; x<qparts.length; x++){
+					var tp = qparts[x].split("=");
+					if(tp[0] == "dojoUrl"){
+						dojoUrl = tp[1];
+					}
+					if(tp[0] == "testUrl"){
+						testUrl = tp[1];
+					}
+					if(tp[0] == "testModule"){
+						testModule = tp[1];
+					}
+				}
+			}
+
+			document.write("<scr"+"ipt type='text/javascript' djConfig='isDebug: true' src='"+dojoUrl+"'></scr"+"ipt>");
+		</script>
 		<script type="text/javascript">
 			try{
-				dojo.require("tests.runner");
+				dojo.require("doh.runner");
 			}catch(e){
 				document.write("<scr"+"ipt type='text/javascript' src='runner.js'></scr"+"ipt>");
-				// document.write("<scr"+"ipt type='text/javascript'>tests.selfTest = true;</scr"+"ipt>");
 				document.write("<scr"+"ipt type='text/javascript' src='_browserRunner.js'></scr"+"ipt>");
+			}
+			if(testUrl.length){
+				document.write("<scr"+"ipt type='text/javascript' src='"+testUrl+".js'></scr"+"ipt>");
 			}
 		</script>
 		<style type="text/css">
-			@import "../resources/dojo.css";
+			@import "http://svn.dojotoolkit.org/dojo/dojo/trunk/resources/dojo.css";
 			/*
 			body {
 				margin: 0px;
@@ -186,7 +210,7 @@
 			-->
 			<tr valign="top" height="30">
 				<td width="30%" class="header">
-					<span id="toggleButtons" onclick="tests.togglePaused();">
+					<span id="toggleButtons" onclick="doh.togglePaused();">
 						<button id="play">&#052;</button>
 						<button id="pause" style="display: none;">&#059;</button>
 					</span>

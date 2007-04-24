@@ -1,12 +1,12 @@
-// FIXME: need to add async tests
+// FIXME: need to add async doh
 // FIXME: need to handle URL wrapping and test registration/running from URLs
 
 // package system gunk. 
 try{
-	dojo.provide("tests.runner");
+	dojo.provide("doh.runner");
 }catch(e){
-	if(!this["tests"]){
-		tests = {};
+	if(!this["doh"]){
+		doh = {};
 	}
 }
 
@@ -14,9 +14,9 @@ try{
 // Utility Functions and Classes
 //
 
-tests.selfTest = false;
+doh.selfTest = false;
 
-tests.hitch = function(/*Object*/thisObject, /*Function|String*/method /*, ...*/){
+doh.hitch = function(/*Object*/thisObject, /*Function|String*/method /*, ...*/){
 	var args = [];
 	for(var x=2; x<arguments.length; x++){
 		args.push(arguments[x]);
@@ -31,7 +31,7 @@ tests.hitch = function(/*Object*/thisObject, /*Function|String*/method /*, ...*/
 	};
 }
 
-tests._mixin = function(/*Object*/ obj, /*Object*/ props){
+doh._mixin = function(/*Object*/ obj, /*Object*/ props){
 	// summary:
 	//		Adds all properties and methods of props to obj. This addition is
 	//		"prototype extension safe", so that instances of objects will not
@@ -58,30 +58,30 @@ tests._mixin = function(/*Object*/ obj, /*Object*/ props){
 	return obj; // Object
 }
 
-tests.mixin = function(/*Object*/obj, /*Object...*/props){
+doh.mixin = function(/*Object*/obj, /*Object...*/props){
 	// summary:	Adds all properties and methods of props to obj. 
 	for(var i=1, l=arguments.length; i<l; i++){
-		tests._mixin(obj, arguments[i]);
+		doh._mixin(obj, arguments[i]);
 	}
 	return obj; // Object
 }
 
-tests.extend = function(/*Object*/ constructor, /*Object...*/ props){
+doh.extend = function(/*Object*/ constructor, /*Object...*/ props){
 	// summary:
 	//		Adds all properties and methods of props to constructor's
 	//		prototype, making them available to all instances created with
 	//		constructor.
 	for(var i=1, l=arguments.length; i<l; i++){
-		tests._mixin(constructor.prototype, arguments[i]);
+		doh._mixin(constructor.prototype, arguments[i]);
 	}
 	return constructor; // Object
 }
 
 
-tests._line = "------------------------------------------------------------";
+doh._line = "------------------------------------------------------------";
 
 /*
-tests._delegate = function(obj, props){
+doh._delegate = function(obj, props){
 	// boodman-crockford delegation
 	function TMP(){};
 	TMP.prototype = obj;
@@ -93,7 +93,7 @@ tests._delegate = function(obj, props){
 }
 */
 
-tests.debug = function(){
+doh.debug = function(){
 	// summary:
 	//		takes any number of arguments and sends them to whatever debugging
 	//		or logging facility is available in this environment
@@ -101,21 +101,21 @@ tests.debug = function(){
 	// YOUR TEST RUNNER NEEDS TO IMPLEMENT THIS
 }
 
-tests._AssertFailure = function(msg){
+doh._AssertFailure = function(msg){
 	// idea for this as way of dis-ambiguating error types is from JUM. 
 	// The JUM is dead! Long live the JUM!
 
-	if(!(this instanceof tests._AssertFailure)){
-		return new tests._AssertFailure(msg);
+	if(!(this instanceof doh._AssertFailure)){
+		return new doh._AssertFailure(msg);
 	}
 	this.message = new String(msg||"");
 	return this;
 }
-tests._AssertFailure.prototype = new Error();
-tests._AssertFailure.prototype.constructor = tests._AssertFailure;
-tests._AssertFailure.prototype.name = "tests._AssertFailure";
+doh._AssertFailure.prototype = new Error();
+doh._AssertFailure.prototype.constructor = doh._AssertFailure;
+doh._AssertFailure.prototype.name = "doh._AssertFailure";
 
-tests.Deferred = function(canceller){
+doh.Deferred = function(canceller){
 	this.chain = [];
 	this.id = this._nextId();
 	this.fired = -1;
@@ -125,7 +125,7 @@ tests.Deferred = function(canceller){
 	this.silentlyCancelled = false;
 };
 
-tests.extend(tests.Deferred, {
+doh.extend(doh.Deferred, {
 	getTestCallback: function(cb, scope){
 		var _this = this;
 		return function(){
@@ -148,13 +148,13 @@ tests.extend(tests.Deferred, {
 				return dj_global[a[0]];
 			}
 		}else if((a[0])&&(a[1])){
-			return tests.hitch(a[0], a[1]);
+			return doh.hitch(a[0], a[1]);
 		}
 		return null;
 	},
 
 	makeCalled: function() {
-		var deferred = new tests.Deferred();
+		var deferred = new doh.Deferred();
 		deferred.callback();
 		return deferred;
 	},
@@ -175,7 +175,7 @@ tests.extend(tests.Deferred, {
 				this.errback(new Error("Deferred(unfired)"));
 			}
 		}else if(	(this.fired == 0)&&
-					(this.results[0] instanceof tests.Deferred)){
+					(this.results[0] instanceof doh.Deferred)){
 			this.results[0].cancel();
 		}
 	},
@@ -229,7 +229,7 @@ tests.extend(tests.Deferred, {
 	addBoth: function(cb, cbfn){
 		var enclosed = this.getFunctionFromArgs(cb, cbfn);
 		if(arguments.length > 2){
-			enclosed = tests.hitch(null, enclosed, arguments, 2);
+			enclosed = doh.hitch(null, enclosed, arguments, 2);
 		}
 		return this.addCallbacks(enclosed, enclosed);
 	},
@@ -237,7 +237,7 @@ tests.extend(tests.Deferred, {
 	addCallback: function(cb, cbfn){
 		var enclosed = this.getFunctionFromArgs(cb, cbfn);
 		if(arguments.length > 2){
-			enclosed = tests.hitch(null, enclosed, arguments, 2);
+			enclosed = doh.hitch(null, enclosed, arguments, 2);
 		}
 		return this.addCallbacks(enclosed, null);
 	},
@@ -245,7 +245,7 @@ tests.extend(tests.Deferred, {
 	addErrback: function(cb, cbfn){
 		var enclosed = this.getFunctionFromArgs(cb, cbfn);
 		if(arguments.length > 2){
-			enclosed = tests.hitch(null, enclosed, arguments, 2);
+			enclosed = doh.hitch(null, enclosed, arguments, 2);
 		}
 		return this.addCallbacks(null, enclosed);
 	},
@@ -274,7 +274,7 @@ tests.extend(tests.Deferred, {
 			try {
 				res = f(res);
 				fired = ((res instanceof Error) ? 1 : 0);
-				if(res instanceof tests.Deferred){
+				if(res instanceof doh.Deferred){
 					cb = function(res){
 						self._continue(res);
 					}
@@ -297,36 +297,36 @@ tests.extend(tests.Deferred, {
 // State Keeping and Reporting
 //
 
-tests._testCount = 0;
-tests._groupCount = 0;
-tests._errorCount = 0;
-tests._failureCount = 0;
-tests._currentGroup = null;
-tests._currentTest = null;
-tests._paused = true;
+doh._testCount = 0;
+doh._groupCount = 0;
+doh._errorCount = 0;
+doh._failureCount = 0;
+doh._currentGroup = null;
+doh._currentTest = null;
+doh._paused = true;
 
-tests._init = function(){
+doh._init = function(){
 	this._currentGroup = null;
 	this._currentTest = null;
 	this._errorCount = 0;
 	this._failureCount = 0;
-	this.debug(this._testCount, "tests to run in", this._groupCount, "groups");
+	this.debug(this._testCount, "doh to run in", this._groupCount, "groups");
 }
 
-// tests._urls = [];
-tests._groups = {};
+// doh._urls = [];
+doh._groups = {};
 
 //
 // Test Registration
 //
 
-tests.registerTestNs = function(/*String*/ group, /*Object*/ ns){
+doh.registerTestNs = function(/*String*/ group, /*Object*/ ns){
 	// summary:
 	//		adds the passed namespace object to the list of objects to be
 	//		searched for test groups. Only "public" functions (not prefixed
-	//		with "_") will be added as tests to be run. If you'd like to use
+	//		with "_") will be added as doh to be run. If you'd like to use
 	//		fixtures (setUp(), tearDown(), and runTest()), please use
-	//		registerTest() or registerTests().
+	//		registerTest() or registerdoh().
 	for(var x in ns){
 		if(	(x.charAt(0) == "_") &&
 			(typeof ns[x] == "function") ){
@@ -335,39 +335,39 @@ tests.registerTestNs = function(/*String*/ group, /*Object*/ ns){
 	}
 }
 
-tests._testRegistered = function(group, fixture){
+doh._testRegistered = function(group, fixture){
 	// slot to be filled in
 }
 
-tests._groupStarted = function(group){
+doh._groupStarted = function(group){
 	// slot to be filled in
 }
 
-tests._groupFinished = function(group, success){
+doh._groupFinished = function(group, success){
 	// slot to be filled in
 }
 
-tests._testStarted = function(group, fixture){
+doh._dohtarted = function(group, fixture){
 	// slot to be filled in
 }
 
-tests._testFinished = function(group, fixture, success){
+doh._testFinished = function(group, fixture, success){
 	// slot to be filled in
 }
 
-tests.registerGroup = function(	/*String*/ group, 
-								/*Array||Function||Object*/ tests, 
+doh.registerGroup = function(	/*String*/ group, 
+								/*Array||Function||Object*/ doh, 
 								/*Function*/ setUp, 
 								/*Function*/ tearDown){
 	// summary:
-	//		registers an entire group of tests at once and provides a setUp and
+	//		registers an entire group of doh at once and provides a setUp and
 	//		tearDown facility for groups. If you call this method with only
 	//		setUp and tearDown parameters, they will replace previously
 	//		installed setUp or tearDown functions for the group with the new
 	//		methods.
 	// group:
 	//		string name of the group
-	// tests:
+	// doh:
 	//		either a function or an object or an array of functions/objects. If
 	//		an object, it must contain at *least* a "runTest" method, and may
 	//		also contain "setUp" and "tearDown" methods. These will be invoked
@@ -376,8 +376,8 @@ tests.registerGroup = function(	/*String*/ group,
 	//		description or test functions.
 	// setUp: a function for initializing the test group
 	// tearDown: a function for initializing the test group
-	if(tests){
-		this.register(group, tests);
+	if(doh){
+		this.register(group, doh);
 	}
 	if(setUp){
 		this._groups[group].setUp = setUp;
@@ -387,7 +387,7 @@ tests.registerGroup = function(	/*String*/ group,
 	}
 }
 
-tests._getTestObj = function(group, test){
+doh._getTestObj = function(group, test){
 	var tObj = test;
 	if(typeof test == "string"){
 		if(test.substr(0, 4)=="url:"){
@@ -410,7 +410,7 @@ tests._getTestObj = function(group, test){
 				if(0 <= ts.indexOf(fStr)){
 					tObj.name = ts.split(fStr)[1].split("(", 1)[0];
 				}
-				// tests.debug(tObj.runTest.toSource());
+				// doh.debug(tObj.runTest.toSource());
 			}catch(e){
 			}
 		}
@@ -419,7 +419,7 @@ tests._getTestObj = function(group, test){
 	return tObj;
 }
 
-tests.registerTest = function(/*String*/ group, /*Function||Object*/ test){
+doh.registerTest = function(/*String*/ group, /*Function||Object*/ test){
 	// summary:
 	//		add the provided test function or fixture object to the specified
 	//		test group.
@@ -443,9 +443,9 @@ tests.registerTest = function(/*String*/ group, /*Function||Object*/ test){
 	return tObj;
 }
 
-tests.registerTests = function(/*String*/ group, /*Array*/ testArr){
+doh.registerdoh = function(/*String*/ group, /*Array*/ testArr){
 	// summary:
-	//		registers a group of tests, treating each element of testArr as
+	//		registers a group of doh, treating each element of testArr as
 	//		though it were being (along with group) passed to the registerTest
 	//		method.
 	for(var x=0; x<testArr.length; x++){
@@ -454,7 +454,7 @@ tests.registerTests = function(/*String*/ group, /*Array*/ testArr){
 }
 
 // FIXME: move implementation to _browserRunner?
-tests.registerUrl = function(	/*String*/ group, 
+doh.registerUrl = function(	/*String*/ group, 
 								/*String*/ url, 
 								/*Integer*/ timeout){
 	this.debug("ERROR:");
@@ -462,13 +462,13 @@ tests.registerUrl = function(	/*String*/ group,
 	// this._urls.push(url);
 }
 
-tests.registerString = function(group, str){
+doh.registerString = function(group, str){
 }
 
-// FIXME: remove the tests.add alias SRTL.
-tests.register = tests.add = function(groupOrNs, testOrNull){
+// FIXME: remove the doh.add alias SRTL.
+doh.register = doh.add = function(groupOrNs, testOrNull){
 	// summary:
-	// 		"magical" variant of registerTests, registerTest, and
+	// 		"magical" variant of registerdoh, registerTest, and
 	// 		registerTestNs. Will accept the calling arguments of any of these
 	// 		methods and will correctly guess the right one to register with.
 	if(	(arguments.length == 1)&&
@@ -480,7 +480,7 @@ tests.register = tests.add = function(groupOrNs, testOrNull){
 		}
 	}
 	if(arguments.length == 1){
-		this.debug("invalid args passed to tests.register():", groupOrNs, ",", testOrNull);
+		this.debug("invalid args passed to doh.register():", groupOrNs, ",", testOrNull);
 		return;
 	}
 	if(typeof testOrNull == "string"){
@@ -492,8 +492,8 @@ tests.register = tests.add = function(groupOrNs, testOrNull){
 		// this.registerTestNs(groupOrNs, testOrNull);
 		return;
 	}
-	if(	tests._isArray(testOrNull) ){
-		this.registerTests(groupOrNs, testOrNull);
+	if(	doh._isArray(testOrNull) ){
+		this.registerdoh(groupOrNs, testOrNull);
 		return;
 	}
 	this.registerTest(groupOrNs, testOrNull);
@@ -503,23 +503,23 @@ tests.register = tests.add = function(groupOrNs, testOrNull){
 // Assertions and In-Test Utilities
 //
 
-tests.t = tests.assertTrue = function(/*Object*/ condition){
+doh.t = doh.assertTrue = function(/*Object*/ condition){
 	// summary:
 	//		is the passed item "truthy"?
 	if(!eval(condition)){
-		throw tests._AssertFailure("assertTrue('" + condition + "') failed");
+		throw doh._AssertFailure("assertTrue('" + condition + "') failed");
 	}
 }
 
-tests.f = tests.assertFalse = function(/*Object*/ condition){
+doh.f = doh.assertFalse = function(/*Object*/ condition){
 	// summary:
 	//		is the passed item "falsey"?
 	if(eval(condition)){
-		throw tests._AssertFailure("assertFalse('" + condition + "') failed");
+		throw doh._AssertFailure("assertFalse('" + condition + "') failed");
 	}
 }
 
-tests.is = tests.assertEqual = function(/*Object*/ expected, /*Object*/ actual){
+doh.is = doh.assertEqual = function(/*Object*/ expected, /*Object*/ actual){
 	// summary:
 	//		are the passed expected and actual objects/values deeply
 	//		equivalent?
@@ -540,28 +540,28 @@ tests.is = tests.assertEqual = function(/*Object*/ expected, /*Object*/ actual){
 		(this._objPropEq(expected, actual)) ){
 		return true;
 	}
-	throw new tests._AssertFailure("assertEqual() failed: expected |"+expected+"| but got |"+actual+"|");
+	throw new doh._AssertFailure("assertEqual() failed: expected |"+expected+"| but got |"+actual+"|");
 }
 
-tests._arrayEq = function(expected, actual){
+doh._arrayEq = function(expected, actual){
 	if(expected.length != actual.length){ return false; }
 	// FIXME: we're not handling circular refs. Do we care?
 	for(var x=0; x<expected.length; x++){
-		if(!tests.assertEqual(expected[x], actual[x])){ return false; }
+		if(!doh.assertEqual(expected[x], actual[x])){ return false; }
 	}
 	return true;
 }
 
-tests._objPropEq = function(expected, actual){
+doh._objPropEq = function(expected, actual){
 	for(var x in expected){
-		if(!tests.assertEqual(expected[x], actual[x])){
+		if(!doh.assertEqual(expected[x], actual[x])){
 			return false;
 		}
 	}
 	return true;
 }
 
-tests._isArray = function(arr){
+doh._isArray = function(arr){
 	return ((arr instanceof Array)||(typeof arr == "array") );
 }
 
@@ -569,13 +569,13 @@ tests._isArray = function(arr){
 // Runner-Wrapper
 //
 
-tests._setupGroupForRun = function(/*String*/ groupName, /*Integer*/ idx){
+doh._setupGroupForRun = function(/*String*/ groupName, /*Integer*/ idx){
 	var tg = this._groups[groupName];
 	this.debug(this._line);
 	this.debug("GROUP", "\""+groupName+"\"", "has", tg.length, "test"+((tg.length > 1) ? "s" : "")+" to run");
 }
 
-tests._handleFailure = function(groupName, fixture, e){
+doh._handleFailure = function(groupName, fixture, e){
 	// this.debug("FAILED test:", fixture.name);
 	// mostly borrowed from JUM
 	this._groups[groupName].failures++;
@@ -606,14 +606,14 @@ try{
 	}
 }
 
-tests._runFixture = function(groupName, fixture){
+doh._runFixture = function(groupName, fixture){
 	var tg = this._groups[groupName];
-	this._testStarted(groupName, fixture);
+	this._dohtarted(groupName, fixture);
 	var threw = false;
 	var err = null;
 	// run it, catching exceptions and reporting them
 	try{
-		// let tests reference "this.group.thinger..." which can be set by
+		// let doh reference "this.group.thinger..." which can be set by
 		// another test or group-level setUp function
 		fixture.group = tg; 
 		// only execute the parts of the fixture we've got
@@ -623,25 +623,25 @@ tests._runFixture = function(groupName, fixture){
 			// if we get a deferred back from the test runner, we know we're
 			// gonna wait for an async result. It's up to the test code to trap
 			// errors and give us an errback or callback.
-			if(ret instanceof tests.Deferred){
+			if(ret instanceof doh.Deferred){
 
 				tg.inFlight++;
 				ret.groupName = groupName;
 				ret.fixture = fixture;
 
 				ret.addErrback(function(err){
-					tests._handleFailure(groupName, fixture, err);
+					doh._handleFailure(groupName, fixture, err);
 				});
 
 				var retEnd = function(){
-					if(fixture["tearDown"]){ fixture.tearDown(tests); }
+					if(fixture["tearDown"]){ fixture.tearDown(doh); }
 					tg.inFlight--;
 					if((!tg.inFlight)&&(tg.iterated)){
-						tests._groupFinished(groupName, (!tg.failures));
+						doh._groupFinished(groupName, (!tg.failures));
 					}
-					tests._testFinished(groupName, fixture, ret.results[0]);
-					if(tests._paused){
-						tests.run();
+					doh._testFinished(groupName, fixture, ret.results[0]);
+					if(doh._paused){
+						doh.run();
 					}
 				}
 
@@ -655,7 +655,7 @@ tests._runFixture = function(groupName, fixture){
 					retEnd();
 				});
 				if(ret.fired < 0){
-					tests.pause();
+					doh.pause();
 				}
 				return ret;
 			}
@@ -665,7 +665,7 @@ tests._runFixture = function(groupName, fixture){
 		threw = true;
 		err = e;
 	}
-	var d = new tests.Deferred();
+	var d = new doh.Deferred();
 	setTimeout(this.hitch(this, function(){
 		if(threw){
 			this._handleFailure(groupName, fixture, err);
@@ -673,23 +673,23 @@ tests._runFixture = function(groupName, fixture){
 		this._testFinished(groupName, fixture, (!threw));
 
 		if((!tg.inFlight)&&(tg.iterated)){
-			tests._groupFinished(groupName, (!tg.failures));
+			doh._groupFinished(groupName, (!tg.failures));
 		}
-		if(tests._paused){
-			tests.run();
+		if(doh._paused){
+			doh.run();
 		}
 	}), 30);
-	tests.pause();
+	doh.pause();
 	return d;
 }
 
-tests._testId = 0;
-tests.runGroup = function(/*String*/ groupName, /*Integer*/ idx){
+doh._testId = 0;
+doh.runGroup = function(/*String*/ groupName, /*Integer*/ idx){
 	// summary:
 	//		runs the specified test group
 
 	// the general structure of the algorithm is to run through the group's
-	// list of tests, checking before and after each of them to see if we're in
+	// list of doh, checking before and after each of them to see if we're in
 	// a paused state. This can be caused by the test returning a deferred or
 	// the user hitting the pause button. In either case, we want to halt
 	// execution of the test until something external to us restarts it. This
@@ -702,7 +702,7 @@ tests.runGroup = function(/*String*/ groupName, /*Integer*/ idx){
 	if(this._isArray(tg)){
 		if(idx<=tg.length){
 			if((!tg.inFlight)&&(tg.iterated == true)){
-				tests._groupFinished(groupName, (!tg.failures));
+				doh._groupFinished(groupName, (!tg.failures));
 				return;
 			}
 		}
@@ -711,7 +711,7 @@ tests.runGroup = function(/*String*/ groupName, /*Integer*/ idx){
 			tg.iterated = false;
 			tg.failures = 0;
 		}
-		tests._groupStarted(groupName);
+		doh._groupStarted(groupName);
 		if(!idx){
 			this._setupGroupForRun(groupName, idx);
 		}
@@ -721,7 +721,7 @@ tests.runGroup = function(/*String*/ groupName, /*Integer*/ idx){
 				// this.debug("PAUSED at:", tg[y].name, this._currentGroup, this._currentTest);
 				return;
 			}
-			tests._runFixture(groupName, tg[y]);
+			doh._runFixture(groupName, tg[y]);
 			if(this._paused){
 				this._currentTest = y+1;
 				if(this._currentTest == tg.length){
@@ -733,41 +733,41 @@ tests.runGroup = function(/*String*/ groupName, /*Integer*/ idx){
 		}
 		tg.iterated = true;
 		if(!tg.inFlight){
-			tests._groupFinished(groupName, (!tg.failures));
+			doh._groupFinished(groupName, (!tg.failures));
 		}
 	}
 }
 
-tests._onEnd = function(){}
+doh._onEnd = function(){}
 
-tests._report = function(){
+doh._report = function(){
 	// summary:
 	//		a private method to be implemented/replaced by the "locally
 	//		appropriate" test runner
 
 	// this.debug("ERROR:");
 	// this.debug("\tNO REPORTING OUTPUT AVAILABLE.");
-	// this.debug("\tIMPLEMENT tests._report() IN YOUR TEST RUNNER");
+	// this.debug("\tIMPLEMENT doh._report() IN YOUR TEST RUNNER");
 
 	this.debug(this._line);
 	this.debug("| TEST SUMMARY:");
 	this.debug(this._line);
-	this.debug("\t", this._testCount, "tests in", this._groupCount, "groups");
+	this.debug("\t", this._testCount, "doh in", this._groupCount, "groups");
 	this.debug("\t", this._errorCount, "errors");
 	this.debug("\t", this._failureCount, "failures");
 }
 
-tests.togglePaused = function(){
+doh.togglePaused = function(){
 	this[(this._paused) ? "run" : "pause"]();
 }
 
-tests.pause = function(){
+doh.pause = function(){
 	// summary:
 	//		halt test run. Can be resumed.
 	this._paused = true;
 }
 
-tests.run = function(){
+doh.run = function(){
 	// summary:
 	//		begins or resumes the test process.
 	// this.debug("STARTING");
@@ -807,33 +807,38 @@ tests.run = function(){
 
 try{
 	dojo.platformRequire({
-		browser: ["tests._browserRunner"],
-		rhino: ["tests._rhinoRunner"],
-		spidermonkey: ["tests._rhinoRunner"]
+		browser: ["doh._browserRunner"],
+		rhino: ["doh._rhinoRunner"],
+		spidermonkey: ["doh._rhinoRunner"]
 	});
 	var _shouldRequire = (dojo.isBrowser) ? (dojo.global == dojo.global["parent"]) : true;
 	if(_shouldRequire){
 		if(dojo.isBrowser){
 			dojo.addOnLoad(function(){
 				if(dojo.byId("testList")){
-					dojo.require("tests._base");
+					dojo.require( ( (testModule&&testModule.length) ? testModule : "tests._base"));
 					setTimeout(function(){
-						tests.run();
+						doh.run();
 					}, 500);
 				}
 			});
 		}else{
-			dojo.require("tests._base");
+			dojo.require("doh._base");
 		}
 	}
 }catch(e){
 	load("_rhinoRunner.js");
-	load("_base.js");
+	try{
+		loadTests();
+	}catch(e2){
+	}
 
-	print("\n"+tests._line);
+	print("\n"+doh._line);
 	print("The Dojo Unit Test Harness, $Rev$");
 	print("Copyright (c) 2007, The Dojo Foundation, All Rights Reserved");
-	print(tests._line, "\n");
+	print(doh._line, "\n");
 
-	tests.run();
+	doh.run();
 }
+
+tests = doh;

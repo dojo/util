@@ -1,5 +1,5 @@
 if(window["dojo"]){
-	dojo.provide("tests._browserRunner");
+	dojo.provide("doh._browserRunner");
 }
 
 // FIXME: need to add prompting for monkey-do testing
@@ -67,7 +67,7 @@ if(window["dojo"]){
 			byId("logBody").appendChild(tn);
 		}
 
-		tests._init = (function(oi){
+		doh._init = (function(oi){
 			return function(){
 				var lb = byId("logBody");
 				if(lb){
@@ -76,12 +76,12 @@ if(window["dojo"]){
 						lb.removeChild(lb.firstChild);
 					}
 				}
-				oi.apply(tests, arguments);
+				oi.apply(doh, arguments);
 			}
-		})(tests._init);
+		})(doh._init);
 
 		if(this["opera"] && opera.postError){
-			tests.debug = function(){
+			doh.debug = function(){
 				var msg = "";
 				for(var x=0; x<arguments.length; x++){
 					msg += " "+arguments[x];
@@ -91,12 +91,12 @@ if(window["dojo"]){
 			}
 		}else if(window["console"]){
 			if(console.info){
-				tests.debug = function(){
+				doh.debug = function(){
 					sendToLogPane.call(window, arguments);
 					console.debug.apply(console, arguments);
 				}
 			}else{
-				tests.debug = function(){
+				doh.debug = function(){
 					var msg = "";
 					for(var x=0; x<arguments.length; x++){
 						msg += " "+arguments[x];
@@ -106,7 +106,7 @@ if(window["dojo"]){
 				}
 			}
 		}else{
-			tests.debug = function(){
+			doh.debug = function(){
 				sendToLogPane.call(window, arguments);
 			}
 		}
@@ -143,7 +143,7 @@ if(window["dojo"]){
 			var cb = tds[1].getElementsByTagName("input")[0];
 			cb.group = group;
 			cb.onclick = function(evt){
-				tests._groups[group].skip = (!this.checked);
+				doh._groups[group].skip = (!this.checked);
 			}
 			tds[2].innerHTML = group;
 			tds[3].innerHTML = "";
@@ -189,7 +189,7 @@ if(window["dojo"]){
 		}
 
 		var updateBacklog = [];
-		tests._updateTestList = function(group, fixture, unwindingBacklog){
+		doh._updateTestList = function(group, fixture, unwindingBacklog){
 			if(!loaded){
 				if(group && fixture){
 					updateBacklog.push([group, fixture]);
@@ -198,7 +198,7 @@ if(window["dojo"]){
 			}else if((updateBacklog.length)&&(!unwindingBacklog)){
 				var tr;
 				while(tr=updateBacklog.shift()){
-					tests._updateTestList(tr[0], tr[1], true);
+					doh._updateTestList(tr[0], tr[1], true);
 				}
 			}
 			if(group && fixture){
@@ -213,9 +213,9 @@ if(window["dojo"]){
 			}
 		}
 
-		tests._testRegistered = tests._updateTestList;
+		doh._testRegistered = doh._updateTestList;
 
-		tests._groupStarted = function(group){
+		doh._groupStarted = function(group){
 			// console.debug("_groupStarted", group);
 			var gn = getGroupNode(group);
 			if(gn){
@@ -223,7 +223,7 @@ if(window["dojo"]){
 			}
 		}
 
-		tests._groupFinished = function(group, success){
+		doh._groupFinished = function(group, success){
 			// console.debug("_groupFinished", group);
 			var gn = getGroupNode(group);
 			if(gn){
@@ -231,8 +231,8 @@ if(window["dojo"]){
 			}
 		}
 
-		tests._testStarted = function(group, fixture){
-			// console.debug("_testStarted", group, fixture.name);
+		doh._dohtarted = function(group, fixture){
+			// console.debug("_dohtarted", group, fixture.name);
 			var fn = getFixtureNode(group, fixture);
 			if(fn){
 				fn.className = "inProgress";
@@ -253,7 +253,7 @@ if(window["dojo"]){
 			}
 		}
 
-		tests._testFinished = function(group, fixture, success){
+		doh._testFinished = function(group, fixture, success){
 			var fn = getFixtureNode(group, fixture);
 			if(fn){
 				fn.getElementsByTagName("td")[3].innerHTML = ((new Date())-fixture.startTime)+"ms";
@@ -267,18 +267,18 @@ if(window["dojo"]){
 		}
 
 		// FIXME: move implementation to _browserRunner?
-		tests.registerUrl = function(	/*String*/ group, 
+		doh.registerUrl = function(	/*String*/ group, 
 										/*String*/ url, 
 										/*Integer*/ timeout){
 			var tg = new String(group);
 			this.register(group, {
 				name: url,
 				setUp: function(){
-					tests.currentGroupName = tg;
-					tests.currentGroup = this;
-					tests.currentUrl = url;
-					this.d = new tests.Deferred();
-					tests.currentTestDeferred = this.d;
+					doh.currentGroupName = tg;
+					doh.currentGroup = this;
+					doh.currentUrl = url;
+					this.d = new doh.Deferred();
+					doh.currentTestDeferred = this.d;
 					showTestPage();
 					byId("testBody").src = url;
 				},
@@ -289,10 +289,10 @@ if(window["dojo"]){
 					return this.d;
 				},
 				tearDown: function(){
-					tests.currentGroupName = null;
-					tests.currentGroup = null;
-					tests.currentTestDeferred = null;
-					tests.currentUrl = null;
+					doh.currentGroupName = null;
+					doh.currentGroup = null;
+					doh.currentTestDeferred = null;
+					doh.currentUrl = null;
 					// this.d.errback(false);
 					// byId("testBody").src = "about:blank";
 					showLogPage();
@@ -332,7 +332,7 @@ if(window["dojo"]){
 			var x=0; var tn;
 			while(tn=inputs[x++]){
 				tn.checked = runAll;
-				tests._groups[tn.group].skip = (!runAll);
+				doh._groups[tn.group].skip = (!runAll);
 			}
 		}
 
@@ -365,17 +365,17 @@ if(window["dojo"]){
 			testTemplate = byId("testTemplate");
 			testTemplate.parentNode.removeChild(testTemplate);
 			testTemplate.style.display = "";
-			tests._updateTestList();
+			doh._updateTestList();
 		});
 
 		_addOnEvt("load", 
 			function(){
-				tests._onEnd = function(){
-					if(tests._failureCount == 0){
-						tests.debug("WOOHOO!!");
+				doh._onEnd = function(){
+					if(doh._failureCount == 0){
+						doh.debug("WOOHOO!!");
 						_playSound("woohoo");
 					}else{
-						console.debug("tests._failureCount:", tests._failureCount);
+						console.debug("doh._failureCount:", doh._failureCount);
 					}
 					if(byId("play")){
 						toggleRunning();
@@ -398,12 +398,12 @@ if(window["dojo"]){
 						isRunning = true;
 					}
 				}
-				tests.run = (function(oldRun){
+				doh.run = (function(oldRun){
 					return function(){
 						toggleRunning();
-						return oldRun.apply(tests, arguments);
+						return oldRun.apply(doh, arguments);
 					}
-				})(tests.run);
+				})(doh.run);
 				var btns = byId("toggleButtons").getElementsByTagName("span");
 				var node; var idx=0;
 				while(node=btns[idx++]){
@@ -414,36 +414,36 @@ if(window["dojo"]){
 	}else{
 		// we're in an iframe environment. Time to mix it up a bit.
 
-		_tests = window.parent.tests;
-		var _thisGroup = _tests.currentGroupName;
-		var _thisUrl = _tests.currentUrl;
+		_doh = window.parent.doh;
+		var _thisGroup = _doh.currentGroupName;
+		var _thisUrl = _doh.currentUrl;
 		if(_thisGroup){
-			tests._testRegistered = function(group, tObj){
-				_tests._updateTestList(_thisGroup, tObj);
+			doh._testRegistered = function(group, tObj){
+				_doh._updateTestList(_thisGroup, tObj);
 			}
-			tests._onEnd = function(){
-				_tests._errorCount += tests._errorCount;
-				_tests._failureCount += tests._failureCount;
-				_tests._testCount += tests._testCount;
+			doh._onEnd = function(){
+				_doh._errorCount += doh._errorCount;
+				_doh._failureCount += doh._failureCount;
+				_doh._testCount += doh._testCount;
 				// should we be really adding raw group counts?
-				_tests._groupCount += tests._groupCount;
-				_tests.currentTestDeferred.callback(true);
+				_doh._groupCount += doh._groupCount;
+				_doh.currentTestDeferred.callback(true);
 			}
-			var otr = tests._getTestObj;
-			tests._getTestObj = function(){
-				var tObj = otr.apply(tests, arguments);
+			var otr = doh._getTestObj;
+			doh._getTestObj = function(){
+				var tObj = otr.apply(doh, arguments);
 				tObj.name = _thisUrl+"::"+arguments[0]+"::"+tObj.name;
 				return tObj;
 			}
-			tests.debug = tests.hitch(_tests, "debug");
-			tests.registerUrl = tests.hitch(_tests, "registerUrl");
-			tests._testStarted = function(group, fixture){
-				_tests._testStarted(_thisGroup, fixture);
+			doh.debug = doh.hitch(_doh, "debug");
+			doh.registerUrl = doh.hitch(_doh, "registerUrl");
+			doh._dohtarted = function(group, fixture){
+				_doh._dohtarted(_thisGroup, fixture);
 			}
-			tests._testFinished = function(g, f, s){
-				_tests._testFinished(_thisGroup, f, s);
+			doh._testFinished = function(g, f, s){
+				_doh._testFinished(_thisGroup, f, s);
 			}
-			tests._report = function(){};
+			doh._report = function(){};
 		}
 	}
 

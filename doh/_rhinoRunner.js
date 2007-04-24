@@ -1,5 +1,5 @@
 if(this["dojo"]){
-	dojo.provide("tests._rhinoRunner");
+	dojo.provide("doh._rhinoRunner");
 }
 
-tests.debug = print;
+doh.debug = print;
