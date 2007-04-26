@@ -347,7 +347,7 @@ doh._groupFinished = function(group, success){
 	// slot to be filled in
 }
 
-doh._dohtarted = function(group, fixture){
+doh._testStarted = function(group, fixture){
 	// slot to be filled in
 }
 
@@ -608,7 +608,7 @@ try{
 
 doh._runFixture = function(groupName, fixture){
 	var tg = this._groups[groupName];
-	this._dohtarted(groupName, fixture);
+	this._testStarted(groupName, fixture);
 	var threw = false;
 	var err = null;
 	// run it, catching exceptions and reporting them

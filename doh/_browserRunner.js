@@ -238,8 +238,8 @@ if(window["dojo"]){
 			}
 		}
 
-		doh._dohtarted = function(group, fixture){
-			// console.debug("_dohtarted", group, fixture.name);
+		doh._testStarted = function(group, fixture){
+			// console.debug("_testStarted", group, fixture.name);
 			var fn = getFixtureNode(group, fixture);
 			if(fn){
 				fn.className = "inProgress";
@@ -412,7 +412,9 @@ if(window["dojo"]){
 				}
 				doh.run = (function(oldRun){
 					return function(){
-						toggleRunning();
+						if(!doh._currentGroup){
+							toggleRunning();
+						}
 						return oldRun.apply(doh, arguments);
 					}
 				})(doh.run);
@@ -449,8 +451,8 @@ if(window["dojo"]){
 			}
 			doh.debug = doh.hitch(_doh, "debug");
 			doh.registerUrl = doh.hitch(_doh, "registerUrl");
-			doh._dohtarted = function(group, fixture){
-				_doh._dohtarted(_thisGroup, fixture);
+			doh._testStarted = function(group, fixture){
+				_doh._testStarted(_thisGroup, fixture);
 			}
 			doh._testFinished = function(g, f, s){
 				_doh._testFinished(_thisGroup, f, s);
