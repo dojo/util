@@ -117,16 +117,14 @@ if(window["dojo"]){
 
 		var groupNodes = {};
 
-		var addGroupToList = function(group){
-			if(!byId("testList")){ return; }
-			var tb = byId("testList").tBodies[0];
-			var tg = groupTemplate.cloneNode(true);
-			var tds = tg.getElementsByTagName("td");
+		var _groupTogglers = {};
+
+		var _getGroupToggler = function(group, toggle){
+			if(_groupTogglers[group]){ return _groupTogglers[group]; }
 			var rolledUp = true;
-			var toggle = tds[0];
-			toggle.onclick = function(){
+			return _groupTogglers[group] = function(evt, forceOpen){
 				var nodes = groupNodes[group].__items;
-				if(rolledUp){
+				if(rolledUp||forceOpen){
 					rolledUp = false;
 					for(var x=0; x<nodes.length; x++){
 						nodes[x].style.display = "";
@@ -139,7 +137,16 @@ if(window["dojo"]){
 					}
 					toggle.innerHTML = "&#052;";
 				}
-			}
+			};
+		}
+
+		var addGroupToList = function(group){
+			if(!byId("testList")){ return; }
+			var tb = byId("testList").tBodies[0];
+			var tg = groupTemplate.cloneNode(true);
+			var tds = tg.getElementsByTagName("td");
+			var toggle = tds[0];
+			toggle.onclick = _getGroupToggler(group, toggle);
 			var cb = tds[1].getElementsByTagName("input")[0];
 			cb.group = group;
 			cb.onclick = function(evt){
@@ -261,6 +268,11 @@ if(window["dojo"]){
 
 				if(!success){
 					_playSound("doh");
+					var gn = getGroupNode(group);
+					if(gn){
+						gn.className = "failure";
+						_getGroupToggler(group)(null, true);
+					}
 				}
 			}
 			this.debug(((success) ? "PASSED" : "FAILED"), "test:", fixture.name);

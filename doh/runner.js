@@ -310,7 +310,7 @@ doh._init = function(){
 	this._currentTest = null;
 	this._errorCount = 0;
 	this._failureCount = 0;
-	this.debug(this._testCount, "doh to run in", this._groupCount, "groups");
+	this.debug(this._testCount, "tests to run in", this._groupCount, "groups");
 }
 
 // doh._urls = [];
@@ -752,7 +752,7 @@ doh._report = function(){
 	this.debug(this._line);
 	this.debug("| TEST SUMMARY:");
 	this.debug(this._line);
-	this.debug("\t", this._testCount, "doh in", this._groupCount, "groups");
+	this.debug("\t", this._testCount, "tests in", this._groupCount, "groups");
 	this.debug("\t", this._errorCount, "errors");
 	this.debug("\t", this._failureCount, "failures");
 }
