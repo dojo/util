@@ -816,7 +816,7 @@ try{
 		if(dojo.isBrowser){
 			dojo.addOnLoad(function(){
 				if(dojo.byId("testList")){
-					dojo.require( ( (testModule&&testModule.length) ? testModule : "tests._base"));
+					dojo.require( ( (testModule&&testModule.length) ? testModule : "dojo.tests.module"));
 					setTimeout(function(){
 						doh.run();
 					}, 500);
