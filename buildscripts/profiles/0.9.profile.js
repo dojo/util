@@ -3,6 +3,6 @@ var dependencies = [
 ];
 
 dependencies.prefixes = [
-	[ "dijit", "../../dijit" ],
-	[ "dojox", "../../dojox" ],
+	[ "dijit", "../dijit" ],
+	[ "dojox", "../dojox" ],
 ];

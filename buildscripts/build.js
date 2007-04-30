@@ -31,9 +31,15 @@ var DojoBuildOptions = {
 		defaultValue: "en-gb,en-us,de-de,es-es,fr-fr,it-it,pt-br,ko-kr,zh-tw,zh-cn,ja-jp",
 		helpText: "The set of locales to use when flattening i18n bundles."
 	},
+	
 	"releaseName": {
 		defaultValue: "dojo",
-		helpText: "The name of the release directory."
+		helpText: "The name of the release. A directory inside 'releaseDir' will be created with this name."
+	},
+	"releaseDir": {
+		defaultValue: "../../release/",
+		helpText: "The top level release directory where builds end up. The 'releaseName' directories will "
+			+ " be placed inside this directory."
 	},
 	"loader": {
 		defaultValue: "default",
@@ -113,94 +119,103 @@ function release(){
 	var copyrightText = fileUtil.readFile("copyright.txt");
 	var buildNoticeText = fileUtil.readFile("build_notice.txt");
 	
+	//Find the dojo prefix path. Need it to process other module prefixes.
+	for(var i = 0; i < prefixes.length; i++){
+		if(prefixes[i][0] == "dojo"){
+			dojoPrefixPath = prefixes[i][1];
+			break;
+		}
+	}
+
 	//Get the list of module directories we need to process.
 	//They will be in the dependencies.prefixes array.
 	//Copy each prefix dir to the releases and
 	//operate on that copy.
-	if(prefixes && prefixes.length > 0){
-		for(var i = 0; i < prefixes.length; i++){
-			var prefixName = prefixes[i][0];
-			var prefixPath = prefixes[i][1];
-			
-			//Set prefix path to the release location, so that
-			//build operations that depend/operate on it are using
-			//the release location.
-			prefixes[i][1] = kwArgs.releaseDir + "/"  + prefixName;
-	
-			//Save dojo for last.
-			if(prefixName == "dojo"){
-				dojoPrefixPath = prefixPath;
-			}else{
-				_prefixPathRelease(prefixName, prefixPath, kwArgs);
-			}
+	for(var i = 0; i < prefixes.length; i++){
+		var prefixName = prefixes[i][0];
+		var prefixPath = prefixes[i][1];
+		
+		//Set prefix path to the release location, so that
+		//build operations that depend/operate on it are using
+		//the release location.
+		prefixes[i][1] = kwArgs.releaseDir + "/"  + prefixName;
+
+		//dojo prefix is special. Do that later.
+		if(prefixName != "dojo"){
+			_prefixPathRelease(prefixName, dojoPrefixPath + "/" + prefixPath, kwArgs);
 		}
 	}
 
 	//Now process Dojo core. Special things for that one.
-	if(dojoPrefixPath){
-		 _prefixPathRelease("dojo", dojoPrefixPath, kwArgs);
+	 _prefixPathRelease("dojo", dojoPrefixPath, kwArgs);
 
-		//Make sure dojo is clear before trying to map dependencies.
-		if(typeof dojo != "undefined"){
-			dojo = undefined;
-		}
-
-		//FIXME: loadDependency list reparses profile file, but we've already done that.
-		logger.trace("Building dojo.js and layer files");
-		var result = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileFile), kwArgs.version);
-
-		//Save the build layers. The first layer is dojo.js.
-		var layerLegalText = copyrightText + buildNoticeText;
-		var dojoReleaseDir = kwArgs.releaseDir + "/dojo/";
-		for(var i = 0; i < result.length; i++){
-			var fileName = dojoReleaseDir + result[i].layerName;
-			var fileContents = result[i].contents;
-			
-			//Flatten resources 
-			//FIXME: Flatten resources. Only do the top level flattening for bundles
-			//in the layer files. How to do this for layers? only do one nls file for
-			//all layers, or a different one for each layer?
-			if(fileName == "dojo.js"){
-				i18n.flattenLayerFileBundles(fileName, dojoReleaseDir + "nls", "nls", kwArgs);
-			}
-
-			//Save uncompressed file.
-			var uncompressedFileName = fileName + ".uncompressed.js";
-			fileUtil.saveFile(uncompressedFileName, layerLegalText + fileContents);
-			
-			//Intern strings if desired. Do this before compression, since, in the xd case,
-			//"dojo" gets converted to a shortened name.
-			if(kwArgs.internStrings){
-				logger.info("Interning strings for file: " + fileName);
-				var prefixes = dependencies["prefixes"] || [];
-				var skiplist = dependencies["internSkipList"] || [];
-				buildUtil.internTemplateStringsInFile(uncompressedFileName, dojoReleaseDir, prefixes, skiplist);
-
-				//Load the file contents after string interning, to pick up interned strings.
-				fileContents = fileUtil.readFile(uncompressedFileName);
-			}
-
-			//Save compressed file.
-			var compresedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, true);
-			fileUtil.saveFile(fileName, compresedContents);
-
-			//Remove _base from the release.
-			fileUtil.deleteFile(dojoReleaseDir + "_base");
-			fileUtil.deleteFile(dojoReleaseDir + "_base.js");
-			
-			//FIXME: generate xd contents for layer files.
-		}
-
-		//Save the dependency lists to build.txt
-		var buildText = "Files baked into this build:" + lineSeparator;
-		for(var i = 0; i < result.length; i++){
-			buildText += lineSeparator + result[i].layerName + ":" + lineSeparator;
-			buildText += result[i].depList.join(lineSeparator) + lineSeparator;
-		}
-		fileUtil.saveFile(kwArgs.releaseDir + "/dojo/build.txt", buildText);
-
-		logger.info(buildText);
+	//Make sure dojo is clear before trying to map dependencies.
+	if(typeof dojo != "undefined"){
+		dojo = undefined;
 	}
+
+	//FIXME: loadDependency list reparses profile file, but we've already done that.
+	logger.trace("Building dojo.js and layer files");
+	var result = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileFile), kwArgs.version);
+
+	//Save the build layers. The first layer is dojo.js.
+	var layerLegalText = copyrightText + buildNoticeText;
+	var dojoReleaseDir = kwArgs.releaseDir + "/dojo/";
+	for(var i = 0; i < result.length; i++){
+		var fileName = dojoReleaseDir + result[i].layerName;
+		var fileContents = result[i].contents;
+		
+		//Flatten resources 
+		//FIXME: Flatten resources. Only do the top level flattening for bundles
+		//in the layer files. How to do this for layers? only do one nls file for
+		//all layers, or a different one for each layer?
+		if(fileName == "dojo.js"){
+			i18n.flattenLayerFileBundles(fileName, dojoReleaseDir + "nls", "nls", kwArgs);
+		}
+
+		//Save uncompressed file.
+		var uncompressedFileName = fileName + ".uncompressed.js";
+		fileUtil.saveFile(uncompressedFileName, layerLegalText + fileContents);
+		
+		//Intern strings if desired. Do this before compression, since, in the xd case,
+		//"dojo" gets converted to a shortened name.
+		if(kwArgs.internStrings){
+			logger.info("Interning strings for file: " + fileName);
+			var prefixes = dependencies["prefixes"] || [];
+			var skiplist = dependencies["internSkipList"] || [];
+			buildUtil.internTemplateStringsInFile(uncompressedFileName, dojoReleaseDir, prefixes, skiplist);
+
+			//Load the file contents after string interning, to pick up interned strings.
+			fileContents = fileUtil.readFile(uncompressedFileName);
+		}
+
+		//Save compressed file.
+		var compresedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, true);
+		fileUtil.saveFile(fileName, compresedContents);
+
+		//Remove _base from the release.
+		fileUtil.deleteFile(dojoReleaseDir + "_base");
+		fileUtil.deleteFile(dojoReleaseDir + "_base.js");
+		
+		//FIXME: generate xd contents for layer files.
+	}
+
+	//Save the dependency lists to build.txt
+	var buildText = "Files baked into this build:" + lineSeparator;
+	for(var i = 0; i < result.length; i++){
+		buildText += lineSeparator + result[i].layerName + ":" + lineSeparator;
+		buildText += result[i].depList.join(lineSeparator) + lineSeparator;
+	}
+	fileUtil.saveFile(kwArgs.releaseDir + "/dojo/build.txt", buildText);
+	logger.info(buildText);
+
+	//Copy over DOH if tests where copied.
+	if(kwArgs.copyTests){
+		copyRegExp = new RegExp(prefixName.replace(/\\/g, "/") + "/(?!tests)");
+		fileUtil.copyDir("../doh", kwArgs.releaseDir + "/util/doh", /./);
+	}
+
+	logger.info("Build is in directory: " + kwArgs.releaseDir);
 }
 //********* End release *********
 
@@ -217,6 +232,7 @@ function _prefixPathRelease(/*String*/prefixName, /*String*/prefixPath, /*Object
 		copyRegExp = new RegExp(prefixName.replace(/\\/g, "/") + "/(?!tests)");
 	}
 
+	logger.info("Copying: " + prefixPath + " to: " + releasePath);
 	fileUtil.copyDir(prefixPath, releasePath, copyRegExp);
 
 	//Intern strings if desired.
@@ -277,7 +293,7 @@ function _makeBuildOptions(/*Array*/scriptArgs){
 	}
 
 	//Set up some compound values
-	kwArgs.releaseDir = "release/" + kwArgs["releaseName"];
+	kwArgs.releaseDir += kwArgs["releaseName"];
 	kwArgs.action = kwArgs.action.split(",");
 	kwArgs.localeList = kwArgs.localeList.split(",");
 	
