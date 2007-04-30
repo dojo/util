@@ -11,9 +11,9 @@
 	<head>
 		<title>The Dojo Unit Test Harness, $Rev$</title>
 		<script type="text/javascript">
-			var dojoUrl = "../../dojo/dojo.js";
-			var testUrl = "";
-			var testModule = "";
+			window.dojoUrl = "../../dojo/dojo.js";
+			window.testUrl = "";
+			window.testModule = "";
 
 			// parse out our test URL and our Dojo URL from the query string
 			var qstr = window.location.search.substr(1);
@@ -22,13 +22,13 @@
 				for(var x=0; x<qparts.length; x++){
 					var tp = qparts[x].split("=");
 					if(tp[0] == "dojoUrl"){
-						dojoUrl = tp[1];
+						window.dojoUrl = tp[1];
 					}
 					if(tp[0] == "testUrl"){
-						testUrl = tp[1];
+						window.testUrl = tp[1];
 					}
 					if(tp[0] == "testModule"){
-						testModule = tp[1];
+						window.testModule = tp[1];
 					}
 				}
 			}

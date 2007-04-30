@@ -817,7 +817,7 @@ try{
 		if(dojo.isBrowser){
 			dojo.addOnLoad(function(){
 				if(dojo.byId("testList")){
-					dojo.require( ( (testModule&&testModule.length) ? testModule : "dojo.tests.module"));
+					dojo.require( ( (dojo.global.testModule && dojo.global.testModule.length) ? dojo.global.testModule : "dojo.tests.module"));
 					setTimeout(function(){
 						doh.run();
 					}, 500);
@@ -871,4 +871,3 @@ try{
 
 	doh.run();
 }
-
