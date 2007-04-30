@@ -804,6 +804,7 @@ doh.run = function(){
 	this._report();
 }
 
+tests = doh;
 
 try{
 	dojo.platformRequire({
@@ -827,18 +828,47 @@ try{
 		}
 	}
 }catch(e){
-	load("_rhinoRunner.js");
-	try{
-		loadTests();
-	}catch(e2){
-	}
-
 	print("\n"+doh._line);
 	print("The Dojo Unit Test Harness, $Rev$");
 	print("Copyright (c) 2007, The Dojo Foundation, All Rights Reserved");
 	print(doh._line, "\n");
 
+	load("_rhinoRunner.js");
+
+	try{
+		var dojoUrl = "../../dojo/dojo.js";
+		var testUrl = "";
+		var testModule = "dojo.tests.module";
+		for(var x=0; x<arguments.length; x++){
+			if(arguments[x].indexOf("=") > 0){
+				var tp = arguments[x].split("=");
+				if(tp[0] == "dojoUrl"){
+					dojoUrl = tp[1];
+				}
+				if(tp[0] == "testUrl"){
+					testUrl = tp[1];
+				}
+				if(tp[0] == "testModule"){
+					testModule = tp[1];
+				}
+			}
+		}
+		if(dojoUrl.length){
+			if(!this["djConfig"]){
+				djConfig = {};
+			}
+			djConfig.baseUrl = dojoUrl.split("dojo.js")[0];
+			load(dojoUrl);
+		}
+		if(testUrl.length){
+			load(testUrl);
+		}
+		if(testModule.length){
+			dojo.require(testModule);
+		}
+	}catch(e){
+	}
+
 	doh.run();
 }
 
-tests = doh;
