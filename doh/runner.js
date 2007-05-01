@@ -817,7 +817,8 @@ try{
 		if(dojo.isBrowser){
 			dojo.addOnLoad(function(){
 				if(dojo.byId("testList")){
-					dojo.require( ( (dojo.global.testModule && dojo.global.testModule.length) ? dojo.global.testModule : "dojo.tests.module"));
+					var _tm = ( (dojo.global.testModule && dojo.global.testModule.length) ? dojo.global.testModule : "dojo.tests.module");
+					dojo.forEach(_tm.split(","), dojo.require, dojo);
 					setTimeout(function(){
 						doh.run();
 					}, 500);
@@ -864,7 +865,7 @@ try{
 			load(testUrl);
 		}
 		if(testModule.length){
-			dojo.require(testModule);
+			dojo.forEach(testModule.split(","), dojo.require, dojo);
 		}
 	}catch(e){
 	}
