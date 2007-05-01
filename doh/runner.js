@@ -619,7 +619,9 @@ doh._runFixture = function(groupName, fixture){
 		// only execute the parts of the fixture we've got
 		if(fixture["setUp"]){ fixture.setUp(this); }
 		if(fixture["runTest"]){  // should we error out of a fixture doesn't have a runTest?
+			fixture.startTime = new Date();
 			var ret = fixture.runTest(this); 
+			fixture.endTime = new Date();
 			// if we get a deferred back from the test runner, we know we're
 			// gonna wait for an async result. It's up to the test code to trap
 			// errors and give us an errback or callback.
@@ -664,6 +666,9 @@ doh._runFixture = function(groupName, fixture){
 	}catch(e){
 		threw = true;
 		err = e;
+		if(!fixture.endTime){
+			fixture.endTime = new Date();
+		}
 	}
 	var d = new doh.Deferred();
 	setTimeout(this.hitch(this, function(){

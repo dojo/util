@@ -244,7 +244,6 @@ if(window["dojo"]){
 			if(fn){
 				fn.className = "inProgress";
 			}
-			fixture.startTime = new Date();
 		}
 
 		var _nameTimes = {};
@@ -263,7 +262,7 @@ if(window["dojo"]){
 		doh._testFinished = function(group, fixture, success){
 			var fn = getFixtureNode(group, fixture);
 			if(fn){
-				fn.getElementsByTagName("td")[3].innerHTML = ((new Date())-fixture.startTime)+"ms";
+				fn.getElementsByTagName("td")[3].innerHTML = (fixture.endTime-fixture.startTime)+"ms";
 				fn.className = (success) ? "success" : "failure";
 
 				if(!success){
