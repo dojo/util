@@ -142,7 +142,11 @@ function release(){
 
 		//dojo prefix is special. Do that later.
 		if(prefixName != "dojo"){
-			_prefixPathRelease(prefixName, dojoPrefixPath + "/" + prefixPath, kwArgs);
+			var finalPrefixPath = prefixPath;
+			if(finalPrefixPath.indexOf(".") == 0){
+				finalPrefixPath = dojoPrefixPath + "/" + prefixPath;
+			}
+			_prefixPathRelease(prefixName, finalPrefixPath, kwArgs);
 		}
 	}
 
@@ -154,9 +158,8 @@ function release(){
 		dojo = undefined;
 	}
 
-	//FIXME: loadDependency list reparses profile file, but we've already done that.
 	logger.trace("Building dojo.js and layer files");
-	var result = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileFile), kwArgs.version);
+	var result = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileProperties), kwArgs.version);
 
 	//Save the build layers. The first layer is dojo.js.
 	var layerLegalText = copyrightText + buildNoticeText;

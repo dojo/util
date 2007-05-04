@@ -324,8 +324,23 @@ buildUtil.evalProfile = function(/*String*/ profileFile){
 	//If not already in the prefix array, assume the default
 	//location, as a sibling to dojo (and util).
 	for(var i = 0; i < usedPrefixes.length; i++){
-		if(!buildUtil.isValueInArray(usedPrefixes[i], dependencies.prefixes)){
-			dependencies.prefixes.push([usedPrefixes[i], "../../" + usedPrefixes[i]]);
+		var hasPrefix = false;
+		for(var j = 0; j < dependencies.prefixes.length; j++){
+			if(dependencies.prefixes[j][0] == usedPrefixes[i]){
+				hasPrefix = true;
+				break;
+			}
+		}
+		if(!hasPrefix){
+			//Assumptions are that any prefixes that are not dojo
+			//are a sibling to dojo. Dojo path is special, it needs
+			//to be relative to util/buildscripts. The dojo path is
+			//prepended to other paths later.
+			var dirPrefix = "../";
+			if(usedPrefixes[i] == "dojo"){
+				dirPrefix = "../../";
+			}
+			dependencies.prefixes.push([usedPrefixes[i], dirPrefix + usedPrefixes[i]]);
 		}
 	}
 
@@ -347,8 +362,10 @@ buildUtil.addPrefixesFromDependencies = function(/*Array*/prefixStore, /*Array*/
 	}
 }
 
-buildUtil.loadDependencyList = function(/*String*/profileFile){
-	var profile = buildUtil.evalProfile(profileFile);
+buildUtil.loadDependencyList = function(/*Object*/profile){
+	//summary: Traverses the dependencies in the profile object.
+	//profile:
+	//		The profile object that is a result of a buildUtil.evalProfile() call.
 	if(profile.hostenvType){
 		profile.hostenvType = profile.hostenvType.join(",\n");
 	}

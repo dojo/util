@@ -5,7 +5,7 @@ load("buildUtil.js");
 var profileFile = arguments[0];
 var lineSeparator = java.lang.System.getProperty("line.separator");
 
-var result = buildUtil.loadDependencyList(profileFile);
+var result = buildUtil.loadDependencyList(buildUtil.evalProfile(profileFile));
 
 var buildText = "Files included in this profile:" + lineSeparator;
 for(var i = 0; i < result.length; i++){
