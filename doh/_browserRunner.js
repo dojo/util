@@ -248,8 +248,10 @@ if(window["dojo"]){
 
 		var _nameTimes = {};
 		var _playSound = function(name){
-			if(byId("hiddenAudio")){
+			if(byId("hiddenAudio") && byId("audio") && byId("audio").checked){
+				// console.debug("playing:", name);
 				var nt = _nameTimes[name];
+				// only play sounds once every second or so
 				if((!nt)||(((new Date)-nt) > 700)){
 					_nameTimes[name] = new Date();
 					var tc = document.createElement("span");

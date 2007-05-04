@@ -4,7 +4,6 @@
 		get a "full screen" UI w/ straightforward CSS.
 	-->
 	<!--
-		// TODO: need to provide UI controls for turning audio on and off
 		// TODO: implement global progress bar
 		// TODO: provide a UI for prompted tests
 	-->
@@ -47,7 +46,7 @@
 			}
 		</script>
 		<style type="text/css">
-			@import "http://svn.dojotoolkit.org/dojo/dojo/trunk/resources/dojo.css";
+			@import "../../dojo/resources/dojo.css";
 			/*
 			body {
 				margin: 0px;
@@ -199,12 +198,16 @@
 				<td colspan="2" id="logoBar">
 					<h3 style="margin: 5px 5px 0px 5px; float: left;">D.O.H.: The Dojo Objective Harness</h3>
 					<img src="small_logo.png" height="40" style="margin: 0px 5px 0px 5px; float: right;">
+					<span style="margin: 10px 5px 0px 5px; float: right;">
+						<input type="checkbox" id="audio" name="audio" checked>
+						<label for="audio">sounds?</label>
+					</span>
 				</td>
 			</tr>
 			<!--
-			<tr valign="top" height="40">
+			<tr valign="top" height="10">
 				<td colspan="2" id="progressOuter">
-					<div id="progressInner"></div>
+					<div id="progressInner">blah</div>
 				</td>
 			</tr>
 			-->
