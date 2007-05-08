@@ -1,6 +1,6 @@
 var buildUtil = {};
 
-buildUtil.interningDojoUriRegExpString = "(((templatePath|templateCssPath)\\s*(=|:)\\s*)|dojo\\.uri\\.cache\\.allow\\(\\s*)dojo\\.(module)?Uri\\(\\s*?[\\\"\\']([\\w\\.\\/]+)[\\\"\\'](([\\,\\s]*)[\\\"\\']([\\w\\.\\/]*)[\\\"\\'])?\\s*\\)";
+buildUtil.interningDojoUriRegExpString = "(((templatePath|templateCssPath)\\s*(=|:)\\s*)|dojo\\.uri\\.cache\\.allow\\(\\s*)dojo\\.(module)?Url\\(\\s*?[\\\"\\']([\\w\\.\\/]+)[\\\"\\'](([\\,\\s]*)[\\\"\\']([\\w\\.\\/]*)[\\\"\\'])?\\s*\\)";
 buildUtil.interningGlobalDojoUriRegExp = new RegExp(buildUtil.interningDojoUriRegExpString, "g");
 buildUtil.interningLocalDojoUriRegExp = new RegExp(buildUtil.interningDojoUriRegExpString);
 
@@ -565,8 +565,7 @@ buildUtil.makeResourceUri = function(resourceName, templatePath, srcRoot, prefix
 			resourceName = resourceName.replace(/\./g, "/");
 
 			//Final path construction
-			var finalPath = srcRoot;
-			finalPath += bestPrefixPath + "/";
+			var finalPath = bestPrefixPath + "/";
 			if(resourceName){
 				finalPath += resourceName + "/";
 			}
