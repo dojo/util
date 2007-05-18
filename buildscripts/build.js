@@ -197,7 +197,8 @@ function release(){
 		fileUtil.saveFile(fileName, compresedContents);
 
 		//Remove _base from the release.
-		fileUtil.deleteFile(dojoReleaseDir + "_base");
+		//FIXME: remove everything except firebug? move firebug resources? 
+		//fileUtil.deleteFile(dojoReleaseDir + "_base");
 		fileUtil.deleteFile(dojoReleaseDir + "_base.js");
 		
 		//FIXME: generate xd contents for layer files.
