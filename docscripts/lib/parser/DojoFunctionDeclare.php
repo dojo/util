@@ -8,6 +8,7 @@ class DojoFunctionDeclare extends DojoBlock
   private $object = 'DojoFunctionDeclare';
   
   private $parameters;
+  protected $parameter_values;
   private $function_name;
   private $body;
   
@@ -96,6 +97,11 @@ class DojoFunctionDeclare extends DojoBlock
   public function getThisInheritanceCalls()
   {
     return array_unique($this->body->getThisInheritanceCalls());
+  }
+  
+  public function getFunctionDeclarations()
+  {
+  	return $this->body->getExternalizedFunctionDeclarations();
   }
   
   public function removeCodeFrom($lines){

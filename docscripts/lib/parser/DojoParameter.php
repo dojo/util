@@ -42,7 +42,7 @@ class DojoParameter extends DojoBlock
   public function build()
   {
     if (!$this->start) {
-      die("DojoFunctionCall->build() used before setting a start position");
+      die("DojoParameter->build() used before setting a start position");
     }
 
     $lines = Text::chop($this->package->getCode(), $this->start[0], $this->start[1], false, false, true);

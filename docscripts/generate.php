@@ -15,10 +15,10 @@ foreach ($files as $set){
 	$resource->setAttribute('provides', $contents['#provides']);
 	$resource->setAttribute('project', $contents['#project']);
 	$resource->setAttribute('file', $file);
-	
+
 	unset($contents['#provides']);
 	unset($contents['#project']);
-	
+
 	if ($contents['#requires']) {
 		$requires = $document->createElement('requires');
 		foreach ($contents['#requires'] as $set) {

@@ -87,12 +87,14 @@ function dojo_get_contents($namespace, $file_name) {
   $inherit_calls = $package->getFunctionCalls('dojo.inherits', true);
   $mixin_calls = array_merge($package->getFunctionCalls('dojo.extend'), $package->getFunctionCalls('dojo.lang.extend', true), $package->getFunctionCalls('dojo.mixin'), $package->getFunctionCalls('dojo.lang.mixin'));
   $declarations = $package->getFunctionDeclarations();
+  $executions = $package->getExecutedFunctions();
   $objects = $package->getObjects();
   $aliases = $package->getAliases();
 
   // Since there can be chase conditions between declarations and calls, we need to find which were "swallowed" by larger blocks
   $package->removeSwallowed($mixin_calls);
   $package->removeSwallowed($declarations);
+  $package->removeSwallowed($executions);
 
   // Handle compound require calls
   foreach ($compound_calls as $call) {
@@ -147,7 +149,7 @@ function dojo_get_contents($namespace, $file_name) {
 			}
     }
   }
-
+  
   // This closely matches dojo.widget.defineWidget as declared in src/widget/Widget.js
   foreach ($declare_calls as $call) {
     $init = null;
@@ -243,6 +245,13 @@ function dojo_get_contents($namespace, $file_name) {
   // Handle function declarations
   foreach ($declarations as $declaration) {
     $declaration->rollOut($output);
+  }
+  
+  foreach ($executions as $execution) {
+  	$execution_declarations = $execution->getFunctionDeclarations();
+  	foreach ($execution_declarations as $declaration) {
+  		$declaration->rollOut($output);
+  	}
   }
   
   foreach ($inherit_calls as $call) {

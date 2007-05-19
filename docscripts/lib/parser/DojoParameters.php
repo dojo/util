@@ -18,7 +18,7 @@ class DojoParameters extends DojoBlock
   public function build()
   {
     if (!$this->start) {
-      die("DojoFunctionCall->build() used before setting a start position");
+      die("DojoParameters->build() used before setting a start position");
     }
 
     $code = $this->package->getCode();
