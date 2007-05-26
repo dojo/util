@@ -228,7 +228,7 @@ function _prefixPathRelease(/*String*/prefixName, /*String*/prefixPath, /*Object
 	//summary: copies modules and supporting files from the prefix path to the release
 	//directory. Also runs intern strings, i18n bundle flattening and xdomain file generation
 	//on the files in directory, if those options are enabled.
-	var releasePath = kwArgs.releaseDir + "/"  + prefixName;
+	var releasePath = kwArgs.releaseDir + "/"  + prefixName.replace(/\./g, "/");
 	var copyRegExp = /./;
 	
 	//Use the copyRegExp to filter out tests if requested.
