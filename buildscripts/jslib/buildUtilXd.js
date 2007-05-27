@@ -63,7 +63,7 @@ buildUtilXd.makeXdContents = function(fileContents, baseRelativePath, prefixes){
 
 	//Build the xd file contents.
 	var xdContentsBuffer = [];
-	xdContentsBuffer.push("dojo.hostenv.packageLoaded({\n");
+	xdContentsBuffer.push("dojo._xdResourceLoaded({\n");
 	
 	//Add in dependencies section.
 	if(dependencies.length > 0){
@@ -80,7 +80,7 @@ buildUtilXd.makeXdContents = function(fileContents, baseRelativePath, prefixes){
 	//Add the contents of the file inside a function.
 	//Pass in dojo as an argument to the function to help with
 	//allowing multiple versions of dojo in a page.
-	xdContentsBuffer.push("\ndefinePackage: function(dojo){");
+	xdContentsBuffer.push("\ndefineResource: function(dojo){");
 	//Remove requireLocalization calls, since that will mess things up.
 	//String() part is needed since fileContents is a Java object.
 	xdContentsBuffer.push(String(fileContents).replace(/dojo\.requireLocalization\([^\)]*\)/g, ""));
@@ -113,7 +113,7 @@ buildUtilXd.makeXdBundleContents = function(prefix, prefixPath, srcFileName, fil
 
 	//Final XD file contents.
 	fileContents = 'dojo.provide("' + moduleName + '.nls.' + (localeName ? localeName + '.' : '') + bundleName + '");'
-	                 + 'dojo.hostenv.xdLoadFlattenedBundle("' + moduleName + '", "' + bundleName
+	                 + 'dojo._xdLoadFlattenedBundle("' + moduleName + '", "' + bundleName
                    + '", "' + localeName + '", ' + fileContents + ');';
 
 	//Now make a proper xd.js file out of the content.
