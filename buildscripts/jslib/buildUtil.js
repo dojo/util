@@ -350,6 +350,18 @@ buildUtil.evalProfile = function(/*String*/ profileFile){
 	};
 }
 
+buildUtil.getDojoPrefixPath = function(/*Array*/prefixes){
+	//summary: Gets the path to Dojo from the prefixes.
+	var result = null;
+	for(var i = 0; i < prefixes.length; i++){
+		if(prefixes[i][0] == "dojo"){
+			result = prefixes[i][1];
+			break;
+		}
+	}
+	return result;
+}
+
 buildUtil.addPrefixesFromDependencies = function(/*Array*/prefixStore, /*Array*/dependencies){
 	//summary: finds the top level prefixes in the build process that
 	//we need to track for the build process. 
@@ -537,13 +549,55 @@ buildUtil.configPrefixes = function(profileFile){
 }
 
 //The regular expressions that will help find dependencies in the file contents.
-buildUtil.masterDependencyRegExpString = "dojo.(requireLocalization|require|requireIf|provide|requireAfterIf|requireAfter|platformRequire)\\(([\\w\\W]*?)\\)";
+buildUtil.masterDependencyRegExpString = "dojo.(requireLocalization|require|requireIf|provide|requireAfterIf|platformRequire)\\(([\\w\\W]*?)\\)";
 buildUtil.globalDependencyRegExp = new RegExp(buildUtil.masterDependencyRegExpString, "mg");
 buildUtil.dependencyPartsRegExp = new RegExp(buildUtil.masterDependencyRegExpString);
 
+buildUtil.mapResourceToPath = function(resourceName, baseRelativePath, prefixes){
+	//summary: converts a resourceName to a path.
+	//resourceName: String: like dojo.foo or mymodule.bar
+	//baseRelativePath: String: the relative path to Dojo. All resource paths are relative to dojo.
+	//                  it always ends in with a slash.
+	//prefixes: Array: Actually an array of arrays. Comes from profile js file.
+	//          dependencies.prefixes = [["mymodule.foo", "../mymoduledir"]];
+	
+	var bestPrefix = "";
+	var bestPrefixPath = "";
+	if(prefixes){
+		for(var i = 0; i < prefixes.length; i++){
+			//Prefix must match from the start of the resourceName string.
+			if(resourceName.indexOf(prefixes[i][0]) == 0){
+				if(prefixes[i][0].length > bestPrefix.length){
+					bestPrefix = prefixes[i][0];
+					bestPrefixPath = prefixes[i][1];
+				}
+			}
+		}
+	}
+
+	//Get rid of matching prefix from resource name.
+	resourceName = resourceName.replace(bestPrefix, "");
+	
+	if(resourceName.charAt(0) == '.'){
+		resourceName = resourceName.substring(1, resourceName.length);
+	}
+	
+	resourceName = resourceName.replace(/\./g, "/");
+
+	var finalPath = baseRelativePath + bestPrefixPath;
+	if(finalPath.charAt(finalPath.length - 1) != "/"){
+		finalPath += "/";
+	}
+	if (resourceName){
+		finalPath += resourceName + "/";
+	}
+	
+	return finalPath;
+}
+
 buildUtil.makeResourceUri = function(resourceName, templatePath, srcRoot, prefixes){
 	var bestPrefix = "";
-	var bestPrefixPath = ""
+	var bestPrefixPath = "";
 	if(prefixes){
 		for (var i = 0; i < prefixes.length; i++){
 			var prefix = prefixes[i];

@@ -23,6 +23,33 @@ buildUtilXd.setXdDojoConfig = function(/*String*/fileContents, /*String*/url){
 	);
 }
 
+buildUtilXd.xdgen = function(/*String*/prefixName, /*String*/prefixPath, /*Array*/prefixes){
+	//summary: generates the .xd.js files for a build.
+	var jsFileNames = fileUtil.getFilteredFileList(prefixPath, /\.js$/, true);
+	var baseRelativePath = buildUtil.getDojoPrefixPath(prefixes);
+
+	for(var i = 0; i < jsFileNames.length; i++){
+		var jsFileName = jsFileNames[i];
+
+		//Some files, like the layer files, have already been xd
+		//processed, so be sure to skip those.
+		if(!jsFileName.match(/\.xd\.js$/)){
+			var xdFileName = jsFileName.replace(/\.js$/, ".xd.js");
+			var fileContents = readText(jsFileName);
+	
+			//Files in nls directories, except for the ones that have multiple
+			//bundles flattened (therefore have a dojo.provide call),
+			//need to have special xd contents.
+			if(jsFileName.match(/\/nls\//) && fileContents.indexOf("dojo.provide(") == -1){
+				var xdContents = buildUtilXd.makeXdBundleContents(prefixName, prefixPath, jsFileName, fileContents, baseRelativePath, prefixes);			
+			}else{
+				xdContents = buildUtilXd.makeXdContents(fileContents, baseRelativePath, prefixes);
+			}
+			fileUtil.saveUtf8File(xdFileName, xdContents);
+		}
+	}
+}
+
 //START makeXdContents function
 //Function that generates the XD version of the module file's contents
 buildUtilXd.makeXdContents = function(fileContents, baseRelativePath, prefixes){
@@ -39,18 +66,22 @@ buildUtilXd.makeXdContents = function(fileContents, baseRelativePath, prefixes){
 			if(depCall == "requireLocalization"){
 				//Need to find out what locales are available so the dojo loader
 				//only has to do one script request for the closest matching locale.
-				var reqArgs = buildUtil.getRequireLocalizationArgsFromString(depArgs);
+				var reqArgs = i18nUtil.getRequireLocalizationArgsFromString(depArgs);
 				if(reqArgs.moduleName){
 					//Find the list of locales supported by looking at the path names.
-					var locales = buildUtil.getLocalesForBundle(reqArgs.moduleName, reqArgs.bundleName, baseRelativePath, prefixes);
-					
+					var locales = i18nUtil.getLocalesForBundle(reqArgs.moduleName, reqArgs.bundleName, baseRelativePath, prefixes);
+
 					//Add the supported locales to the requireLocalization arguments.
 					if(!reqArgs.localeName){
 						depArgs += ", null";
 					}
-					
+
 					depCall = "xdRequireLocalization";
 					depArgs += ', "' + locales.join(",") + '"';
+					
+					//Need to make sure dojo.i18n is loaded in order for the xdRequireLocalization
+					//calls to work.
+					dependencies.push('"require", "dojo.i18n"');
 				}else{
 					//Malformed requireLocalization call. Skip it. May be a comment.
 					continue;
@@ -93,9 +124,9 @@ buildUtilXd.makeXdContents = function(fileContents, baseRelativePath, prefixes){
 
 //START makeXdBundleContents function
 buildUtilXd.makeXdBundleContents = function(prefix, prefixPath, srcFileName, fileContents, baseRelativePath, prefixes){
-	print("Flattening bundle: " + srcFileName);
+	logger.info("Flattening bundle: " + srcFileName);
 
-	var bundleParts = buildUtil.getBundlePartsFromFileName(prefix, prefixPath, srcFileName);
+	var bundleParts = i18nUtil.getBundlePartsFromFileName(prefix, prefixPath, srcFileName);
 	if(!bundleParts){
 		return null;
 	}
@@ -103,13 +134,13 @@ buildUtilXd.makeXdBundleContents = function(prefix, prefixPath, srcFileName, fil
 	var bundleName = bundleParts.bundleName;
 	var localeName = bundleParts.localeName;
 	
-	print("## moduleName: " + moduleName + ", bundleName: " + bundleName + ", localeName: " + localeName);
+	logger.trace("## moduleName: " + moduleName + ", bundleName: " + bundleName + ", localeName: " + localeName);
 	
 	//If this is a dojo bundle, it will have already been flattened via the normal build process.
 	//If it is an external bundle, then we didn't flatten it during the normal build process since
 	//right now, we don't make copies of the external module source files. Need to figure that out at some
 	//point, but for now, need to get flattened contents for external modules.
-	fileContents = (prefix.indexOf("dojo") == 0) ? fileContents : buildUtil.makeFlatBundleContents(prefix, prefixPath, srcFileName);
+	fileContents = (prefix.indexOf("dojo") == 0) ? fileContents : i18nUtil.makeFlatBundleContents(prefix, prefixPath, srcFileName);
 
 	//Final XD file contents.
 	fileContents = 'dojo.provide("' + moduleName + '.nls.' + (localeName ? localeName + '.' : '') + bundleName + '");'

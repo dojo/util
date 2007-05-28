@@ -4,6 +4,7 @@ var buildTimerStart = (new Date()).getTime();
 load("jslib/logger.js");
 load("jslib/fileUtil.js");
 load("jslib/buildUtil.js");
+load("jslib/buildUtilXd.js");
 load("jslib/i18nUtil.js");
 
 var DojoBuildOptions = {
@@ -114,49 +115,44 @@ function release(){
 
 	var dependencies = kwArgs.profileProperties.dependencies;
 	var prefixes = dependencies.prefixes;
-	var dojoPrefixPath = null;
 	var lineSeparator = fileUtil.getLineSeparator();
 	var copyrightText = fileUtil.readFile("copyright.txt");
 	var buildNoticeText = fileUtil.readFile("build_notice.txt");
 	
 	//Find the dojo prefix path. Need it to process other module prefixes.
-	for(var i = 0; i < prefixes.length; i++){
-		if(prefixes[i][0] == "dojo"){
-			dojoPrefixPath = prefixes[i][1];
-			break;
-		}
-	}
+	var dojoPrefixPath = buildUtil.getDojoPrefixPath(prefixes);
 
 	//Get the list of module directories we need to process.
 	//They will be in the dependencies.prefixes array.
 	//Copy each prefix dir to the releases and
-	//operate on that copy.
+	//operate on that copy instead of modifying the source.
 	for(var i = 0; i < prefixes.length; i++){
 		var prefixName = prefixes[i][0];
 		var prefixPath = prefixes[i][1];
-		
-		//Set prefix path to the release location, so that
-		//build operations that depend/operate on it are using
-		//the release location.
-		prefixes[i][1] = kwArgs.releaseDir + "/"  + prefixName;
 
-		//dojo prefix is special. Do that later.
-		if(prefixName != "dojo"){
-			var finalPrefixPath = prefixPath;
-			if(finalPrefixPath.indexOf(".") == 0){
-				finalPrefixPath = dojoPrefixPath + "/" + prefixPath;
-			}
-			_prefixPathRelease(prefixName, finalPrefixPath, kwArgs);
+		var finalPrefixPath = prefixPath;
+		if(finalPrefixPath.indexOf(".") == 0 && prefixName != "dojo"){
+			finalPrefixPath = dojoPrefixPath + "/" + prefixPath;
 		}
+		_copyToRelease(prefixName, finalPrefixPath, kwArgs);
 	}
 
-	//Now process Dojo core. Special things for that one.
-	 _prefixPathRelease("dojo", dojoPrefixPath, kwArgs);
+	//Fix all the prefix paths to be in the release directory.
+	//Do this after the copy step above. If it is done as part
+	//of that loop, then dojo path gets set first usually, and any prefixes
+	//after it are wrong.
+	for(var i = 0; i < prefixes.length; i++){
+		prefixes[i][1] = kwArgs.releaseDir + "/"  + prefixes[i][0].replace(/\./g, "/");
+	}
 
 	//Make sure dojo is clear before trying to map dependencies.
 	if(typeof dojo != "undefined"){
 		dojo = undefined;
 	}
+
+	//Recalculate the dojo prefix path since we should now use the one in the
+	//release folder.
+	var dojoPrefixPath = buildUtil.getDojoPrefixPath(prefixes);
 
 	logger.trace("Building dojo.js and layer files");
 	var result = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileProperties), kwArgs.version);
@@ -165,6 +161,7 @@ function release(){
 	var layerLegalText = copyrightText + buildNoticeText;
 	var dojoReleaseDir = kwArgs.releaseDir + "/dojo/";
 	for(var i = 0; i < result.length; i++){
+		var layerName = result[i].layerName;
 		var fileName = dojoReleaseDir + result[i].layerName;
 		var fileContents = result[i].contents;
 		
@@ -172,14 +169,19 @@ function release(){
 		//FIXME: Flatten resources. Only do the top level flattening for bundles
 		//in the layer files. How to do this for layers? only do one nls file for
 		//all layers, or a different one for each layer?
-		if(fileName == "dojo.js"){
-			i18n.flattenLayerFileBundles(fileName, dojoReleaseDir + "nls", "nls", kwArgs);
+		if(layerName == "dojo.js"){
+			i18nUtil.flattenLayerFileBundles(fileName, dojoReleaseDir + "nls", "nls", kwArgs);
 		}
 
 		//Save uncompressed file.
 		var uncompressedFileName = fileName + ".uncompressed.js";
 		fileUtil.saveFile(uncompressedFileName, layerLegalText + fileContents);
-		
+		if(kwArgs.loader == "xdomain" && layerName != "dojo.js"){
+			var xdContents = buildUtilXd.makeXdContents(layerLegalText + fileContents, dojoPrefixPath, prefixes);
+			fileUtil.saveFile(uncompressedFileName.replace(/\.js$/, ".xd.js"), xdContents);
+				
+		}
+
 		//Intern strings if desired. Do this before compression, since, in the xd case,
 		//"dojo" gets converted to a shortened name.
 		if(kwArgs.internStrings){
@@ -195,13 +197,15 @@ function release(){
 		//Save compressed file.
 		var compresedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, true);
 		fileUtil.saveFile(fileName, compresedContents);
+		if(kwArgs.loader == "xdomain" && layerName != "dojo.js"){
+			xdContents = buildUtilXd.makeXdContents(compresedContents, dojoPrefixPath, prefixes);
+			fileUtil.saveFile(fileName.replace(/\.js$/, ".xd.js"), xdContents);
+		}
 
 		//Remove _base from the release.
 		//FIXME: remove everything except firebug? move firebug resources? 
 		//fileUtil.deleteFile(dojoReleaseDir + "_base");
 		fileUtil.deleteFile(dojoReleaseDir + "_base.js");
-		
-		//FIXME: generate xd contents for layer files.
 	}
 
 	//Save the dependency lists to build.txt
@@ -213,6 +217,12 @@ function release(){
 	fileUtil.saveFile(kwArgs.releaseDir + "/dojo/build.txt", buildText);
 	logger.info(buildText);
 
+	//Run string interning, xd file building, etc.. on the prefix dirs in the
+	//release area.
+	for(var i = 0; i < prefixes.length; i++){
+		_optimizeReleaseDirs(prefixes[i][0], prefixes[i][1], kwArgs);
+	}
+	
 	//Copy over DOH if tests where copied.
 	if(kwArgs.copyTests){
 		copyRegExp = new RegExp(prefixName.replace(/\\/g, "/") + "/(?!tests)");
@@ -223,11 +233,10 @@ function release(){
 }
 //********* End release *********
 
-//********* Start _releasePrefixPath *********
-function _prefixPathRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kwArgs){
+//********* Start _copyToRelease *********
+function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kwArgs){
 	//summary: copies modules and supporting files from the prefix path to the release
-	//directory. Also runs intern strings, i18n bundle flattening and xdomain file generation
-	//on the files in directory, if those options are enabled.
+	//directory.
 	var releasePath = kwArgs.releaseDir + "/"  + prefixName.replace(/\./g, "/");
 	var copyRegExp = /./;
 	
@@ -238,7 +247,17 @@ function _prefixPathRelease(/*String*/prefixName, /*String*/prefixPath, /*Object
 
 	logger.info("Copying: " + prefixPath + " to: " + releasePath);
 	fileUtil.copyDir(prefixPath, releasePath, copyRegExp);
+}
+//********* End _copyToRelease *********
 
+
+//********* Start _optimizeReleaseDirs *********
+function _optimizeReleaseDirs(/*String*/prefixName, /*String*/prefixPath, /*Object*/kwArgs){
+	//summary: runs intern strings, i18n bundle flattening and xdomain file generation
+	//on the files in a release directory, if those options are enabled.
+	var releasePath = kwArgs.releaseDir + "/"  + prefixName.replace(/\./g, "/");
+	var prefixes = kwArgs.profileProperties.dependencies.prefixes;
+	
 	//Intern strings if desired.
 	if(kwArgs.internStrings){
 		logger.info("Interning strings for: " + releasePath);
@@ -246,17 +265,16 @@ function _prefixPathRelease(/*String*/prefixName, /*String*/prefixPath, /*Object
 	}
 
 	//Flatten bundles inside the directory
-	//FIXME: Is baseRelativePath now obsolete?
-	i18nUtil.flattenDirBundles(prefixName, prefixPath, /*baseRelativePath*/"", kwArgs);
+	i18nUtil.flattenDirBundles(prefixName, prefixPath, buildUtil.getDojoPrefixPath(prefixes), kwArgs);
 
-	//FIXME: Run xdgen if an xdomain build.
 	if(kwArgs.loader == "xdomain"){
-
+		buildUtilXd.xdgen(prefixName, prefixPath, prefixes);
 	}
-	
+
 	//FIXME: call stripComments. Maybe rename, inline with optimize? need build options too.
 }
-//********* End _releasePrefixPath *********
+//********* End _optimizeReleaseDirs *********
+
 
 //********* Start _makeBuildOptions *********
 function _makeBuildOptions(/*Array*/scriptArgs){

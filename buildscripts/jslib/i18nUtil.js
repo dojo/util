@@ -30,7 +30,7 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/destDi
 	//		bundle in a locale like "en-us" would result in three web hits: one looking for en_us/ another
 	//		for en/ and another for ROOT/.  All of this multiplied by the number of bundles used can result
 	//		in a lot of web hits and latency.  This script uses Dojo to actually load the resources into
-	//		memory, then flatten the object and spit it out using dojo.json.serialize.  The bootstrap
+	//		memory, then flatten the object and spit it out using dojo.toJson.  The bootstrap
 	//		will be modified to download exactly one of these files, whichever is closest to the user's
 	//		locale.
 	//fileName:
@@ -98,7 +98,7 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/destDi
 						os.write("dojo.provide(\""+bundlePkg+"\");");
 						os.write(bundlePkg+"._built=true;");
 						os.write("dojo.provide(\""+translationPkg+"\");");
-						os.write(translationPkg+"="+dojo.json.serialize(bundle[jsLocale])+";");
+						os.write(translationPkg+"="+dojo.toJson(bundle[jsLocale])+";");
 					}
 				}
 			}finally{
@@ -108,7 +108,7 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/destDi
 		}
 		
 		//Inject the processed locales into the file name.
-		fileContents.replace(/\/\*\*\*BUILD:localesGenerated\*\*\*\//, dojo.json.serialize(localeList));
+		fileContents.replace(/\/\*\*\*BUILD:localesGenerated\*\*\*\//, dojo.toJson(localeList));
 	
 		//Remove dojo.requireLocalization calls from the file.
 		fileContents.replace(/dojo\.requireLocalization\(.*\)\;/g, "");
@@ -209,14 +209,14 @@ i18nUtil.makeFlatBundleContents = function(prefix, prefixPath, srcFileName){
 		throw "Cannot create flattened bundle for src file: " + srcFileName;
 	}
 
-	return dojo.json.serialize(flattenedBundle);
+	return dojo.toJson(flattenedBundle);
 }
 
 //Given a module and bundle name, find all the supported locales.
 i18nUtil.getLocalesForBundle = function(moduleName, bundleName, baseRelativePath, prefixes){
 	//Build a path to the bundle directory and ask for all files that match
 	//the bundle name.
-	var filePath = this.mapResourceToPath(moduleName, baseRelativePath, prefixes);
+	var filePath = buildUtil.mapResourceToPath(moduleName, baseRelativePath, prefixes);
 	
 	var bundleRegExp = new RegExp("nls[/]?([\\w\\-]*)/" + bundleName + ".js$");
 	var bundleFiles = fileUtil.getFilteredFileList(filePath + "nls/", bundleRegExp, true);
@@ -296,48 +296,4 @@ i18nUtil.getBundlePartsFromFileName = function(prefix, prefixPath, srcFileName){
 	}
 
 	return {moduleName: moduleName, bundleName: bundleName, localeName: localeName};
-}
-
-//FIXME: baseRelativePath a problem? Maybe don't need it anymore, if the
-//prefixes directories are already fixed to the right location.
-i18nUtil.mapResourceToPath = function(resourceName, baseRelativePath, prefixes){
-	//summary: converts a resourceName to a path.
-	//resourceName: String: like dojo.foo or mymodule.bar
-	//baseRelativePath: String: the relative path to Dojo. All resource paths are relative to dojo.
-	//                  it always ends in with a slash.
-	//prefixes: Array: Actually an array of arrays. Comes from profile js file.
-	//          dependencies.prefixes = [["mymodule.foo", "../mymoduledir"]];
-	
-	var bestPrefix = "";
-	var bestPrefixPath = "";
-	if(prefixes){
-		for(var i = 0; i < prefixes.length; i++){
-			//Prefix must match from the start of the resourceName string.
-			if(resourceName.indexOf(prefixes[i][0]) == 0){
-				if(prefixes[i][0].length > bestPrefix.length){
-					bestPrefix = prefixes[i][0];
-					bestPrefixPath = prefixes[i][1];
-				}
-			}
-		}
-	}
-
-	//Get rid of matching prefix from resource name.
-	resourceName = resourceName.replace(bestPrefix, "");
-	
-	if(resourceName.charAt(0) == '.'){
-		resourceName = resourceName.substring(1, resourceName.length);
-	}
-	
-	resourceName = resourceName.replace(/\./g, "/");
-
-	var finalPath = baseRelativePath + bestPrefixPath;
-	if(finalPath.charAt(finalPath.length - 1) != "/"){
-		finalPath += "/";
-	}
-	if (resourceName){
-		finalPath += resourceName + "/";
-	}
-	
-	return finalPath;
 }

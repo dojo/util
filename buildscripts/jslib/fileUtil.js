@@ -26,7 +26,7 @@ fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilt
 				var filePath = file.getPath();
 				if(makeUnixPaths){
 					//Make sure we have a JS string.
-					filePath = String(filePath);
+					filePath = new String(filePath);
 					if(filePath.indexOf("/") == -1){
 						filePath = filePath.replace(/\\/g, "/");
 					}
