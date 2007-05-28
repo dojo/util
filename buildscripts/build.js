@@ -203,8 +203,7 @@ function release(){
 		}
 
 		//Remove _base from the release.
-		//FIXME: remove everything except firebug? move firebug resources? 
-		//fileUtil.deleteFile(dojoReleaseDir + "_base");
+		fileUtil.deleteFile(dojoReleaseDir + "_base");
 		fileUtil.deleteFile(dojoReleaseDir + "_base.js");
 	}
 
