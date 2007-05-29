@@ -26,14 +26,8 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 	}
 
 	if(!dependencies){
-		dependencies = [ 
-			"dojo.event.*",
-			"dojo.io.*",
-			"dojo.string",
-			"dojo.xml.*",
-			"dojo.xml.Parse",
-			"dojo.widget.Parse",
-			"dojo.widget.Button"
+		dependencies = [
+			"dojo._base"
 		];
 	}
 	
@@ -171,25 +165,33 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 	}
 
 	//Now build the URI list, starting with the main dojo.js file
-	var result = [];
-	result[0] = {
-		layerName: "dojo.js",
-		depList: buildUtil.determineUriList(dependencies, null, dependencies["filters"]),
-		provideList: currentProvideList
+	if(!dependencies["layers"]){
+		dependencies.layers = [];
 	}
+
+	//Set up the dojo.js layer. Add _base if the profile already
+	//defines a dojo.js layer. If the profile defines a dojo.js
+	//layer it MUST be the first layer.
+	if(dependencies.layers[0] && dependencies.layers[0].name == "dojo.js"){
+		dependencies.layers[0].dependencies.unshift("dojo._base");
+	}else{
+		dependencies.layers.unshift({
+			name: "dojo.js",
+			dependencies: [
+				"dojo._base"
+			]
+		});
+	}
+
 	currentProvideList = [];
-	
-	//Figure out if we have to process layers.
-	var layerCount = 0;
+	var result = [];
 	var layers = dependencies["layers"];
-	if(layers && layers.length > 0){
-		layerCount = layers.length;
-	}
+	var layerCount = layers.length;
 	
 	//Process dojo layer files 
 	if(layerCount){
 		//Set up a lookup table for the layer URIs based on layer file name.
-		var namedLayerUris = {"dojo.js": result[0].depList};
+		var namedLayerUris = {};
 				
 		for(var i = 0; i < layerCount; i++){
 			var layer = layers[i];
@@ -212,7 +214,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 			namedLayerUris[layer.name] = layerUris.concat(depList);
 
 			//Add to the results object.
-			result[i + 1] = {
+			result[i] = {
 				layerName: layer.name,
 				depList: depList,
 				provideList: currentProvideList
@@ -290,7 +292,7 @@ buildUtil.determineUriList = function(/*Array*/dependencies, /*Array*/layerUris,
 
 
 buildUtil.evalProfile = function(/*String*/ profileFile){
-	var dependencies = null;
+	var dependencies = {};
 	var hostenvType = null;
 	var profileText = fileUtil.readFile(profileFile);
 	

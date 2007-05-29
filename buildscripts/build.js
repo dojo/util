@@ -318,6 +318,9 @@ function _makeBuildOptions(/*Array*/scriptArgs){
 	kwArgs.action = kwArgs.action.split(",");
 	kwArgs.localeList = kwArgs.localeList.split(",");
 	
+	//Attach the final loader type to the dependencies
+	dependencies.loader = kwArgs.loader;
+
 	return kwArgs;
 }
 //********* End _makeBuildOptions *********

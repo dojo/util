@@ -1,3 +1,1 @@
-var dependencies = [
-	"dojo._base"
-];
+//To build just Dojo base, you just need an empty file.

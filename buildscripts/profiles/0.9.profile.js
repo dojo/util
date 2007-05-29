@@ -1,20 +1,18 @@
-var dependencies = [
-	"dojo._base"
-];
-
-dependencies.layers = [
-	{
-		name: "../dijit/dijit.js",
-		layerDependencies: [
+dependencies = {
+	layers: [
+		{
+			name: "../dijit/dijit.js",
+			layerDependencies: [
 			"dojo.js"
-		],
-		dependencies: [
-			"dijit.dijit"
-		]
-	}
-];
+			],
+			dependencies: [
+				"dijit.dijit"
+			]
+		}
+	],
 
-dependencies.prefixes = [
-	[ "dijit", "../dijit" ],
-	[ "dojox", "../dojox" ],
-];
+	prefixes: [
+		[ "dijit", "../dijit" ],
+		[ "dojox", "../dojox" ]
+	]
+}
