@@ -17,7 +17,31 @@ buildUtil.getDojoLoader = function(/*Object?*/dependencies){
 	return (dependencies && dependencies["loader"] ? dependencies["loader"] : java.lang.System.getProperty("DOJO_LOADER"));
 }
 
+buildUtil.includeLoaderFiles = function(/*String*/dojoLoader, /*String or Array*/hostenvType){
+	//summary: adds the loader files to the file list for a build file.
+	dojo._loadedUrls.push("jslib/dojoGuardStart.jsfrag");
+	dojo._loadedUrls.push("../../dojo/_base/_loader/bootstrap.js");
+	
+	if(dojoLoader == "default"){
+		dojo._loadedUrls.push("../../dojo/_base/_loader/loader.js");
+	}else if(dojoLoader=="xdomain"){
+		dojo._loadedUrls.push("../../dojo/_base/_loader/loader.js");
+		dojo._loadedUrls.push("../../dojo/_base/_loader/loader_xd.js");
+	}
+	dojo._loadedUrls.push("jslib/dojoGuardEnd.jsfrag");
+
+	if(hostenvType.constructor == Array){
+		for(var x=0; x<hostenvType.length; x++){
+			dojo._loadedUrls.push("../../dojo/_base/_loader/hostenv_"+hostenvType[x]+".js");
+		}
+		hostenvType = hostenvType.pop();
+	}else{
+		dojo._loadedUrls.push("../../dojo/_base/_loader/hostenv_"+hostenvType+".js");
+	}
+}
+
 buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array*/hostenvType, /*boolean?*/isWebBuild){
+	//summary: Main function that traces the files that are needed for a give list of dependencies.
 	if(!isWebBuild){
 		djConfig = {
 			baseRelativePath: "../../dojo/"
@@ -43,30 +67,12 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		dojo.global = {};
 	}
 
-	dojo._loadedUrls.push("jslib/dojoGuardStart.jsfrag");
-	dojo._loadedUrls.push("../../dojo/_base/_loader/bootstrap.js");
-	
-	if(dojoLoader == "default"){
-		dojo._loadedUrls.push("../../dojo/_base/_loader/loader.js");
-	}else if(dojoLoader=="xdomain"){
-		dojo._loadedUrls.push("../../dojo/_base/_loader/loader.js");
-		dojo._loadedUrls.push("../../dojo/_base/_loader/loader_xd.js");
-	}
-	dojo._loadedUrls.push("jslib/dojoGuardEnd.jsfrag");
-	
 	if(!hostenvType){
 		hostenvType = "browser";
 	}
-	
-	if(hostenvType.constructor == Array){
-		for(var x=0; x<hostenvType.length; x++){
-			dojo._loadedUrls.push("../../dojo/_base/_loader/hostenv_"+hostenvType[x]+".js");
-		}
-		hostenvType = hostenvType.pop();
-	}else{
-		dojo._loadedUrls.push("../../dojo/_base/_loader/hostenv_"+hostenvType+".js");
-	}
-	
+
+	buildUtil.includeLoaderFiles(dojoLoader, hostenvType);
+
 	if(dependencies["prefixes"]){
 		var tmp = dependencies.prefixes;
 		for(var x=0; x<tmp.length; x++){
