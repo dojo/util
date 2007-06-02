@@ -577,11 +577,9 @@ buildUtil.masterDependencyRegExpString = "dojo.(requireLocalization|require|requ
 buildUtil.globalDependencyRegExp = new RegExp(buildUtil.masterDependencyRegExpString, "mg");
 buildUtil.dependencyPartsRegExp = new RegExp(buildUtil.masterDependencyRegExpString);
 
-buildUtil.mapResourceToPath = function(resourceName, baseRelativePath, prefixes){
+buildUtil.mapResourceToPath = function(resourceName, prefixes){
 	//summary: converts a resourceName to a path.
 	//resourceName: String: like dojo.foo or mymodule.bar
-	//baseRelativePath: String: the relative path to Dojo. All resource paths are relative to dojo.
-	//                  it always ends in with a slash.
 	//prefixes: Array: Actually an array of arrays. Comes from profile js file.
 	//          dependencies.prefixes = [["mymodule.foo", "../mymoduledir"]];
 	
@@ -608,7 +606,7 @@ buildUtil.mapResourceToPath = function(resourceName, baseRelativePath, prefixes)
 	
 	resourceName = resourceName.replace(/\./g, "/");
 
-	var finalPath = baseRelativePath + bestPrefixPath;
+	var finalPath = bestPrefixPath;
 	if(finalPath.charAt(finalPath.length - 1) != "/"){
 		finalPath += "/";
 	}

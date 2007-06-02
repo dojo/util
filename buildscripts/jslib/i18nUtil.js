@@ -82,7 +82,7 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/destDi
 		var mkdir = false;
 		var dir = new java.io.File(destDirName);
 		for (jsLocale in djBundlesByLocale){
-			var locale = jsLocale.replace('_', '-');
+			var locale = jsLocale.replace(/\_/g, '-');
 			if(!mkdir){ dir.mkdir(); mkdir = true; }
 			var outFile = new java.io.File(dir, nlsNamePrefix + "_" + locale + ".js");
 			var os = new java.io.BufferedWriter(
@@ -118,13 +118,13 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/destDi
 	}
 }
 
-i18nUtil.flattenDirBundles = function(/*String*/prefixName, /*String*/prefixDir,
-	/*String*/baseRelativePath, /*Object*/kwArgs){
+i18nUtil.flattenDirBundles = function(/*String*/prefixName, /*String*/prefixDir, /*Object*/kwArgs){
 	//summary: Flattens the i18n bundles inside a directory so that only request
 	//is needed per bundle. Does not handle resource flattening for dojo.js or
 	//layered build files.
+
 	i18nUtil.setup(kwArgs);
-	var fileList = fileUtil.getFilteredFileList(prefixDir, /\/(?!tests)\/.*\.js$/, true);
+	var fileList = fileUtil.getFilteredFileList(prefixDir, /\.js$/, true);
 	var prefixes = kwArgs.profileProperties.dependencies.prefixes;
 	for(var i= 0; i < fileList.length; i++){
 		//Use new String so we get a JS string and not a Java string.
@@ -136,7 +136,7 @@ i18nUtil.flattenDirBundles = function(/*String*/prefixName, /*String*/prefixDir,
 		if(jsFileName.match(/\/nls\//) && jsFileName.indexOf(prefixDir + "/nls/") == -1){
 			fileContents = "(" + i18nUtil.makeFlatBundleContents(prefixName, prefixDir, jsFileName) + ")";			
 		}else{
-			fileContents = i18nUtil.modifyRequireLocalization(readText(jsFileName), baseRelativePath, prefixes);
+			fileContents = i18nUtil.modifyRequireLocalization(readText(jsFileName), prefixes);
 		}
 
 		if(fileContents){
@@ -145,7 +145,7 @@ i18nUtil.flattenDirBundles = function(/*String*/prefixName, /*String*/prefixDir,
 	}
 }
 
-i18nUtil.modifyRequireLocalization = function(fileContents, baseRelativePath, prefixes){
+i18nUtil.modifyRequireLocalization = function(/*String*/fileContents, /*Array*/prefixes){
 	//summary: Modifies any dojo.requireLocalization calls in the fileContents to have the
 	//list of supported locales as part of the call. This allows the i18n loading functions
 	//to only make request(s) for locales that actually exist on disk.
@@ -169,7 +169,7 @@ i18nUtil.modifyRequireLocalization = function(fileContents, baseRelativePath, pr
 				var reqArgs = i18nUtil.getRequireLocalizationArgsFromString(depArgs);
 				if(reqArgs.moduleName){
 					//Find the list of locales supported by looking at the path names.
-					var locales = i18nUtil.getLocalesForBundle(reqArgs.moduleName, reqArgs.bundleName, baseRelativePath, prefixes);
+					var locales = i18nUtil.getLocalesForBundle(reqArgs.moduleName, reqArgs.bundleName, prefixes);
 	
 					//Add the supported locales to the requireLocalization arguments.
 					if(!reqArgs.localeName){
@@ -213,10 +213,10 @@ i18nUtil.makeFlatBundleContents = function(prefix, prefixPath, srcFileName){
 }
 
 //Given a module and bundle name, find all the supported locales.
-i18nUtil.getLocalesForBundle = function(moduleName, bundleName, baseRelativePath, prefixes){
+i18nUtil.getLocalesForBundle = function(moduleName, bundleName, prefixes){
 	//Build a path to the bundle directory and ask for all files that match
 	//the bundle name.
-	var filePath = buildUtil.mapResourceToPath(moduleName, baseRelativePath, prefixes);
+	var filePath = buildUtil.mapResourceToPath(moduleName, prefixes);
 	
 	var bundleRegExp = new RegExp("nls[/]?([\\w\\-]*)/" + bundleName + ".js$");
 	var bundleFiles = fileUtil.getFilteredFileList(filePath + "nls/", bundleRegExp, true);

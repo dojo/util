@@ -177,7 +177,7 @@ function release(){
 		var uncompressedFileName = fileName + ".uncompressed.js";
 		fileUtil.saveFile(uncompressedFileName, layerLegalText + fileContents);
 		if(kwArgs.loader == "xdomain" && !layerName.match(/dojo\.js(\.xd\.js)?/)){
-			var xdContents = buildUtilXd.makeXdContents(layerLegalText + fileContents, dojoPrefixPath, prefixes);
+			var xdContents = buildUtilXd.makeXdContents(layerLegalText + fileContents, prefixes);
 			fileUtil.saveFile(uncompressedFileName.replace(/\.js$/, ".xd.js"), xdContents);
 				
 		}
@@ -198,7 +198,7 @@ function release(){
 		var compresedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, true);
 		fileUtil.saveFile(fileName, compresedContents);
 		if(kwArgs.loader == "xdomain" && !layerName.match(/dojo\.js(\.xd\.js)?/)){
-			xdContents = buildUtilXd.makeXdContents(compresedContents, dojoPrefixPath, prefixes);
+			xdContents = buildUtilXd.makeXdContents(compresedContents, prefixes);
 			fileUtil.saveFile(fileName.replace(/\.js$/, ".xd.js"), xdContents);
 		}
 
@@ -264,7 +264,7 @@ function _optimizeReleaseDirs(/*String*/prefixName, /*String*/prefixPath, /*Obje
 	}
 
 	//Flatten bundles inside the directory
-	i18nUtil.flattenDirBundles(prefixName, prefixPath, buildUtil.getDojoPrefixPath(prefixes), kwArgs);
+	i18nUtil.flattenDirBundles(prefixName, prefixPath, kwArgs);
 
 	if(kwArgs.loader == "xdomain"){
 		buildUtilXd.xdgen(prefixName, prefixPath, prefixes);
