@@ -33,10 +33,12 @@ buildUtilXd.xdgen = function(/*String*/prefixName, /*String*/prefixPath, /*Array
 
 		//Some files, like the layer files, have already been xd
 		//processed, so be sure to skip those.
-		if(!jsFileName.match(/\.xd\.js$/) && !jsFileName.match(/dojo\.js(\.uncompressed.js)?$/)){
+		if(!jsFileName.match(/\.xd\.js$/)
+			&& !jsFileName.match(/uncompressed\.js$/)
+			&& !jsFileName.match(/dojo\.js$/)){
 			var xdFileName = jsFileName.replace(/\.js$/, ".xd.js");
 			var fileContents = readText(jsFileName);
-	
+			
 			//Files in nls directories, except for the ones that have multiple
 			//bundles flattened (therefore have a dojo.provide call),
 			//need to have special xd contents.

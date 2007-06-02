@@ -176,7 +176,7 @@ function release(){
 		//Save uncompressed file.
 		var uncompressedFileName = fileName + ".uncompressed.js";
 		fileUtil.saveFile(uncompressedFileName, layerLegalText + fileContents);
-		if(kwArgs.loader == "xdomain" && layerName != "dojo.js"){
+		if(kwArgs.loader == "xdomain" && !layerName.match(/dojo\.js(\.xd\.js)?/)){
 			var xdContents = buildUtilXd.makeXdContents(layerLegalText + fileContents, dojoPrefixPath, prefixes);
 			fileUtil.saveFile(uncompressedFileName.replace(/\.js$/, ".xd.js"), xdContents);
 				
@@ -197,7 +197,7 @@ function release(){
 		//Save compressed file.
 		var compresedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, true);
 		fileUtil.saveFile(fileName, compresedContents);
-		if(kwArgs.loader == "xdomain" && layerName != "dojo.js"){
+		if(kwArgs.loader == "xdomain" && !layerName.match(/dojo\.js(\.xd\.js)?/)){
 			xdContents = buildUtilXd.makeXdContents(compresedContents, dojoPrefixPath, prefixes);
 			fileUtil.saveFile(fileName.replace(/\.js$/, ".xd.js"), xdContents);
 		}

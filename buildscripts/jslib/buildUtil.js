@@ -71,8 +71,6 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		hostenvType = "browser";
 	}
 
-	buildUtil.includeLoaderFiles(dojoLoader, hostenvType);
-
 	if(dependencies["prefixes"]){
 		var tmp = dependencies.prefixes;
 		for(var x=0; x<tmp.length; x++){
@@ -189,6 +187,16 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		});
 	}
 
+	//Add the xd version of dojo.js to the build list, if it is wanted.
+	if(dojoLoader == "xdomain"){
+	dependencies.layers.splice(1, 0, {
+			name: "dojo.js.xd.js",
+			dependencies: [
+				"dojo._base"
+			]
+		});
+	}
+
 	currentProvideList = [];
 	var result = [];
 	var layers = dependencies["layers"];
@@ -201,7 +209,15 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 				
 		for(var i = 0; i < layerCount; i++){
 			var layer = layers[i];
-			
+
+			if(layer.name == "dojo.js"){
+				buildUtil.includeLoaderFiles("default", hostenvType);
+			}else if(layer.name == "dojo.js.xd.js"){
+				//Clear out dojo._base so we load it again
+				dojo._loadedModules = {};
+				buildUtil.includeLoaderFiles("xdomain", hostenvType);
+			}
+
 			//Set up list of module URIs that are already defined for this layer's
 			//layer dependencies.
 			var layerUris = [];
