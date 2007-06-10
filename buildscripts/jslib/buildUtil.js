@@ -839,4 +839,34 @@ buildUtil.stripComments = function(/*String*/startDir, /*boolean*/suppressDojoCo
 	}
 }
 
+buildUtil.guardProvideRegExp = /dojo\.provide\((\".*\")\)/;
+
+buildUtil.addGuards = function(/*String*/startDir){
+	//summary: adds a definition guard around code in a file to protect
+	//against redefinition cases when layered builds are used.
+	var lineSeparator = fileUtil.getLineSeparator();
+	var fileList = fileUtil.getFilteredFileList(startDir, /\.js$/, true);
+	if(fileList){
+		for(var i = 0; i < fileList.length; i++){
+			var fileContents = fileUtil.readFile(fileList[i]);
+			buildUtil.guardProvideRegExp.lastIndex = 0;
+			var match = buildUtil.guardProvideRegExp.exec(fileContents);
+			if(match){
+				fileContents = 'if(!dojo._hasResource[' + match[1] + ']){'
+					+ lineSeparator
+					+ 'dojo._hasResource[' + match[1] + '] = true;'
+					+ lineSeparator
+					+ fileContents
+					+ lineSeparator
+					+ '}'
+					+ lineSeparator;
+
+				fileUtil.saveFile(fileList[i], fileContents);
+			}
+		}
+	}
+}
+
+
+
 

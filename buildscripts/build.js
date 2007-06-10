@@ -235,7 +235,7 @@ function release(){
 //********* Start _copyToRelease *********
 function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kwArgs){
 	//summary: copies modules and supporting files from the prefix path to the release
-	//directory.
+	//directory. Also adds code guards to module resources.
 	var releasePath = kwArgs.releaseDir + "/"  + prefixName.replace(/\./g, "/");
 	var copyRegExp = /./;
 	
@@ -246,6 +246,10 @@ function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kw
 
 	logger.info("Copying: " + prefixPath + " to: " + releasePath);
 	fileUtil.copyDir(prefixPath, releasePath, copyRegExp);
+	
+	//Put in code guards for each resource, to protect against redifinition of
+	//code in the layered build cases. Do this here before the layers are built.
+	buildUtil.addGuards(releasePath);
 }
 //********* End _copyToRelease *********
 
@@ -256,7 +260,7 @@ function _optimizeReleaseDirs(/*String*/prefixName, /*String*/prefixPath, /*Obje
 	//on the files in a release directory, if those options are enabled.
 	var releasePath = kwArgs.releaseDir + "/"  + prefixName.replace(/\./g, "/");
 	var prefixes = kwArgs.profileProperties.dependencies.prefixes;
-	
+		
 	//Intern strings if desired.
 	if(kwArgs.internStrings){
 		logger.info("Interning strings for: " + releasePath);
