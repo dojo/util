@@ -4,8 +4,8 @@
 var startDir = arguments[0];
 var xdDojoUrl = arguments[1];
 
-load("fileUtil.js");
-load("buildUtil.js");
+load("jslib/fileUtil.js");
+load("jslib/buildUtil.js");
 
 var fileList = fileUtil.getFilteredFileList(startDir, /\.(html|htm)$/, true);
 

@@ -57,6 +57,13 @@ var DojoBuildOptions = {
 	"log": {
 		defaultValue: logger.TRACE,
 		helpText: "Sets the logging verbosity. See jslib/logger.js for possible integer values."
+	},
+	
+	"xdDojoPath": {
+		defaultValue: "",
+		helpText: "If the loader=xdomain build option is used, then the value of this option "
+			+ "will be used for the path to Dojo modules. The dijit and dojox paths will be assumed "
+			+ "to be sibilings of this path. The xdDojoPath should end in '/dojo'."
 	}
 };
 
@@ -165,6 +172,11 @@ function release(){
 		var fileName = dojoReleaseDir + result[i].layerName;
 		var fileContents = result[i].contents;
 		
+		//Burn in xd path for dojo if requested, and only do this in dojo.xd.js.
+		if(layerName.match(/dojo\.xd\.js/) && kwArgs.xdDojoPath){
+			fileContents = buildUtilXd.setXdDojoConfig(fileContents, kwArgs.xdDojoPath);
+		}
+
 		//Flatten resources 
 		//FIXME: Flatten resources. Only do the top level flattening for bundles
 		//in the layer files. How to do this for layers? only do one nls file for
@@ -175,9 +187,10 @@ function release(){
 
 		//Save uncompressed file.
 		var uncompressedFileName = fileName + ".uncompressed.js";
-		fileUtil.saveFile(uncompressedFileName, layerLegalText + fileContents);
-		if(kwArgs.loader == "xdomain" && !layerName.match(/dojo\.js(\.xd\.js)?/)){
-			var xdContents = buildUtilXd.makeXdContents(layerLegalText + fileContents, prefixes);
+		var uncompressedContents = layerLegalText + fileContents;
+		fileUtil.saveFile(uncompressedFileName, uncompressedContents);
+		if(kwArgs.loader == "xdomain" && !layerName.match(/dojo(\.xd)?\.js/)){
+			var xdContents = buildUtilXd.makeXdContents(uncompressedContents, prefixes);
 			fileUtil.saveFile(uncompressedFileName.replace(/\.js$/, ".xd.js"), xdContents);
 				
 		}
@@ -197,7 +210,7 @@ function release(){
 		//Save compressed file.
 		var compresedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, true);
 		fileUtil.saveFile(fileName, compresedContents);
-		if(kwArgs.loader == "xdomain" && !layerName.match(/dojo\.js(\.xd\.js)?/)){
+		if(kwArgs.loader == "xdomain" && !layerName.match(/dojo(\.xd)?\.js/)){
 			xdContents = buildUtilXd.makeXdContents(compresedContents, prefixes);
 			fileUtil.saveFile(fileName.replace(/\.js$/, ".xd.js"), xdContents);
 		}

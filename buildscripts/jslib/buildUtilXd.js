@@ -5,22 +5,33 @@ buildUtilXd.setXdDojoConfig = function(/*String*/fileContents, /*String*/url){
 	//summary: sets sets up xdomain loading for a particular URL.
 	//parameters:
 	//		fileContents: be a built dojo.js (can be uncompressed or compressed).
-	//		url: value should include the /src path for the xdomain dojo.
-	//			Example: "http://some.domain.com/dojo-xdversion/src" (no ending slash)
+	//		url: value should be the url to the dojo directory that contains dojo.xd.js.
+	//			Example: "http://some.domain.com/dojo" (no ending slash)
 	//This function will inject some contents after the dojo.registerModulePath() definition.
 	//The contents of fileName should have been a dojo.js that includes the contents
-	//of loader_xd.js (specify -DdojoLoader=xdomain in the build command).
+	//of loader_xd.js (specify loader=xdomain in the build command).
 
-
-	//This regexp is not very robust. It will break if dojo.registerModulePath definition
+	//This code is not very robust. It will break if dojo.registerModulePath definition
 	//changes to anything more advanced.
-	var insertionRegExp = /(dojo\.registerModulePath\s*=\s*function.*\{[^}]*};?)/;
+	var match = fileContents.match(/(dojo\.registerModulePath\s*=\s*function.*\{)/);
 	
-	return fileContents.replace(insertionRegExp, "$1\nif(typeof djConfig[\"useXDomain\"] == \"undefined\"){"
+	//Find the next two } braces and in inject code after that.
+	var endIndex = fileContents.indexOf("}", match.index);
+	endIndex = fileContents.indexOf("}", endIndex + 1);
+	if(fileContents.charAt(endIndex + 1) == ";"){
+		endIndex += 1;
+	}
+	endIndex +=1;
+
+	var lineSeparator = fileUtil.getLineSeparator();
+	return fileContents.substring(0, endIndex)
+		+ lineSeparator
+		+ "if(typeof djConfig[\"useXDomain\"] == \"undefined\"){"
 		+ "djConfig.useXDomain = true;};\ndojo.registerModulePath(\"dojo\", \""
 		+ url
-		+ "\");\n"
-	);
+		+ "\");"
+		+ lineSeparator
+		+ fileContents.substring(endIndex, fileContents.length);
 }
 
 buildUtilXd.xdgen = function(/*String*/prefixName, /*String*/prefixPath, /*Array*/prefixes){

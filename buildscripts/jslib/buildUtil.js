@@ -190,7 +190,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 	//Add the xd version of dojo.js to the build list, if it is wanted.
 	if(dojoLoader == "xdomain"){
 	dependencies.layers.splice(1, 0, {
-			name: "dojo.js.xd.js",
+			name: "dojo.xd.js",
 			dependencies: [
 				"dojo._base"
 			]
@@ -212,7 +212,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 
 			if(layer.name == "dojo.js"){
 				buildUtil.includeLoaderFiles("default", hostenvType);
-			}else if(layer.name == "dojo.js.xd.js"){
+			}else if(layer.name == "dojo.xd.js"){
 				//Clear out dojo._base so we load it again
 				dojo._loadedModules = {};
 				buildUtil.includeLoaderFiles("xdomain", hostenvType);
