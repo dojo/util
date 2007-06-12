@@ -22,13 +22,9 @@ buildUtil.includeLoaderFiles = function(/*String*/dojoLoader, /*String or Array*
 	dojo._loadedUrls.push("jslib/dojoGuardStart.jsfrag");
 	dojo._loadedUrls.push("../../dojo/_base/_loader/bootstrap.js");
 	
-	if(dojoLoader == "default"){
+	if(dojoLoader == "default" || dojoLoader=="xdomain"){
 		dojo._loadedUrls.push("../../dojo/_base/_loader/loader.js");
-	}else if(dojoLoader=="xdomain"){
-		dojo._loadedUrls.push("../../dojo/_base/_loader/loader.js");
-		dojo._loadedUrls.push("../../dojo/_base/_loader/loader_xd.js");
 	}
-	dojo._loadedUrls.push("jslib/dojoGuardEnd.jsfrag");
 
 	if(hostenvType.constructor == Array){
 		for(var x=0; x<hostenvType.length; x++){
@@ -38,6 +34,15 @@ buildUtil.includeLoaderFiles = function(/*String*/dojoLoader, /*String or Array*
 	}else{
 		dojo._loadedUrls.push("../../dojo/_base/_loader/hostenv_"+hostenvType+".js");
 	}
+	
+	//Need to add the xd loader after hostenv, since in browser, some extra djConfig
+	//parameters are created from the script tag in hostenv_browser, so to get an accurate
+	//view of djConfig, need to wait until after hostenv.
+	if(dojoLoader=="xdomain"){
+		dojo._loadedUrls.push("../../dojo/_base/_loader/loader_xd.js");
+	}
+
+	dojo._loadedUrls.push("jslib/dojoGuardEnd.jsfrag");
 }
 
 buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array*/hostenvType, /*boolean?*/isWebBuild){
