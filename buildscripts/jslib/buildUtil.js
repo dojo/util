@@ -192,7 +192,8 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 	dependencies.layers.splice(1, 0, {
 			name: "dojo.xd.js",
 			dependencies: [
-				"dojo._base"
+				"dojo._base",
+				"dojo.i18n"
 			]
 		});
 	}
