@@ -43,12 +43,6 @@ buildUtil.includeLoaderFiles = function(/*String*/dojoLoader, /*String or Array*
 
 buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array*/hostenvType, /*boolean?*/isWebBuild){
 	//summary: Main function that traces the files that are needed for a give list of dependencies.
-	if(!isWebBuild){
-		djConfig = {
-			baseRelativePath: "../../dojo/"
-			// isDebug: true
-		};
-	}
 
 	if(!dependencies){
 		dependencies = [
@@ -61,119 +55,6 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		dojoLoader = "default";
 	}
 
-	if(!isWebBuild){		
-		load("../../dojo/_base/_loader/bootstrap.js");
-		load("../../dojo/_base/_loader/loader.js");
-		load("../../dojo/_base/_loader/hostenv_rhino.js");
-		dojo.global = {};
-	}
-
-	if(!hostenvType){
-		hostenvType = "browser";
-	}
-
-	if(dependencies["prefixes"]){
-		var tmp = dependencies.prefixes;
-		for(var x=0; x<tmp.length; x++){
-			dojo.registerModulePath(tmp[x][0], tmp[x][1]);
-		}
-	}
-
-	dojo._name = hostenvType;
-	if(hostenvType == "browser"){
-		//Make sure we setup the env so that dojo
-		//thinks we are running in a browser.
-		dojo.isBrowser = true;
-	}
-	
-	//Override dojo.provide to get a list of resource providers.
-	var currentProvideList = [];
-	dojo._provide = dojo.provide;
-	dojo.provide = function(resourceName){
-		currentProvideList.push(resourceName);
-		dojo._provide(resourceName);
-	}
-	
-	function removeComments(contents){
-		// if we get the contents of the file from Rhino, it might not be a JS
-		// string, but rather a Java string, which will cause the replace() method
-		// to bomb.
-		contents = new String((!contents) ? "" : contents);
-		// clobber all comments
-		contents = contents.replace( /^(.*?)\/\/(.*)$/mg , "$1");
-		contents = contents.replace( /(\n)/mg , "__DOJONEWLINE");
-		contents = contents.replace( /\/\*(.*?)\*\//g , "");
-		return contents.replace( /__DOJONEWLINE/mg , "\n");
-	}
-	
-	// over-write dojo.eval to prevent actual loading of subsequent files
-	dojo._oldEval = dojo["eval"];
-	dojo["eval"] = function(){ return true; }
-	var old_load = load;
-	load = function(uri){
-		try{
-			var text = removeComments((isWebBuild ? dojo._getText(uri) : fileUtil.readFile(uri)));
-			var requires = dojo._getRequiresAndProvides(text);
-			eval(requires.join(";"));
-			dojo._loadedUrls.push(uri);
-			dojo._loadedUrls[uri] = true;
-			var delayRequires = dojo._getDelayRequiresAndProvides(text);
-			eval(delayRequires.join(";"));
-		}catch(e){
-			if(isWebBuild){
-				dojo.debug("error loading uri: " + uri + ", exception: " + e);
-			}else{
-				java.lang.System.err.println("error loading uri: " + uri + ", exception: " + e);
-				quit(-1);
-			}
-		}
-		return true;
-	}
-	
-	if(isWebBuild){
-		dojo._oldLoadUri = dojo._loadUri;
-		dojo._loadUri = load;
-	}
-	
-	dojo._getRequiresAndProvides = function(contents){
-		// FIXME: should probably memoize this!
-		if(!contents){ return []; }
-	
-		// check to see if we need to load anything else first. Ugg.
-		var deps = [];
-		var tmp;
-		RegExp.lastIndex = 0;
-		var testExp = /dojo.(require|platformRequire|provide)\([\w\W]*?\)/mg;
-		while((tmp = testExp.exec(contents)) != null){
-			deps.push(tmp[0]);
-		}
-		
-		//If there is a dojo.requireLocalization() call, make sure to add dojo.i18n
-		if(contents.match(/dojo\.requireLocalization\(.*?\)/)){
-			deps.push('dojo.require("dojo.i18n")');
-		}
-
-		return deps;
-	}
-	
-	dojo._getDelayRequiresAndProvides = function(contents){
-		// FIXME: should probably memoize this!
-		if(!contents){ return []; }
-	
-		// check to see if we need to load anything else first. Ugg.
-		var deps = [];
-		var tmp;
-		RegExp.lastIndex = 0;
-		var testExp = /dojo.(requireAfterIf|requireIf)\([\w\W]*?\)/mg;
-		while((tmp = testExp.exec(contents)) != null){
-			deps.push(tmp[0]);
-		}
-		return deps;
-	}
-
-	if(dependencies["dojoLoaded"]){
-		dependencies["dojoLoaded"]();
-	}
 
 	//Now build the URI list, starting with the main dojo.js file
 	if(!dependencies["layers"]){
@@ -194,17 +75,6 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		});
 	}
 
-	//Add the xd version of dojo.js to the build list, if it is wanted.
-	if(dojoLoader == "xdomain"){
-	dependencies.layers.splice(1, 0, {
-			name: "dojo.xd.js",
-			dependencies: [
-				"dojo._base",
-				"dojo.i18n"
-			]
-		});
-	}
-
 	currentProvideList = [];
 	var result = [];
 	var layers = dependencies["layers"];
@@ -215,61 +85,208 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		//Set up a lookup table for the layer URIs based on layer file name.
 		var namedLayerUris = {};
 				
-		for(var i = 0; i < layerCount; i++){
-			var layer = layers[i];
-
-			dojo._loadedModules = {};
-			if(layer.name == "dojo.js"){
-				buildUtil.includeLoaderFiles("default", hostenvType);
-			}else if(layer.name == "dojo.xd.js"){
-				//Clear out dojo._base so we load it again
-				dojo._loadedModules = {};
-				buildUtil.includeLoaderFiles("xdomain", hostenvType);
-			}else if(!layer.name.match(/\.xd\.js$/)){
-				//Need to clear out dojo.i18n for the non-xd case.
-				//dojo.xd.js will automatically load it.
-				delete dojo.i18n;
+		//If xd build, cycle over the layers twice. Second time through
+		//are the xd files.
+		var endCount = layerCount;
+		if(dojoLoader == "xdomain"){
+			endCount = endCount * 2;
+		}
+		
+		for(var i = 0; i < endCount; i++){
+			var j = i;
+			var isXd = false;
+			if(i >= layerCount){
+				//Dealing with the xd files.
+				if(i == layerCount){
+					//Reset the dependencies.
+					namedLayerUris = {};
+				}
+				j = i - layerCount;
+				isXd = true;
+			}
+			var layer = layers[j];
+			var layerName = layers[j].name;
+			if(isXd){
+				layerName = layerName.replace(/\.js$/, ".xd.js");
 			}
 
+			//Add dojo.i18n to dojo.xd.js. Too complicated to dynamically load it in that case.
+			if(isXd && layerName == "dojo.xd.js"){
+				layer.dependencies.push("dojo.i18n");
+			}
+
+			if(!isWebBuild){
+				djConfig = {
+					baseRelativePath: "../../dojo/"
+					// isDebug: true
+				};
+			}
+
+			if(!isWebBuild){		
+				load("../../dojo/_base/_loader/bootstrap.js");
+				load("../../dojo/_base/_loader/loader.js");
+				load("../../dojo/_base/_loader/hostenv_rhino.js");
+				dojo.global = {};
+			}
+		
+			if(!hostenvType){
+				hostenvType = "browser";
+			}
+		
+			if(dependencies["prefixes"]){
+				var tmp = dependencies.prefixes;
+				for(var x=0; x<tmp.length; x++){
+					dojo.registerModulePath(tmp[x][0], tmp[x][1]);
+				}
+			}
+		
+			dojo._name = hostenvType;
+			if(hostenvType == "browser"){
+				//Make sure we setup the env so that dojo
+				//thinks we are running in a browser.
+				dojo.isBrowser = true;
+			}
+			
+			//Override dojo.provide to get a list of resource providers.
+			var currentProvideList = [];
+			dojo._provide = dojo.provide;
+			dojo.provide = function(resourceName){
+				currentProvideList.push(resourceName);
+				dojo._provide(resourceName);
+			}
+			
+			function removeComments(contents){
+				// if we get the contents of the file from Rhino, it might not be a JS
+				// string, but rather a Java string, which will cause the replace() method
+				// to bomb.
+				contents = new String((!contents) ? "" : contents);
+				// clobber all comments
+				contents = contents.replace( /^(.*?)\/\/(.*)$/mg , "$1");
+				contents = contents.replace( /(\n)/mg , "__DOJONEWLINE");
+				contents = contents.replace( /\/\*(.*?)\*\//g , "");
+				return contents.replace( /__DOJONEWLINE/mg , "\n");
+			}
+			
+			// over-write dojo.eval to prevent actual loading of subsequent files
+			dojo._oldEval = dojo["eval"];
+			dojo["eval"] = function(){ return true; }
+			var old_load = load;
+			load = function(uri){
+				try{
+					var text = removeComments((isWebBuild ? dojo._getText(uri) : fileUtil.readFile(uri)));
+					var requires = dojo._getRequiresAndProvides(text);
+					eval(requires.join(";"));
+					dojo._loadedUrls.push(uri);
+					dojo._loadedUrls[uri] = true;
+					var delayRequires = dojo._getDelayRequiresAndProvides(text);
+					eval(delayRequires.join(";"));
+				}catch(e){
+					if(isWebBuild){
+						dojo.debug("error loading uri: " + uri + ", exception: " + e);
+					}else{
+						java.lang.System.err.println("error loading uri: " + uri + ", exception: " + e);
+						quit(-1);
+					}
+				}
+				return true;
+			}
+			
+			if(isWebBuild){
+				dojo._oldLoadUri = dojo._loadUri;
+				dojo._loadUri = load;
+			}
+			
+			dojo._getRequiresAndProvides = function(contents){
+				// FIXME: should probably memoize this!
+				if(!contents){ return []; }
+			
+				// check to see if we need to load anything else first. Ugg.
+				var deps = [];
+				var tmp;
+				RegExp.lastIndex = 0;
+				var testExp = /dojo.(require|platformRequire|provide)\([\w\W]*?\)/mg;
+				while((tmp = testExp.exec(contents)) != null){
+					deps.push(tmp[0]);
+				}
+				
+				//If there is a dojo.requireLocalization() call, make sure to add dojo.i18n
+				if(contents.match(/dojo\.requireLocalization\(.*?\)/)){
+					deps.push('dojo.require("dojo.i18n")');
+				}
+		
+				return deps;
+			}
+			
+			dojo._getDelayRequiresAndProvides = function(contents){
+				// FIXME: should probably memoize this!
+				if(!contents){ return []; }
+			
+				// check to see if we need to load anything else first. Ugg.
+				var deps = [];
+				var tmp;
+				RegExp.lastIndex = 0;
+				var testExp = /dojo.(requireAfterIf|requireIf)\([\w\W]*?\)/mg;
+				while((tmp = testExp.exec(contents)) != null){
+					deps.push(tmp[0]);
+				}
+				return deps;
+			}
+		
+			if(dependencies["dojoLoaded"]){
+				dependencies["dojoLoaded"]();
+			}
+		
+		
+			if(layerName == "dojo.js"){
+				buildUtil.includeLoaderFiles("default", hostenvType);
+			}else if(layerName == "dojo.xd.js"){
+				buildUtil.includeLoaderFiles("xdomain", hostenvType);
+			}
+		
 			//Set up list of module URIs that are already defined for this layer's
-			//layer dependencies.
+			//layer dependencies. Always include the dojo.js layer uris. dojo.js could
+			//have more than _base, and in xdomain, it has dojo.i18n.
 			var layerUris = [];
+			if(layer.name != "dojo.js"){
+				layerUris = layerUris.concat(namedLayerUris["dojo.js"]);
+			}
+			
 			if(layer["layerDependencies"]){
 				for(var j = 0; j < layer.layerDependencies.length; j++){
 					if(namedLayerUris[layer.layerDependencies[j]]){
-						layerUris.concat(namedLayerUris[layer.layerDependencies[j]]);
+						layerUris = layerUris.concat(namedLayerUris[layer.layerDependencies[j]]);
 					}
 				}
 			}
-			
+
 			//Get the final list of dependencies in this layer
 			var depList = buildUtil.determineUriList(layer.dependencies, layerUris, dependencies["filters"]); 
 			
 			//Store the layer URIs that are in this file as well as all files it depends on.
 			namedLayerUris[layer.name] = layerUris.concat(depList);
-
+		
 			//Add to the results object.
 			result[i] = {
-				layerName: layer.name,
+				layerName: layerName,
 				depList: depList,
 				provideList: currentProvideList
 			}
-
+		
 			//Reset for another run through the loop.
 			currentProvideList = []; 
-		} 
-	}
-
-	if(isWebBuild){
-		dojo._loadUri = dojo._oldLoadUri;
-	}else{
-		load = old_load; // restore the original load function
-		dojo["eval"] = dojo._oldEval; // restore the original dojo.eval function
-
-		var djGlobal = dojo.global;
-		djGlobal['djConfig'] = undefined;
-
-		delete dojo;
+		
+			if(isWebBuild){
+				dojo._loadUri = dojo._oldLoadUri;
+			}else{
+				load = old_load; // restore the original load function
+				dojo["eval"] = dojo._oldEval; // restore the original dojo.eval function
+		
+				var djGlobal = dojo.global;
+				djGlobal['djConfig'] = undefined;
+		
+				delete dojo;
+			}
+		}
 	}
 
 	return result; //Object with properties: name (String), depList (Array) and provideList (Array)
@@ -304,18 +321,20 @@ buildUtil.determineUriList = function(/*Array*/dependencies, /*Array*/layerUris,
 					if(curi.match(filters[i])){
 						continue uris;
 					}
-
-					//If the uri is already accounted for in another
-					//layer, skip it.
-					if(layerUris){
-						for(var i = 0; i < layerUris.length; i++){ 
-							if(curi == layerUris[i]){ 
-											continue uris; 
-							} 
-						} 
-					} 
 				}
 			}
+			
+			//If the uri is already accounted for in another
+			//layer, skip it.
+			if(layerUris){
+				for(var i = 0; i < layerUris.length; i++){ 
+					if(curi == layerUris[i]){ 
+						continue uris; 
+					} 
+				} 
+			} 
+
+			//No filter or layerUri matches, so it is good to keep.
 			depList.push(curi);
 		}
 	}

@@ -182,10 +182,6 @@ function release(){
 		var ignoreName = layerName.replace(/\.\.\//g, "");
 		optimizeIgnoreString += (optimizeIgnoreString ? "|" : "") + buildUtil.regExpEscape(ignoreName) + "$";
 		optimizeIgnoreString += "|" + buildUtil.regExpEscape(ignoreName + ".uncompressed.js") + "$";
-		if(kwArgs.loader == "xdomain"){
-			optimizeIgnoreString += "|" + buildUtil.regExpEscape(ignoreName.replace(/\.js$/, ".xd.js")) + "$";
-			optimizeIgnoreString += "|" + buildUtil.regExpEscape((ignoreName + ".uncompressed.js").replace(/\.js$/, ".xd.js")) + "$";
-		}
 		
 		//Burn in xd path for dojo if requested, and only do this in dojo.xd.js.
 		if(layerName.match(/dojo\.xd\.js/) && kwArgs.xdDojoPath){
@@ -203,12 +199,10 @@ function release(){
 		//Save uncompressed file.
 		var uncompressedFileName = fileName + ".uncompressed.js";
 		var uncompressedContents = layerLegalText + fileContents;
-		fileUtil.saveFile(uncompressedFileName, uncompressedContents);
-		if(kwArgs.loader == "xdomain" && !layerName.match(/dojo(\.xd)?\.js/)){
-			var xdContents = buildUtilXd.makeXdContents(uncompressedContents, prefixes);
-			fileUtil.saveFile(uncompressedFileName.replace(/\.js$/, ".xd.js"), xdContents);
-				
+		if(layerName.match(/\.xd\.js$/) && !layerName.match(/dojo(\.xd)?\.js/)){
+			uncompressedContents = buildUtilXd.makeXdContents(uncompressedContents, prefixes);
 		}
+		fileUtil.saveFile(uncompressedFileName, uncompressedContents);
 
 		//Intern strings if desired. Do this before compression, since, in the xd case,
 		//"dojo" gets converted to a shortened name.
@@ -223,17 +217,17 @@ function release(){
 		}
 
 		//Save compressed file.
-		var compresedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, true);
-		fileUtil.saveFile(fileName, compresedContents);
-		if(kwArgs.loader == "xdomain" && !layerName.match(/dojo(\.xd)?\.js/)){
-			xdContents = buildUtilXd.makeXdContents(compresedContents, prefixes);
-			fileUtil.saveFile(fileName.replace(/\.js$/, ".xd.js"), xdContents);
+		var compressedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, true);
+		if(layerName.match(/\.xd\.js$/) && !layerName.match(/dojo(\.xd)?\.js/)){
+			compressedContents = buildUtilXd.makeXdContents(compressedContents, prefixes);
 		}
+		fileUtil.saveFile(fileName, compressedContents);
 
-		//Remove _base from the release.
-		fileUtil.deleteFile(dojoReleaseDir + "_base");
-		fileUtil.deleteFile(dojoReleaseDir + "_base.js");
 	}
+
+	//Remove _base from the release.
+	fileUtil.deleteFile(dojoReleaseDir + "_base");
+	fileUtil.deleteFile(dojoReleaseDir + "_base.js");
 
 	//Save the dependency lists to build.txt
 	var buildText = "Files baked into this build:" + lineSeparator;
