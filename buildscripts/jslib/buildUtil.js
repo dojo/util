@@ -147,6 +147,12 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		while((tmp = testExp.exec(contents)) != null){
 			deps.push(tmp[0]);
 		}
+		
+		//If there is a dojo.requireLocalization() call, make sure to add dojo.i18n
+		if(contents.match(/dojo\.requireLocalization\(.*?\)/)){
+			deps.push('dojo.require("dojo.i18n")');
+		}
+
 		return deps;
 	}
 	
@@ -212,12 +218,17 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 		for(var i = 0; i < layerCount; i++){
 			var layer = layers[i];
 
+			dojo._loadedModules = {};
 			if(layer.name == "dojo.js"){
 				buildUtil.includeLoaderFiles("default", hostenvType);
 			}else if(layer.name == "dojo.xd.js"){
 				//Clear out dojo._base so we load it again
 				dojo._loadedModules = {};
 				buildUtil.includeLoaderFiles("xdomain", hostenvType);
+			}else if(!layer.name.match(/\.xd\.js$/)){
+				//Need to clear out dojo.i18n for the non-xd case.
+				//dojo.xd.js will automatically load it.
+				delete dojo.i18n;
 			}
 
 			//Set up list of module URIs that are already defined for this layer's
@@ -423,12 +434,6 @@ buildUtil.createLayerContents = function(/*Array*/depList, /*Array*/provideList,
 		//Make sure we have a JS string and not a Java string by using new String().
 		dojoContents += fileUtil.readFile(depList[i]) + "\r\n";
 	}
-	
-	// dojo.requireLocalization is a special case as it pulls in dojo.i18n at runtime
-	if(dojoContents.match(buildUtil.globalRequireLocalizationRegExp)){
-		depList.push("../../dojo/i18n.js");
-		dojoContents += fileUtil.readFile(depList[depList.length-1]);
-	}
 
 	//Construct a string of all the dojo.provide statements.
 	//This string will be used to construct the regexp that will be
@@ -447,7 +452,7 @@ buildUtil.createLayerContents = function(/*Array*/depList, /*Array*/provideList,
 	//If we have a string for a regexp, do the dojo.require() and requireIf() removal now.
 	if(depRegExpString){
 		//Make to escape regexp-sensitive characters
-		depRegExpString = depRegExpString.replace(/([\.\*])/g, "\\$1");
+		depRegExpString = buildUtil.regExpEscape(depRegExpString);
 		//Build the regexp
 		var depRegExp = new RegExp("dojo\\.(require|requireIf)\\(.*?(" + depRegExpString + ")\\)(;?)", "g");
 		dojoContents = dojoContents.replace(depRegExp, "");
@@ -735,6 +740,11 @@ buildUtil.interningRegexpMagic = function(resourceContent, srcRoot, prefixes, sk
 	});
 }
 
+buildUtil.regExpEscape = function(/*String*/value){
+	//summary: Makes sure regexp-sensitive characters in a string are escaped correctly.
+	return value.replace(/([\.\*\/])/g, "\\$1");
+}
+
 buildUtil.jsEscape = function(/*string*/str){
 //summary:
 //	Adds escape sequences for non-visual characters, double quote and backslash
@@ -788,7 +798,7 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 		var script = context.compileString(fileContents, fileName, 1, null);
 		if(doCompression){
 			//Apply compression using custom compression call in Dojo-modified rhino.
-			fileContents = new String(context.compressScript(script, 0, fileContents, 1));
+			fileContents = new String(context.compressScript(script, 0, fileContents, 1)).replace(/[\r\n]/g, "");
 		}else{
 			//Strip comments
 			fileContents = new String(context.decompileScript(script, 0));
@@ -809,7 +819,7 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 	return copyright + fileContents;
 }
 
-buildUtil.stripComments = function(/*String*/startDir, /*boolean*/suppressDojoCopyright, /*boolean*/doCompress){
+buildUtil.stripComments = function(/*String*/startDir, /*RegeExp*/optimizeIgnoreRegExp, /*boolean*/suppressDojoCopyright, /*boolean*/doCompress){
 	//summary: strips the JS comments from all the files in "startDir", and all subdirectories.
 	var copyright = suppressDojoCopyright ? "" : (fileUtil.readFile("copyright.txt") + fileUtil.getLineSeparator());
 	var fileList = fileUtil.getFilteredFileList(startDir, /\.js$/, true);
@@ -818,11 +828,11 @@ buildUtil.stripComments = function(/*String*/startDir, /*boolean*/suppressDojoCo
 			//Don't process dojo.js since it has already been processed.
 			//Don't process dojo.js.uncompressed.js because it is huge.
 			//Don't process anything that might be in a buildscripts folder (only a concern for webbuild.sh)
-			if(!fileList[i].match(/dojo\.js$/)
-				&& !fileList[i].match(/dojo\.js\.uncompressed\.js$/)
+			if(!fileList[i].match(optimizeIgnoreRegExp)
 				&& !fileList[i].match(/buildscripts/)
+				&& !fileList[i].match(/nls/)
 				&& !fileList[i].match(/tests\//)){
-				print("Stripping comments from file: " + fileList[i]);
+				logger.trace((doCompress ? "Shrinksafing file: " : "Stripping comments from file: ") + fileList[i]);
 				
 				//Read in the file. Make sure we have a JS string.
 				var fileContents = fileUtil.readFile(fileList[i]);
@@ -831,7 +841,7 @@ buildUtil.stripComments = function(/*String*/startDir, /*boolean*/suppressDojoCo
 				try{
 					fileContents = buildUtil.optimizeJs(fileList[i], fileContents, copyright, doCompress);
 				}catch(e){
-					print("Could not strip comments for file: " + fileList[i] + ", error: " + e);
+					logger.error("Could not strip comments for file: " + fileList[i] + ", error: " + e);
 				}
 
 				//Write out the file with appropriate copyright.

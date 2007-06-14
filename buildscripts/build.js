@@ -50,6 +50,12 @@ var DojoBuildOptions = {
 		defaultValue: true,
 		helpText: "Turn on or off widget template/dojo.uri.cache() file interning."
 	},
+	"optimize": {
+		defaultValue: "",
+		helpText: "Specifies how to optimize module files. If \"comments\" is specified, "
+			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
+			+ "the Dojo compressor will be used on the files."
+	},
 	"copyTests": {
 		defaultValue: true,
 		helpText: "Turn on or off copying of test files."
@@ -58,7 +64,6 @@ var DojoBuildOptions = {
 		defaultValue: logger.TRACE,
 		helpText: "Sets the logging verbosity. See jslib/logger.js for possible integer values."
 	},
-	
 	"xdDojoPath": {
 		defaultValue: "",
 		helpText: "If the loader=xdomain build option is used, then the value of this option "
@@ -167,10 +172,20 @@ function release(){
 	//Save the build layers. The first layer is dojo.js.
 	var layerLegalText = copyrightText + buildNoticeText;
 	var dojoReleaseDir = kwArgs.releaseDir + "/dojo/";
+	var optimizeIgnoreString = "";
 	for(var i = 0; i < result.length; i++){
 		var layerName = result[i].layerName;
 		var fileName = dojoReleaseDir + result[i].layerName;
 		var fileContents = result[i].contents;
+		
+		//Build up string of files to ignore for the directory optimization step
+		var ignoreName = layerName.replace(/\.\.\//g, "");
+		optimizeIgnoreString += (optimizeIgnoreString ? "|" : "") + buildUtil.regExpEscape(ignoreName) + "$";
+		optimizeIgnoreString += "|" + buildUtil.regExpEscape(ignoreName + ".uncompressed.js") + "$";
+		if(kwArgs.loader == "xdomain"){
+			optimizeIgnoreString += "|" + buildUtil.regExpEscape(ignoreName.replace(/\.js$/, ".xd.js")) + "$";
+			optimizeIgnoreString += "|" + buildUtil.regExpEscape((ignoreName + ".uncompressed.js").replace(/\.js$/, ".xd.js")) + "$";
+		}
 		
 		//Burn in xd path for dojo if requested, and only do this in dojo.xd.js.
 		if(layerName.match(/dojo\.xd\.js/) && kwArgs.xdDojoPath){
@@ -231,8 +246,9 @@ function release(){
 
 	//Run string interning, xd file building, etc.. on the prefix dirs in the
 	//release area.
+	var ignoreRegExp = new RegExp(optimizeIgnoreString);
 	for(var i = 0; i < prefixes.length; i++){
-		_optimizeReleaseDirs(prefixes[i][0], prefixes[i][1], kwArgs);
+		_optimizeReleaseDirs(prefixes[i][0], prefixes[i][1], kwArgs, ignoreRegExp);
 	}
 	
 	//Copy over DOH if tests where copied.
@@ -268,7 +284,11 @@ function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kw
 
 
 //********* Start _optimizeReleaseDirs *********
-function _optimizeReleaseDirs(/*String*/prefixName, /*String*/prefixPath, /*Object*/kwArgs){
+function _optimizeReleaseDirs(
+	/*String*/prefixName, 
+	/*String*/prefixPath, 
+	/*Object*/kwArgs,
+	/*RegExp*/optimizeIgnoreRegExp){
 	//summary: runs intern strings, i18n bundle flattening and xdomain file generation
 	//on the files in a release directory, if those options are enabled.
 	var releasePath = kwArgs.releaseDir + "/"  + prefixName.replace(/\./g, "/");
@@ -288,6 +308,13 @@ function _optimizeReleaseDirs(/*String*/prefixName, /*String*/prefixPath, /*Obje
 	}
 
 	//FIXME: call stripComments. Maybe rename, inline with optimize? need build options too.
+	if(kwArgs.optimize){
+		if(kwArgs.optimize == "comments"){
+			buildUtil.stripComments(releasePath, optimizeIgnoreRegExp, false, false);
+		}else if(kwArgs.optimize == "shrinksafe"){
+			buildUtil.stripComments(releasePath, optimizeIgnoreRegExp, false, true);
+		}
+	}
 }
 //********* End _optimizeReleaseDirs *********
 
