@@ -2,9 +2,6 @@ dependencies = {
 	layers: [
 		{
 			name: "../dijit/dijit.js",
-			layerDependencies: [
-			"dojo.js"
-			],
 			dependencies: [
 				"dijit.dijit"
 			]

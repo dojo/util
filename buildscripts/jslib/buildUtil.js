@@ -266,12 +266,14 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 			namedLayerUris[layer.name] = layerUris.concat(depList);
 		
 			//Add to the results object.
-			result[i] = {
-				layerName: layerName,
-				depList: depList,
-				provideList: currentProvideList
+			if(!layer["discard"]){
+				result.push({
+					layerName: layerName,
+					depList: depList,
+					provideList: currentProvideList
+				});
 			}
-		
+
 			//Reset for another run through the loop.
 			currentProvideList = []; 
 		
