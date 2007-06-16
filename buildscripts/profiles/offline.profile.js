@@ -1,7 +1,7 @@
 dependencies = {
 	layers: [
 		{
-			name: "../dojox/offline.js",
+			name: "../dojox/off/offline.js",
 			layerDependencies: [
 			],
 			dependencies: [
