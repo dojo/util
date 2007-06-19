@@ -54,7 +54,17 @@ var DojoBuildOptions = {
 		defaultValue: "",
 		helpText: "Specifies how to optimize module files. If \"comments\" is specified, "
 			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
-			+ "the Dojo compressor will be used on the files."
+			+ "the Dojo compressor will be used on the files, and line returns will be removed. "
+			+ "If \"shrinksafe.lineReturns\" is specified, then the Dojo compressor will be used "
+			+ "on the files, and line returns will be preserved."
+	},
+	"layerOptimize": {
+		defaultValue: "shrinksafe",
+		helpText: "Specifies how to optimize the layer files. If \"comments\" is specified, "
+			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
+			+ "the Dojo compressor will be used on the files, and line returns will be removed. "
+			+ "If \"shrinksafe.lineReturns\" is specified, then the Dojo compressor will be used "
+			+ "on the layer files, and line returns will be preserved."
 	},
 	"copyTests": {
 		defaultValue: true,
@@ -217,7 +227,7 @@ function release(){
 		}
 
 		//Save compressed file.
-		var compressedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, true);
+		var compressedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, kwArgs.layerOptimize);
 		if(layerName.match(/\.xd\.js$/) && !layerName.match(/dojo(\.xd)?\.js/)){
 			compressedContents = buildUtilXd.makeXdContents(compressedContents, prefixes);
 		}
@@ -303,11 +313,7 @@ function _optimizeReleaseDirs(
 
 	//FIXME: call stripComments. Maybe rename, inline with optimize? need build options too.
 	if(kwArgs.optimize){
-		if(kwArgs.optimize == "comments"){
-			buildUtil.stripComments(releasePath, optimizeIgnoreRegExp, false, false);
-		}else if(kwArgs.optimize == "shrinksafe"){
-			buildUtil.stripComments(releasePath, optimizeIgnoreRegExp, false, true);
-		}
+		buildUtil.stripComments(releasePath, optimizeIgnoreRegExp, false, kwArgs.optimize);
 	}
 }
 //********* End _optimizeReleaseDirs *********

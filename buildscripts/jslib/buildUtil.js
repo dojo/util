@@ -806,7 +806,7 @@ buildUtil.convertArrayToObject = function(/*Array*/ary){
 	return result; //Object
 }
 
-buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileContents, /*String*/copyright, /*boolean*/doCompression){
+buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileContents, /*String*/copyright, /*String*/optimizeType){
 	//summary: either strips comments from string or compresses it.
 	copyright = copyright || "";
 
@@ -817,10 +817,13 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 		context.setOptimizationLevel(-1);
 		
 		var script = context.compileString(fileContents, fileName, 1, null);
-		if(doCompression){
+		if(optimizeType.indexOf("shrinksafe") == 0){
 			//Apply compression using custom compression call in Dojo-modified rhino.
-			fileContents = new String(context.compressScript(script, 0, fileContents, 1)).replace(/[\r\n]/g, "");
-		}else{
+			fileContents = new String(context.compressScript(script, 0, fileContents, 1));
+			if(optimizeType.indexOf(".lineReturns") == -1){
+				fileContents = fileContents.replace(/[\r\n]/g, "");
+			}
+		}else if(optimizeType == "comments"){
 			//Strip comments
 			fileContents = new String(context.decompileScript(script, 0));
 			//Replace the spaces with tabs.
@@ -840,7 +843,7 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 	return copyright + fileContents;
 }
 
-buildUtil.stripComments = function(/*String*/startDir, /*RegeExp*/optimizeIgnoreRegExp, /*boolean*/suppressDojoCopyright, /*boolean*/doCompress){
+buildUtil.stripComments = function(/*String*/startDir, /*RegeExp*/optimizeIgnoreRegExp, /*boolean*/suppressDojoCopyright, /*String*/optimizeType){
 	//summary: strips the JS comments from all the files in "startDir", and all subdirectories.
 	var copyright = suppressDojoCopyright ? "" : (fileUtil.readFile("copyright.txt") + fileUtil.getLineSeparator());
 	var fileList = fileUtil.getFilteredFileList(startDir, /\.js$/, true);
@@ -853,14 +856,14 @@ buildUtil.stripComments = function(/*String*/startDir, /*RegeExp*/optimizeIgnore
 				&& !fileList[i].match(/buildscripts/)
 				&& !fileList[i].match(/nls/)
 				&& !fileList[i].match(/tests\//)){
-				logger.trace((doCompress ? "Shrinksafing file: " : "Stripping comments from file: ") + fileList[i]);
+				logger.trace((optimizeType.indexOf("shrinksafe") == 0 ? "Shrinksafing file: " : "Stripping comments from file: ") + fileList[i]);
 				
 				//Read in the file. Make sure we have a JS string.
 				var fileContents = fileUtil.readFile(fileList[i]);
 
 				//Do comment removal.
 				try{
-					fileContents = buildUtil.optimizeJs(fileList[i], fileContents, copyright, doCompress);
+					fileContents = buildUtil.optimizeJs(fileList[i], fileContents, copyright, optimizeType);
 				}catch(e){
 					logger.error("Could not strip comments for file: " + fileList[i] + ", error: " + e);
 				}

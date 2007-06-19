@@ -71,7 +71,7 @@ if(isInputOk){
 		}
 
 		//Compress code.
-		compressedContents = buildUtil.optimizeJs("dojo.js", contents, "", true);
+		compressedContents = buildUtil.optimizeJs("dojo.js", contents, "", "shrinksafe");
 
 		//Add copyright
 		var copyright = fileUtil.readFile("copyright.txt");
