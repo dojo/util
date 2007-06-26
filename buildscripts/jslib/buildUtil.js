@@ -701,25 +701,31 @@ buildUtil.internTemplateStrings = function(dependencies, srcRoot){
 
 buildUtil.internTemplateStringsInFile = function(resourceFile, srcRoot, prefixes, skiplist){
 	var resourceContent = fileUtil.readFile(resourceFile);
-	resourceContent = buildUtil.interningRegexpMagic(resourceContent, srcRoot, prefixes, skiplist);
+	resourceContent = buildUtil.interningRegexpMagic(resourceFile, resourceContent, srcRoot, prefixes, skiplist);
 	fileUtil.saveFile(resourceFile, resourceContent);
 }
 
-buildUtil.interningRegexpMagic = function(resourceContent, srcRoot, prefixes, skiplist){
+buildUtil.interningRegexpMagic = function(resourceFile, resourceContent, srcRoot, prefixes, skiplist){
+	var shownFileName = false;
 	return resourceContent.replace(buildUtil.interningGlobalDojoUriRegExp, function(matchString){
 		var parts = matchString.match(buildUtil.interningLocalDojoUriRegExp);
 
 		var filePath = "";
 		var resourceNsName = "";
 
-		logger.trace("Module match: " + parts[6] + " and " + parts[9]);
+		if(!shownFileName){
+			logger.trace("Interning strings for : " + resourceFile);
+			shownFileName = true;
+		}
+
+		//logger.trace("Module match: " + parts[6] + " and " + parts[9]);
 		filePath = buildUtil.makeResourceUri(parts[6], parts[9], srcRoot, prefixes);
 		resourceNsName = parts[6] + ':' + parts[9];		
 
 		if(!filePath || buildUtil.isValueInArray(resourceNsName, skiplist)){
-			logger.trace("Skip intern resource: " + filePath);
+			logger.trace("    skipping " + filePath);
 		}else{
-			logger.trace("Interning resource path: " + filePath);
+			logger.trace("    " + filePath);
 			//buildUtil.jsEscape will add starting and ending double-quotes.
 			var jsEscapedContent = buildUtil.jsEscape(fileUtil.readFile(filePath));
 			if(jsEscapedContent){
