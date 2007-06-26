@@ -839,7 +839,9 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 			if(optimizeType == "packer"){
 				buildUtil.setupPacker();
 
-				var base62 = false;
+				// var base62 = false;
+				// var shrink = true;
+				var base62 = true;
 				var shrink = true;
 				var packer = new Packer();
 				fileContents = packer.pack(fileContents, base62, shrink);
