@@ -56,7 +56,8 @@ var DojoBuildOptions = {
 			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
 			+ "the Dojo compressor will be used on the files, and line returns will be removed. "
 			+ "If \"shrinksafe.lineReturns\" is specified, then the Dojo compressor will be used "
-			+ "on the files, and line returns will be preserved."
+			+ "on the files, and line returns will be preserved. If \"packer\" is specified, "
+			+ "Then Dean Edwards' Packer will be used."
 	},
 	"layerOptimize": {
 		defaultValue: "shrinksafe",
@@ -64,7 +65,8 @@ var DojoBuildOptions = {
 			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
 			+ "the Dojo compressor will be used on the files, and line returns will be removed. "
 			+ "If \"shrinksafe.lineReturns\" is specified, then the Dojo compressor will be used "
-			+ "on the layer files, and line returns will be preserved."
+			+ "on the layer files, and line returns will be preserved. If \"packer\" is specified, "
+			+ "Then Dean Edwards' Packer will be used."
 	},
 	"copyTests": {
 		defaultValue: true,
@@ -227,6 +229,7 @@ function release(){
 		}
 
 		//Save compressed file.
+		logger.trace("Optimizing (" + kwArgs.layerOptimize + ") file: " + fileName);
 		var compressedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, kwArgs.layerOptimize);
 		if(layerName.match(/\.xd\.js$/) && !layerName.match(/dojo(\.xd)?\.js/)){
 			compressedContents = buildUtilXd.makeXdContents(compressedContents, prefixes);

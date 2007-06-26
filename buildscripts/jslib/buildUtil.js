@@ -811,11 +811,14 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 	copyright = copyright || "";
 
 	//Use rhino to help do minifying/compressing.
+	//Even when using Dean Edwards' Packer, run it through the custom rhino so
+	//that the source is formatted nicely for Packer's consumption (in particular get
+	//commas after function definitions).
 	var context = Packages.org.mozilla.javascript.Context.enter();
 	try{
 		// Use the interpreter for interactive input (copied this from Main rhino class).
 		context.setOptimizationLevel(-1);
-		
+
 		var script = context.compileString(fileContents, fileName, 1, null);
 		if(optimizeType.indexOf("shrinksafe") == 0){
 			//Apply compression using custom compression call in Dojo-modified rhino.
@@ -823,12 +826,22 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 			if(optimizeType.indexOf(".lineReturns") == -1){
 				fileContents = fileContents.replace(/[\r\n]/g, "");
 			}
-		}else if(optimizeType == "comments"){
+		}else if(optimizeType == "comments" || optimizeType == "packer"){
 			//Strip comments
 			fileContents = new String(context.decompileScript(script, 0));
-			//Replace the spaces with tabs.
-			//Ideally do this in the pretty printer rhino code.
-			fileContents = fileContents.replace(/    /g, "\t");
+			
+			if(optimizeType == "packer"){
+				buildUtil.setupPacker();
+
+				var base62 = false;
+				var shrink = true;
+				var packer = new Packer();
+				fileContents = packer.pack(fileContents, base62, shrink);
+			}else{
+				//Replace the spaces with tabs.
+				//Ideally do this in the pretty printer rhino code.
+				fileContents = fileContents.replace(/    /g, "\t");
+			}
 
 			//If this is an nls bundle, make sure it does not end in a ;
 			//Otherwise, bad things happen.
@@ -840,7 +853,19 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 		Packages.org.mozilla.javascript.Context.exit();
 	}
 
+
 	return copyright + fileContents;
+}
+
+
+buildUtil.setupPacker = function(){
+	//summary: loads the files needed to run Dean Edwards' Packer.
+	if(typeof(Packer) == "undefined"){
+		load("jslib/packer/base2.js");
+		load("jslib/packer/Packer.js");
+		load("jslib/packer/Words.js");
+
+	}
 }
 
 buildUtil.stripComments = function(/*String*/startDir, /*RegeExp*/optimizeIgnoreRegExp, /*boolean*/suppressDojoCopyright, /*String*/optimizeType){
@@ -856,7 +881,7 @@ buildUtil.stripComments = function(/*String*/startDir, /*RegeExp*/optimizeIgnore
 				&& !fileList[i].match(/buildscripts/)
 				&& !fileList[i].match(/nls/)
 				&& !fileList[i].match(/tests\//)){
-				logger.trace((optimizeType.indexOf("shrinksafe") == 0 ? "Shrinksafing file: " : "Stripping comments from file: ") + fileList[i]);
+				logger.trace("Optimizing (" + optimizeType + ") file: " + fileList[i]);
 				
 				//Read in the file. Make sure we have a JS string.
 				var fileContents = fileUtil.readFile(fileList[i]);
