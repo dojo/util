@@ -812,25 +812,37 @@ doh.run = function(){
 tests = doh;
 
 try{
-	dojo.platformRequire({
-		browser: ["doh._browserRunner"],
-		rhino: ["doh._rhinoRunner"],
-		spidermonkey: ["doh._rhinoRunner"]
-	});
-	var _shouldRequire = (dojo.isBrowser) ? (dojo.global == dojo.global["parent"]) : true;
-	if(_shouldRequire){
-		if(dojo.isBrowser){
-			dojo.addOnLoad(function(){
-				if(dojo.byId("testList")){
-					var _tm = ( (dojo.global.testModule && dojo.global.testModule.length) ? dojo.global.testModule : "dojo.tests.module");
-					dojo.forEach(_tm.split(","), dojo.require, dojo);
-					setTimeout(function(){
-						doh.run();
-					}, 500);
-				}
-			});
-		}else{
-			dojo.require("doh._base");
+	if(typeof dojo != "undefined"){
+		dojo.platformRequire({
+			browser: ["doh._browserRunner"],
+			rhino: ["doh._rhinoRunner"],
+			spidermonkey: ["doh._rhinoRunner"]
+		});
+		var _shouldRequire = (dojo.isBrowser) ? (dojo.global == dojo.global["parent"]) : true;
+		if(_shouldRequire){
+			if(dojo.isBrowser){
+				dojo.addOnLoad(function(){
+					if(dojo.byId("testList")){
+						var _tm = ( (dojo.global.testModule && dojo.global.testModule.length) ? dojo.global.testModule : "dojo.tests.module");
+						dojo.forEach(_tm.split(","), dojo.require, dojo);
+						setTimeout(function(){
+							doh.run();
+						}, 500);
+					}
+				});
+			}else{
+				dojo.require("doh._base");
+			}
+		}
+	}else{
+		if(
+			(typeof load == "function")&&
+			(	(typeof Packages == "function")||
+				(typeof Packages == "object")	)
+		){
+			throw new Error();
+		}else if(typeof load == "function"){
+			throw new Error();
 		}
 	}
 }catch(e){
