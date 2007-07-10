@@ -14,7 +14,8 @@
 	<property name="json" location="${root}/dojo/cldr/nls"/>
 
 	<!-- Arbitrary defaults. locales and currencies properties can be altered or eliminated to build the entire set -->
-	<property name="locales" value="en-au,en-ca,en-gb,en-us,de-de,es-es,fr-fr,it-it,pt-br,ko-kr,zh-tw,zh-cn,ja-jp"/>
+<!--
+	<property name="locales" value="en-au,en-ca,en-gb,en-us,de-de,es-es,fr-fr,it-it,pt-br,ko-kr,zh-tw,zh-cn,ja-jp"/>-->
 	<property name="currencies" value="GBP,USD,CAD,AUD,EUR,CHF,HKD,JPY"/>
 
 	<target name="-check-config"
