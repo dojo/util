@@ -6,7 +6,9 @@ list of locales may be specified as an ant property to limit the locales built.
 Currencies may also be specified, but a default list is included in the ant script.
 
 NOTE: it is currently necessary to perform a one-time installation of the Saxon XSLT 
-  processor due to classpath issues and workarounds.  Copy the Saxon JAR into the
+  processor due to classpath issues and workarounds.  Copy the XSLT jars into the
   .ant directory, beneath your home directory:
 
   util/buildscripts/cldr/lib/saxon8.jar -> ~/.ant/lib
+  util/buildscripts/cldr/lib/resolver.jar -> ~/.ant/lib
+  
