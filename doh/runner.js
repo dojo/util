@@ -1,4 +1,4 @@
-// FIXME: need to add async doh
+// FIXME: need to add async tests
 // FIXME: need to handle URL wrapping and test registration/running from URLs
 
 // package system gunk. 
@@ -324,9 +324,9 @@ doh.registerTestNs = function(/*String*/ group, /*Object*/ ns){
 	// summary:
 	//		adds the passed namespace object to the list of objects to be
 	//		searched for test groups. Only "public" functions (not prefixed
-	//		with "_") will be added as doh to be run. If you'd like to use
+	//		with "_") will be added as tests to be run. If you'd like to use
 	//		fixtures (setUp(), tearDown(), and runTest()), please use
-	//		registerTest() or registerdoh().
+	//		registerTest() or registerTests().
 	for(var x in ns){
 		if(	(x.charAt(0) == "_") &&
 			(typeof ns[x] == "function") ){
@@ -356,18 +356,18 @@ doh._testFinished = function(group, fixture, success){
 }
 
 doh.registerGroup = function(	/*String*/ group, 
-								/*Array||Function||Object*/ doh, 
+								/*Array||Function||Object*/ tests, 
 								/*Function*/ setUp, 
 								/*Function*/ tearDown){
 	// summary:
-	//		registers an entire group of doh at once and provides a setUp and
+	//		registers an entire group of tests at once and provides a setUp and
 	//		tearDown facility for groups. If you call this method with only
 	//		setUp and tearDown parameters, they will replace previously
 	//		installed setUp or tearDown functions for the group with the new
 	//		methods.
 	// group:
 	//		string name of the group
-	// doh:
+	// tests:
 	//		either a function or an object or an array of functions/objects. If
 	//		an object, it must contain at *least* a "runTest" method, and may
 	//		also contain "setUp" and "tearDown" methods. These will be invoked
@@ -376,8 +376,8 @@ doh.registerGroup = function(	/*String*/ group,
 	//		description or test functions.
 	// setUp: a function for initializing the test group
 	// tearDown: a function for initializing the test group
-	if(doh){
-		this.register(group, doh);
+	if(tests){
+		this.register(group, tests);
 	}
 	if(setUp){
 		this._groups[group].setUp = setUp;
@@ -443,9 +443,9 @@ doh.registerTest = function(/*String*/ group, /*Function||Object*/ test){
 	return tObj;
 }
 
-doh.registerdoh = function(/*String*/ group, /*Array*/ testArr){
+doh.registerTests = function(/*String*/ group, /*Array*/ testArr){
 	// summary:
-	//		registers a group of doh, treating each element of testArr as
+	//		registers a group of tests, treating each element of testArr as
 	//		though it were being (along with group) passed to the registerTest
 	//		method.
 	for(var x=0; x<testArr.length; x++){
@@ -468,7 +468,7 @@ doh.registerString = function(group, str){
 // FIXME: remove the doh.add alias SRTL.
 doh.register = doh.add = function(groupOrNs, testOrNull){
 	// summary:
-	// 		"magical" variant of registerdoh, registerTest, and
+	// 		"magical" variant of registerTests, registerTest, and
 	// 		registerTestNs. Will accept the calling arguments of any of these
 	// 		methods and will correctly guess the right one to register with.
 	if(	(arguments.length == 1)&&
@@ -492,8 +492,8 @@ doh.register = doh.add = function(groupOrNs, testOrNull){
 		// this.registerTestNs(groupOrNs, testOrNull);
 		return;
 	}
-	if(	doh._isArray(testOrNull) ){
-		this.registerdoh(groupOrNs, testOrNull);
+	if(doh._isArray(testOrNull)){
+		this.registerTests(groupOrNs, testOrNull);
 		return;
 	}
 	this.registerTest(groupOrNs, testOrNull);
