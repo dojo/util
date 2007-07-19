@@ -159,12 +159,9 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 				// if we get the contents of the file from Rhino, it might not be a JS
 				// string, but rather a Java string, which will cause the replace() method
 				// to bomb.
-				contents = new String((!contents) ? "" : contents);
+				contents = contents ? new String(contents) : "";
 				// clobber all comments
-				contents = contents.replace( /^(.*?)\/\/(.*)$/mg , "$1");
-				contents = contents.replace( /(\n)/mg , "__DOJONEWLINE");
-				contents = contents.replace( /\/\*(.*?)\*\//g , "");
-				return contents.replace( /__DOJONEWLINE/mg , "\n");
+				return contents.replace( /(\/\*([\s\S]*?)\*\/|\/\/(.*)$)/mg , "");
 			}
 			
 			// over-write dojo.eval to prevent actual loading of subsequent files
