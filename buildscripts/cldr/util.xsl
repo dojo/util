@@ -61,7 +61,7 @@
             <xsl:otherwise>
                 <!-- source is an external xml file -->
                 <xsl:if test="string-length($xpath)>0">
-	                <xsl:for-each select="doc(concat($basedir,concat($source,'.xml')))"> 
+	                <xsl:for-each select="doc(concat('file:///',concat($basedir,concat($source,'.xml'))))">
                         <xsl:for-each select="saxon:evaluate($xpath)">
                             <xsl:call-template name="invoke_template_by_name">
                                 <xsl:with-param name="templateName" select="$templateToCall"></xsl:with-param>
