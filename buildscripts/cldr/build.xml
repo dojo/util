@@ -22,11 +22,17 @@
 		description="checks to make sure than we're sane before doing anything else">
 		<available property="bsf_ok" file="${user.home}/.ant/lib/bsf.jar" />
 		<available property="ant_bsf_ok" file="${user.home}/.ant/lib/ant-apache-bsf.jar" />
-
+		<available property="js_ok" file="${user.home}/.ant/lib/js.jar" />
+		<available property="saxon8_ok" file="${user.home}/.ant/lib/saxon8.jar" />
+		<available property="resolver_ok" file="${user.home}/.ant/lib/resolver.jar" />
+		
 		<condition property="config_ok">
 			<and>
 				<isset property="bsf_ok" />
 				<isset property="ant_bsf_ok" />
+				<isset property="js_ok" />
+				<isset property="saxon8_ok" />
+				<isset property="resolver_ok" />
 			</and>
 		</condition>
 	</target>
