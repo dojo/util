@@ -2,6 +2,7 @@
 <xsl:stylesheet xmlns:saxon="http://saxon.sf.net/" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" extension-element-prefixes="saxon" version="2.0">
 
     <xsl:variable name="first" select="true()" saxon:assignable="yes"/>
+    <xsl:variable name="basedirsansslash" saxon:assignable="yes"/>
 
     <xsl:param name="basedir"></xsl:param>
 
@@ -61,7 +62,15 @@
             <xsl:otherwise>
                 <!-- source is an external xml file -->
                 <xsl:if test="string-length($xpath)>0">
-	                <xsl:for-each select="doc(concat('file:///',concat($basedir,concat($source,'.xml'))))">
+                    <xsl:choose>
+                        <xsl:when test="starts-with($basedir, '/')">
+                            <saxon:assign name="basedirsansslash" select="substring($basedir, 2)"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <saxon:assign name="basedirsansslash" select="$basedir"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+	                <xsl:for-each select="doc(concat('file:///',concat($basedirsansslash,concat($source,'.xml'))))">
                         <xsl:for-each select="saxon:evaluate($xpath)">
                             <xsl:call-template name="invoke_template_by_name">
                                 <xsl:with-param name="templateName" select="$templateToCall"></xsl:with-param>
