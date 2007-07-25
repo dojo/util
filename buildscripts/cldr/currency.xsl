@@ -33,7 +33,8 @@
             <xsl:choose>
                 <xsl:when test="name()='currencies'">
                     <xsl:result-document href="currency.js" encoding="UTF-8">// generated from ldml/main/*.xml, xpath: ldml/numbers/currencies
-({<xsl:choose><xsl:when test="string-length(string($currencyList))>0">                            
+({<xsl:choose><xsl:when test="string-length(string($currencyList))>0 and string($currencyList)!='${currencies}'">
+<!--if outer param $currencyList is not initiated, it will be '${currencies}' by default,please see ${util}/buildscripts/cldr/build.xml -->
                                  <xsl:for-each select="currency">
                                      <xsl:if test="contains($currencyList,@type)">
                                          <xsl:call-template name="currency"></xsl:call-template>
@@ -84,20 +85,16 @@
         </xsl:when>
         <xsl:otherwise>
         <xsl:if test="count(./* [(not(@draft) or @draft!='provisional' and @draft!='unconfirmed')]) > 0">
-            <xsl:call-template name="insert_comma"/>
             <xsl:for-each select="*[not(@draft)] | *[@draft!='provisional' and @draft!='unconfirmed']">
+				<xsl:call-template name="insert_comma"/>
                 <xsl:text>
 	</xsl:text>
 		        <xsl:value-of select="$width"></xsl:value-of>
                 <xsl:text>_</xsl:text>
                 <xsl:value-of select="name()"></xsl:value-of>
                 <xsl:text>:"</xsl:text>
-                <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"></xsl:value-of>                
+                <xsl:call-template name="normalize_unicode"/>
                 <xsl:text>"</xsl:text>
-                <xsl:if test="count((following-sibling::node())[not(@draft)] 
-                            | *[@draft!='provisional' and @draft!='unconfirmed']) > 0 ">
-                    <xsl:text>,</xsl:text>
-                </xsl:if>
             </xsl:for-each>
             </xsl:if>
          </xsl:otherwise>   
@@ -116,5 +113,15 @@
         <xsl:if test="$templateName='currency'">
             <xsl:call-template name="currency"></xsl:call-template>
         </xsl:if>
-    </xsl:template>   
+    </xsl:template>
+
+	<!-- This template is used to normalize special characters in unicode format
+	     e.g. character 'U+200F' should be formatted to '\u200F' 
+		 more items may be added later, so use a separate template here -->
+	<xsl:variable name="str" select="Undefined" saxon:assignable="yes"/>
+    <xsl:template name="normalize_unicode">
+		<saxon:assign name="str" select="replace(.,'&quot;', '\\&quot;')"/>
+		<saxon:assign name="str" select="replace($str, '&#x200F;', '\\u200F')"/>
+		<xsl:value-of select="$str"></xsl:value-of>
+    </xsl:template>
 </xsl:stylesheet>
