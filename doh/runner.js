@@ -707,6 +707,7 @@ doh.runGroup = function(/*String*/ groupName, /*Integer*/ idx){
 	if(this._isArray(tg)){
 		if(idx<=tg.length){
 			if((!tg.inFlight)&&(tg.iterated == true)){
+				if(tg["tearDown"]){ tg.tearDown(this); }
 				doh._groupFinished(groupName, (!tg.failures));
 				return;
 			}
@@ -719,6 +720,7 @@ doh.runGroup = function(/*String*/ groupName, /*Integer*/ idx){
 		doh._groupStarted(groupName);
 		if(!idx){
 			this._setupGroupForRun(groupName, idx);
+			if(tg["setUp"]){ tg.setUp(this); }
 		}
 		for(var y=(idx||0); y<tg.length; y++){
 			if(this._paused){
@@ -738,6 +740,7 @@ doh.runGroup = function(/*String*/ groupName, /*Integer*/ idx){
 		}
 		tg.iterated = true;
 		if(!tg.inFlight){
+			if(tg["tearDown"]){ tg.tearDown(this); }
 			doh._groupFinished(groupName, (!tg.failures));
 		}
 	}
