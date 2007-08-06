@@ -561,8 +561,8 @@ doh._objPropEq = function(expected, actual){
 	return true;
 }
 
-doh._isArray = function(arr){
-	return ((arr instanceof Array)||(typeof arr == "array") );
+doh._isArray = function(it){
+	return (it && it instanceof Array || typeof it == "array" || ((typeof dojo["NodeList"] != "undefined") && (it instanceof dojo.NodeList)));
 }
 
 //
