@@ -679,7 +679,8 @@ buildUtil.makeResourceUri = function(resourceName, templatePath, srcRoot, prefix
 	return srcRoot + templatePath;
 }
 
-buildUtil.internTemplateStrings = function(dependencies, srcRoot){
+buildUtil.internTemplateStrings = function(/*Object*/dependencies, /*String*/srcRoot, /*RegExp*/optimizeIgnoreRegExp){
+	//summary: interns strings in files for all .js files in the srcRoot directory.
 	var prefixes = dependencies["prefixes"] || [];
 	var skiplist = dependencies["internSkipList"] || [];
 
@@ -689,7 +690,7 @@ buildUtil.internTemplateStrings = function(dependencies, srcRoot){
 		for(var i = 0; i < fileList.length; i++){
 			//Skip nls directories.
 			var fileName = fileList[i];
-			if(!fileName.match(/\/nls\//)){
+			if(!fileName.match(/\/nls\//) && !fileName.match(optimizeIgnoreRegExp)){
 				buildUtil.internTemplateStringsInFile(fileList[i], srcRoot, prefixes, skiplist);
 			}
 		}

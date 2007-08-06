@@ -304,7 +304,7 @@ function _optimizeReleaseDirs(
 	//Intern strings if desired.
 	if(kwArgs.internStrings){
 		logger.info("Interning strings for: " + releasePath);
-		buildUtil.internTemplateStrings(kwArgs.profileProperties.dependencies, releasePath);
+		buildUtil.internTemplateStrings(kwArgs.profileProperties.dependencies, releasePath, optimizeIgnoreRegExp);
 	}
 
 	//Flatten bundles inside the directory
