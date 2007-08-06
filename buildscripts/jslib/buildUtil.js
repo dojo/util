@@ -918,7 +918,7 @@ buildUtil.addGuards = function(/*String*/startDir){
 			buildUtil.guardProvideRegExp.lastIndex = 0;
 			var match = buildUtil.guardProvideRegExp.exec(fileContents);
 			if(match){
-				fileContents = 'if(!dojo._hasResource[' + match[1] + ']){'
+				fileContents = 'if(!dojo._hasResource[' + match[1] + ']){ //_hasResource checks added by build. Do not use _hasResource directly in your code.'
 					+ lineSeparator
 					+ 'dojo._hasResource[' + match[1] + '] = true;'
 					+ lineSeparator
