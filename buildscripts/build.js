@@ -200,13 +200,15 @@ function release(){
 			fileContents = buildUtilXd.setXdDojoConfig(fileContents, kwArgs.xdDojoPath);
 		}
 
-		//Flatten resources 
-		//FIXME: Flatten resources. Only do the top level flattening for bundles
-		//in the layer files. How to do this for layers? only do one nls file for
-		//all layers, or a different one for each layer?
-		if(layerName == "dojo.js"){
-			i18nUtil.flattenLayerFileBundles(fileName, dojoReleaseDir + "nls", "nls", kwArgs);
-		}
+		//Flatten resources
+		//FIXME: Needs a bit more work still.
+		var nlsDir = fileName.replace(/\/[^\/]+$/, "/") + "nls";
+		var nlsNamePrefix = fileName.replace(/\.js$/, "");
+		nlsNamePrefix = nlsNamePrefix.substring(nlsNamePrefix.lastIndexOf("/") + 1, nlsNamePrefix.length);
+		//FIXME: actually assign the result to file contents
+		//once we get the call to preloadLocalizations worked out.
+		//fileContents = i18nUtil.flattenLayerFileBundles(fileContents, nlsDir, nlsNamePrefix, kwArgs);
+		i18nUtil.flattenLayerFileBundles(fileContents, nlsDir, nlsNamePrefix, kwArgs);
 
 		//Save uncompressed file.
 		var uncompressedFileName = fileName + ".uncompressed.js";

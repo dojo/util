@@ -21,7 +21,7 @@ i18nUtil.setup = function(/*Object*/kwArgs){
 	}
 }
 
-i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/destDirName,
+i18nUtil.flattenLayerFileBundles = function(/*String*/fileContents, /*String*/destDirName,
 	/*String*/nlsNamePrefix, /*Object*/kwArgs){
 	//summary:
 	//		This little utility is invoked by the build to flatten all of the JSON resource bundles used
@@ -33,9 +33,9 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/destDi
 	//		memory, then flatten the object and spit it out using dojo.toJson.  The bootstrap
 	//		will be modified to download exactly one of these files, whichever is closest to the user's
 	//		locale.
-	//fileName:
-	//		Name of the file to process (like dojo.js). This function will look in
-	//		that file for dojo.requireLocation() calls.
+	//fileContents:
+	//		The contents of the file to process (like dojo.js). This function will look in
+	//		the contents for dojo.requireLocation() calls.
 	//destDirName:
 	//		Name of the directory to store the flattend bundles.
 	//nlsNamePrefix:
@@ -55,11 +55,8 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/destDi
 		djLoadedBundles.push({modulename: modulename, module: eval(modulename), bundlename: bundlename});
 	};
 	
-	//Find dojo.requireLocalization files in fileName, and eval them to load
-	//the bundles.
-	var fileContents = fileUtil.readFile(fileName);
 	var requireStatements = fileContents.match(/dojo\.requireLocalization\(.*\)\;/g);
-	if(requireStatements){
+	if(requireStatements){	
 		eval(requireStatements.join(";"));
 
 		//print("loaded bundles: "+djLoadedBundles.length);
@@ -84,6 +81,7 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/destDi
 		for (jsLocale in djBundlesByLocale){
 			var locale = jsLocale.replace(/\_/g, '-');
 			if(!mkdir){ dir.mkdir(); mkdir = true; }
+			
 			var outFile = new java.io.File(dir, nlsNamePrefix + "_" + locale + ".js");
 			var os = new java.io.BufferedWriter(
 					new java.io.OutputStreamWriter(new java.io.FileOutputStream(outFile), "utf-8"));
@@ -108,13 +106,14 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/destDi
 		}
 		
 		//Inject the processed locales into the file name.
+		//FIXME: call preloadLocalizations instead, and make sure preloadLocalizations does the right thing.
 		fileContents.replace(/\/\*\*\*BUILD:localesGenerated\*\*\*\//, dojo.toJson(localeList));
 	
 		//Remove dojo.requireLocalization calls from the file.
-		fileContents.replace(/dojo\.requireLocalization\(.*\)\;/g, "");
+		fileContents = fileContents.replace(/dojo\.requireLocalization\(.*\)\;/g, "");
 		
-		//Save the modified file.
-		fileUtil.saveFile(fileName, fileContents);
+		//Return the modified file.
+		return fileContents; //String
 	}
 }
 
