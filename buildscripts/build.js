@@ -201,14 +201,10 @@ function release(){
 		}
 
 		//Flatten resources
-		//FIXME: Needs a bit more work still.
-		var nlsDir = fileName.replace(/\/[^\/]+$/, "/") + "nls";
-		var nlsNamePrefix = fileName.replace(/\.js$/, "");
-		nlsNamePrefix = nlsNamePrefix.substring(nlsNamePrefix.lastIndexOf("/") + 1, nlsNamePrefix.length);
-		//FIXME: actually assign the result to file contents
-		//once we get the call to preloadLocalizations worked out.
-		//fileContents = i18nUtil.flattenLayerFileBundles(fileContents, nlsDir, nlsNamePrefix, kwArgs);
-		i18nUtil.flattenLayerFileBundles(fileContents, nlsDir, nlsNamePrefix, kwArgs);
+		//TODO: enable for xd builds too.
+		if(kwArgs.loader != "xdomain"){
+			fileContents = i18nUtil.flattenLayerFileBundles(fileName, fileContents, kwArgs);
+		}
 
 		//Save uncompressed file.
 		var uncompressedFileName = fileName + ".uncompressed.js";

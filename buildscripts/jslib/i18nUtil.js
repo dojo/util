@@ -21,8 +21,7 @@ i18nUtil.setup = function(/*Object*/kwArgs){
 	}
 }
 
-i18nUtil.flattenLayerFileBundles = function(/*String*/fileContents, /*String*/destDirName,
-	/*String*/nlsNamePrefix, /*Object*/kwArgs){
+i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/fileContents, /*Object*/kwArgs){
 	//summary:
 	//		This little utility is invoked by the build to flatten all of the JSON resource bundles used
 	//		by dojo.requireLocalization(), much like the main build itself, to optimize so that multiple
@@ -33,17 +32,19 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileContents, /*String*/de
 	//		memory, then flatten the object and spit it out using dojo.toJson.  The bootstrap
 	//		will be modified to download exactly one of these files, whichever is closest to the user's
 	//		locale.
+	//fileName:
+	//		The name of the file to process (like dojo.js). This function will use
+	//		it to determine the best resource name to give the flattened bundle.
 	//fileContents:
 	//		The contents of the file to process (like dojo.js). This function will look in
 	//		the contents for dojo.requireLocation() calls.
-	//destDirName:
-	//		Name of the directory to store the flattend bundles.
-	//nlsNamePrefix:
-	//		First part of the file name used to save the bundles. Format is:
-	//		{nlsNamePrefix}_{locale}.js
 	//kwArgs:
 	//		The build's kwArgs.
 	
+	var destDirName = fileName.replace(/\/[^\/]+$/, "/") + "nls";
+	var nlsNamePrefix = fileName.replace(/\.js$/, "");
+	nlsNamePrefix = nlsNamePrefix.substring(nlsNamePrefix.lastIndexOf("/") + 1, nlsNamePrefix.length);
+
 	i18nUtil.setup(kwArgs);
 	var djLoadedBundles = [];
 	
@@ -78,6 +79,17 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileContents, /*String*/de
 		//Save flattened bundles used by dojo.js.
 		var mkdir = false;
 		var dir = new java.io.File(destDirName);
+		var modulePrefix = buildUtil.mapPathToResourceName(fileName, kwArgs.profileProperties.dependencies.prefixes);
+
+		//Adjust modulePrefix to include the nls part before the last segment.
+		var lastDot = modulePrefix.lastIndexOf(".");
+		if(lastDot != -1){
+			modulePrefix = modulePrefix.substring(0, lastDot + 1) + "nls." + modulePrefix.substring(lastDot + 1, modulePrefix.length);
+		}else{
+			throw "Invalid module prefix for flattened bundle: " + modulePrefix;
+		}
+		
+		//logger.trace("### Using modulePrefix: " + modulePrefix);
 		for (jsLocale in djBundlesByLocale){
 			var locale = jsLocale.replace(/\_/g, '-');
 			if(!mkdir){ dir.mkdir(); mkdir = true; }
@@ -86,7 +98,7 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileContents, /*String*/de
 			var os = new java.io.BufferedWriter(
 					new java.io.OutputStreamWriter(new java.io.FileOutputStream(outFile), "utf-8"));
 			try{
-				os.write("dojo.provide(\"nls.dojo_"+locale+"\");");
+				os.write("dojo.provide(\""+modulePrefix+"_"+locale+"\");");
 				for (var j = 0; j < djLoadedBundles.length; j++){
 					entry = djLoadedBundles[j];
 					var bundlePkg = [entry.modulename,"nls",entry.bundlename].join(".");
@@ -105,16 +117,17 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileContents, /*String*/de
 			localeList.push(locale);
 		}
 		
-		//Inject the processed locales into the file name.
-		//FIXME: call preloadLocalizations instead, and make sure preloadLocalizations does the right thing.
-		fileContents.replace(/\/\*\*\*BUILD:localesGenerated\*\*\*\//, dojo.toJson(localeList));
-	
 		//Remove dojo.requireLocalization calls from the file.
 		fileContents = fileContents.replace(/dojo\.requireLocalization\(.*\)\;/g, "");
-		
-		//Return the modified file.
-		return fileContents; //String
+
+		//Inject the dojo._preloadLocalizations call into the file.
+		//Do this at the end of the file, since we need to make sure dojo.i18n has been loaded.
+		//The assumption is that if dojo.i18n is not in this layer file, dojo.i18n is
+		//in one of the layer files this layer file depends on.
+		fileContents += '\ndojo.i18n._preloadLocalizations("' + modulePrefix + '", ' + dojo.toJson(localeList) + ');\n';
 	}
+
+	return fileContents; //String
 }
 
 i18nUtil.flattenDirBundles = function(/*String*/prefixName, /*String*/prefixDir, /*Object*/kwArgs){

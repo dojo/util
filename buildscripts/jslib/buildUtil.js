@@ -602,6 +602,43 @@ buildUtil.masterDependencyRegExpString = "dojo.(requireLocalization|require|requ
 buildUtil.globalDependencyRegExp = new RegExp(buildUtil.masterDependencyRegExpString, "mg");
 buildUtil.dependencyPartsRegExp = new RegExp(buildUtil.masterDependencyRegExpString);
 
+buildUtil.mapPathToResourceName = function(pathName, prefixes){
+	//summary: converts a path name to the best fit for a resource name
+	//based on the available prefixes.
+	//Returns a value like "foo.bar" given an input of /some/path/to/foo/bar.js"
+
+	//First, find best fit prefix.
+	var bestPrefix = "";
+	var bestPrefixPath = "";
+	var bestPrefixPathIndex = 0;
+	var currentIndex = 0;
+	for(var i = 0; i < prefixes.length; i++){
+		//Prefix path must match somewhere in the pathName
+		currentIndex = pathName.indexOf("/" + prefixes[i][0].replace(/\./g, "/") + "/");
+		if(currentIndex != -1 && currentIndex > bestPrefixPathIndex){
+			bestPrefix = prefixes[i][0];
+			bestPrefixPath = prefixes[i][1];
+			bestPrefixPathIndex = currentIndex;
+		}
+	}
+	
+	//Adjust the bestPrefixPathIndex by 2, to account for the slashes in the test above.
+	bestPrefixPathIndex += 2;
+	
+	if(!bestPrefix){
+		throw "Could not find a matching prefix for pathName: " + pathName;
+	}
+	
+	//Strip off first part of file name that is not relevant.
+	var startIndex = bestPrefixPathIndex + bestPrefix.length;
+	var newPathName = pathName.substring(startIndex, pathName.length);
+	
+	//Remove file extensions and any front slash.
+	newPathName = newPathName.replace(/^\//, "").replace(/\..*?$/, "");
+	
+	return bestPrefix + "." + newPathName.replace(/\//g, "."); 
+}
+
 buildUtil.mapResourceToPath = function(resourceName, prefixes){
 	//summary: converts a resourceName to a path.
 	//resourceName: String: like dojo.foo or mymodule.bar
