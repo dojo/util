@@ -201,10 +201,7 @@ function release(){
 		}
 
 		//Flatten resources
-		//TODO: enable for xd builds too.
-		if(kwArgs.loader != "xdomain"){
-			fileContents = i18nUtil.flattenLayerFileBundles(fileName, fileContents, kwArgs);
-		}
+		fileContents = i18nUtil.flattenLayerFileBundles(fileName, fileContents, kwArgs);
 
 		//Save uncompressed file.
 		var uncompressedFileName = fileName + ".uncompressed.js";
@@ -224,14 +221,13 @@ function release(){
 
 			//Load the file contents after string interning, to pick up interned strings.
 			fileContents = fileUtil.readFile(uncompressedFileName);
+		}else{
+			fileContents = uncompressedContents;
 		}
 
 		//Save compressed file.
 		logger.trace("Optimizing (" + kwArgs.layerOptimize + ") file: " + fileName);
 		var compressedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, kwArgs.layerOptimize);
-		if(layerName.match(/\.xd\.js$/) && !layerName.match(/dojo(\.xd)?\.js/)){
-			compressedContents = buildUtilXd.makeXdContents(compressedContents, prefixes);
-		}
 		fileUtil.saveFile(fileName, compressedContents);
 
 	}
@@ -251,7 +247,7 @@ function release(){
 
 	//Run string interning, xd file building, etc.. on the prefix dirs in the
 	//release area.
-	var ignoreRegExp = new RegExp(optimizeIgnoreString);
+	var ignoreRegExp = new RegExp("(" + optimizeIgnoreString + ")");
 	for(var i = 0; i < prefixes.length; i++){
 		_optimizeReleaseDirs(prefixes[i][0], prefixes[i][1], kwArgs, ignoreRegExp);
 	}
@@ -309,7 +305,7 @@ function _optimizeReleaseDirs(
 	i18nUtil.flattenDirBundles(prefixName, prefixPath, kwArgs);
 
 	if(kwArgs.loader == "xdomain"){
-		buildUtilXd.xdgen(prefixName, prefixPath, prefixes);
+		buildUtilXd.xdgen(prefixName, prefixPath, prefixes, optimizeIgnoreRegExp);
 	}
 
 	//FIXME: call stripComments. Maybe rename, inline with optimize? need build options too.

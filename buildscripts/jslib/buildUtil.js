@@ -598,7 +598,7 @@ buildUtil.configPrefixes = function(profileFile){
 }
 
 //The regular expressions that will help find dependencies in the file contents.
-buildUtil.masterDependencyRegExpString = "dojo.(requireLocalization|require|requireIf|provide|requireAfterIf|platformRequire)\\(([\\w\\W]*?)\\)";
+buildUtil.masterDependencyRegExpString = "dojo.(requireLocalization|require|requireIf|provide|requireAfterIf|platformRequire|i18n\._preloadLocalizations)\\(([\\w\\W]*?)\\)";
 buildUtil.globalDependencyRegExp = new RegExp(buildUtil.masterDependencyRegExpString, "mg");
 buildUtil.dependencyPartsRegExp = new RegExp(buildUtil.masterDependencyRegExpString);
 

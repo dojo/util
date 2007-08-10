@@ -34,7 +34,12 @@ buildUtilXd.setXdDojoConfig = function(/*String*/fileContents, /*String*/url){
 		+ fileContents.substring(endIndex, fileContents.length);
 }
 
-buildUtilXd.xdgen = function(/*String*/prefixName, /*String*/prefixPath, /*Array*/prefixes){
+buildUtilXd.xdgen = function(
+	/*String*/prefixName,
+	/*String*/prefixPath,
+	/*Array*/prefixes,
+	/*RegExp*/optimizeIgnoreRegExp
+){
 	//summary: generates the .xd.js files for a build.
 	var jsFileNames = fileUtil.getFilteredFileList(prefixPath, /\.js$/, true);
 
@@ -43,9 +48,7 @@ buildUtilXd.xdgen = function(/*String*/prefixName, /*String*/prefixPath, /*Array
 
 		//Some files, like the layer files, have already been xd
 		//processed, so be sure to skip those.
-		if(!jsFileName.match(/\.xd\.js$/)
-			&& !jsFileName.match(/uncompressed\.js$/)
-			&& !jsFileName.match(/dojo\.js$/)){
+		if(!jsFileName.match(optimizeIgnoreRegExp)){
 			var xdFileName = jsFileName.replace(/\.js$/, ".xd.js");
 			var fileContents = readText(jsFileName);
 			
@@ -88,12 +91,8 @@ buildUtilXd.makeXdContents = function(fileContents, prefixes){
 						depArgs += ", null";
 					}
 
-					depCall = "xdRequireLocalization";
+					depCall = "requireLocalization";
 					depArgs += ', "' + locales.join(",") + '"';
-					
-					//Need to make sure dojo.i18n is loaded in order for the xdRequireLocalization
-					//calls to work.
-					dependencies.push('"require", "dojo.i18n"');
 				}else{
 					//Malformed requireLocalization call. Skip it. May be a comment.
 					continue;
@@ -126,9 +125,9 @@ buildUtilXd.makeXdContents = function(fileContents, prefixes){
 	xdContentsBuffer.push("\ndefineResource: function(dojo){");
 	//Remove requireLocalization calls, since that will mess things up.
 	//String() part is needed since fileContents is a Java object.
-	xdContentsBuffer.push(String(fileContents).replace(/dojo\.requireLocalization\([^\)]*\)/g, ""));
+	xdContentsBuffer.push(String(fileContents).replace(/dojo\.(requireLocalization|i18n\._preloadLocalizations)\([^\)]*\)/g, ""));
 	xdContentsBuffer.push("\n}});");
-	
+
 	return xdContentsBuffer.join("");
 }
 //END makeXdContents function

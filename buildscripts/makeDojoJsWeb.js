@@ -58,10 +58,7 @@ if(isInputOk){
 		//Make sure any dojo.requireLocalization calls are modified
 		//so that they inform the loader of valid locales that can be loaded.
 		contents = buildUtil.modifyRequireLocalization(contents, prefixes);
-		
-		//Convert requireLocalization calls into xdRequireLocalization calls.
-		contents = contents.replace(/dojo\.requireLocalization\s*\(/g, "dojo.xdRequireLocalization(");
-		
+
 		//Intern strings.
 		contents = buildUtil.interningRegexpMagic("xdomain", contents, djConfig.baseRelativePath, prefixes, [], true);
 		

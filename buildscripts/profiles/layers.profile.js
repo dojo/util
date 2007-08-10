@@ -28,6 +28,7 @@ dependencies = {
 			//is the "discard" property. If set to true, then the layer
 			//will not be a saved layer in the release directory.
 			name: "string.discard",
+			resourceName: "string.discard",
 			discard: true,
 			dependencies: [
 				"dojo.string"
@@ -35,6 +36,7 @@ dependencies = {
 		},
 		{
 			name: "../dijit/dijit.js",
+			resourceName: "dijit.dijit",
 			layerDependencies: [
 			"string.discard"
 			],
