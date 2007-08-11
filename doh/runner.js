@@ -648,8 +648,9 @@ doh._runFixture = function(groupName, fixture){
 				}
 
 				var timer = setTimeout(function(){
-					ret.cancel();
-					retEnd();
+					// ret.cancel();
+					// retEnd();
+					ret.errback(new Error("test timeout in "+fixture.name.toString()));
 				}, fixture["timeout"]||1000);
 
 				ret.addBoth(function(arg){
@@ -679,6 +680,11 @@ doh._runFixture = function(groupName, fixture){
 
 		if((!tg.inFlight)&&(tg.iterated)){
 			doh._groupFinished(groupName, (!tg.failures));
+		}else if(tg.inFlight > 0){
+			setTimeout(this.hitch(this, function(){
+				doh.runGroup(groupName); // , idx);
+			}), 100);
+			this._paused = true;
 		}
 		if(doh._paused){
 			doh.run();
