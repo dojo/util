@@ -79,8 +79,9 @@ var DojoBuildOptions = {
 	"xdDojoPath": {
 		defaultValue: "",
 		helpText: "If the loader=xdomain build option is used, then the value of this option "
-			+ "will be used for the path to Dojo modules. The dijit and dojox paths will be assumed "
-			+ "to be sibilings of this path. The xdDojoPath should end in '/dojo'."
+			+ "will be used to call dojo.registerModulePath() for dojo, dijit and dojox. "
+			+ "The xdDojoPath should be the directory that contains the dojo, dijit and dojox "
+			+ "directories, and it should NOT end in a slash. For instance: 'http://some.domain.com/path/to/dojo090'."
 	}
 };
 

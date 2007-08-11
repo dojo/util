@@ -5,8 +5,9 @@ buildUtilXd.setXdDojoConfig = function(/*String*/fileContents, /*String*/url){
 	//summary: sets sets up xdomain loading for a particular URL.
 	//parameters:
 	//		fileContents: be a built dojo.js (can be uncompressed or compressed).
-	//		url: value should be the url to the dojo directory that contains dojo.xd.js.
-	//			Example: "http://some.domain.com/dojo" (no ending slash)
+	//		url: value should be the url to the directory that contains the dojo,
+	//		dijit and dojox directories.
+	//			Example: "http://some.domain.com/dojo090" (no ending slash)
 	//This function will inject some contents after the dojo.registerModulePath() definition.
 	//The contents of fileName should have been a dojo.js that includes the contents
 	//of loader_xd.js (specify loader=xdomain in the build command).
@@ -28,7 +29,11 @@ buildUtilXd.setXdDojoConfig = function(/*String*/fileContents, /*String*/url){
 		+ lineSeparator
 		+ "if(typeof djConfig[\"useXDomain\"] == \"undefined\"){"
 		+ "djConfig.useXDomain = true;};\ndojo.registerModulePath(\"dojo\", \""
-		+ url
+		+ url + "/dojo"
+		+ "\");\ndojo.registerModulePath(\"dijit\", \""
+		+ url + "/dijit"
+		+ "\");\ndojo.registerModulePath(\"dojox\", \""
+		+ url + "/dojox"
 		+ "\");"
 		+ lineSeparator
 		+ fileContents.substring(endIndex, fileContents.length);
