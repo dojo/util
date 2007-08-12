@@ -477,6 +477,15 @@ buildUtil.createLayerContents = function(/*Array*/depList, /*Array*/provideList,
 	}
 
 	//Set version number.
+	dojoContents = buildUtil.changeVersion(version, dojoContents);
+
+	return dojoContents; //String
+}
+
+buildUtil.changeVersion = function(/*String*/version, /*String*/fileContents){
+	//summary: Changes the version number for dojo. Input should be the fileContents
+	//of a file that contains the version number.
+	//Set version number.
 	//First, break apart the version string.
 	var verSegments = version.split(".");
 	var majorValue = 0;
@@ -504,12 +513,12 @@ buildUtil.createLayerContents = function(/*Array*/depList, /*Array*/provideList,
 	}
 	
 	//Do the final version replacement.
-	dojoContents = dojoContents.replace(
+	fileContents = fileContents.replace(
 		/major:\s*\d*,\s*minor:\s*\d*,\s*patch:\s*\d*,\s*flag:\s*".*?"\s*,/g,
 		"major: " + majorValue + ", minor: " + minorValue + ", patch: " + patchValue + ", flag: \"" + flagValue + "\","
 	);
-	
-	return dojoContents;
+
+	return fileContents; //String
 }
 
 buildUtil.makeDojoJs = function(/*Object*/dependencyResult, /*String*/version){
