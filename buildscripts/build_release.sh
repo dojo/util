@@ -30,7 +30,7 @@ svn commit -m "Updating dojo version for the tag." _base/_loader/bootstrap.js
 
 #Erase the SVN dir and replace with an exported SVN contents.
 cd ../..
-rm -rf ./$buildName/*
+rm -rf ./$buildName/
 svn export http://svn.dojotoolkit.org/dojo/tags/$tagName $buildName
 
 #Make a src bundle
