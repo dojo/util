@@ -7,6 +7,11 @@ svnUserName=$2
 #The svn revision number to use for tag. Should be a number, like 11203
 svnRevision=$3
 
+#If no svnRevision number, get the latest one from he repo.
+if [ "$svnRevision" = "" ]; then
+	svnRevision=`svn info http://svn.dojotoolkit.org/dojo/util/trunk/buildscripts/build_release.sh | grep Revision | sed 's/Revision: //'`
+fi
+
 tagName=release-$version
 buildName=dojo-$tagName
 
@@ -49,7 +54,8 @@ mv $buildScriptsName $buildName
 
 #Run the build.
 cd $buildName/util/buildscripts/
-build.sh profile=0.9 version=$1 releaseName=$buildName action=release
+chmod +x ./build.sh
+./build.sh profile=0.9 version=$1 releaseName=$buildName action=release
 cd ../../release/
 zip -rq $buildName.zip $buildName/
 tar -zcf $buildName.tar.gz $buildName/
