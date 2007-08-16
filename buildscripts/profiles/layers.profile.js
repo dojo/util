@@ -30,6 +30,9 @@ dependencies = {
 			name: "string.discard",
 			resourceName: "string.discard",
 			discard: true,
+			//Path to the copyright file must be relative to
+			//the util/buildscripts directory, or an absolute path.
+			copyrightFile: "myCopyright.txt",
 			dependencies: [
 				"dojo.string"
 			]

@@ -266,6 +266,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 			if(!layer["discard"]){
 				result.push({
 					layerName: layerName,
+					copyrightFile: layer.copyrightFile,
 					depList: depList,
 					provideList: currentProvideList
 				});

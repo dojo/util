@@ -183,13 +183,15 @@ function release(){
 	var result = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileProperties), kwArgs.version);
 
 	//Save the build layers. The first layer is dojo.js.
-	var layerLegalText = copyrightText + buildNoticeText;
+	var defaultLegalText = copyrightText + buildNoticeText;
 	var dojoReleaseDir = kwArgs.releaseDir + "/dojo/";
 	var optimizeIgnoreString = "";
 	for(var i = 0; i < result.length; i++){
-		var layerName = result[i].layerName;
-		var fileName = dojoReleaseDir + result[i].layerName;
-		var fileContents = result[i].contents;
+		var currentLayer = result[i];
+		var layerName = currentLayer.layerName;
+		var layerLegalText = (currentLayer.copyrightFile ? fileUtil.readFile(currentLayer.copyrightFile) : defaultLegalText);
+		var fileName = dojoReleaseDir + currentLayer.layerName;
+		var fileContents = currentLayer.contents;
 		
 		//Build up string of files to ignore for the directory optimization step
 		var ignoreName = layerName.replace(/\.\.\//g, "");
