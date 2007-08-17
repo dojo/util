@@ -55,7 +55,7 @@ var DojoBuildOptions = {
 		helpText: "Specifies how to optimize module files. If \"comments\" is specified, "
 			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
 			+ "the Dojo compressor will be used on the files, and line returns will be removed. "
-			+ "If \"shrinksafe.lineReturns\" is specified, then the Dojo compressor will be used "
+			+ "If \"shrinksafe.keepLines\" is specified, then the Dojo compressor will be used "
 			+ "on the files, and line returns will be preserved. If \"packer\" is specified, "
 			+ "Then Dean Edwards' Packer will be used."
 	},
@@ -64,9 +64,15 @@ var DojoBuildOptions = {
 		helpText: "Specifies how to optimize the layer files. If \"comments\" is specified, "
 			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
 			+ "the Dojo compressor will be used on the files, and line returns will be removed. "
-			+ "If \"shrinksafe.lineReturns\" is specified, then the Dojo compressor will be used "
+			+ "If \"shrinksafe.keepLines\" is specified, then the Dojo compressor will be used "
 			+ "on the layer files, and line returns will be preserved. If \"packer\" is specified, "
 			+ "Then Dean Edwards' Packer will be used."
+	},
+	"cssOptimize": {
+		defaultValue: "",
+		helpText: "Specifies how to optimize CSS files. If \"comments\" is specified, "
+			+ "then code comments and line returns are stripped. If \"comments.keepLines\" "	
+			+ "is specified, then code comments are stripped, but line returns are preserved."
 	},
 	"copyTests": {
 		defaultValue: true,
@@ -314,6 +320,10 @@ function _optimizeReleaseDirs(
 	//FIXME: call stripComments. Maybe rename, inline with optimize? need build options too.
 	if(kwArgs.optimize){
 		buildUtil.stripComments(releasePath, optimizeIgnoreRegExp, false, kwArgs.optimize);
+	}
+	
+	if(kwArgs.cssOptimize){
+		buildUtil.optimizeCss(releasePath, kwArgs.cssOptimize);
 	}
 }
 //********* End _optimizeReleaseDirs *********

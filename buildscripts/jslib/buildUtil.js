@@ -874,7 +874,7 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 		if(optimizeType.indexOf("shrinksafe") == 0){
 			//Apply compression using custom compression call in Dojo-modified rhino.
 			fileContents = new String(context.compressScript(script, 0, fileContents, 1));
-			if(optimizeType.indexOf(".lineReturns") == -1){
+			if(optimizeType.indexOf(".keepLines") == -1){
 				fileContents = fileContents.replace(/[\r\n]/g, "");
 			}
 		}else if(optimizeType == "comments" || optimizeType == "packer"){
@@ -948,6 +948,48 @@ buildUtil.stripComments = function(/*String*/startDir, /*RegeExp*/optimizeIgnore
 
 				//Write out the file with appropriate copyright.
 				fileUtil.saveUtf8File(fileList[i], fileContents);
+			}
+		}
+	}
+}
+
+buildUtil.optimizeCss = function(/*String*/startDir, /*String*/optimizeType){
+	//summmary: Optimizes CSS files in a directory.
+	
+	if(optimizeType.indexOf("comments") != -1){
+		var fileList = fileUtil.getFilteredFileList(startDir, /\.css$/, true);
+		if(fileList){
+			for(var i = 0; i < fileList.length; i++){
+				var fileName = fileList[i];
+				logger.trace("Optimizing (" + optimizeType + ") CSS file: " + fileName);
+				
+				//Read in the file. Make sure we have a JS string.
+				var originalFileContents = fileUtil.readFile(fileName);
+				var fileContents = originalFileContents;
+	
+				//Do comment removal.
+				try{
+					var startIndex = -1;
+					//Get rid of comments.
+					while((startIndex = fileContents.indexOf("/*")) != -1){
+						var endIndex = fileContents.indexOf("*/", startIndex + 2);
+						if(endIndex == -1){
+							throw "Improper comment in CSS file: " + fileName;
+						}
+						fileContents = fileContents.substring(0, startIndex) + fileContents.substring(endIndex + 2, fileContents.length);
+					}
+					//Get rid of newlines.
+					if(optimizeType.indexOf(".keepLines") == -1){
+						fileContents = fileContents.replace(/[\r\n]/g, "");
+					}
+				}catch(e){
+					fileContents = originalFileContents;
+					logger.error("Could not optimized CSS file: " + fileName + ", error: " + e);
+				}
+	
+				//Write out the file with appropriate copyright.
+				fileUtil.saveFile(fileName + ".commented.css", originalFileContents);
+				fileUtil.saveFile(fileName, fileContents);
 			}
 		}
 	}
