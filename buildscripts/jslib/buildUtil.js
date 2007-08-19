@@ -624,7 +624,7 @@ buildUtil.mapPathToResourceName = function(pathName, prefixes){
 	var currentIndex = 0;
 	for(var i = 0; i < prefixes.length; i++){
 		//Prefix path must match somewhere in the pathName
-		currentIndex = pathName.indexOf("/" + prefixes[i][0].replace(/\./g, "/") + "/");
+		currentIndex = pathName.lastIndexOf("/" + prefixes[i][0].replace(/\./g, "/") + "/");
 		if(currentIndex != -1 && currentIndex > bestPrefixPathIndex){
 			bestPrefix = prefixes[i][0];
 			bestPrefixPath = prefixes[i][1];
