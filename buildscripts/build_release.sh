@@ -57,6 +57,13 @@ cd $buildName/util/buildscripts/
 chmod +x ./build.sh
 ./build.sh profile=0.9 version=$1 releaseName=$buildName action=release
 cd ../../release/
+
+#Pause to allow manual process of packing Dojo.
+currDir=`pwd`
+echo "You can find dojo in $currDir/$buildName/dojo/dojo.js"
+read -p "Build Done. If you want to pack Dojo manually, do it now, then press Enter to continue build packaging..."
+
+#Continuing with packaging up the release.
 zip -rq $buildName.zip $buildName/
 tar -zcf $buildName.tar.gz $buildName/
 mv $buildName.zip ../../
