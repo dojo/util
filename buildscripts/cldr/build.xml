@@ -15,8 +15,8 @@
 
 	<!-- Arbitrary defaults. locales and currencies properties can be altered or eliminated to build the entire set -->
 <!--
-	<property name="locales" value="en-au,en-ca,en-gb,en-us,de-de,es-es,fr-fr,it-it,pt-br,ko-kr,zh-tw,zh-cn,ja-jp"/>-->
-	<property name="currencies" value="GBP,USD,CAD,AUD,EUR,CHF,HKD,JPY"/>
+	<property name="locales" value="en-au,en-ca,en-gb,en-us,de-de,es-es,fr-fr,it-it,pt-br,ko-kr,zh-hant,zh-tw,zh-hans,zh-cn,ja-jp"/>	-->
+	<property name="currencies" value="GBP,USD,CAD,AUD,EUR,CHF,HKD,JPY,CNY"/>
 
 	<target name="-check-config"
 		description="checks to make sure than we're sane before doing anything else">
@@ -187,6 +187,7 @@
 	if(filter){
 		filter = String(filter).replace(/-/g,'_').split(",");
 		for(var i in filter){
+			filter[i] = filter[i].replace(/\s/g,'');
 			var variants = filter[i].split("_");
 			for(var j = 1; j <= variants.length - 1; j++){
 				var partial = variants.slice(0, j).join("_");
@@ -236,6 +237,11 @@
 		</transformCldr>
 		<java jar="lib/js.jar" failonerror="true" fork="true" logError="true" >
 			<arg value="arrayInherit.js" />
+			<arg value="${json}" />
+			<sysproperty key="DOJO_LOADER" value="${dojoLoader}" />
+		</java>
+		<java jar="lib/js.jar" failonerror="true" fork="true" logError="true" >
+			<arg value="specialLocale.js" />
 			<arg value="${json}" />
 			<sysproperty key="DOJO_LOADER" value="${dojoLoader}" />
 		</java>
