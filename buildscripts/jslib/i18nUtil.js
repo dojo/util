@@ -130,7 +130,7 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/fileCo
 	return fileContents; //String
 }
 
-i18nUtil.flattenDirBundles = function(/*String*/prefixName, /*String*/prefixDir, /*Object*/kwArgs){
+i18nUtil.flattenDirBundles = function(/*String*/prefixName, /*String*/prefixDir, /*Object*/kwArgs, /*RegExp*/nlsIgnoreRegExp){
 	//summary: Flattens the i18n bundles inside a directory so that only request
 	//is needed per bundle. Does not handle resource flattening for dojo.js or
 	//layered build files.
@@ -143,9 +143,8 @@ i18nUtil.flattenDirBundles = function(/*String*/prefixName, /*String*/prefixDir,
 		var jsFileName = String(fileList[i]);
 		var fileContents = null;
 		
-		//Files in nls directories (except for the top level one in Dojo that has multiple
-		//bundles flattened) need to have special xd contents.
-		if(jsFileName.match(/\/nls\//) && jsFileName.indexOf(prefixDir + "/nls/") == -1){
+		//Files in nls directories, except for layer bundles that already have been processed.
+		if(jsFileName.match(/\/nls\//) && !jsFileName.match(nlsIgnoreRegExp)){
 			fileContents = "(" + i18nUtil.makeFlatBundleContents(prefixName, prefixDir, jsFileName) + ")";			
 		}else{
 			fileContents = i18nUtil.modifyRequireLocalization(readText(jsFileName), prefixes);

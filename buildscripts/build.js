@@ -191,7 +191,8 @@ function release(){
 	//Save the build layers. The first layer is dojo.js.
 	var defaultLegalText = copyrightText + buildNoticeText;
 	var dojoReleaseDir = kwArgs.releaseDir + "/dojo/";
-	var optimizeIgnoreString = "";
+	var layerIgnoreString = "";
+	var nlsIgnoreString = "";
 	for(var i = 0; i < result.length; i++){
 		var currentLayer = result[i];
 		var layerName = currentLayer.layerName;
@@ -201,8 +202,14 @@ function release(){
 		
 		//Build up string of files to ignore for the directory optimization step
 		var ignoreName = layerName.replace(/\.\.\//g, "");
-		optimizeIgnoreString += (optimizeIgnoreString ? "|" : "") + buildUtil.regExpEscape(ignoreName) + "$";
-		optimizeIgnoreString += "|" + buildUtil.regExpEscape(ignoreName + ".uncompressed.js") + "$";
+		var nameSegment = ignoreName.replace(/\.js$/, "");
+		layerIgnoreString += (layerIgnoreString ? "|" : "") + buildUtil.regExpEscape(ignoreName);
+		layerIgnoreString += "|" + buildUtil.regExpEscape(ignoreName + ".uncompressed");
+
+		if(nameSegment.indexOf("/") != -1){
+			nameSegment = nameSegment.substring(nameSegment.lastIndexOf("/") + 1, nameSegment.length);
+		}
+		nlsIgnoreString += (nlsIgnoreString ? "|" : "") + buildUtil.regExpEscape(nameSegment);
 		
 		//Burn in xd path for dojo if requested, and only do this in dojo.xd.js.
 		if(layerName.match(/dojo\.xd\.js/) && kwArgs.xdDojoPath){
@@ -256,9 +263,10 @@ function release(){
 
 	//Run string interning, xd file building, etc.. on the prefix dirs in the
 	//release area.
-	var ignoreRegExp = new RegExp("(" + optimizeIgnoreString + ")");
+	var layerIgnoreRegExp = new RegExp("(" + layerIgnoreString + ")\.js$");
+	var nlsIgnoreRegExp = new RegExp("\\/nls\\/(" + nlsIgnoreString + ")_");
 	for(var i = 0; i < prefixes.length; i++){
-		_optimizeReleaseDirs(prefixes[i][0], prefixes[i][1], kwArgs, ignoreRegExp);
+		_optimizeReleaseDirs(prefixes[i][0], prefixes[i][1], kwArgs, layerIgnoreRegExp, nlsIgnoreRegExp);
 	}
 	
 	//Copy over DOH if tests where copied.
@@ -298,7 +306,8 @@ function _optimizeReleaseDirs(
 	/*String*/prefixName, 
 	/*String*/prefixPath, 
 	/*Object*/kwArgs,
-	/*RegExp*/optimizeIgnoreRegExp){
+	/*RegExp*/layerIgnoreRegExp,
+	/*RegExp*/nlsIgnoreRegExp){	
 	//summary: runs intern strings, i18n bundle flattening and xdomain file generation
 	//on the files in a release directory, if those options are enabled.
 	var releasePath = kwArgs.releaseDir + "/"  + prefixName.replace(/\./g, "/");
@@ -307,19 +316,19 @@ function _optimizeReleaseDirs(
 	//Intern strings if desired.
 	if(kwArgs.internStrings){
 		logger.info("Interning strings for: " + releasePath);
-		buildUtil.internTemplateStrings(kwArgs.profileProperties.dependencies, releasePath, optimizeIgnoreRegExp);
+		buildUtil.internTemplateStrings(kwArgs.profileProperties.dependencies, releasePath, layerIgnoreRegExp);
 	}
 
 	//Flatten bundles inside the directory
-	i18nUtil.flattenDirBundles(prefixName, prefixPath, kwArgs);
+	i18nUtil.flattenDirBundles(prefixName, prefixPath, kwArgs, nlsIgnoreRegExp);
 
 	if(kwArgs.loader == "xdomain"){
-		buildUtilXd.xdgen(prefixName, prefixPath, prefixes, optimizeIgnoreRegExp);
+		buildUtilXd.xdgen(prefixName, prefixPath, prefixes, layerIgnoreRegExp);
 	}
 
 	//FIXME: call stripComments. Maybe rename, inline with optimize? need build options too.
 	if(kwArgs.optimize){
-		buildUtil.stripComments(releasePath, optimizeIgnoreRegExp, false, kwArgs.optimize);
+		buildUtil.stripComments(releasePath, layerIgnoreRegExp, false, kwArgs.optimize);
 	}
 	
 	if(kwArgs.cssOptimize){
