@@ -203,8 +203,8 @@ function release(){
 		//Build up string of files to ignore for the directory optimization step
 		var ignoreName = layerName.replace(/\.\.\//g, "");
 		var nameSegment = ignoreName.replace(/\.js$/, "");
-		layerIgnoreString += (layerIgnoreString ? "|" : "") + buildUtil.regExpEscape(ignoreName);
-		layerIgnoreString += "|" + buildUtil.regExpEscape(ignoreName + ".uncompressed");
+		layerIgnoreString += (layerIgnoreString ? "|" : "") + buildUtil.regExpEscape(ignoreName) + "$";
+		layerIgnoreString += "|" + buildUtil.regExpEscape(ignoreName + ".uncompressed.js") + "$";
 
 		if(nameSegment.indexOf("/") != -1){
 			nameSegment = nameSegment.substring(nameSegment.lastIndexOf("/") + 1, nameSegment.length);
@@ -263,7 +263,7 @@ function release(){
 
 	//Run string interning, xd file building, etc.. on the prefix dirs in the
 	//release area.
-	var layerIgnoreRegExp = new RegExp("(" + layerIgnoreString + ")\.js$");
+	var layerIgnoreRegExp = new RegExp("(" + layerIgnoreString + ")");
 	var nlsIgnoreRegExp = new RegExp("\\/nls\\/(" + nlsIgnoreString + ")_");
 	for(var i = 0; i < prefixes.length; i++){
 		_optimizeReleaseDirs(prefixes[i][0], prefixes[i][1], kwArgs, layerIgnoreRegExp, nlsIgnoreRegExp);
@@ -312,7 +312,7 @@ function _optimizeReleaseDirs(
 	//on the files in a release directory, if those options are enabled.
 	var releasePath = kwArgs.releaseDir + "/"  + prefixName.replace(/\./g, "/");
 	var prefixes = kwArgs.profileProperties.dependencies.prefixes;
-		
+
 	//Intern strings if desired.
 	if(kwArgs.internStrings){
 		logger.info("Interning strings for: " + releasePath);
