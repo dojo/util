@@ -145,7 +145,7 @@ doh.extend(doh.Deferred, {
 			if(typeof a[0] == "function"){
 				return a[0];
 			}else if(typeof a[0] == "string"){
-				return dj_global[a[0]];
+				return dojo.global[a[0]];
 			}
 		}else if((a[0])&&(a[1])){
 			return doh.hitch(a[0], a[1]);
