@@ -45,9 +45,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 	//summary: Main function that traces the files that are needed for a give list of dependencies.
 
 	if(!dependencies){
-		dependencies = [
-			"dojo._base"
-		];
+		dependencies = {}
 	}
 	
 	var dojoLoader = buildUtil.getDojoLoader(dependencies);
@@ -65,7 +63,9 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 	//defines a dojo.js layer. If the profile defines a dojo.js
 	//layer it MUST be the first layer.
 	if(dependencies.layers[0] && dependencies.layers[0].name == "dojo.js"){
-		dependencies.layers[0].dependencies.unshift("dojo._base");
+		if(!dependencies.layers[0].customBase){
+			dependencies.layers[0].dependencies.unshift("dojo._base");
+		}
 	}else{
 		dependencies.layers.unshift({
 			name: "dojo.js",
