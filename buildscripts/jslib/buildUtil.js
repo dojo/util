@@ -1023,6 +1023,79 @@ buildUtil.addGuards = function(/*String*/startDir){
 	}
 }
 
+buildUtil.conditionalRegExp = /(exclude|include)Start\s*\(\s*["'](\w+)["']\s*,(.*)\)/;
+buildUtil.processConditionals = function(/*String*/fileName, /*String*/fileContents, /*Object*/kwArgs){
+	//summary: processes the fileContents for some Dojo-specific conditional comments.
+	var foundIndex = -1;
+	var startIndex = 0;
+	
+	while((foundIndex = fileContents.indexOf("//>>", startIndex)) != -1){
+		//Found a conditional. Get the conditional line.
+		var lineEndIndex = fileContents.indexOf("\n", foundIndex);
+		if(lineEndIndex == -1){
+			lineEndIndex = fileContents.length - 1;
+		}
+
+		//Increment startIndex past the line so the next conditional search can be done.
+		startIndex = lineEndIndex + 1;
+
+		//Break apart the conditional.
+		var conditionLine = fileContents.substring(foundIndex, lineEndIndex + 1);
+		var matches = conditionLine.match(buildUtil.conditionalRegExp);
+		if(matches){
+			var type = matches[1];
+			var marker = matches[2];
+			var condition = matches[3];
+			var isTrue = false;
+			//See if the condition is true.
+			try{
+				isTrue = !!eval("(" + condition + ")");
+			}catch(e){
+				throw "Error in file: "
+					+ fileName
+					+ ". Conditional comment: "
+					+ conditionLine
+					+ " failed with this error: " + e;
+			}
+		
+			//Find the endpoint marker.
+			var endRegExp = new RegExp('\\/\\/\\>\\>\\s*' + type + 'End\\(\\s*[\'"]' + marker + '[\'"]\\s*\\)', "g");
+			var endMatches = endRegExp.exec(fileContents.substring(startIndex, fileContents.length));
+			if(endMatches){
+				
+				var endMarkerIndex = startIndex + endRegExp.lastIndex - endMatches[0].length;
+				
+				//Find the next line return based on the match position.
+				lineEndIndex = fileContents.indexOf("\n", endMarkerIndex);
+				if(lineEndIndex == -1){
+					lineEndIndex = fileContents.length - 1;
+				}
+
+				//Should we include the segment?
+				var shouldInclude = ((type == "exclude" && !isTrue) || (type == "include" && isTrue));
+				
+				//Remove the conditional comments, and optionally remove the content inside
+				//the conditional comments.
+				var startLength = startIndex - foundIndex;
+				fileContents = fileContents.substring(0, foundIndex)
+					+ (shouldInclude ? fileContents.substring(startIndex, endMarkerIndex) : "")
+					+ fileContents.substring(lineEndIndex + 1, fileContents.length);
+				
+				//Move startIndex to foundIndex, since that is the new position in the file
+				//where we need to look for more conditionals in the next while loop pass.
+				startIndex = foundIndex;
+			}else{
+				throw "Error in file: "
+					+ fileName
+					+ ". Cannot find end marker for conditional comment: "
+					+ conditionLine;
+				
+			}
+		}
+	}
+
+	return fileContents;
+}
 
 
 
