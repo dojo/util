@@ -186,7 +186,7 @@ function release(){
 	var dojoPrefixPath = buildUtil.getDojoPrefixPath(prefixes);
 
 	logger.trace("Building dojo.js and layer files");
-	var result = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileProperties), kwArgs.version);
+	var result = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileProperties), kwArgs.version, kwArgs);
 
 	//Save the build layers. The first layer is dojo.js.
 	var defaultLegalText = copyrightText + buildNoticeText;
@@ -294,7 +294,7 @@ function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kw
 	logger.info("Copying: " + prefixPath + " to: " + releasePath);
 	fileUtil.copyDir(prefixPath, releasePath, copyRegExp);
 	
-	//Put in code guards for each resource, to protect against redifinition of
+	//Put in code guards for each resource, to protect against redefinition of
 	//code in the layered build cases. Do this here before the layers are built.
 	buildUtil.addGuards(releasePath);
 }

@@ -443,15 +443,22 @@ buildUtil.loadDependencyList = function(/*Object*/profile){
 	return depResult;
 }
 
-buildUtil.createLayerContents = function(/*Array*/depList, /*Array*/provideList, /*String*/version){
+buildUtil.createLayerContents = function(
+	/*String*/layerName,
+	/*Array*/depList,
+	/*Array*/provideList,
+	/*String*/version,
+	/*Object?*/kwArgs){
 	//summary: Creates the core contents for a build layer (including dojo.js).
 
 	//Concat the files together, and mark where we should insert all the
 	//provide statements.
 	var dojoContents = "";
 	for(var i = 0; i < depList.length; i++){
-		//Make sure we have a JS string and not a Java string by using new String().
-		dojoContents += fileUtil.readFile(depList[i]) + "\r\n";
+		//Run the file contents through the include/exclude "preprocessor".
+		var depContents = fileUtil.readFile(depList[i]);
+		dojoContents += (kwArgs ? buildUtil.processConditionals(layerName, depContents, kwArgs) : depContents)
+			+ "\r\n";
 	}
 
 	//Construct a string of all the dojo.provide statements.
@@ -522,7 +529,7 @@ buildUtil.changeVersion = function(/*String*/version, /*String*/fileContents){
 	return fileContents; //String
 }
 
-buildUtil.makeDojoJs = function(/*Object*/dependencyResult, /*String*/version){
+buildUtil.makeDojoJs = function(/*Object*/dependencyResult, /*String*/version, /*Object?*/kwArgs){
 	//summary: Makes the uncompressed contents for dojo.js using the object
 	//returned from buildUtil.getDependencyList()
 
@@ -531,7 +538,7 @@ buildUtil.makeDojoJs = function(/*Object*/dependencyResult, /*String*/version){
 	//Cycle through the layers to create the content for each layer.
 	for(var i = 0; i< dependencyResult.length; i++){
 		var layerResult = dependencyResult[i];
-		layerResult.contents = buildUtil.createLayerContents(layerResult.depList, layerResult.provideList, version);
+		layerResult.contents = buildUtil.createLayerContents(layerResult.layerName, layerResult.depList, layerResult.provideList, version, kwArgs);
 	}
 
 	//Object with properties:
@@ -546,23 +553,6 @@ buildUtil.makeDojoJs = function(/*Object*/dependencyResult, /*String*/version){
 		resourceDependencies: depList,
 		dojoContents: dojoContents
 	};
-
-	//Things to consider for later:
-
-	//preload resources?
-	//Remove requireLocalization calls?
-	
-	//compress (or minify?)
-	//Name changes to dojo.js here
-	
-	//no compress if nostrip = true
-	//Name changes to dojo.js here
-	
-	//Add build notice
-	
-	//Add copyright notice
-	
-	//Remove ${release_dir}/source.__package__.js
 }
 
 

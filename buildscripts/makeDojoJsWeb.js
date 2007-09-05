@@ -51,6 +51,7 @@ if(isInputOk){
 
 	var buildSigDir = dojo.crypto.MD5.compute(depList.sort().join(","), dojo.crypto.outputTypes.Hex);
 	try{
+		//xxx createLayerContents is broken: need kwargs? it is optional but probably should provide it.
 		var contents = buildUtil.createLayerContents(dependencyResult.depList, dependencyResult.provideList, version);
 		var compressedContents = "";
 		var prefixes = [["dojo", "src"]];
