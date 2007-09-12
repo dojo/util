@@ -248,10 +248,6 @@ function release(){
 
 	}
 
-	//Remove _base from the release.
-	fileUtil.deleteFile(dojoReleaseDir + "_base");
-	fileUtil.deleteFile(dojoReleaseDir + "_base.js");
-
 	//Save the dependency lists to build.txt
 	var buildText = "Files baked into this build:" + lineSeparator;
 	for(var i = 0; i < result.length; i++){
