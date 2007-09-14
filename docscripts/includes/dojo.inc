@@ -3,82 +3,64 @@
 require_once('lib/parser/Dojo.php');
 require_once('lib/parser/DojoPackage.php');
 
-global $namespaces;
-$namespaces = array();
-$files = scandir('modules');
-foreach ($files as $file) {
-  if (substr($file, -7) == '.module') {
-    include_once('modules/' . $file);
-		$namespaces[] = substr($file, 0, -7);
-	}
+function _dojo_get_namespaces(){
+  static $namespaces;
+  if (!isset($namespaces)) {
+    $namespaces = array();
+    $files = scandir('modules');
+    foreach ($files as $file) {
+      if (substr($file, -7) == '.module') {
+        include_once('modules/' . $file);
+        $namespaces[] = substr($file, 0, -7);
+      }
+    }
+  }
+  return $namespaces;
 }
-unset($file);
-unset($files);
 
-function dojo_file_is_new($namespace, $file) {
-	static $timestamps;
-
-	if (!$timestamps) {
-		$lines = @file_get_contents('timestamps');
-		if (!$lines) {
-			$timestamps = array();
-		}
-		else {
-			$timestamps = unserialize($lines);
-		}
-	}
-	
-	$current = filectime(call_user_func($namespace . '_code_location') . $file);
-	if (!isset($timestamps[$file]) || $current > $timestamps[$file]) {
-		$timestamps[$file] = $current;
-		file_put_contents('timestamps', serialize($timestamps));
-		return true;
-	}
-
-	return false;
+function dojo_get_file_time($namespace, $file) {
+  return filectime(call_user_func($namespace . '_code_location') . $file);
 }
 
 function dojo_get_files() {
-	global $namespaces;
-	$files = array();
-	foreach ($namespaces as $namespace) {
-		$location = call_user_func($namespace . '_code_location');
-		if (!$location) die($namespace . '_code_location does not return useful result');
-		$dojo = new Dojo($namespace, $location);
-		$list = $dojo->getFileList();
-		foreach ($list as $i => $item) {
-			$list[$i] = array($namespace, $item);
-		}
-		$files = array_merge($files, $list);
-	}
+    $namespaces = _dojo_get_namespaces();
+    $files = array();
+    foreach ($namespaces as $namespace) {
+        $location = call_user_func($namespace . '_code_location');
+        if (!$location) die($namespace . '_code_location does not return useful result');
+        $dojo = new Dojo($namespace, $location);
+        $list = $dojo->getFileList();
+        foreach ($list as $i => $item) {
+            $list[$i] = array($namespace, $item);
+        }
+        $files = array_merge($files, $list);
+    }
 
-	return $files;
+    return $files;
 }
 
 function dojo_get_conditions() {
-	return array('svg', 'vml');
+    return array('svg', 'vml');
 }
 
 function dojo_get_environments() {
-	return array(
-		'common' => array(
-			'browser' => array(
-				'dashboard' => true
-			),
-			'rhino' => true
-		)
-	);
+    return array(
+        'common' => array(
+            'browser' => true
+        )
+    );
 }
 
 function dojo_get_contents($namespace, $file_name) {
-	$output = array();
+  $output = array();
 
-	$dojo = new Dojo($namespace, call_user_func($namespace . '_code_location'));
-	$package = new DojoPackage($dojo, $file_name);
-	$package_name = $package->getPackageName();
+  $dojo = new Dojo($namespace, call_user_func($namespace . '_code_location'));
+  $package = new DojoPackage($dojo, $file_name);
+  $package_name = $package->getPackageName();
+  $resource_name = $package->getResourceName();
 
-	$output['#provides'] = $package_name;
-	$output['#project'] = call_user_func($namespace . '_project_name');
+  $output['#provides'] = $package_name;
+  $output['#resource'] = $resource_name;
 
   $compound_calls = $package->getFunctionCalls('dojo.kwCompoundRequire');
   $require_calls = $package->getFunctionCalls('dojo.require');
@@ -106,12 +88,12 @@ function dojo_get_contents($namespace, $file_name) {
             if ($item->isA(DojoString)) {
               $output['#requires'][] = array($key, $item->getString());
             }
-						elseif ($item->isA(DojoArray)) {
-							$item = $item->getArray();
-							if ($item->getItem(0)->isA(DojoString)) {
-								$output['#requires'][] = array($key, $item->getItem(0)->getString());
-							}
-						}
+            elseif ($item->isA(DojoArray)) {
+              $item = $item->getArray();
+              if ($item->getItem(0)->isA(DojoString)) {
+                $output['#requires'][] = array($key, $item->getItem(0)->getString());
+              }
+            }
           }
         }
       }
@@ -133,20 +115,28 @@ function dojo_get_contents($namespace, $file_name) {
     if ($environment && $require) {
       $environment = $environment->getValue();
       $require = $require->getValue();
-			$env_value = $environment->getValue();
+      $env_value = $environment->getValue();
       if ($require instanceof DojoString) {
-				if ($environment instanceof DojoString) {
-        	$output['#requires'][] = array($environment->getValue(), $require->getValue());
-				}
-			}
-			elseif ($environment instanceof DojoVariable) {
-				if ($environment->getValue() == "dojo.render.svg.capable") {
-      		$output['#requires'][] = array('svg', $require);
-				}
-				else if($environment->getValue() == "dojo.render.vml.capable") {
-      		$output['#requires'][] = array('vml', $require);
-				}
-			}
+        if ($environment instanceof DojoString) {
+          $output['#requires'][] = array($environment->getValue(), $require->getValue());
+        }
+      }
+      elseif ($environment instanceof DojoVariable) {
+        $environment = $environment->getValue();
+        if ($environment == "dojo.isBrowser") {
+          $env = 'browser';
+        }
+        elseif ($environment == "dojo.render.svg.capable") {
+          $env = 'svg';
+        }
+        elseif ($environment == "dojo.render.vml.capable") {
+          $env = 'vml';
+        }
+        elseif (preg_match('%^dojox.gfx.render\s*=\s*"([a-z]+)"%', $environment, $match)) {
+          $env = $match[1];
+        }
+        $output['#requires'][] = array($env, $require);
+      }
     }
   }
   
@@ -159,10 +149,10 @@ function dojo_get_contents($namespace, $file_name) {
       if ($args[3]->isA(DojoFunctionDeclare)) {
         $init = $args[3]->getFunction();
       }
-			if ($args[3]->isA(DojoObject)) {
-				$args[4] = $args[3];
-				$args[3] = null;
-			}
+            if ($args[3]->isA(DojoObject)) {
+                $args[4] = $args[3];
+                $args[3] = null;
+            }
     }
     else {
       if ($call->getParameter(3)->isA(DojoString)) {
@@ -189,7 +179,7 @@ function dojo_get_contents($namespace, $file_name) {
     }
 
     $name = $args[0]->getString();
-		$output[$name]['type'] = 'Function';
+    $output[$name]['type'] = 'Function';
 
     // $args looks like (name, null, superclass(es), initializer, mixins)      
     if ($args[2]->isA(DojoVariable)) {
@@ -209,14 +199,14 @@ function dojo_get_contents($namespace, $file_name) {
 
     if ($args[4]->isA(DojoObject)) {
       $object = $args[4]->getObject();
-			$object->setName($name);
+            $object->setName($name);
       $object->setAnonymous(true);
       $values = $object->getValues();
       foreach ($values as $key => $value) {
-				$full_name = "$name.$key";
+        $full_name = "$name.$key";
         if ($key == 'initializer' && $value->isA(DojoFunctionDeclare)) {
           $init = $value->getFunction();
-					$init->setConstructor(true);
+          $init->setConstructor(true);
           continue;
         }
         if ($value->isA(DojoFunctionDeclare)) {
@@ -248,10 +238,10 @@ function dojo_get_contents($namespace, $file_name) {
   }
   
   foreach ($executions as $execution) {
-  	$execution_declarations = $execution->getFunctionDeclarations();
-  	foreach ($execution_declarations as $declaration) {
-  		$declaration->rollOut($output);
-  	}
+    $execution_declarations = $execution->getFunctionDeclarations();
+    foreach ($execution_declarations as $declaration) {
+        $declaration->rollOut($output);
+    }
   }
   
   foreach ($inherit_calls as $call) {
@@ -262,25 +252,25 @@ function dojo_get_contents($namespace, $file_name) {
 
   // Handle. dojo.lang.extend and dojo.lang.mixin calls
   foreach ($mixin_calls as $call) {
-		$is_prototype = false;
+    $is_prototype = false;
     if ($call->getParameter(0)->isA(DojoVariable)) {
       $object = $call->getParameter(0)->getVariable();
       $call_name = $call->getName();
 
-			if(strlen($object) > 10 && substr($object, -10) == '.prototype') {
-				$is_prototype = true;
-				$object = substr($object, 0, -10);
-			}
+      if(strlen($object) > 10 && substr($object, -10) == '.prototype') {
+          $is_prototype = true;
+          $object = substr($object, 0, -10);
+      }
 
       if ($call->getParameter(1)->isA(DojoObject)) {
         $properties = $call->getParameter(1)->getObject();
         $keys = $properties->getValues();
         foreach ($keys as $key => $function) {
-					$full_variable_name = "$object.$key";
+          $full_variable_name = "$object.$key";
 
-					if ($is_prototype) {
-						$output[$full_variable_name]['prototype'] = $object;
-					}
+          if ($is_prototype) {
+              $output[$full_variable_name]['prototype'] = $object;
+          }
           if ($function->isA(DojoFunctionDeclare)) {
             $function = $function->getFunction();
             if ($call_name == 'dojo.lang.extend') {
@@ -291,14 +281,14 @@ function dojo_get_contents($namespace, $file_name) {
           }
           else {
             if ($call_name == 'dojo.lang.mixin' || $call_name == 'dojo.mixin') {
-							if (empty($output[$full_variable_name])) {
-              	$output[$full_variable_name] = array();
-							}
+              if (empty($output[$full_variable_name])) {
+                $output[$full_variable_name] = array();
+              }
             }
             else {
-							if ($is_prototype) {
-								$output[$full_variable_name]['prototype'] = $object;
-							}
+                if ($is_prototype) {
+                    $output[$full_variable_name]['prototype'] = $object;
+                }
             }
           }
         }
@@ -319,29 +309,35 @@ function dojo_get_contents($namespace, $file_name) {
       }
     }
   }
-  
+
   foreach ($objects as $object) {
     $object->rollOut($output);
   }
-	
-	// Remember, dojo.provides creates new objects if needed
-	$parts = explode('.', $output['#provides']);
-	while (count($parts)) {
-		if (!array_key_exists(implode('.', $parts), $output)) {
-			$output[implode('.', $parts)] = array('type' => 'Object');
-		}
-		array_pop($parts);
-	}
 
-	foreach ($output as $object_name => $object) {
-		$parts = explode('.', $object_name);
-		$last = array_pop($parts);
-		if ($last{0} == '_') {
-			$output[$object_name]['private'] = true;
-		}
-	}
+  // Remember, dojo.provides creates new objects if needed
+  $parts = explode('.', $output['#resource']);
+  while (count($parts)) {
+      if (!array_key_exists(implode('.', $parts), $output)) {
+          $output[implode('.', $parts)] = array('type' => 'Object');
+      }
+      array_pop($parts);
+  }
 
-	return $output;
+  foreach ($output as $object_name => $object) {
+    $parts = explode('.', $object_name);
+    $last = array_pop($parts);
+    if ($last{0} == '_') {
+      $output[$object_name]['private'] = true;
+    }
+    if (strpos($object_name, '._') !== false) {
+        $output[$object_name]['private_parent'] = true;
+    }
+    if (preg_match('%^[A-Z]%', $last) && $object['type'] == 'Function') {
+        $output[$object_name]['classlike'] = true;
+    }
+  }
+
+  return $output;
 }
 
 ?>

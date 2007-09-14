@@ -8,8 +8,20 @@ function dijit_project_name() {
 	return 'dijit';
 }
 
+function dijit_resource_name($namespace, $file) {
+  $parts = explode('/', $file);
+	$file_parts = explode('.', array_pop($parts));
+	array_pop($file_parts);
+	array_push($parts, implode('.', $file_parts));
+	array_unshift($parts, $namespace);
+  return implode('.', $parts);
+}
+
 function dijit_package_name($namespace, $file) {
   $parts = explode('/', $file);
+  if ($parts[0] == '_base') {
+		return $namespace;
+  }
 	$file_parts = explode('.', array_pop($parts));
 	array_pop($file_parts);
 	array_push($parts, implode('.', $file_parts));
