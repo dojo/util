@@ -8,12 +8,20 @@ function dojo_project_name() {
 	return 'dojo';
 }
 
+function dojo_resource_name($namespace, $file) {
+  $parts = explode('/', $file);
+	$file_parts = explode('.', array_pop($parts));
+	array_pop($file_parts);
+	array_push($parts, implode('.', $file_parts));
+	array_unshift($parts, $namespace);
+  return implode('.', $parts);
+}
+
 function dojo_package_name($namespace, $file) {
   $parts = explode('/', $file);
   if ($parts[0] == '_base') {
 		return $namespace;
   }
-  $parts = explode('/', $file);
 	$file_parts = explode('.', array_pop($parts));
 	array_pop($file_parts);
 	array_push($parts, implode('.', $file_parts));
