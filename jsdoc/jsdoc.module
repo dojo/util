@@ -1,0 +1,2304 @@
+<?php
+// $Id$
+
+/**
+* @file
+* Documentation front-end for JavaScript projects.
+*
+* Allows JavaScript projects to parse their code and return an object structure
+* that will be used to generate custom Drupal nodes.
+*/
+
+// Public API (intended for use in a JS source page)
+// =================================================
+
+// Implemented global hook functions
+// =================================
+
+/**
+ * Implementation of hook_node_info().
+ */
+function jsdoc_node_info() {
+  return array(
+    'jsdoc_object' => array('name' => t('JavaScript Object'), 'module' => 'jsdoc_object', 'description' => t('An implemented JavaScript object')),
+    'jsdoc_variable' => array('name' => t('JavaScript Variable'), 'module' => 'jsdoc_variable', 'description' => t('A disambiguation in case an object occurs in more than one file.')),
+    'jsdoc_resource' => array('name' => t('JavaScript Resource'), 'module' => 'jsdoc_resource', 'description' => t('A "dot-notation" pointer to a file or include')),
+    'jsdoc_project' => array('name' => t('JavaScript Project'), 'module' => 'jsdoc_project'),
+    'jsdoc_version' => array('name' => t('JavaScript Project Version'), 'module' => 'jsdoc_version')
+  );
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function jsdoc_perm() {
+  return array('edit jsdoc');
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function jsdoc_menu($may_cache) {
+  $items = array();
+  $version = $_SESSION['jsdoc_version'];
+
+  if ($may_cache) {
+    $items[] = array(
+      'path' => 'admin/settings/jsdoc',
+      'title' => t('JavaScript Documentation'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('jsdoc_admin'),
+      'access' => user_access('access administration pages'),
+      'type' => MENU_NORMAL_ITEM
+    );
+
+    $items[] = array(
+      'path' => 'node/add/jsdoc',
+      'access' => false
+    );
+
+    $items[] = array(
+      'path' => 'node/add/jsdoc_object',
+      'access' => false
+    );
+
+    $items[] = array(
+      'path' => 'node/add/jsdoc_resource',
+      'access' => false
+    );
+  }
+  else {
+    if (arg(0) == 'jsdoc' && arg(3) == 'resource') {
+      // jsdoc/namespace/'HEAD'/'resource'/resource
+
+      $node = jsdoc_resource_node_load(arg(1), arg(2), arg(4));
+      $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/resource/' . arg(4),
+        'title' => t('View'),
+        'callback' => 'jsdoc_resource_node_view',
+        'callback arguments' => array($node),
+        'access' => node_access('view', $node),
+        'type' => MENU_CALLBACK,
+      );
+      $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/resource/' . arg(4) . '/view',
+        'title' => t('View'),
+        'type' => MENU_DEFAULT_LOCAL_TASK,
+        'weight' => -10
+      );
+      $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/resource/' . arg(4) . '/private',
+        'title' => t('View w/ Private'),
+        'callback' => 'jsdoc_resource_node_view',
+        'callback arguments' => array($node),
+        'access' => node_access('view', $node),
+        'weight' => -9,
+        'type' => MENU_LOCAL_TASK
+      );
+      $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/resource/' . arg(4) . '/edit',
+        'title' => t('Edit'),
+        'callback' => 'jsdoc_resource_edit_redirect',
+        'callback arguments' => array($node),
+        'access' => node_access('update', $node),
+        'weight' => 1,
+        'type' => MENU_LOCAL_TASK
+      );
+    }
+
+    if (arg(0) == 'jsdoc' && arg(3) == 'object' && arg(4)) {
+      // jsdoc/namespace/'HEAD'/'object'/resource/object
+      if (arg(5) && arg(5) != 'view' && arg(5) != 'edit' && arg(5) != 'private') {
+        $item = arg(4) . '/' . arg(5);
+        $node = jsdoc_object_node_load(arg(1), arg(2), arg(5), arg(4));
+      }
+      // jsdoc/namespace/'HEAD'/'object'/object
+      else {
+        $item = arg(4);
+        $node = jsdoc_object_node_load(arg(1), arg(2), arg(4));
+      }
+      $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item,
+        'title' => t('View'),
+        'callback' => 'jsdoc_object_node_view',
+        'callback arguments' => array($node),
+        'access' => node_access('view', $node),
+        'type' => MENU_CALLBACK
+      );
+      $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/view',
+        'title' => t('View'),
+        'type' => MENU_DEFAULT_LOCAL_TASK,
+        'weight' => -10
+      );
+      $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/private',
+        'title' => t('View w/ Private'),
+        'callback' => 'jsdoc_object_node_view',
+        'callback arguments' => array($node, null, true),
+        'access' => node_access('view', $node),
+        'weight' => -9,
+        'type' => MENU_LOCAL_TASK
+      );
+      $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/edit',
+        'title' => t('Edit'),
+        'callback' => 'jsdoc_object_edit_redirect',
+        'callback arguments' => array($node),
+        'access' => node_access('update', $node),
+        'weight' => 1,
+        'type' => MENU_LOCAL_TASK
+      );
+
+      if ($node->jsdoc_type == 'Function') {
+        if ($node->jsdoc_classlike) {
+          $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/view/init',
+            'title' => t('Initialized'),
+            'type' => MENU_DEFAULT_LOCAL_TASK,
+            'weight' => -10
+          );
+          $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/view/normal',
+            'title' => t('Uninitialized'),
+            'callback' => 'jsdoc_object_node_view',
+            'callback arguments' => array($node, false),
+            'access' => node_access('view', $node),
+            'type' => MENU_LOCAL_TASK
+          );
+          $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/private/init',
+            'title' => t('Initialized'),
+            'type' => MENU_DEFAULT_LOCAL_TASK,
+            'weight' => -10
+          );
+          $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/private/normal',
+            'title' => t('Uninitialized'),
+            'callback' => 'jsdoc_object_node_view',
+            'callback arguments' => array($node, false, true),
+            'access' => node_access('view', $node),
+            'type' => MENU_LOCAL_TASK
+          );
+        }
+        else {
+          $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/view/normal',
+            'title' => t('Uninitialized'),
+            'type' => MENU_DEFAULT_LOCAL_TASK,
+            'weight' => -10
+          );
+          $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/view/init',
+            'title' => t('Initialized'),
+            'callback' => 'jsdoc_object_node_view',
+            'callback arguments' => array($node, true),
+            'access' => node_access('view', $node),
+            'type' => MENU_LOCAL_TASK
+          );
+          $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/private/normal',
+            'title' => t('Uninitialized'),
+            'type' => MENU_DEFAULT_LOCAL_TASK,
+            'weight' => -10
+          );
+          $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/private/init',
+            'title' => t('Initialized'),
+            'callback' => 'jsdoc_object_node_view',
+            'callback arguments' => array($node, true, true),
+            'access' => node_access('view', $node),
+            'type' => MENU_LOCAL_TASK
+          );
+        }
+      }
+    }
+  }
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_update_index().
+ */
+function jsdoc_update_index() {
+  // TODO: Add a version: tag here
+  $result = db_query("SELECT n.nid, nr.vid FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (nr.vid = jo.vid) JOIN {node} n ON (n.nid = nr.nid) LEFT JOIN {search_dataset} sd ON (sd.sid = nr.vid) WHERE sd.sid IS NULL LIMIT 1000");
+  while ($node = db_fetch_object($result)) {
+    $node = node_load($node->nid, $node->vid);
+
+    $text = '<h1>'. str_replace('.', ' ', $node->title) .'</h1>'. $node->title . ' ' . $node->teaser;
+
+    search_index($node->vid, 'jsdoc', $text);
+  }
+
+  $result = db_query("SELECT n.nid, nr.vid FROM {node} n JOIN {node_revisions} nr ON (nr.nid = n.nid) LEFT JOIN {search_dataset} sd ON (sd.sid = nr.vid) WHERE n.type = 'jsdoc_resource' AND sd.sid IS NULL LIMIT 1000");
+  while ($node = db_fetch_object($result)) {
+    $node = node_load($node->nid, $node->vid);
+
+    $text = '<h1>'. str_replace('.', ' ', $node->title) .'</h1>'. $node->title . ' ' . $node->teaser;
+
+    search_index($node->vid, 'jsdoc', $text);
+  }
+}
+
+/**
+ * Implementation of hook_search().
+ */
+function jsdoc_search($op = 'search', $keys = null) {
+  switch ($op) {
+    case 'name':
+      return t('JavaScript Documentation');
+    case 'search':
+      $find = do_search(str_replace('.', ' ', $keys) . ' OR ' . $keys, 'jsdoc', 'INNER JOIN {node_revisions} nr ON (nr.vid = i.sid) INNER JOIN {node} n ON (n.nid = nr.nid)', 'n.status = 1');
+      $results = array();
+      foreach ($find as $item) {
+        $object = db_fetch_object(db_query("SELECT nid, vid FROM {node_revisions} WHERE vid = %d", $item->sid));
+        $node = node_load($object->nid, $object->vid);
+
+        if ($node->type == 'jsdoc_object') {
+          $url = 'jsdoc/HEAD/object/'. $node->title;
+        }
+        else {
+          $url = 'jsdoc/HEAD/resource/'. $node->title;
+        }
+
+        $info = jsdoc_node_info();
+        $results[] = array(
+          'link' => url($url),
+          'type' => $info[$node->type]['name'],
+          'title' => $node->title,
+          'user' => theme('username', $node),
+          'date' => $node->changed,
+          'node' => $node,
+          'score' => $item->score,
+          'snippet' => ($node->teaser) ? search_excerpt($keys, $node->teaser) : ''
+        );
+      }
+      return $results;
+  }
+}
+
+/**
+ * Implementation of hook_cron().
+ */
+function jsdoc_cron() {
+  // Validate variables and stuff related to basic configuration
+  if (!_jsdoc_cron_validate()) {
+    return;
+  }
+
+  // Use the configuration settings to switch directories, and load the plugin file
+  _jsdoc_cron_chdir(true);
+
+  // Validate the stuff added in the newly included file
+  if (_jsdoc_cron_validate_include()) {
+    $files = call_user_func(_jsdoc_base() . '_get_files');
+    if (!is_array($files)) {
+      watchdog('jsdoc', _jsdoc_base() . '_get_files' . t(' does not return an array in ') . _jsdoc_file_location(), WATCHDOG_ERROR);
+    }
+    else {
+      db_query("UPDATE {jsdoc_cache} SET used = 0");
+      db_query("UPDATE {jsdoc_objects} SET used = 0");
+      db_query("UPDATE {jsdoc_parameters} SET used = 0");
+      db_query("UPDATE {jsdoc_resources} SET used = 0");
+      db_query("UPDATE {jsdoc_variables} SET used = 0");
+
+      foreach ($files as $list) {
+        list($namespace, $file_name) = $list;
+        unset($list);
+
+        // Cache the results from a parse in the file and reuse it if we can.
+        $cache_dir = _jsdoc_get_base_path() . '/' . drupal_get_path('module', 'jsdoc') . '/cache/';
+        $ctime = call_user_func(_jsdoc_base() . '_get_file_time', $namespace, $file_name);
+        $query = db_query("SELECT ctime, cid, namespace, filepath FROM {jsdoc_cache} WHERE namespace = '%s' AND filepath = '%s'", $namespace, $file_name);
+        if ($cache = db_fetch_object($query)) {
+          if ($cache->ctime != $ctime || !file_exists($cache_dir . $cache->cid)) {
+            $contents = call_user_func(_jsdoc_base() . '_get_contents', $namespace, $file_name);
+            db_query("UPDATE {jsdoc_cache} SET used = 1, ctime = %d WHERE namespace = '%s' AND filepath = '%s'", $ctime, $namespace, $file_name);
+            file_put_contents($cache_dir . $cache->cid, serialize($contents));
+          }
+          else {
+            db_query("UPDATE {jsdoc_cache} SET used = 1 WHERE namespace = '%s' AND filepath = '%s'", $namespace, $file_name);
+            $contents = unserialize(file_get_contents($cache_dir . $cache->cid));
+          }
+        }
+        else {
+          $contents = call_user_func(_jsdoc_base() . '_get_contents', $namespace, $file_name);
+          $cache->cid = db_next_id('{jsdoc_cache}_cid');
+          db_query("INSERT INTO {jsdoc_cache} (namespace, filepath, ctime, cid) VALUES ('%s', '%s', %d, %d)", $namespace, $file_name, $ctime, $cache->cid);
+          file_put_contents($cache_dir . $cache->cid, serialize($contents));
+        }
+
+        if (is_array($contents)) {
+          // Create an actual node representation for the resource that this file provides.
+          $provides_node = _jsdoc_resource_get_or_create($contents['#provides'], $namespace);
+          $resource_node = _jsdoc_resource_get_or_create($contents['#resource'], $namespace);
+
+          db_query("DELETE FROM {jsdoc_resource_hierarchy} WHERE vid = %d", $provides_node->vid);
+
+          // Using the requires statement, create the links between files that are required
+          // by this file, and this file
+          if (!empty($contents['#requires']) && !empty($contents['#provides'])) {
+            foreach ($contents['#requires'] as $weight => $require) {
+              $requires_node = _jsdoc_resource_get_or_create($require[1], $namespace);
+
+              foreach (taxonomy_get_term_by_name($require[0]) as $term) {
+                if ($term->vid == _jsdoc_environments()->vid || $term->vid == _jsdoc_conditions()->vid) {
+                  // Find a matching item in the environment or conditions vocabularies
+                  $environment = $term->tid;
+                  break;
+                }
+              }
+              if (!$environment) {
+                // Make sure we have a term for this resource
+                watchdog('jsdoc', "Missing environment or condition term for '" . $require[0] . "'", WATCHDOG_ERROR);
+                _jsdoc_cron_chdir();
+                return;
+              }
+
+              _jsdoc_save_hierarchy($provides_node, $requires_node, $environment);
+            }
+          }
+
+          unset($contents['#requires']);
+          unset($contents['#resource']);
+          unset($contents['#provides']);
+
+          foreach ($contents as $var => $content) {
+            $variable_node = _jsdoc_variable_get_or_create($var, $namespace, $content['private']);
+
+            db_query("UPDATE {jsdoc_objects} SET used = 1 WHERE vid = %d", $variable_node->vid);
+
+            $object_node = _jsdoc_object_get_or_create(
+              $namespace,
+              $var,
+              $content['summary'],
+              $content['description'],
+              $resource_node,
+              $provides_node,
+              $content['private'],
+              $content['private_parent'],
+              $content['initialized'],
+              $content['classlike'],
+              $content['type'],
+              $content['returns'],
+              $content['source'],
+              $content['parameters'],
+              $content['aliases'],
+              $content['instance'],
+              $content['prototype'],
+              $content['chains']
+            );
+
+            db_query("UPDATE {jsdoc_objects} SET used = 1 WHERE vid = %d", $object_node->vid);
+          }
+        }
+      }
+    }
+  }
+
+  _jsdoc_cron_chdir();
+}
+
+/**
+ * Implementation of hook_help().
+ */
+function jsdoc_help($section = '') {
+  $output = '';
+  
+  switch ($section) {
+    case 'admin/help#jsdoc':
+      return '<p>' . t('View and edit JavaScript Documentation') . '</p>';
+    case 'admin/modules#jsdoc':
+      return t('View and edit JavaScript Documentation');
+      case 'admin/settings/jsdoc/ignore':
+        return t("
+  <p>There will be several vocabularies created by this resource. Two of the more important are \"JavaScript Environments\" and \"JavaScript Conditions\". You should read their explanations below and make sure that these values exist in your vocabularies.</p>
+  <p>In order for this to work, you need to declare both a file and two functions within that file. When the cron task runs, it will call a function that gets a list of files within your project. The files will be run one by one, each calling the second function. Our task expects an array to be returned in the following format:</p>
+  <ul>
+    <li><em>variable</em>: The name of the variable</li>
+    <li><strong>Resource Specific</strong></li>
+    <li><em>#requires</em>: The string literal '#requires'</li>
+    <li><em>#provides</em>: The string literal '#provides'. It should match the requires statements of other files</li>
+    <li><em>resource</em>: Your code might load different files depending on different conditions. A resource is a string to indicate the location of a file</li>
+    <li><em>environment</em>: An indicator of where your code is running. Only one is available during run-time. Must correspond to the entry in \"JavaScript Environments\"</li>
+    <li><em>condition</em>: An indicator of a condition under which your code is running. Multiple conditions are available at run-time. Must correspond to an entry in \"JavaScript Conditions\"</li>
+    <li><strong>Object Specific</strong></li>
+    <li><em>private</em>: True if this object isn't meant to be public</li>
+    <li><em>type</em>: Object type. If it's a function, set to 'Function'</li>
+    <li><em>summary</em>: A short description of what the item does.</li>
+    <li><em>description</em>: An extended description of what the item does.</li>
+    <li><strong>Function Specific</strong></li>
+    <li><em>aliases</em>: The name of a function/variable this references. In code, it would have been fn1 = fn2, where fn1 aliases fn2</li>
+    <li><em>instance</em>: The name of a function that the 'this' variable refers to. Useful if a function is declared in a constructor.</li>
+    <li><em>initialized</em>: True if this variable references an initialized function.</li>
+    <li><em>classlike</em>: True if a function acts like a class.</li>
+    <li><em>prototype</em>: This object is attached via the prototype of this function</li>
+    <li><em>returns</em>: Object type of the function return.</li>
+    <li><em>chains</em>: The string literal 'chains'</li>
+    <li><em>chain-type</em>: call, or prototype. Basically, either doing this.call(parent); or this.prototype = new parent; respectively</li>
+    <li><em>function</em>: A function name</li>
+    <li><em>parameters</em>: The string literal 'parameters'</li>
+    <li><em>parameter</em>: The name of the parameter</li>
+    <li><em>optional</v>: True if the parameter is documented as optional</li>
+    <li><em>repeating</em>: True if the parameter is documented as repeating</li>
+    <li><em>type</em>: Object type of the parameter.</li>
+    <li><em>source</em>: Source Code (if it's a function)</li>
+  </ul>
+  <pre>array(
+  'variable' => array(
+    '#requires' => array(
+      array('environment/condition', 'resource')
+    )
+    'type' => '',   
+    'source' => '',
+    'summary' => '',
+    'description' => '',
+    'aliases' => '',
+    'instance' => '',
+    'initialized' => boolean,
+    'prototype' => '',
+    'returns' => '',
+    'chains' => array(
+      array('chain-type', 'function')
+    ),
+    'parameters' => array(
+      'parameter' => array(
+        'optional' => boolean,
+        'repeating' => boolean,
+        'type' => '',
+        'summary' => ''
+      )
+    )
+  )
+)</pre>");
+  }
+
+  return '';
+}
+
+// Implemented node-type hook functions
+// ====================================
+
+/**
+ * Implementation of hook_access().
+ */
+function jsdoc_object_access($op, $node) {
+  global $user;
+
+  if ($op == 'update') {
+    return user_access('edit jsdoc');
+  }
+  elseif ($op == 'view') {
+    return user_access('access content');
+  }
+
+  return false;
+}
+
+/**
+ * Implementation of hook_access().
+ */
+function jsdoc_variable_access($op, $node) {
+  return jsdoc_object_access($op, $node);
+}
+
+/**
+ * Implementation of hook_access().
+ */
+function jsdoc_resource_access($op, $node) {
+  return jsdoc_object_access($op, $node);
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function jsdoc_form_alter($form_id, &$form) {
+  if ($form['type']['#value'] == 'jsdoc_object') {
+    unset($form['taxonomy']);
+  }
+}
+
+/**
+ * Implementation of hook_form().
+ */
+function jsdoc_object_form(&$node) {
+  $form = array(
+    '#redirect' => $node->jsdoc_url
+  );
+
+  if ($node->teaser) {
+    $form['summary'] = array(
+      '#type' => 'item',
+      '#title' => t('Summary'),
+      '#value' => $node->teaser,
+      '#weight' => -10
+    );
+  }
+
+  if ($node->jsdoc_type != 'Function' && !$node->jsdoc_source) {
+    // Force them to specify summary in source where possible
+    $form['teaser'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Summary'),
+      '#default-value' => $node->teaser,
+      '#weight' => -10
+    );
+  }
+  else {
+    $form['teaser'] = array(
+      '#type' => 'hidden',
+      '#value' => $node->teaser
+    );
+    $form['jsdoc_classlike'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Is intended to be instantiated (like a class)'),
+      '#default_value' => $node->jsdoc_classlike,
+      '#weight' => -2
+    );
+  }
+
+  $form['jsdoc_updating'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Update on next cron'),
+    '#default_value' => $node->jsdoc_updating,
+    '#weight' => 0
+  );
+
+  if ($node->jsdoc_parameters) {
+    $summaries = array();
+    $query = db_query("SELECT DISTINCT jp.summary FROM {node_revisions} nr JOIN {node_revisions} nr2 ON (nr.nid = nr2.nid) JOIN {jsdoc_parameters} jp ON (jp.vid = nr2.vid) JOIN {jsdoc_objects} jo ON (jp.vid = jo.vid) WHERE nr.vid = %d AND jo.version = %d AND jp.name NOT IN ('%s')", $node->vid, $node->jsdoc_version, implode("', '", array_keys($node->jsdoc_parameters)));
+    while ($summary = db_fetch_object($query)) {
+      $summaries[$summary->summary] = $summary->summary;
+    }
+
+    foreach ($node->jsdoc_parameters as $parameter) {
+      $form['jsdoc_parameters'][$parameter->name] = array(
+        '#type' => 'fieldset',
+        '#title' => $parameter->jsdoc_formatted['type'] . $parameter->jsdoc_formatted['separator'] . $parameter->name,
+        '#weight' => $parameter->weight
+      );
+      $form['jsdoc_parameters'][$parameter->name]['summary'] = array(
+        '#title' => t('Summary'),
+        '#type' => 'textfield',
+        '#default_value' => $parameter->summary
+      );
+      if (!$parameter->summary && $summaries) {
+        $form['jsdoc_parameters'][$parameter->name]['previous_summary'] = array(
+          '#title' => t('Use Previous Summary'),
+          '#type' => 'radios',
+          '#options' => $summaries
+        );
+      }
+      $form['jsdoc_parameters']['#type'] = 'fieldset';
+      $form['jsdoc_parameters']['#title'] = t('Parameters');
+      $form['jsdoc_parameters']['#tree'] = true;
+      $form['jsdoc_parameters']['#collapsible'] = true;
+      $form['jsdoc_parameters']['#weight'] = -8;
+    }
+  }
+
+  $form['body_filter']['#weight'] = -6;
+  $form['body_filter']['body'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Description'),
+    '#default_value' => $node->body,
+    '#rows' => 10,
+    '#required' => FALSE,
+  );
+  $form['body_filter']['format'] = filter_form($node->format);
+
+  return $form;
+}
+
+/**
+ * Implementation of hook_form().
+ */
+function jsdoc_variable_form(&$node) {
+  $form = array(
+    '#redirect' => $node->jsdoc_url
+  );
+
+  $query = db_query("SELECT nid FROM {node} WHERE type = 'jsdoc' AND BINARY title = '%s'", $node->title);
+  if (db_num_rows($query)) {
+    $form['jsdoc_details'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Edit Specific Objects')
+    );
+  }
+  while ($detail = db_fetch_object($query)) {
+    $detail = node_load($detail->nid);
+    $form['jsdoc_details'][$detail->nid] = array(
+      '#type' => 'item',
+      '#value' => l(t('Edit object in: ') . db_result(db_query("SELECT title FROM {node_revisions} WHERE vid = %d", $detail->jsdoc_resource)), 'node/' . $detail->nid . '/edit')
+    );
+  }
+
+  $form['jsdoc_disambiguation'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Disambiguation'),
+    '#collapsible' => true,
+    '#collapsed' => true
+  );
+
+  $form['jsdoc_disambiguation']['jsdoc_disambiguation'] = array(
+    '#type' => 'radios',
+    '#default_value' => round($node->jsdoc_disambiguation->vid),
+    '#options' => array()
+  );
+
+  $query = db_query("SELECT nr.nid, MAX(jo.vid) FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (jo.vid = nr.vid) WHERE BINARY nr.title = '%s' GROUP BY nr.nid", $node->title);
+  while ($detail = db_fetch_object($query)) {
+    $detail = node_load($detail->nid, $detail->vid);
+    $resource = db_result(db_query("SELECT title FROM {node_revisions} WHERE vid = %d", $detail->jsdoc_resource_vid));
+
+    $form['jsdoc_disambiguation']['jsdoc_disambiguation']['#options'][$detail->jsdoc_resource_vid] = t('Use the summary and description in ' . $resource);
+  }
+
+  $form['jsdoc_disambiguation']['jsdoc_disambiguation']['#options']['0'] = t('No cutomization'); 
+  $form['jsdoc_disambiguation']['jsdoc_disambiguation']['#options']['-1'] = t('Provide a custom summary and description (below)');
+
+  $form['teaser'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Summary'),
+    '#default_value' => $node->teaser
+  );
+
+  $form['body'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Description'),
+    '#default_value' => $node->body
+  );
+  
+  return $form;
+}
+
+/**
+ * Implementation of hook_form().
+ */
+function jsdoc_resource_form(&$node, &$param) {
+  $type = node_get_types('type', $node);
+  $form = array(
+    '#redirect' => $node->jsdoc_url
+  );
+
+  $form['title'] = array(
+    '#type' => 'item',
+    '#title' => t('Resource Name'),
+    '#value' => $node->title,
+    '#weight' => -5
+  );
+
+  $form['teaser'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Summary'),
+    '#required' => TRUE,
+    '#default_value' => $node->teaser,
+    '#weight' => -4
+  );
+
+  $form['body_filter']['#weight'] = -6;
+  $form['body_filter']['body'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Description'),
+    '#default_value' => $node->body,
+    '#required' => FALSE
+  );
+  $form['body_filter']['filter'] = filter_form($node->format);
+
+  return $form;
+}
+
+/**
+ * Implementation of hook_insert().
+ */
+function jsdoc_object_insert($node) {
+  if (!$node->jsdoc_version) {
+    $project = _jsdoc_project_get_or_create($node->jsdoc_namespace);
+    $node->jsdoc_version = $project->jsdoc_version;
+  }
+
+  db_query("INSERT INTO {jsdoc_objects} (vid, nid, resource_vid, resource_nid, provide_vid, provide_nid, initialized, classlike, type, returns, source, private, private_parent, version) VALUES (%d, %d, %d, %d, %d, %d, %d, %d, '%s', '%s', '%s', %d, %d, %d)", $node->vid, $node->nid, $node->jsdoc_resource_vid, $node->jsdoc_resource, $node->jsdoc_provide_vid, $node->jsdoc_provide, $node->jsdoc_initialized, $node->jsdoc_classlike, $node->jsdoc_type, $node->jsdoc_returns, $node->jsdoc_source, $node->jsdoc_private, $node->jsdoc_private_parent, $node->jsdoc_version);
+
+  _jsdoc_detail_update_joins($node);
+
+  if (is_array($node->jsdoc_parameters)) {
+    $i = 0;
+    foreach ($node->jsdoc_parameters as $parameter_name => $parameter) {
+      if (!db_num_rows(db_query("SELECT 1 FROM {jsdoc_parameters} WHERE vid = %d AND name = '%s'", $node->vid, $parameter_name))) {
+        db_query("INSERT INTO {jsdoc_parameters} (vid, nid, weight, name, type, summary, optional, repeating) VALUES (%d, %d, %d, '%s', '%s', '%s', %d, %d)", $node->vid, $node->nid, $i++, $parameter_name, $parameter['type'], $parameter['summary'], $parameter['optional'], $parameter['repeating']);
+      }
+    }
+  }
+}
+
+/**
+ * Implementation of hook_insert().
+ */
+function jsdoc_variable_insert($node) {
+  db_query("INSERT INTO {jsdoc_variables} (vid, nid, private, private_parent, version) VALUES (%d, %d, %d, %d, %d)", $node->vid, $node->nid, $node->jsdoc_private, $node->jsdoc_private_parent, $node->jsdoc_version);
+}
+
+/**
+ * Implementation of hook_resource().
+ */
+function jsdoc_resource_insert($node) {
+  db_query("INSERT INTO {jsdoc_resources} (vid, nid, version) VALUES (%d, %d, %d)", $node->vid, $node->nid, $node->jsdoc_version);
+}
+
+/**
+ * Implementation of hook_insert().
+ */
+function jsdoc_project_insert($node) {
+  if (!$node->jsdoc_version || $node->revision) {
+    $version = _jsdoc_version_get_or_create('HEAD', $node->nid);
+  }
+}
+
+/**
+ * Implementation of hook_insert().
+ */
+function jsdoc_version_insert($node) {
+  db_query("INSERT INTO {jsdoc_versions} (nid, project) VALUES (%d, %d)", $node->nid, $node->jsdoc_project);
+}
+
+/**
+ * Implementation of hook_update().
+ */
+function jsdoc_object_update($node) {
+  if ($node->revision) {
+    db_query("INSERT INTO {jsdoc_objects} SELECT %d, nid, resource_vid, resource_nid, provide_vid, provide_nid, initialized, classlike, type, 0, returns, source, private, private_parent, version, used FROM {jsdoc_objects} WHERE vid = %d", $node->vid, $node->old_vid);
+    $node->jsdoc_updating = 0;
+  }
+
+  if (!$node->jsdoc_version) {
+    $project = _jsdoc_project_get_or_create($node->jsdoc_namespace);
+    $node->jsdoc_version = $project->jsdoc_version;
+  }
+
+  _jsdoc_detail_update_joins($node);
+  db_query("UPDATE {jsdoc_objects} SET updating = %d, resource_vid = %d, resource_nid = %d, provide_vid = %d, provide_nid = %d, initialized = %d, classlike = %d, type = '%s', returns = '%s', source = '%s', private = %d, private_parent = %d, version = %d WHERE vid = %d", $node->jsdoc_updating, $node->jsdoc_resource_vid, $node->jsdoc_resource, $node->jsdoc_provide_vid, $node->jsdoc_provide, $node->jsdoc_initialized, $node->jsdoc_classlike, $node->jsdoc_type, $node->jsdoc_returns, $node->jsdoc_source, $node->jsdoc_private, $node->jsdoc_private_parent, $node->jsdoc_version, $node->vid);
+
+  if (is_array($node->jsdoc_parameters)) {
+    $i = 0;
+    foreach ($node->jsdoc_parameters as $parameter_name => $parameter) {
+      if (is_array($parameter)) {
+        if ($node->revision) {
+          db_query("INSERT INTO {jsdoc_parameters} (vid, nid, weight, name, type, summary, optional, repeating) VALUES (%d, %d, %d, '%s', '%s', '%s', %d, %d)", $node->vid, $node->nid, $i++, $parameter_name, $parameter['type'], ($parameter['previous_summary']) ? $parameter['previous_summary'] : $parameter['summary'], $parameter['optional'], $parameter['repeating']);
+        }
+        else {
+          db_query("UPDATE {jsdoc_parameters} SET summary = '%s' WHERE vid = %d AND name = '%s'", $parameter['summary'], $node->vid, $parameter_name);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implementation of hook_update().
+ */
+function jsdoc_variable_update($node) {
+  if ($node->revision) {
+    jsdoc_object_insert($node);
+  }
+  else {
+    if (!is_array($node->jsdoc_disamgibuation)) {
+      $resource_nid = db_result(db_query("SELECT nid FROM {node_revisions} WHERE vid = %d", $node->jsdoc_disambiguation));
+      $node->jsdoc_disambiguation = (object)array(
+        'nid' => $resource_nid,
+        'vid' => $node->jsdoc_disambiguation
+      );
+    }
+    db_query("UPDATE {jsdoc_variables} SET resource_vid = %d, resource_nid = %d, private = %d, private_parent = %d WHERE vid = %d", $node->jsdoc_disambiguation->vid, $node->jsdoc_disambiguation->nid, $node->jsdoc_private, $node->jsdoc_private_parent, $node->vid);
+  }
+}
+
+/**
+ * Implementation of hook_update().
+ */
+function jsdoc_resource_update($node) {
+  db_query("UPDATE {jsdoc_resources} SET version = '%s' WHERE vid = %d", $node->jsdoc_version, $node->vid);
+}
+
+/**
+ * Implementation of hook_delete
+ */
+function jsdoc_object_delete(&$node) {
+  db_query("DELETE FROM {jsdoc_objects} WHERE nid = %d", $node->nid);
+  db_query("DELETE FROM {jsdoc_parameters} WHERE nid = %d", $node->nid);
+}
+
+/**
+ * Implementation of hook_delete
+ */
+function jsdoc_variable_delete(&$node) {
+  db_query("DELETE FROM {jsdoc_variables} WHERE nid = %d", $node->nid);
+  db_query("DELETE FROM {jsdoc_variable_hierarchy} WHERE nid = %d OR parent_nid = %d", $node->nid, $node->nid);
+  $query = db_query("SELECT nid FROM {nodes} WHERE type = 'jsdoc_object' AND title = '%s'", $node->title);
+  while ($object = db_fetch_object($query)) {
+    jsdoc_object_delete($object);
+  }
+}
+
+/**
+ * Implementation of hook_delete
+ */
+function jsdoc_resource_delete(&$node) {
+  db_query("DELETE FROM {jsdoc_resources} WHERE nid = %d", $node->nid);
+  db_query("DELETE FROM {jsdoc_resource_hierarchy} WHERE nid = %d OR parent_nid = %d", $node->nid, $node->nid);
+}
+
+/**
+ * Implementation of hook_load().
+ */
+function jsdoc_object_load($node) {
+  // TODO: Deal with alias
+  $additions = db_fetch_object(db_query("SELECT jo.type AS jsdoc_type, jo.returns AS jsdoc_returns, jo.updating AS jsdoc_updating, jo.classlike AS jsdoc_classlike, jo.private AS jsdoc_private, jo.private_parent AS jsdoc_private_parent, jo.resource_nid AS jsdoc_resource, jo.resource_vid AS jsdoc_resource_vid, jo.provide_nid AS jsdoc_provide, jo.provide_vid AS jsdoc_provide_vid, jo.version AS jsdoc_version, source AS jsdoc_source, jo.resource_vid != n.vid AS has_revisions FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (jo.resource_vid = nr.vid) JOIN {node} n ON (nr.nid = n.nid) WHERE jo.vid = %d", $node->vid));
+
+  $version = node_load($additions->jsdoc_version);
+  $additions->jsdoc_namespace = $version->jsdoc_namespace;
+  $additions->jsdoc_project_name = $version->jsdoc_project_name;
+  $additions->jsdoc_version_name = $version->title;
+
+  $additions->jsdoc_formatted = _jsdoc_format_type($additions->jsdoc_type, $additions->jsdoc_classlike);
+
+  $additions->jsdoc_parameters = array();
+  $query = db_query("SELECT * FROM {jsdoc_parameters} WHERE vid = %d ORDER BY weight", $node->vid);
+  while ($parameter = db_fetch_object($query)) {
+    $parameter->jsdoc_formatted = _jsdoc_format_type($parameter->type, $parameter->optional, $parameter->recurring);
+    $additions->jsdoc_parameters[$parameter->name] = $parameter;
+  }
+
+  $additions->jsdoc_parents = array();
+  $query = db_query("SELECT n.title FROM {jsdoc_variable_hierarchy} j JOIN {node_revisions} n ON (n.vid = j.parent_vid) WHERE j.type IN ('normal', 'prototype', 'instance') AND j.vid = %d GROUP BY BINARY n.title", $node->vid);
+  while ($parent = db_fetch_object($query)) {
+    $additions->jsdoc_parents[] = $parent->title;
+  }
+  $additions->jsdoc_parents = array_unique($additions->jsdoc_parents);
+  natsort($additions->jsdoc_parents);
+
+  $query = db_query("SELECT j.type, j.subtype, nr.title FROM {jsdoc_variable_hierarchy} j JOIN {node_revisions} nr ON (nr.vid = j.vid) JOIN {node_revisions} nr2 ON (nr2.vid = j.parent_vid) WHERE BINARY nr2.title = '%s'", $node->title);
+  while ($join = db_fetch_object($query)) {
+    if ($join->type == 'instance') {
+      $additions->jsdoc_instances[] = $join->title;
+    }
+    elseif ($join->type == 'prototype') {
+      $additions->jsdoc_prototypes[] = $join->title;
+    }
+    elseif ($join->type == 'normal') {
+      $additions->jsdoc_variables[] = $join->title;
+    }
+    elseif ($join->type == 'chain') {
+      $additions->jsdoc_chains[$join->subtype][] = $join->title;
+    }
+  }
+
+  $query = db_query("SELECT j.subtype, nr.title AS parent FROM {jsdoc_variable_hierarchy} j JOIN {node_revisions} nr ON (nr.vid = j.parent_vid) WHERE j.vid = %d AND j.type = 'chain'", $node->vid);
+  while ($chain = db_fetch_object($query)) {
+    $additions->jsdoc_parents[$chain->subtype][] = $chain->parent;
+  }
+
+  if ($node->teaser) {
+    $additions->jsdoc_body = $node->teaser . "\n\n" . $node->body;
+  }
+
+  $node->jsdoc_url = 'jsdoc/' . $version->jsdoc_project_name . '/HEAD/object/' . db_result(db_query("SELECT title FROM {node_revisions} WHERE vid = %d", $additions->jsdoc_resource_vid)). '/' . $node->title;
+
+  return $additions;
+}
+
+/**
+ * Implementation of hook_load().
+ */
+function jsdoc_project_load($node) {
+  $additions = (object)array(
+    'jsdoc_versions' => array()
+  );
+  $query = db_query("SELECT nid AS jsdoc_version FROM {jsdoc_versions} WHERE project = %d ORDER BY nid DESC", $node->nid);
+  while ($addition = db_fetch_object($query)) {
+    if (empty($additions->jsdoc_versions)) {
+      $additions->jsdoc_version = $addition->jsdoc_version;
+    }
+    $additions->jsdoc_versions[] = $addition->jsdoc_version;
+  }
+
+  return $additions;
+}
+
+/**
+ * Implementation of hook_load().
+ */
+function jsdoc_version_load($node) {
+  return db_fetch_object(db_query("SELECT n2.title AS jsdoc_project_name, n2.nid AS jsdoc_project, n.title AS jsdoc_namespace FROM {jsdoc_versions} j JOIN {node} n ON (n.nid = j.nid) JOIN {node} n2 ON (n2.nid = j.project) WHERE j.nid = %d", $node->nid));
+}
+
+/**
+ * Implementation of hook_load().
+ */
+function jsdoc_resource_load($node) {
+  $additions = db_fetch_object(db_query("SELECT version AS jsdoc_version FROM {jsdoc_resources} WHERE vid = %d", $node->vid));
+  $version = node_load($additions->jsdoc_version);
+  $additions->jsdoc_project_name = $version->jsdoc_project_name;
+  $additions->jsdoc_version = $version->title;
+  $additions->jsdoc_url = 'jsdoc/' . $additions->jsdoc_project_name . '/HEAD/resource/' . $node->title;
+  $additions->jsdoc_formatted = array();
+  return $additions;
+}
+
+/**
+ * Implementation of hook_load().
+ */
+function jsdoc_variable_load($node) {
+  // An object might have a "default" disambiguation package.
+  $additions = db_fetch_object(db_query("SELECT version AS jsdoc_version, resource_nid AS jsdoc_resource, resource_vid AS jsdoc_resource_vid, private AS jsdoc_private FROM {jsdoc_variables} WHERE vid = %d", $node->vid));
+  if ($additions->jsdoc_resource) {
+    $additions->jsdoc_disambiguation = node_load($additions->jsdoc_resource, $additions->jsdoc_resource_vid);
+  }
+  unset($additions->jsdoc_resource);
+  unset($additions->jsdoc_resource_vid);
+  
+  $version = node_load($additions->jsdoc_version);
+
+  $additions->jsdoc_project_name = $version->jsdoc_project_name;
+  $additions->jsdoc_version_name = $version->title;
+  $additions->jsdoc_url = 'jsdoc/' . $additions->jsdoc_project_name . '/' . $additions->jsdoc_version_name . '/object/' . $node->title;
+
+  if ($additions->jsdoc_resource && $additions->jsdoc_resource != '-1') {
+    // Narrow the resource object down by resource
+    $query = db_query("SELECT n.nid, MAX(n.vid) AS vid FROM {jsdoc_objects} j JOIN {node_revisions} n ON (j.vid = n.vid) WHERE BINARY n.title = '%s' AND j.resource_vid = %d AND j.version = %d GROUP BY n.nid", $node->title, $additions->jsdoc_resource_vid, $additions->jsdoc_version);
+  }
+  else {
+    // Choose all resource objects, regardless of resource (might be more than one resource)
+    $query = db_query("SELECT n.nid, MAX(n.vid) AS vid FROM {jsdoc_objects} j JOIN {node_revisions} n ON (j.vid = n.vid) WHERE BINARY n.title = '%s' AND j.version = %d GROUP BY n.nid", $node->title, $additions->jsdoc_version);
+  }
+
+  // If the object only exists in one resource, we can display this on the page
+  if (db_num_rows($query) == 1 && ($additions->jsdoc_detail = db_fetch_object($query)) && $additions->jsdoc_disambiguation != '-1' && arg(0) == 'jsdoc') {
+    // If we have a non-custom disambiguation...
+    $sumdesc = db_fetch_object(db_query("SELECT j.type, j.classlike, n.teaser, n.body, n.format, n2.title AS resource FROM {jsdoc_objects} j JOIN {node_revisions} n ON (n.vid = j.vid) JOIN {node_revisions} n2 ON (n2.vid = j.resource_vid) WHERE j.vid = %d", $additions->jsdoc_detail->vid));
+    $additions->teaser = $sumdesc->teaser;
+    $additions->format = $sumdesc->format;
+    $additions->body = $sumdesc->body;
+    $additions->jsdoc_type = $sumdesc->type;
+    $additions->jsdoc_classlike = $sumdesc->classlike;
+    $additions->jsdoc_url = 'jsdoc/' . $version->jsdoc_project_name . '/' . $version->title . '/object/' . $sumdesc->resource . '/' . $node->title;
+  }
+  else {
+    $additions->teaser = $node->teaser;
+    $additions->body = $node->body;
+    $types = array();
+    $query = db_query("SELECT n2.title, j.type, j.private FROM {jsdoc_objects} j JOIN {node_revisions} n ON (n.vid = j.vid) JOIN {node_revisions} n2 ON (j.resource_vid = n2.vid) WHERE j.version = %d AND BINARY n.title = '%s' GROUP BY BINARY n2.title, j.type ORDER BY BINARY n.title", $additions->jsdoc_version, $node->title);
+    while ($resource = db_fetch_object($query)) {
+      $types[] = $resource->type;
+      $node->jsdoc_disambiguations[] = $resource->title;
+      if ($resource->private) {
+        $node->jsdoc_private = true;
+      }
+    }
+    $types = array_unique($types);
+    if (count($types) === 1) {
+      $additions->jsdoc_type = $types[0];
+    }
+    unset($types);
+  }
+
+  $additions->jsdoc_parents = array();
+  if ($additions->jsdoc_detail) {
+    $query = db_query("SELECT %d AS vid", $additions->jsdoc_detail->vid);
+  }
+  else {
+    // Select all resources with this as a name
+    $query = db_query("SELECT MAX(n.vid) AS vid FROM {jsdoc_objects} j JOIN {node_revisions} n ON (n.vid = j.vid) WHERE j.version = %d AND BINARY n.title = '%s' GROUP BY n.nid", $additions->jsdoc_version, $node->title);
+  }
+  $vids = array(-1);
+  while ($child = db_fetch_object($query)) {
+    $vids[] = $child->vid;
+  }
+  $query = db_query("SELECT n.nid, MAX(n.vid) AS vid FROM {jsdoc_variable_hierarchy} j JOIN {node_revisions} n ON (n.vid = j.parent_vid) WHERE j.vid IN (%s) GROUP BY n.nid ORDER BY BINARY n.title", implode(", ", array_unique($vids)));
+  while ($parent = db_fetch_object($query)) {
+    $additions->jsdoc_parents[] = $parent;
+  }
+
+  if ($additions->teaser) {
+    $additions->body = $additions->teaser . "\n\n" . $additions->body;
+  }
+
+  $additions->jsdoc_title = $node->title;
+
+  $additions->jsdoc_formatted = _jsdoc_format_type($additions->jsdoc_type, $additions->jsdoc_classlike);
+
+  return $additions;
+}
+
+/**
+ * Implementation of hook_view().
+ */
+function jsdoc_resource_view($node, $teaser = false, $page = false) {
+  $node = node_prepare($node, $teaser);
+
+  $parts = explode('.', $node->title);
+  $title_text = "";
+  $end = array_pop($parts);
+  $title = "";
+  $last_part = "";
+  foreach ($parts as $part) {
+    if (!empty($title_text)) {
+      $title_text .= '.';
+    }
+    $title_text .= $part;
+
+    $obj = jsdoc_resource_node_load($node->jsdoc_project_name, $node->jsdoc_version, $title_text);
+    if (!empty($title)) {
+      $title .= '.';
+    }
+    if ($obj) {
+      $title .= l($part, $obj->jsdoc_url);
+    }
+    else {
+      $title .= $part;
+    }
+    $title_text .= '.' . $part;
+  }
+  if (!empty($title)) {
+    $title .= '.';
+  }
+  drupal_set_title($title . $end);
+  
+  $tree = _jsdoc_get_tree(array(3, 4), $node->vid);
+
+  $resources = array();
+  $expanded = _jsdoc_resource_expand($tree, $node->vid, 0, $resources);
+
+  $depth = 1;
+  while ($depth < 20) {
+    $found = false;
+    
+    for ($i = 0; $i < count($expanded); $i++) {
+      $leaf = $expanded[$i];
+      if ($leaf->depth == $depth - 1) {
+        $leaf = _jsdoc_resource_expand($tree, $leaf->vid, $depth, $resources);
+        if (!empty($leaf)) {
+          $found = true;
+          array_splice($expanded, $i + 1, 0, $leaf);
+          $i += count($leaf);
+        }
+      }
+    }
+    ++$depth;
+    if (!$found) break;
+  }
+
+  $resources = '';
+  foreach ($expanded as $leaf) {
+    if ($leaf->depth == 0) {
+      $resources .= '<span style="color: red;">';
+    }
+    $resources .= str_pad('', $leaf->depth, '-') . ' ' . $leaf->name . '<br>';
+    if ($leaf->depth == 0) {
+      $resources .= '</span>';
+    }
+  }
+  
+  if (count($expanded)) {
+    $node->content['resources'] = array(
+      '#type' => 'fieldset',
+      '#collapsible' => true,
+      '#collapsed' => true,
+      '#title' => t('Uses') . ' ' . count($expanded) . ' ' . t('resources') . '<br>',
+      '#weight' => 5
+    );
+    $node->content['resources']['resources'] = array(
+      '#type' => 'item',
+      '#value' => $resources
+    );
+  }
+
+  if ($node->teaser) {
+    $node->content['teaser'] = array(
+      '#type' => 'item',
+      '#title' => t('Summary'),
+      '#value' => '<p>' . $node->teaser . '</p>',
+      '#weight' => -25
+    );
+  }
+
+  $view_as_private = (arg(0) == 'jsdoc' && arg(5) == 'private') ? true : false;
+  $children = jsdoc_resource_object_list($node, $view_as_private);
+  if (count($children)) {
+    $node->content['jsdoc_children'] = array(
+      '#type' => 'fieldset',
+      '#collapsible' => true,
+      '#collapsed' => true,
+      '#title' => t('Objects in this resource'),
+      '#weight' => 10
+    );
+  }
+  uksort($children, "strnatcmp");
+
+  $i = 0;
+  $last = "";
+  foreach ($children as $child) {
+    $child = node_load($child->nid, $child->vid);
+    if($last && strpos($child->title, $last) === 0 && strpos($child->title, $node->title . '.') === 0){
+      continue;
+    }
+    $node->content['jsdoc_children']['children'][] = array(
+      '#type' => 'item',
+      '#weight' => $i++,
+      '#value' => $child->jsdoc_formatted['type'] . $child->jsdoc_formatted['separator'] . l($child->title, $child->jsdoc_url, array(), null, null, null, true)
+    );
+    if (strpos($child->title, $node->title . '.') === 0) {
+      $last = $child->title . '.';
+    }
+  }
+
+  if ($node->content['jsdoc_children']) {
+    $node->content['jsdoc_children']['#title'] = ($i == 1) ? t('1 object in this resource') : t($i . ' objects in this resource');
+  }
+
+  if (!$node->content['jsdoc_children']['children']) {
+    unset($node->children['jsdoc_children']);
+  }
+
+  return $node;
+}
+
+/**
+ * Implementation of hook_view().
+ */
+function jsdoc_object_view($node, $teaser = false, $page = false) {
+  $object = node_prepare($node, $teaser);
+  return _jsdoc_detail_view($node);
+}
+
+/**
+ * Implementation of hook_view().
+ */
+function jsdoc_variable_view($node, $teaser = false, $page = false) {
+  $node = node_prepare($node, $teaser);
+  return _jsdoc_detail_view($node);
+}
+
+function _jsdoc_detail_view($node) {
+  if ($node->type == 'jsdoc_variable') {
+    if ($node->jsdoc_detail) {
+      $detail = node_load($node->jsdoc_detail->nid, $node->jsdoc_detail->vid);
+      $node->contents = $detail->contents; // Save the comments/etc to the detail, not to the parent.
+    }
+  }
+  elseif ($node->type == 'jsdoc_object') {
+    $detail = $node;
+  }
+
+  $parts = explode('.', $node->title);
+  $title_text = "";
+  $end = array_pop($parts);
+  $title = "";
+  $last_part = "";
+  foreach ($parts as $part) {
+    if (!empty($title_text)) {
+      $title_text .= '.';
+    }
+    $title_text .= $part;
+
+    $obj = jsdoc_object_node_load($node->jsdoc_project_name, $node->jsdoc_version_name, $title_text);
+    if (!empty($title)) {
+      $title .= '.';
+    }
+    if ($obj) {
+      $title .= l($part, $obj->jsdoc_url);
+    }
+    else {
+      $title .= $part;
+    }
+  }
+  if (!empty($title)) {
+    $title .= '.';
+  }
+  drupal_set_title($title . $end);
+
+  $version = node_load($node->jsdoc_version);
+
+  if ($node->jsdoc_disambiguation && $node->jsdoc_disambiguation->vid) {
+    $node->content['detail']['jsdoc_disambiguation'] = array(
+      '#type' => 'item',
+      '#title' => t('In Resource'),
+      '#value' => l($node->jsdoc_disambiguation->title, $node->jsdoc_disambiguation->jsdoc_url),
+      '#weight' => -22
+    );
+  }
+
+  if (is_array($node->jsdoc_disambiguations)) {
+    $node->content['detail']['jsdoc_disambiguations'] = array(
+      '#type' => 'fieldset',
+      '#title' => ($node->jsdoc_disambiguation && $node->jsdoc_disambiguation != 0) ? t('Also in Resources') : t('Appears in Resources'),
+      '#collapsible' => true,
+      '#collapsed' => true,
+      '#weight' => -20
+    );
+    foreach ($node->jsdoc_disambiguations as $resource) {
+      if ($resource == $node->jsdoc_resource->title) continue;
+
+      $node->content['detail']['jsdoc_disambiguations'][] = array(
+        '#type' => 'item',
+        '#value' => l($resource, 'jsdoc/' . $node->jsdoc_project_name . '/HEAD/object/' . $resource . '/' . $node->title)
+      );
+    }
+  }
+
+  if (trim($node->body)) {
+    $node->content['detail']['body'] = $node->content['body'];
+    $node->content['detail']['body']['#type'] = 'item';
+    $node->content['detail']['body']['#title'] = t('Description');
+    $node->content['detail']['body']['#weight'] = -30;
+    unset($node->content['body']);
+  }
+  
+  if ($detail) {
+    if ($detail->jsdoc_resource) {
+      $detail->jsdoc_resource = node_load(db_result(db_query("SELECT nid FROM node_revisions WHERE vid = %d", $detail->jsdoc_resource_vid)));
+    }
+    if ($detail->jsdoc_provide) {
+      $detail->jsdoc_provide = node_load(db_result(db_query("SELECT nid FROM node_revisions WHERE vid = %d", $detail->jsdoc_provide_vid)));
+    }
+
+    $node->content['detail']['jsdoc_resource'] = array(
+      '#type' => 'item',
+      '#title' => t('In Resource'),
+      '#value' => l($detail->jsdoc_resource->title, $detail->jsdoc_resource->jsdoc_url),
+      '#weight' => -20
+    );
+
+    if ($detail->jsdoc_provide_vid != $detail->jsdoc_resource_vid) {
+      $node->content['detail']['jsdoc_provides'] = array(
+        '#type' => 'item',
+        '#title' => t('To Include'),
+        '#value' => l($detail->jsdoc_provide->title, $detail->jsdoc_provide->jsdoc_url),
+        '#weight' => -19
+      );
+    }
+    
+    if ($detail->jsdoc_parents) {
+      $node->content['detail']['jsdoc_parents'] = array(
+        '#weight' => -18
+      );
+      foreach ($detail->jsdoc_parents as $weight => $parent) {
+        $parent = jsdoc_object_node_load($version->jsdoc_project_name, $version->title, $parent);
+        $node->content['detail']['jsdoc_parents'][$parent->title] = array(
+          '#type' => 'item',
+          '#value' => l($parent->title, $parent->jsdoc_url),
+          '#weight' => $weight
+        );
+        if (!$weight) {
+          if (count($detail->jsdoc_parents) == 1) {
+            $node->content['detail']['jsdoc_parents'][$parent->title]['#title'] = t('Parent Object');
+          }
+          else {
+            $node->content['detail']['jsdoc_parents'][$parent->title]['#title'] = t('Parent Objects');
+          }
+        }
+      }
+    }
+
+    if ($detail->jsdoc_type) {
+      $node->content['detail']['jsdoc_type'] = array(
+        '#type' => 'item',
+        '#title' => t('Object Type'),
+        '#value' => ($node->jsdoc_initialized || $detail->jsdoc_initialized) ? $detail->jsdoc_formatted['class_type'] : $detail->jsdoc_formatted['type'],
+        '#weight' => -15
+      );
+    }
+    
+    if ($detail->jsdoc_source) {
+      $node->content['detail']['jsdoc_source'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Source'),
+        '#weight' => 20
+      );
+    
+      $parameters = array();
+      $worth_displaying = false;  
+      foreach ($detail->jsdoc_parameters as $weight => $parameter) {
+        $worth_displaying = true;
+        $type = $parameter->jsdoc_formatted['type'];
+        $obj = jsdoc_object_node_load($node->jsdoc_project_name, $node->jsdoc_version_name, $parameter->type, $node->jsdoc_resource->title);
+        if ($obj) {
+          $type = l($parameter->jsdoc_formatted['type'], $obj->jsdoc_url);
+        }
+        $parameters[] = $parameter->jsdoc_formatted['html_type_prefix'] . $parameter->jsdoc_formatted['type'] . $parameter->jsdoc_formatted['html_type_suffix'] . $parameter->jsdoc_formatted['separator'] . $parameter->name;
+        $node->content['detail']['jsdoc_parameters'][$parameter->name] = array(
+          '#type' => 'item',
+          '#weight' => $weight
+        );
+        if ($parameter->summary) {
+          $node->content['detail']['jsdoc_parameters'][$parameter->name]['#value'] = $type . $parameter->jsdoc_formatted['separator'] . $parameter->name . ': ' . $parameter->summary;
+        }
+        else {
+          $node->content['detail']['jsdoc_parameters'][$parameter->name]['#value'] = $type . $parameter->jsdoc_formatted['separator'] . $parameter->name;
+        }
+      }
+  
+      if (!$worth_displaying) {
+        unset($node->content['detail']['jsdoc_parameters']);
+      }
+      else {
+        $node->content['detail']['jsdoc_parameters']['#type'] = 'fieldset';
+        $node->content['detail']['jsdoc_parameters']['#title'] = t('Parameters');
+        $node->content['detail']['jsdoc_parameters']['#collapsible'] = true;
+        $node->content['detail']['jsdoc_parameters']['#weight'] = 10;
+      }
+  
+      $source = '';
+      if ($detail->jsdoc_returns) {
+        $source .= $detail->jsdoc_returns . ' ';
+      }
+
+      $source .= 'function ' . $detail->title . '(' . implode(', ', $parameters) . '){';
+      if (isset($_GET['source'])) {
+        $source .= "\n\t" . trim($detail->jsdoc_source) . "\n";
+      }
+      else {
+        $source .= ' "View source" ';
+      }
+      $source .= '}';
+  
+      ini_set('include_path', ini_get('include_path') . ':' . getcwd() . '/' . drupal_get_path('module', 'jsdoc') . '/lib');
+      include_once('Text/Highlighter.php');
+
+      $highlighter =& Text_Highlighter::factory('javascript', array('tabsize' => 2));
+      if ($highlighter instanceof PEAR_Error) {
+        watchdog('jsdoc', $highlighter->getMessage(), WATCHDOG_ERROR);
+      }
+      else {
+        drupal_add_css(drupal_get_path('module', 'jsdoc') . '/jsdoc.css');
+        $source = $highlighter->highlight($source);
+      }
+
+      if (!isset($_GET['source'])) {
+        $source = str_replace('<span class="hl-string">View source</span>', l('<span class="hl-string" style="text-decoration: underline;">View source</span>', $_GET['q'], array(), 'source', null, false, true), $source);
+      }
+
+      $node->content['detail']['jsdoc_source']['source'] = array(
+        '#type' => 'item',
+        '#value' => $source
+      );
+    }
+    
+    if ($node->jsdoc_initialized) {
+      $detail->jsdoc_initialized = true;
+    }
+    
+    $variables = array();
+    if ($detail->jsdoc_instances && $detail->jsdoc_initialized) {
+      foreach ($detail->jsdoc_instances as $title) {
+        $variables[$title] = jsdoc_object_node_load($version->jsdoc_project_name, $version->title, $title, $detail->jsdoc_resource->title);
+      }
+    }
+    if ($detail->jsdoc_prototypes && $detail->jsdoc_initialized){
+      foreach ($detail->jsdoc_prototypes as $title) {
+        $variables[$title] = jsdoc_object_node_load($version->jsdoc_project_name, $version->title, $title, $detail->jsdoc_resource->title);
+      }
+    }
+    if ($detail->jsdoc_variables && !$detail->jsdoc_initialized){
+      foreach ($detail->jsdoc_variables as $title) {
+        $variables[$title] = jsdoc_object_node_load($version->jsdoc_project_name, $version->title, $title, $detail->jsdoc_resource->title);
+      }
+    }
+    if ($detail->jsdoc_chains){
+      foreach ($detail->jsdoc_chains as $subtype => $chain) {
+        foreach ($chain as $title) {
+          //$variables[$title] = jsdoc_object_node_load('HEAD', $title, $detail->jsdoc_resource->title);
+        }
+      }
+    }
+    uksort($variables, "strnatcmp");
+
+    if ($variables) {
+      $i = 0;
+      foreach ($variables as $object) {
+        if (!$node->jsdoc_allow_private && $object->jsdoc_private) continue;
+
+        $title = $object->title;
+        if (strpos($object->title, $node->title . '.') === 0) {
+          $title = substr($object->title, strlen($node->title) + 1);
+        }
+        if (strpos($title, '.') !== false) continue;
+
+        if ($object->jsdoc_type == 'Function') {
+          if ($object->jsdoc_classlike) {
+            $section_title = 'Classes';
+            $section_weight = '-28';
+            $section_index = 'jsdoc_classes';
+            $section_prefix = "";
+          }
+          else {
+            $section_title = 'Functions';
+            $section_weight = '-26';
+            $section_index = 'jsdoc_functions';
+            $section_prefix = "";
+          }
+        }
+        else {
+          $section_title = 'Fields';
+          $section_weight = '-24';
+          $section_index = 'jsdoc_fields';
+          $section_prefix = l($object->jsdoc_formatted['type'], jsdoc_object_node_load($object->jsdoc_project_name, $object->jsdoc_version_name, $object->jsdoc_type)->jsdoc_url) . $object->jsdoc_formatted['separator'];
+        }
+  
+        $node->content['detail'][$section_index]['#type'] = 'fieldset';
+        $node->content['detail'][$section_index]['#title'] = t($section_title);
+        $node->content['detail'][$section_index]['#collapsible'] = true;
+        $node->content['detail'][$section_index]['#weight'] = $section_weight;
+        $node->content['detail'][$section_index][$object->title] = array(
+          '#type' => 'item',
+          '#value' => $section_prefix . l($title, $object->jsdoc_url) . (($object->teaser) ? ': ' . $object->teaser : ''),
+          '#weight' => $i++
+        );
+      }
+    }
+  }
+  else {
+    // This object exists in more than one resource and a specification hasn't been made, or is never explicitly declared
+    // Either way, let's treat is like a normal object
+    
+    if ($node->jsdoc_type) {
+      $node->content['detail']['jsdoc_type'] = array(
+        '#type' => 'item',
+        '#title' => t('Object Type'),
+        '#value' => ($node->jsdoc_initialized) ? $node->jsdoc_formatted['class_type'] : $node->jsdoc_formatted['type'],
+        '#weight' => -15
+      );      
+    }
+    
+    if ($node->jsdoc_parents) {
+      $node->content['detail']['jsdoc_parents'] = array(
+        '#weight' => -12
+      );
+      foreach ($node->jsdoc_parents as $weight => $parent) {
+        $parent = node_load($parent->nid, $parent->vid);
+        $node->content['detail']['jsdoc_parents'][$parent->title] = array(
+          '#type' => 'item',
+          '#value' => ($parent->title == 'window') ? 'window' : l($parent->title, $parent->jsdoc_url),
+          '#weight' => $weight
+        );
+        if (!$weight) {
+          if (count($node->jsdoc_parents) == 1) {
+            $node->content['detail']['jsdoc_parents'][$parent->title]['#title'] = t('Parent Object');
+          }
+          else {
+            $node->content['detail']['jsdoc_parents'][$parent->title]['#title'] = t('Parent Objects');
+          }
+        }
+      }
+    }
+
+    // Find all objects joined normally to this object, 
+    $query = db_query("SELECT n.nid, MAX(n.vid) AS vid FROM {jsdoc_variable_hierarchy} j JOIN {jsdoc_objects} jo ON (jo.vid = j.vid) JOIN {node_revisions} n ON (n.vid = j.vid) WHERE j.parent_vid = %d AND j.type = 'normal' AND jo.version  = %d AND jo.private = 0 GROUP BY n.nid ORDER BY BINARY n.title", $node->vid, $version->vid);
+    $variables = array();
+    while ($object = db_fetch_object($query)) {
+      $object = node_load($object->nid, $object->vid);
+      $variables[$object->title] = $object;
+    }
+    uksort($variables, 'strnatcasecmp');
+
+    $i = 0;
+    foreach ($variables as $object) {
+      $title = $object->title;
+      if (strpos($object->title, $node->title . '.') === 0) {
+        $title = substr($object->title, strlen($node->title) + 1);
+      }
+      if (strpos($title, '.') !== false) continue;
+
+      if (!$node->jsdoc_allow_private && $object->jsdoc_private) continue;
+
+      if ($object->jsdoc_type == 'Function') {
+        if ($object->jsdoc_classlike) {
+          $section_title = 'Classes';
+          $section_weight = '-28';
+          $section_index = 'jsdoc_classes';
+          $section_prefix = "";
+        }
+        else {
+          $section_title = 'Functions';
+          $section_weight = '-26';
+          $section_index = 'jsdoc_functions';
+          $section_prefix = "";
+        }
+      }
+      else {
+        $section_title = 'Fields';
+        $section_weight = '-24';
+        $section_index = 'jsdoc_fields';
+        $section_prefix = l($object->jsdoc_formatted['type'], jsdoc_object_node_load($object->jsdoc_project_name, $object->jsdoc_version_name, $object->jsdoc_type)->jsdoc_url) . $object->jsdoc_formatted['separator'];
+      }
+
+      $node->content['detail'][$section_index]['#type'] = 'fieldset';
+      $node->content['detail'][$section_index]['#title'] = t($section_title);
+      $node->content['detail'][$section_index]['#collapsible'] = true;
+      $node->content['detail'][$section_index]['#weight'] = $section_weight;
+      $node->content['detail'][$section_index][$object->title] = array(
+        '#type' => 'item',
+        '#value' => $section_prefix . l($title, $object->jsdoc_url) . (($object->teaser) ? ': ' . $object->teaser : ''),
+        '#weight' => $i++
+      );
+    }
+  }
+  
+  return $node;
+}
+
+/**
+* Get the base objects for this project
+* 
+* @param $version
+*   The release version
+*/
+function jsdoc_root_objects($version) {
+  $objects = array();
+
+  // Find all "objects" that aren't private and don't have a period in them
+  $query = db_query("SELECT nr.nid, MAX(nr.vid) AS vid FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (nr.vid = jo.vid) WHERE nr.title NOT LIKE '%.%' AND nr.title != 'window' AND jo.private = 0 AND jo.version = '%s' GROUP BY nr.nid ORDER BY BINARY nr.title", $version);
+  while ($object = db_fetch_object($query)) {
+    if (_jsdoc_object_has_child($version, $object)) {
+      // If we find attached variables, it means this is a root level object
+      $object = node_load($object->nid, $object->vid);
+      $objects[$object->title] = $object;
+    }
+  }
+  
+  return $objects;
+}
+
+/**
+* Load all objects within this resource
+*/
+function jsdoc_resource_object_list($node, $private = false) {
+  $objects = array();
+
+  if ($private) {
+    $query = db_query("SELECT nid, MAX(vid) AS vid FROM {jsdoc_objects} WHERE provide_vid = %d GROUP BY nid", $node->nid);
+  }
+  else {
+        $query = db_query("SELECT nid, MAX(vid) AS vid FROM {jsdoc_objects} WHERE provide_vid = %d AND private = %d AND private_parent = %d GROUP BY nid", $node->nid, $private, $private);
+  }
+
+  while ($object = db_fetch_object($query)) {
+    $object = node_load($object->nid, $object->vid);
+    $objects[$object->title] = $object;
+  }
+
+  return $objects;
+}
+
+/**
+* For a given node, find any objects that are its children
+*
+* @param $version
+*   The release version
+* @param $node
+*   A node object of type 'jsdoc_object'
+* @param $only_objects
+*   Only show children that have children if true
+*/
+function jsdoc_child_objects($version, $node, $only_objects = false) {
+  $objects = array();
+
+  // Find the titles of all objects with this node as a parent
+  $query = db_query("SELECT nr.title FROM {jsdoc_variable_hierarchy} joh JOIN {jsdoc_objects} jro ON (jro.vid = joh.vid) JOIN {node_revisions} nr ON (nr.vid = joh.vid) WHERE joh.parent_vid = %d AND joh.type = 'normal' AND jro.private = 0 AND jro.version = '%s' GROUP BY BINARY nr.title", $node->vid, $version);
+  while ($title = db_fetch_object($query)) {
+    // Find the object nid/vid wih this as a title
+    $query2 = db_query("SELECT nr.nid, MAX(nr.vid) AS vid FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (nr.vid = jo.vid) WHERE BINARY nr.title = '%s' AND jo.private = 0 AND jo.version = '%s' GROUP BY nr.nid", $title->title, $version); 
+    while ($object = db_fetch_object($query2)) {
+      if (!$only_objects || _jsdoc_object_has_child($version, $object)) {
+        // If we find attached variables, it means this is a root level object
+        $object = node_load($object->nid, $object->vid);
+        $objects[$object->title] = $object;
+      }
+    }
+  }
+
+  return $objects;
+}
+
+/**
+* Check to see if there are any variables attached directly to this object
+*
+* @param $version
+*   The release version
+* @param $node
+*   A node of type jsdoc_object
+*/
+function _jsdoc_object_has_child($version, $node) {
+  $query = db_query("SELECT 1 FROM {jsdoc_variable_hierarchy} joh JOIN {jsdoc_resource_objects} jro ON (jro.vid = joh.vid) JOIN {node_revisions} nr ON (nr.vid = joh.vid) WHERE parent = %d AND joh.type = 'normal' AND jro.private = 0 AND jro.version = '%s' GROUP BY nr.nid", $node->vid, $version);
+  if (db_num_rows($query)) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Path: admin/settings/jsdoc
+ */
+function jsdoc_admin() {
+  $form = array();
+  
+  $form['jsdoc_dir_location'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Directory to run your file from'),
+    '#default_value' => variable_get('jsdoc_dir_location', ''),
+    '#required' => true
+  );
+  
+  $form['jsdoc_file_location'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Location of file used to parse your code'),
+    '#default_value' => variable_get('jsdoc_file_location', ''),
+    '#required' => true
+  );
+  
+  $form['jsdoc_base'] = array(
+    '#type' => 'textfield',
+    '#title' => t('This will be used as a base of our functions'),
+    '#default_value' => variable_get('jsdoc_base', 'jsdoc'),
+    '#description' => t('Implement hook_get_files() and hook_get_contents($file)'),
+    '#required' => true
+  );
+
+  $formats = filter_formats();
+  $options = array();
+  foreach ($formats as $format) {
+    $options[$format->format] = $format->name;
+  }
+
+  $form['jsdoc_input_format'] = array(
+    '#title' => t('Default Input Format'),
+    '#type' => 'radios',
+    '#options' => $options,
+    '#required' => true,
+    '#default_value' => variable_get('jsdoc_input_format', 0)
+  );
+  
+  return system_settings_form($form);
+}
+
+/**
+ * Custom version of node_load for variables
+ */
+function jsdoc_variable_node_load($version, $name, $resource = false) {
+  if ($resource) {
+    $object = db_fetch_object(db_query("SELECT nr.nid, MAX(nr.vid) AS vid FROM {jsdoc_resource_objects} jro JOIN {node_revisions} nr ON (nr.vid = jro.vid) JOIN {node_revisions} nr2 ON (nr2.vid = jro.resource) WHERE BINARY nr.title = '%s' AND BINARY nr2.title = '%s' AND jro.version = '%s' GROUP BY nr.nid", $name, $resource, $version));
+    if (!$object->nid) {
+      $resource = false;
+    }
+    else {
+      return node_load($object->nid, $object->vid);
+    }
+  }
+  if (!$resource) {
+    if ($object = db_fetch_object(db_query("SELECT nr.nid, MAX(nr.vid) AS vid FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (nr.vid = jo.vid) WHERE BINARY nr.title = '%s' AND jo.version = '%s' GROUP BY nr.nid", $name, $version))) {
+      return node_load($object->nid, $object->vid);
+    }
+  }
+}
+
+/**
+ * Custom version of node_load for resources
+ */
+function jsdoc_resource_node_load($project, $revision, $name) {
+  if ($version = db_fetch_object(db_query("SELECT n2.nid FROM {node} n JOIN {jsdoc_versions} j ON (j.project = n.nid) JOIN {node} n2 ON (n2.nid = j.nid) WHERE n.title = '%s' AND n2.title = '%s'", $project, $revision))) {
+    if ($resource = db_fetch_object(db_query("SELECT nr.nid, MAX(nr.vid) AS vid FROM {jsdoc_resources} jr JOIN {node_revisions} nr ON (nr.vid = jr.vid) JOIN {node} n ON (n.nid = jr.version) WHERE BINARY nr.title = '%s' AND jr.version = '%s' GROUP BY nr.nid", $name, $version->nid))) {
+      return node_load($resource->nid, $resource->vid);
+    }
+  }
+}
+
+/**
+ * Custom version of node_load for objects
+ */
+function jsdoc_object_node_load($project, $revision, $name, $resource = false) {
+  $global_vars = array('Array', 'Boolean', 'Date', 'Error', 'Function', 'Number', 'Object', 'RegExp', 'String');
+
+  if (in_array($name, $global_vars)) {
+    return (object)array(
+      'jsdoc_url' => 'http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Reference:Global_Objects:' . $name,
+      'title' => $name
+    );
+  }
+
+  if ($version = db_fetch_object(db_query("SELECT n2.nid FROM {node} n JOIN {jsdoc_versions} j ON (j.project = n.nid) JOIN {node} n2 ON (n2.nid = j.nid) WHERE n.title = '%s' AND n2.title = '%s'", $project, $revision))) {
+    if ($resource && $resource = db_fetch_object(db_query("SELECT n.nid, n.vid FROM {node_revisions} n JOIN {jsdoc_resources} j ON (j.vid = n.vid) AND BINARY n.title = '%s' AND j.version = %d", $resource, $version->nid))) {
+      if ($node = db_fetch_object(db_query("SELECT n.nid, n.vid FROM {node_revisions} n JOIN {jsdoc_objects} j ON (j.vid = n.vid) AND BINARY n.title = '%s' AND j.resource_vid = %d", $name, $resource->vid))) {
+        return node_load($node->nid, $node->vid);
+      }
+    }
+    else {
+      if ($node = db_fetch_object(db_query("SELECT n.nid, n.vid FROM {node_revisions} n JOIN {jsdoc_variables} j ON (j.vid = n.vid) WHERE BINARY n.title = '%s' AND j.version = %d", $name, $version->nid))) {
+        return node_load($node->nid, $node->vid);
+      }
+    }
+  }
+}
+
+/**
+ * Path: jsdoc/VERSION/object/NAME
+ */
+function jsdoc_object_node_view($node, $initialized = null, $allow_private = false) {
+  if (is_null($initialized)) {
+    $node->jsdoc_initialized = $node->jsdoc_classlike;
+  }
+  else {
+    $node->jsdoc_initialized = $initialized;
+  }
+  $node->jsdoc_allow_private = $allow_private;
+  drupal_set_title(check_plain($node->title));
+  return node_show($node, 0);
+}
+
+/**
+ * Path: jsdoc/VERSION/resource/NAME
+ */
+function jsdoc_resource_node_view($node) {
+  return node_show($node, 0);
+}
+
+/**
+ * Path: jsdoc/VERSION/object/NAME/edit
+ */
+function jsdoc_object_edit_redirect($node) {
+  if ($node->jsdoc_detail) {
+    drupal_goto('node/' . $node->jsdoc_detail->nid . '/edit');
+  }
+  else {
+    drupal_goto('node/' . $node->nid . '/edit');
+  }
+}
+
+/**
+ * Path: jsdoc/VERSION/object/NAME/edit
+ */
+function jsdoc_variable_edit_redirect($node) {
+  drupal_goto('node/' . $node->nid . '/edit');
+}
+
+/**
+ * Path: jsdoc/VERSION/resource/NAME/edit
+ */
+function jsdoc_resource_edit_redirect($node) {
+  drupal_goto('node/' . $node->nid . '/edit');
+}
+
+function _jsdoc_format_type($type, $classlike = false, $optional = false, $recurring = false) {
+  $output = array();
+  $name = '';
+
+  if ($type) {
+    $output['html_type_prefix'] = '/*';
+    $output['html_type_suffix'] = '*/';
+    $output['type'] = $type;
+    $output['class_type'] = $type; // The only important thing here is that it will differentiate between Function and Class
+    if ($type == 'Function' && $classlike) {
+      $output['class_type'] = 'Class';
+    }
+    if ($optional) {
+      $output['type'] .= '?';
+      $output['class_type'] .= '?';
+    }
+    if ($recurring) {
+      $output['type'] .= '...';
+      $output['class_type'] .= '...';
+    }
+  }
+  if ($type) {
+    $output['separator'] .= ' ';
+  }
+
+  return $output;
+}
+
+/**
+ * Either load or create an object, dealing with versioning and everything
+ *
+ * We look up an object by name and resource, getting the latest nid that we find.
+ *
+ * If there is no object present, we use node_save to create a new node. After
+ * this, we can just exit the block.
+ *
+ * If there is an object present, the first thing to check for is to see if
+ * we need to create a new revision of the object. We do this by checking
+ * to see if we have a new revision, if updating flag is set in the DB, or
+ * if the parameters have been updated. In this case, we create a new version
+ * of the node.
+ *
+ * For a few values, we check to see if they are either absent in the DB or
+ * if the updating flag is set (the user is basically saying for the JS to "win").
+ *
+ * For the rest of the values, the values from JS win.
+ */
+function _jsdoc_object_get_or_create($namespace, $name, $summary, $description, $resource, $provide, $private, $private_parent, $initialized, $classlike, $type, $returns, $source, $parameters, $aliases, $instance, $prototype, $chains) {
+  if (!$nid = db_fetch_object(db_query("SELECT nr.nid AS nid FROM {jsdoc_objects} j JOIN {node_revisions} nr ON (nr.vid = j.vid) AND BINARY nr.title = '%s' AND j.resource_vid = %d ORDER BY nr.vid DESC", $name, $resource->vid))) {
+    // Create a node for this object if we don't already have one
+    $node = (object)array(
+      'title' => $name,
+      'type' => 'jsdoc_object',
+      'teaser' => $summary, // from source
+      'body' => $description, // immutable by source
+      'uid' => 1,
+      'status' => 1,
+      'comment' => 2,
+      'promote' => 0,
+      'sticky' => 0,
+      'jsdoc_namespace' => $namespace, // from source
+      'jsdoc_resource' => $resource->nid, // from source,
+      'jsdoc_resource_vid' => $resource->vid, // from source,
+      'jsdoc_provide' => $provide->nid, // from source
+      'jsdoc_provide_vid' => $provide->vid, // from source
+      'jsdoc_private' => $private, // from source
+      'jsdoc_private_parent' => $private_parent, // from source
+      'jsdoc_initialized' => $initialized, // from source
+      'jsdoc_classlike' => $classlike, // immutable by source
+      'jsdoc_type' => $type, // immutable
+      'jsdoc_returns' => $returns, // from source
+      'jsdoc_source' => $source, // from source
+      'jsdoc_parameters' => $parameters, // from source
+      'jsdoc_aliases' => $aliases, // from source
+      'jsdoc_instance' => $instance, // from source
+      'jsdoc_prototype' => $prototype, // from source
+      'jsdoc_chains' => $chains // from source
+    );
+    if (trim($description)) {
+      $node->format = variable_get('jsdoc_input_format', 0);
+    }
+    node_save($node);
+    $node = node_load($node->nid);
+  }
+  else {
+    $node = node_load($nid);
+
+    if ($parameters) {
+      foreach ($parameters as $parameter_name => $parameter) {
+        if (array_key_exists($parameter_name, $node->jsdoc_parameters)) {
+          if (empty($parameter['summary'])) {
+            $parameters[$parameter_name]['summary'] = $node->jsdoc_parameters[$parameter_name]->summary; // Database wins over source
+          }
+        }
+        else {
+          $node->jsdoc_updating = true;
+        }
+      }
+    }
+
+    if ($node->jsdoc_updating || count($node->jsdoc_parameters) != count($parameters)) {
+      $node->revision = true;
+      node_save($node);
+    }
+
+    // Allow overriding of all properties, not just mutable values.
+    // Create a new revision before we do this, though (see logic block above)
+    if ($node->jsdoc_updating || !$node->jsdoc_type) {
+      $node->jsdoc_type = $type;
+    }
+
+    if ($node->jsdoc_updating || !trim($node->body)) {
+      $node->body = $description;
+      $node->format = variable_get('jsdoc_input_format', 0);
+    }
+
+    if ($node->jsdoc_updating) {
+      $node->jsdoc_classlike = $classlike;
+    }
+
+    $node->jsdoc_parameters = $parameters;
+    $node->teaser = $summary;
+    $node->jsdoc_private = $private;
+    $node->jsdoc_private_parent = $private_parent;
+    $node->jsdoc_initialized = $initialized;
+    $node->jsdoc_returns = $returns;
+    $node->jsdoc_resource = $resource->nid;
+    $node->jsdoc_resource_vid = $resource->vid;
+    $node->jsdoc_provide = $provide->nid;
+    $node->jsdoc_provide_vid = $provide->vid;
+    $node->jsdoc_source = $source;
+    $node->jsdoc_aliases = $aliases;
+    $node->jsdoc_instance = $instance;
+    $node->jsdoc_prototype = $prototype;
+    $node->jsdoc_chains = $chains;
+
+    node_save($node);
+    $node = node_load($node->nid);
+  }
+
+  return $node;
+}
+
+function _jsdoc_variable_get_or_create($name, $project_name, $private) {
+  if (!$nid = db_result(db_query("SELECT nr.nid FROM {jsdoc_variables} j JOIN {node_revisions} nr ON (j.vid = nr.vid) WHERE BINARY nr.title = '%s' ORDER BY nr.vid DESC", $name))) {
+    $project = _jsdoc_project_get_or_create($project_name);
+    $node = (object)array(
+      'title' => $name,
+      'jsdoc_version' => $project->jsdoc_version,
+      'jsdoc_private' => $private,
+      'type' => 'jsdoc_variable',
+      'uid' => 1,
+      'status' => 1,
+      'comment' => 2,
+      'promote' => 0,
+      'sticky' => 0
+    );
+    node_save($node);
+    $node = node_load($node->nid);
+  }
+  else {
+    $node = node_load($nid);
+
+    if ($node->jsdoc_updating) {
+      $node->revision = true;
+      node_save($node);
+      $node = node_load($node->nid);
+    }
+
+    $node->jsdoc_private = $private;
+
+    node_save($node);
+    $node = node_load($node->nid);
+  }
+
+  return $node;
+}
+
+function _jsdoc_resource_get_or_create($name, $project_name) {
+  if (!$nid = db_result(db_query("SELECT nr.nid FROM {jsdoc_resources} j JOIN {node_revisions} nr ON (j.vid = nr.vid) WHERE BINARY nr.title = '%s' ORDER BY nr.vid DESC", $name))) {
+    $project = _jsdoc_project_get_or_create($project_name);
+    $node = (object)array(
+      'jsdoc_version' => $project->jsdoc_version,
+      'title' => $name,
+      'type' => 'jsdoc_resource', 
+      'uid' => 1,
+      'status' => 1,
+      'comment' => 2,
+      'promote' => 0,
+      'stick' => 0
+    );
+    node_save($node);
+    $node = node_load($node->nid);
+  }
+  else {
+    $node = node_load($nid);
+
+    if ($node->jsdoc_updating) {
+      $node->revision = true;
+      node_save($node);
+      $node = node_load($node->nid);
+    }
+  }
+
+  return $node;
+}
+
+function _jsdoc_project_get_or_create($name) {
+  if (!$nid = db_result(db_query("SELECT nid FROM {node} n WHERE type = 'jsdoc_project' AND BINARY title = '%s'", $name))) {
+    $node = (object)array(
+      'title' => $name,
+      'type' => 'jsdoc_project',
+      'uid' => 1,
+      'status' => 1,
+      'comment' => 0,
+      'promote' => 0,
+      'stick' => 0
+    );
+    node_save($node);
+    $node = node_load($node->nid);
+  }
+  else {
+    $node = node_load($nid);
+  }
+
+  return $node;
+}
+
+function _jsdoc_version_get_or_create($name, $project_nid) {
+  if (!$nid = db_result(db_query("SELECT n.nid FROM {node} n JOIN {jsdoc_versions} j ON (j.nid = n.nid) WHERE n.type = 'jsdoc_version' AND BINARY n.title = '%s' AND j.project = %d", $name, $project_nid))) {
+    $node = (object)array(
+      'jsdoc_project' => $project_nid,
+      'title' => $name,
+      'type' => 'jsdoc_version', 
+      'uid' => 1,
+      'status' => 1,
+      'comment' => 2,
+      'promote' => 0,
+      'stick' => 0
+    );
+    node_save($node);
+  }
+  else {
+    $node = node_load($nid);
+  }
+}
+
+function _jsdoc_detail_update_joins($node) {
+  db_query("DELETE FROM {jsdoc_variable_hierarchy} WHERE vid = %d", $node->vid);
+  if ($node->jsdoc_aliases) {
+    $parent = _jsdoc_variable_get_or_create($node->jsdoc_aliases, $node->jsdoc_namespace, false);
+    db_query("INSERT INTO {jsdoc_variable_hierarchy} (vid, nid, parent_vid, parent_nid, type, version) VALUES (%d, %d, %d, %d, '%s', %d)", $node->vid, $node->nid, $parent->vid, $parent->nid, 'alias', $node->jsdoc_version);
+  }
+  else {
+    if ($node->jsdoc_instance) {
+      $parent = _jsdoc_variable_get_or_create($node->jsdoc_instance, $node->jsdoc_namespace, false);
+      db_query("INSERT INTO {jsdoc_variable_hierarchy} (vid, nid, parent_vid, parent_nid, type, version) VALUES (%d, %d, %d, %d, '%s', %d)", $node->vid, $node->nid, $parent->vid, $parent->nid, 'instance', $node->jsdoc_version);
+      
+      // If object foo has function foo.bar and foo.bar uses the variable this.baz and is uninstantiated,
+      // `this` would refer to foo, making baz a property of foo
+      // So we create a normal join from foo.bar.baz to foo.baz by removing the second to last object section
+      if (preg_match('%^([^.]+)\.[^.]+\.([^.]+)$%', $node->jsdoc_instance, $match)) {
+        $parent = _jsdoc_variable_get_or_create($match[1] . '.' . $match[2], $node->jsdoc_namespace, false);
+        db_query("INSERT INTO {jsdoc_variable_hierarchy} (vid, nid, parent_vid, parent_nid, type, version) VALUES (%d, %d, %d, %d, '%s', %d)", $node->vid, $node->nid, $parent->vid, $parent->nid, 'normal', $node->jsdoc_version);
+      }
+    }
+    if ($node->jsdoc_prototype) {
+      $parent = _jsdoc_variable_get_or_create($node->jsdoc_prototype, $node->jsdoc_namespace, false);
+      db_query("INSERT INTO {jsdoc_variable_hierarchy} (vid, nid, parent_vid, parent_nid, type, version) VALUES (%d, %d, %d, %d, '%s', %d)", $node->vid, $node->nid, $parent->vid, $parent->nid, 'prototype', $node->jsdoc_version);
+    }
+    if (!$node->jsdoc_instance && !$node->jsdoc_prototype) {
+      $parts = explode('.', $node->title);
+      if (count($parts) == 1) {
+        $parent = 'window';
+      }
+      else {
+        array_pop($parts);
+        $parent = implode('.', $parts);
+      }
+      $parent = _jsdoc_variable_get_or_create($parent, $node->jsdoc_namespace, false);
+      db_query("INSERT INTO {jsdoc_variable_hierarchy} (vid, nid, parent_vid, parent_nid, type, version) VALUES (%d, %d, %d, %d, '%s', %d)", $node->vid, $node->nid, $parent->vid, $parent->nid, 'normal', $node->jsdoc_version);
+    }
+    if ($node->jsdoc_chains) {
+      foreach ($node->jsdoc_chains as $subtype => $chain) {
+        $chain = array_unique($chain);
+        foreach ($chain as $parent) {
+          $parent = _jsdoc_variable_get_or_create($parent, $node->jsdoc_namespace, false);
+          db_query("INSERT INTO {jsdoc_variable_hierarchy} (vid, nid, parent_vid, parent_nid, type, subtype, version) VALUES (%d, %d, %d, %d, '%s', '%s', %d)", $node->vid, $node->nid, $parent->vid, $parent->nid, 'chain', $subtype, $node->jsdoc_version);
+        }
+      }
+    }
+  }
+}
+
+function _jsdoc_resource_expand($tree, $child, $depth, &$resources){
+  $output = array();
+  foreach ($tree as $leaf) {
+    if ($leaf->depth == $depth && in_array($child, $leaf->children) && !in_array($leaf->vid, $resources)) {
+      $resources[] = $leaf->vid;
+      $output[] = $leaf;
+    }
+  }
+
+  return $output;
+}
+
+function _jsdoc_get_tree($environments, $parent = 0, $depth = -1) {
+  static $children, $parents, $terms;
+
+  $depth++;
+
+  if (!isset($parents)) {
+    $parents = array();
+
+    $result = db_query("SELECT j.vid, j.nid, j.parent_vid, j.parent_nid, nr.title AS name FROM {jsdoc_resource_hierarchy} j JOIN {node_revisions} nr ON (j.vid = nr.vid) WHERE j.tid IN (%s) GROUP BY j.vid, j.parent_vid, BINARY nr.title", implode(', ', $environments));
+    while ($term = db_fetch_object($result)) {
+      if ($term->parent_vid) {
+        $children[$term->parent_vid][] = $term->vid;
+        $parents[$term->vid][] = array($term->parent_vid, $term->parent_vid);
+      }
+      $terms[$term->vid] = $term;
+    }
+  }
+
+  if ($parents[$parent]) {
+    foreach ($parents[$parent] as $parent) {
+      if (isset($terms[$parent[1]])) {
+        $term = drupal_clone($terms[$parent[1]]);
+      }
+      else {
+        $term = node_load($parent[0], $parent[1]);
+        $term->name = $term->title;
+      }
+
+      $term->depth = $depth;
+      $term->children = $children[$parent[1]];
+      $tree[] = $term;
+
+      if ($parents[$parent[1]]) {
+        $tree = array_merge($tree, _jsdoc_get_tree($environments, $parent[1], $depth));
+      }
+    }
+  }
+
+  return $tree ? $tree : array();
+}
+
+/**
+ * Links a node to another node with a taxonomy term.
+ *
+ * @param $vid
+ *   The vid of a node_revisions item
+ * @param $parent
+ *   The vid of a node_revisions item representing a parent of the vid
+ * @param $tid
+ *   The taxonomy term tid to use to link them together
+ */
+function _jsdoc_save_hierarchy($provides_node, $requires_node, $tid) 
+{
+  db_query("INSERT INTO {jsdoc_resource_hierarchy} (vid, nid, parent_vid, parent_nid, tid, version) VALUES (%d, %d, %d, %d, %d, %d)", $provides_node->vid, $provides_node->nid, $requires_node->vid, $requires_node->nid, $tid, $provides_node->jsdoc_version);
+}
+
+function _jsdoc_file_location() {
+  static $location;
+
+  if (!isset($location)) {
+    $location = variable_get('jsdoc_file_location', false);
+  }
+
+  return $location;
+}
+
+function _jsdoc_dir_location() {
+  static $location;
+
+  if (!isset($location)) {
+    $location = variable_get('jsdoc_dir_location', false);
+  }
+
+  return $location;
+}
+
+function _jsdoc_base() {
+  static $base;
+
+  if (!isset($base)) {
+    $base = variable_get('jsdoc_base', 'jsdoc');
+  }
+
+  return $base;
+}
+
+function _jsdoc_vocabularies($name) {
+  static $vocabularies;
+
+  if (!isset($vocabularies)) {
+    $vocabularies = array();
+  }
+
+  if ($vocabularies[$name]) {
+    return $vocabularies[$name];
+  }
+
+  foreach (taxonomy_get_vocabularies('jsdoc_object') as $vocabulary) {
+    $vocabularies[$vocabulary->name] = $vocabulary;
+  }
+
+  return $vocabularies[$name];
+}
+
+function _jsdoc_environments() {
+  return _jsdoc_vocabularies('Environments');
+}
+
+function _jsdoc_conditions() {
+  return _jsdoc_vocabularies('Conditions');
+}
+
+function _jsdoc_flags() {
+  return _jsdoc_vocabularies('Flags');
+}
+
+/**
+ * Validate some of the expected global settings
+ */
+function _jsdoc_cron_validate() {
+  if (!_jsdoc_file_location() || !_jsdoc_dir_location()) {
+    watchdog('jsdoc', t('jsdoc settings should be configured'), WATCHDOG_ERROR);
+    return false;
+  }
+  if (!file_exists(_jsdoc_file_location())) {
+    watchdog('jsdoc', t('Not able to load file ') . $file_location, WATCHDOG_ERROR);
+    return false;
+  }
+
+  return true;
+}
+
+function _jsdoc_cron_validate_include() {
+  $files_function = _jsdoc_base() . '_get_files';
+  if (!function_exists($files_function)) {
+    watchdog('jsdoc', $files_function . t(' does not exist in ') . $file_location, WATCHDOG_ERROR);
+    return false;
+  }
+
+  $test_file = _jsdoc_get_base_path() . '/' . drupal_get_path('module', 'jsdoc') . '/cache/test';
+  if (!@touch($test_file)) {
+    watchdog('jsdoc', t('Need permission to access the jsdoc cache directory'), WATCHDOG_ERROR);
+    return false;
+  }
+  else {
+    unlink($test_file);
+  }
+
+  if (function_exists(_jsdoc_base() . '_get_conditions')) {
+    $conditions = call_user_func(_jsdoc_base() . '_get_conditions');
+
+    $found = false;
+    foreach ($conditions as $condition) {
+      foreach (taxonomy_get_term_by_name($condition) as $term) {
+        if ($term->vid == _jsdoc_conditions()->vid) {
+          $found = true;
+          break;
+        }
+      }
+      if (!$found) {
+        $term = array('name' => $condition, 'description' => '', 'vid' => _jsdoc_conditions()->vid, 'weight' => 0);
+        taxonomy_save_term($term);
+      }
+    }
+  }
+
+  if (function_exists(_jsdoc_base() . '_get_environments')) {
+    $environments = call_user_func(_jsdoc_base() . '_get_environments');
+    _jsdoc_build_taxonomy($environments, _jsdoc_environments()->vid);
+  }
+
+  if (!function_exists(_jsdoc_base() . '_get_contents')) {
+    watchdog('jsdoc', _jsdoc_base() . '_get_contents' . t(' does not exist in ') . _jsdoc_file_location(), WATCHDOG_ERROR);
+    return false;
+  }
+
+  return true;
+}
+
+function _jsdoc_build_taxonomy($names, $vid, $parent = false)
+{
+  foreach ($names as $name => $content) {
+    foreach (taxonomy_get_term_by_name($name) as $term) {
+      if ($term->vid == $vid) {
+        $found = true;
+        break;
+      }
+    }
+    if (!$found) {
+      $term = array('name' => $name, 'description' => '', 'vid' => $vid, 'weight' => 0);
+      if ($parent) {
+        $term['parent'] = $parent;
+      }
+      taxonomy_save_term($term);
+    }
+    if (is_array($content)) {
+      _jsdoc_build_taxonomy($content, $vid, $term->tid);
+    }
+  }
+}
+
+function _jsdoc_get_base_path() {
+  static $path;
+
+  if (!isset($path)) {
+    $path = getcwd();
+  }
+
+  return $path;
+}
+
+function _jsdoc_cron_chdir($enter=false) {
+  static $location;
+
+  if ($enter) {
+    $location = _jsdoc_get_base_path();
+    @chdir(_jsdoc_dir_location());
+    include_once(_jsdoc_file_location());
+  }
+  else {
+    chdir($location);
+  }
+}

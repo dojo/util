@@ -1,0 +1,1 @@
+Get the Text_Highlight package from: http://pear.php.net/package/Text_Highlighter/ and rename the Text_Highlighter-<version> directory to "Text" and place in this directory
