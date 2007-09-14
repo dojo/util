@@ -8,15 +8,6 @@ function dojox_project_name() {
 	return 'dojox';
 }
 
-function dojox_resource_name($namespace, $file) {
-  $parts = explode('/', $file);
-	$file_parts = explode('.', array_pop($parts));
-	array_pop($file_parts);
-	array_push($parts, implode('.', $file_parts));
-	array_unshift($parts, $namespace);
-  return implode('.', $parts);
-}
-
 function dojox_package_name($namespace, $file) {
   $parts = explode('/', $file);
 	$file_parts = explode('.', array_pop($parts));

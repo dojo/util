@@ -337,8 +337,8 @@ class DojoPackage
 				++$position;
 			}
 			
-			if ($i == 500) {
-				die("\$i should not reach 500: $line");
+			if ($i == 100) {
+				die("\$i should not reach 100: $line");
 			}
 			
 			if ($in_comment !== false && !empty($line)) {
@@ -380,7 +380,7 @@ class DojoPackage
 			}
 		}
 	}
-
+	
 	public function getPackageName()
 	{
 		$name = '';
@@ -393,20 +393,7 @@ class DojoPackage
 		if ($name) return $name;
 		return 'null';
 	}
-
-	public function getResourceName()
-	{
-		$name = '';
-
-		if (file_exists('modules/' . $this->dojo->namespace . '.module')) {
-			include_once('modules/' . $this->dojo->namespace . '.module');
-			$name = call_user_func($this->dojo->namespace . '_resource_name', $this->dojo->namespace, $this->file);
-		}
-
-		if ($name) return $name;
-		return 'null';
-	}
-
+	
 }
 
 ?>

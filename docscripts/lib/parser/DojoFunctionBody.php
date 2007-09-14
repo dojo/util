@@ -63,7 +63,7 @@ class DojoFunctionBody extends DojoBlock
     $value = '';
     $this->getBlockCommentKeys();
     if (!empty($this->comments[$key])) {
-      $value = trim($this->comments[$key]);
+      $value = preg_replace('%\s+%', ' ', trim($this->comments[$key]));
     }
     return $value;
   }
@@ -99,7 +99,7 @@ class DojoFunctionBody extends DojoBlock
         
         if (preg_match($expression, $comment, $match)) {
           if ($buffer && $key) {
-            $this->comments[$key] = implode("\n", $buffer);
+            $this->comments[$key] = implode(' ', $buffer);
             $buffer = array();
           }
           $key = $match[1];
@@ -122,7 +122,7 @@ class DojoFunctionBody extends DojoBlock
       }
       
       if ($buffer && $key) {
-        $this->comments[$key] = implode("\n", $buffer);
+        $this->comments[$key] = implode(' ', $buffer);
       }
   
       if ($i == 0 && !$this->comment_end) {

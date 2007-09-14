@@ -308,10 +308,7 @@ class DojoFunctionDeclare extends DojoBlock
 						$parameter_type = substr($parameter_type, 0, strlen($parameter_type) - 3);
 						$output[$function_name]['parameters'][$key]['repeating'] = true;
 					}
-					$output[$function_name]['parameters'][$key]['type'] = $parameter_type;
-				}
-				if ($parameter_type && strpos($comment, $parameter_type) === 0) {
-					$comment =  preg_replace('%' . preg_escape($parameter_type) . '\s*%', '', $comment);
+        	$output[$function_name]['parameters'][$key]['type'] = $parameter_type;
 				}
 				$output[$function_name]['parameters'][$key]['summary'] = $comment;
       }
