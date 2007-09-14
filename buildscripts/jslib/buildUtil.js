@@ -176,7 +176,18 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 					dojo._loadedUrls.push(uri);
 					dojo._loadedUrls[uri] = true;
 					var delayRequires = dojo._getDelayRequiresAndProvides(text);
-					eval(delayRequires.join(";"));
+					
+					//Now do the requireIfs. Since they contain some code tests that could
+					//not be valid in the current scope (access variables that are not defined
+					//when running in Rhino, for instance), then do a try/catch around each
+					//one. If the expression fails, then it was not meant for this context.
+					for(var i = 0; i < delayRequires.length; i++){
+						try{
+							eval(delayRequires[i]);
+						}catch(e){
+							//logger.trace("A requireIf failed for text [" + delayRequires[i] + "], error: " + e);
+						}
+					}
 				}catch(e){
 					if(isWebBuild){
 						dojo.debug("error loading uri: " + uri + ", exception: " + e);
