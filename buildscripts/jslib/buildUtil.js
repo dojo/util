@@ -586,16 +586,15 @@ buildUtil.getDependencyPropertyFromProfile = function(/*String*/profileFile, /*S
 	return result; //Array
 }
 
-buildUtil.configPrefixes = function(profileFile){
-	//summary: Get the resource prefixes from the profile and registers the prefixes with Dojo.
-	var prefixes = this.getDependencyPropertyFromProfile(profileFile, "prefixes");
+buildUtil.configPrefixes = function(/*Object*/prefixes){
+	//summary: Registers the prefixes with Dojo.
 	if(prefixes && prefixes.length > 0){
 		for(i = 0; i < prefixes.length; i++){
 			dojo.registerModulePath(prefixes[i][0], prefixes[i][1]);
 		}
 	}
-	return prefixes; //Array of arrays
 }
+
 
 //The regular expressions that will help find dependencies in the file contents.
 buildUtil.masterDependencyRegExpString = "dojo.(requireLocalization|require|requireIf|provide|requireAfterIf|platformRequire|i18n\._preloadLocalizations)\\(([\\w\\W]*?)\\)";

@@ -10,12 +10,15 @@ i18nUtil.setup = function(/*Object*/kwArgs){
 			extraLocale: kwArgs.localeList,
 			baseUrl: "../../dojo/"
 		};
-		
+
 		load('../../dojo/dojo.js');
 
 		//Now set baseUrl so it is current directory, since all the prefixes
-		//will be relative to the release dir in this directory.
-		djConfig.baseUrl = "./" + kwArgs.releaseDir + "/dojo/";
+		//will be relative to the release dir from this directory.
+		dojo.baseUrl = "./";
+
+		//Also be sure we register the right paths for module prefixes.
+		buildUtil.configPrefixes(kwArgs.profileProperties.dependencies.prefixes);
 
 		dojo.require("dojo.i18n");
 	}
@@ -89,7 +92,6 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/fileCo
 			throw "Invalid module prefix for flattened bundle: " + modulePrefix;
 		}
 		
-		//logger.trace("### Using modulePrefix: " + modulePrefix);
 		for (jsLocale in djBundlesByLocale){
 			var locale = jsLocale.replace(/\_/g, '-');
 			if(!mkdir){ dir.mkdir(); mkdir = true; }
@@ -208,14 +210,13 @@ i18nUtil.makeFlatBundleContents = function(prefix, prefixPath, srcFileName){
 	var bundleName = bundleParts.bundleName;
 	var localeName = bundleParts.localeName;
 
-	//print("## moduleName: " + moduleName + ", bundleName: " + bundleName + ", localeName: " + localeName);
 	dojo.requireLocalization(moduleName, bundleName, localeName);
 	
 	//Get the generated, flattened bundle.
 	var module = dojo.getObject(moduleName);
 	var bundleLocale = localeName ? localeName.replace(/-/g, "_") : "ROOT";
 	var flattenedBundle = module.nls[bundleName][bundleLocale];
-	//print("## flattenedBundle: " + flattenedBundle);
+	
 	if(!flattenedBundle){
 		throw "Cannot create flattened bundle for src file: " + srcFileName;
 	}
