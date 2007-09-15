@@ -54,30 +54,12 @@ function dojo_get_environments() {
 function dojo_get_contents($namespace, $file_name) {
   $output = array();
 
-  $dojo = new Dojo($namespace, call_user_func($namespace . '_code_location'));
-  $package = new DojoPackage($dojo, $file_name);
-  $package_name = $package->getPackageName();
-  $resource_name = $package->getResourceName();
+  $package = new DojoPackage(new Dojo($namespace, call_user_func($namespace . '_code_location')), $file_name);
 
-  $output['#provides'] = $package_name;
-  $output['#resource'] = $resource_name;
+  $output['#provides'] = $package->getPackageName();
+  $output['#resource'] = $package->getResourceName();
 
   $compound_calls = $package->getFunctionCalls('dojo.kwCompoundRequire');
-  $require_calls = $package->getFunctionCalls('dojo.require');
-  $require_if_calls = array_merge($package->getFunctionCalls('dojo.requireIf'), $package->getFunctionCalls('dojo.requireAfterIf'));
-  $declare_calls = array_merge($package->getFunctionCalls('dojo.declare'), $package->getFunctionCalls('dojo.widget.defineWidget'));
-  $inherit_calls = $package->getFunctionCalls('dojo.inherits', true);
-  $mixin_calls = array_merge($package->getFunctionCalls('dojo.extend'), $package->getFunctionCalls('dojo.lang.extend', true), $package->getFunctionCalls('dojo.mixin'), $package->getFunctionCalls('dojo.lang.mixin'));
-  $declarations = $package->getFunctionDeclarations();
-  $executions = $package->getExecutedFunctions();
-  $objects = $package->getObjects();
-  $aliases = $package->getAliases();
-
-  // Since there can be chase conditions between declarations and calls, we need to find which were "swallowed" by larger blocks
-  $package->removeSwallowed($mixin_calls);
-  $package->removeSwallowed($declarations);
-  $package->removeSwallowed($executions);
-
   // Handle compound require calls
   foreach ($compound_calls as $call) {
     if ($call->getParameter(0)->isA(DojoObject)) {
@@ -99,7 +81,14 @@ function dojo_get_contents($namespace, $file_name) {
       }
     }
   }
+	unset($compound_calls);
+	unset($call);
+	unset($object);
+	unset($key);
+	unset($value);
+	unset($item);
 
+  $require_calls = $package->getFunctionCalls('dojo.require');
   // Handle dojo.require calls
   foreach ($require_calls as $call) {
     $require = $call->getParameter(0);
@@ -107,7 +96,11 @@ function dojo_get_contents($namespace, $file_name) {
       $output['#requires'][] = array('common', $require->getString());
     }
   }
+	unset($require_calls);
+	unset($call);
+	unset($require);
 
+  $require_if_calls = array_merge($package->getFunctionCalls('dojo.requireIf'), $package->getFunctionCalls('dojo.requireAfterIf'));
   // Handle dojo.requireAfterIf calls
   foreach ($require_if_calls as $call) {
     $environment = $call->getParameter(0);
@@ -115,11 +108,15 @@ function dojo_get_contents($namespace, $file_name) {
     if ($environment && $require) {
       $environment = $environment->getValue();
       $require = $require->getValue();
-      $env_value = $environment->getValue();
+
+			unset($env);
+			unset($req);
+
       if ($require instanceof DojoString) {
-        if ($environment instanceof DojoString) {
-          $output['#requires'][] = array($environment->getValue(), $require->getValue());
-        }
+				$req = $require->getValue();
+      }
+			if ($environment instanceof DojoString) {
+        $env = $environment->getValue();
       }
       elseif ($environment instanceof DojoVariable) {
         $environment = $environment->getValue();
@@ -135,11 +132,20 @@ function dojo_get_contents($namespace, $file_name) {
         elseif (preg_match('%^dojox.gfx.render\s*=\s*"([a-z]+)"%', $environment, $match)) {
           $env = $match[1];
         }
-        $output['#requires'][] = array($env, $require);
       }
+			if ($env && $req) {
+				$output['#requires'][] = array($env, $req);
+			}
     }
   }
-  
+	unset($require_if_calls);
+	unset($call);
+	unset($environment);
+	unset($require);
+	unset($env);
+	unset($req);
+
+  $declare_calls = array_merge($package->getFunctionCalls('dojo.declare'), $package->getFunctionCalls('dojo.widget.defineWidget'));
   // This closely matches dojo.widget.defineWidget as declared in src/widget/Widget.js
   foreach ($declare_calls as $call) {
     $init = null;
@@ -199,12 +205,12 @@ function dojo_get_contents($namespace, $file_name) {
 
     if ($args[4]->isA(DojoObject)) {
       $object = $args[4]->getObject();
-            $object->setName($name);
+      $object->setName($name);
       $object->setAnonymous(true);
       $values = $object->getValues();
       foreach ($values as $key => $value) {
         $full_name = "$name.$key";
-        if ($key == 'initializer' && $value->isA(DojoFunctionDeclare)) {
+        if (($key == 'initializer' || $key == 'constructor') && $value->isA(DojoFunctionDeclare)) {
           $init = $value->getFunction();
           $init->setConstructor(true);
           continue;
@@ -231,11 +237,55 @@ function dojo_get_contents($namespace, $file_name) {
       $init->rollOut($output);
     }
   }
+	unset($declare_calls);
+	unset($call);
+	unset($init);
+	unset($args);
+	unset($name);
+	unset($p);
+	unset($items);
+	unset($item);
+	unset($object);
+	unset($values);
+	unset($key);
+	unset($value);
+	unset($full_name);
+	unset($function);
+
+  $inherit_calls = $package->getFunctionCalls('dojo.inherits', true);
+  foreach ($inherit_calls as $call) {
+    if ($call->getParameter(0)->isA(DojoVariable) && $call->getParameter(1)->isA(DojoVariable)) {
+      $output[$call->getParameter(0)->getVariable()]['chains']['prototype'][] = $call->getParameter(1)->getVariable();
+    }
+  }
+	unset($inherit_calls);
+	unset($call);
+
+  $objects = $package->getObjects();
+	foreach ($objects as $object) {
+    $object->rollOut($output);
+  }
+	unset($objects);
+	unset($object);
+
+	$aliases = $package->getAliases();
+	unset($aliases);
+
+  $mixin_calls = array_merge($package->getFunctionCalls('dojo.extend'), $package->getFunctionCalls('dojo.lang.extend', true), $package->getFunctionCalls('dojo.mixin'), $package->getFunctionCalls('dojo.lang.mixin'));
+  $declarations = $package->getFunctionDeclarations();
+  $executions = $package->getExecutedFunctions();
+
+  // Since there can be chase conditions between declarations and calls, we need to find which were "swallowed" by larger blocks
+  $package->removeSwallowed($mixin_calls);
+  $package->removeSwallowed($declarations);
+  $package->removeSwallowed($executions);
 
   // Handle function declarations
   foreach ($declarations as $declaration) {
     $declaration->rollOut($output);
   }
+	unset($declarations);
+	unset($declaration);
   
   foreach ($executions as $execution) {
     $execution_declarations = $execution->getFunctionDeclarations();
@@ -243,12 +293,10 @@ function dojo_get_contents($namespace, $file_name) {
         $declaration->rollOut($output);
     }
   }
-  
-  foreach ($inherit_calls as $call) {
-    if ($call->getParameter(0)->isA(DojoVariable) && $call->getParameter(1)->isA(DojoVariable)) {
-      $output[$call->getParameter(0)->getVariable()]['chains']['prototype'][] = $call->getParameter(1)->getVariable();
-    }
-  }
+	unset($executions);
+	unset($execution);
+	unset($execution_declarations);
+	unset($declaration);
 
   // Handle. dojo.lang.extend and dojo.lang.mixin calls
   foreach ($mixin_calls as $call) {
@@ -309,10 +357,17 @@ function dojo_get_contents($namespace, $file_name) {
       }
     }
   }
-
-  foreach ($objects as $object) {
-    $object->rollOut($output);
-  }
+	unset($mixin_calls);
+	unset($call);
+	unset($is_prototype);
+	unset($object);
+	unset($call_name);
+	unset($properties);
+	unset($keys);
+	unset($key);
+	unset($function);
+	unset($variable_name);
+	unset($full_variable_name);
 
   // Remember, dojo.provides creates new objects if needed
   $parts = explode('.', $output['#resource']);
@@ -322,6 +377,7 @@ function dojo_get_contents($namespace, $file_name) {
       }
       array_pop($parts);
   }
+	unset($parts);
 
   foreach ($output as $object_name => $object) {
     $parts = explode('.', $object_name);
