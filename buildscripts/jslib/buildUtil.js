@@ -504,33 +504,15 @@ buildUtil.createLayerContents = function(
 buildUtil.changeVersion = function(/*String*/version, /*String*/fileContents){
 	//summary: Changes the version number for dojo. Input should be the fileContents
 	//of a file that contains the version number.
+	
 	//Set version number.
 	//First, break apart the version string.
-	var verSegments = version.split(".");
-	var majorValue = 0;
-	var minorValue = 0;
-	var patchValue = 0;
-	var flagValue = "";
-	
-	if(verSegments.length > 0 && verSegments[0]){
-		majorValue = verSegments[0];
-	}
-	if(verSegments.length > 1 && verSegments[1]){
-		minorValue = verSegments[1];
-	}
-	if(verSegments.length > 2 && verSegments[2]){
-		//If the patchValue has a string in it, split
-		//it off and store it in the flagValue.
-		var patchSegments = verSegments[2].split(/\D/);
-		patchValue = patchSegments[0];
-		if(patchSegments.length > 1){
-			flagValue = verSegments[2].substring(patchValue.length, verSegments[2].length);
-		}
-	}
-	if(verSegments.length > 3 && verSegments[3]){
-		flagValue = verSegments[3];
-	}
-	
+	var verSegments = version.match(/^(\d*)\.?(\d*)\.?(\d*)\.?(.*)$/); 
+	var majorValue = verSegments[1] || 0; 
+	var minorValue = verSegments[2] || 0; 
+	var patchValue = verSegments[3] || 0; 
+	var flagValue  = verSegments[4] || ""; 
+
 	//Do the final version replacement.
 	fileContents = fileContents.replace(
 		/major:\s*\d*,\s*minor:\s*\d*,\s*patch:\s*\d*,\s*flag:\s*".*?"\s*,/g,
