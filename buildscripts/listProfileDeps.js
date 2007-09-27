@@ -1,6 +1,8 @@
 //START of the "main" part of the script.
 //This is the entry point for this script file.
-load("buildUtil.js");
+load("jslib/logger.js");
+load("jslib/fileUtil.js");
+load("jslib/buildUtil.js");
 
 var profileFile = arguments[0];
 var lineSeparator = java.lang.System.getProperty("line.separator");

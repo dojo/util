@@ -7,93 +7,11 @@ load("jslib/buildUtil.js");
 load("jslib/buildUtilXd.js");
 load("jslib/i18nUtil.js");
 
-var DojoBuildOptions = {
-	"profile": {
-		defaultValue: "base",
-		helpText: "The name of the profile to use for the build. It must be the first part of "
-			+ "the profile file name in the profiles/ directory. For instance, to use base.profile.js, "
-			+ "specify profile=base."
-	},
-	"profileFile": {
-		defaultValue: "",
-		helpText: "A file path to the the profile file. Use this if your profile is outside of the profiles "
-			+ "directory. Do not specify the \"profile\" build option if you use \"profileFile\"."
-	},
-	"action": {
-		defaultValue: "help",
-		helpText: "The build action(s) to run. Can be a comma-separated list, like action=clean,release. "
-			+ "The possible build actions are: clean, release."
-	},
-	"version": {
-		defaultValue: "0.0.0.dev",
-		helpText: "The build will be stamped with this version string."
-	},
-	"localeList": {
-		defaultValue: "en-gb,en-us,de-de,es-es,fr-fr,it-it,pt-br,ko-kr,zh-tw,zh-cn,ja-jp",
-		helpText: "The set of locales to use when flattening i18n bundles."
-	},
-	
-	"releaseName": {
-		defaultValue: "dojo",
-		helpText: "The name of the release. A directory inside 'releaseDir' will be created with this name."
-	},
-	"releaseDir": {
-		defaultValue: "../../release/",
-		helpText: "The top level release directory where builds end up. The 'releaseName' directories will "
-			+ " be placed inside this directory."
-	},
-	"loader": {
-		defaultValue: "default",
-		helpText: "The type of dojo loader to use. \"default\" or \"xdomain\" are acceptable values."		
-	},
-	"internStrings": {
-		defaultValue: true,
-		helpText: "Turn on or off widget template/dojo.uri.cache() file interning."
-	},
-	"optimize": {
-		defaultValue: "",
-		helpText: "Specifies how to optimize module files. If \"comments\" is specified, "
-			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
-			+ "the Dojo compressor will be used on the files, and line returns will be removed. "
-			+ "If \"shrinksafe.keepLines\" is specified, then the Dojo compressor will be used "
-			+ "on the files, and line returns will be preserved. If \"packer\" is specified, "
-			+ "Then Dean Edwards' Packer will be used."
-	},
-	"layerOptimize": {
-		defaultValue: "shrinksafe",
-		helpText: "Specifies how to optimize the layer files. If \"comments\" is specified, "
-			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
-			+ "the Dojo compressor will be used on the files, and line returns will be removed. "
-			+ "If \"shrinksafe.keepLines\" is specified, then the Dojo compressor will be used "
-			+ "on the layer files, and line returns will be preserved. If \"packer\" is specified, "
-			+ "Then Dean Edwards' Packer will be used."
-	},
-	"cssOptimize": {
-		defaultValue: "",
-		helpText: "Specifies how to optimize CSS files. If \"comments\" is specified, "
-			+ "then code comments and line returns are stripped. If \"comments.keepLines\" "	
-			+ "is specified, then code comments are stripped, but line returns are preserved."
-	},
-	"copyTests": {
-		defaultValue: true,
-		helpText: "Turn on or off copying of test files."
-	},
-	"log": {
-		defaultValue: logger.TRACE,
-		helpText: "Sets the logging verbosity. See jslib/logger.js for possible integer values."
-	},
-	"xdDojoPath": {
-		defaultValue: "",
-		helpText: "If the loader=xdomain build option is used, then the value of this option "
-			+ "will be used to call dojo.registerModulePath() for dojo, dijit and dojox. "
-			+ "The xdDojoPath should be the directory that contains the dojo, dijit and dojox "
-			+ "directories, and it should NOT end in a slash. For instance: 'http://some.domain.com/path/to/dojo090'."
-	}
-};
+//NOTE: See buildUtil.DojoBuildOptions for the list of build options.
 
 //*****************************************************************************
 //Convert arguments to keyword arguments.
-var kwArgs = _makeBuildOptions(arguments);
+var kwArgs = buildUtil.makeBuildOptions(arguments);
 
 //Set logging level.
 logger.level = kwArgs["log"];
@@ -113,9 +31,9 @@ logger.info("Build time: " + buildTime + " seconds");
 //********* Start help ************
 function help(){
 	var buildOptionText = "";
-	for(var param in DojoBuildOptions){
-		buildOptionText += param + "=" + DojoBuildOptions[param].defaultValue + "\n"
-			+ DojoBuildOptions[param].helpText + "\n\n";
+	for(var param in buildUtil.DojoBuildOptions){
+		buildOptionText += param + "=" + buildUtil.DojoBuildOptions[param].defaultValue + "\n"
+			+ buildUtil.DojoBuildOptions[param].helpText + "\n\n";
 	}
 
 	var helpText = "To run the build, you must have Java 1.4.2 or later installed.\n"
@@ -180,10 +98,6 @@ function release(){
 	if(typeof dojo != "undefined"){
 		dojo = undefined;
 	}
-
-	//Recalculate the dojo prefix path since we should now use the one in the
-	//release folder.
-	var dojoPrefixPath = buildUtil.getDojoPrefixPath(prefixes);
 
 	logger.trace("Building dojo.js and layer files");
 	var result = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileProperties), kwArgs.version, kwArgs);
@@ -332,55 +246,3 @@ function _optimizeReleaseDirs(
 	}
 }
 //********* End _optimizeReleaseDirs *********
-
-
-//********* Start _makeBuildOptions *********
-function _makeBuildOptions(/*Array*/scriptArgs){
-	var kwArgs = {};
-
-	//Parse the command line arguments
-	var kwArgs = buildUtil.convertArrayToObject(scriptArgs);
-	if(!kwArgs["profileFile"] && kwArgs["profile"]){
-		kwArgs.profileFile = "profiles/" + kwArgs.profile + ".profile.js";
-	}
-
-	//Load dependencies object from profile file, if there is one.
-	var dependencies = {};
-	if(kwArgs["profileFile"]){
-		var profileProperties = buildUtil.evalProfile(kwArgs.profileFile);
-		if(profileProperties){
-			kwArgs.profileProperties = profileProperties;
-			dependencies = kwArgs.profileProperties.dependencies;
-			
-			//Allow setting build options from on the profile's dependencies object
-			for(var param in DojoBuildOptions){
-				if(typeof dependencies[param] != "undefined"){
-					kwArgs[param] = dependencies[param];
-				}
-			}
-		}
-	}
-
-	//Set up default options
-	for(var param in DojoBuildOptions){
-		//Only use default if there is no value so far.
-		if(typeof kwArgs[param] == "undefined"){
-			kwArgs[param] = DojoBuildOptions[param].defaultValue;
-		}else if(kwArgs[param] === "false"){
-			//Make sure "false" strings get translated to proper false value.
-			kwArgs[param] = false;
-		}
-	}
-
-	//Set up some compound values
-	kwArgs.releaseDir += kwArgs["releaseName"];
-	kwArgs.action = kwArgs.action.split(",");
-	kwArgs.localeList = kwArgs.localeList.split(",");
-	
-	//Attach the final loader type to the dependencies
-	dependencies.loader = kwArgs.loader;
-
-	return kwArgs;
-}
-//********* End _makeBuildOptions *********
-

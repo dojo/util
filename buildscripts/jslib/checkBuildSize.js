@@ -2,6 +2,7 @@
 
 //TODO: could take profile and compression option as args
 
+load("jslib/logger.js");
 load("jslib/fileUtil.js");
 load("jslib/buildUtil.js");
 
