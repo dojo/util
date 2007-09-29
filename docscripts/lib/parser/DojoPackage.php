@@ -16,35 +16,31 @@ class DojoPackage
 	protected $objects = array(); // Builds an array of objects
 	protected $aliases = array(); // Builds a key/value list of aliases in this file
 
-	public function __construct(Dojo $dojo, $file)
-	{
+	public function __construct(Dojo $dojo, $file){
 		$this->dojo = $dojo;
 		$this->setFile($file);
 	}
 	
-	public function getFile()
-	{
+	public function getFile(){
 		return $this->file;
 	}
 	
-	public function setFile($file)
-	{
+	public function setFile($file){
 		$this->file = $file;
 	}
 
-	public function getFunctionDeclarations()
-	{
+	public function getFunctionDeclarations(){
 		$lines = $this->getCode();
 		$end = array(0, 0);
 
 		$matches = preg_grep('%function%', $lines);
 		$last_line = 0;
-		foreach ($matches as $line_number => $line) {
-			if ($line_number < $last_line) {
+		foreach($matches as $line_number => $line){
+			if($line_number < $last_line){
 				continue;
 			}
 
-			if (preg_match('%(\bfunction\s+[a-zA-Z0-9_.$]+\b\s*\(|\b[a-zA-Z0-9_.$]+\s*=\s*(new\s*)?function\s*\()%', $line, $match)) {
+			if(preg_match('%(\bfunction\s+[a-zA-Z0-9_.$]+\b\s*\(|\b[a-zA-Z0-9_.$]+\s*=\s*(new\s*)?function\s*\()%', $line, $match)) {
 				$declaration = new DojoFunctionDeclare($this);
 				$declaration->setStart($line_number, strpos($line, $match[0]));
 				$end = $declaration->build();
@@ -56,8 +52,7 @@ class DojoPackage
 		return $this->declarations;
 	}
 
-	public function getExecutedFunctions()
-	{
+	public function getExecutedFunctions(){
 		$lines = $this->getCode();
 		
 		$matches = preg_grep('%function%', $lines);
@@ -86,8 +81,7 @@ class DojoPackage
 	 *
 	 * @param unknown_type $name
 	 */
-	public function getFunctionCalls($name)
-	{
+	public function getFunctionCalls($name){
 		if ($this->calls[$name]) {
 			return $this->calls[$name];
 		}
@@ -107,8 +101,7 @@ class DojoPackage
 		return $this->calls[$name];
 	}
 	
-	public function removeCodeFrom($lines)
-	{
+	public function removeCodeFrom($lines){
 		for($i = 0; $i < count($lines); $i++) {
 			$line = $lines[$i];
 			if (preg_match('%function\s*\([^)]*\)\s*{%', $line, $match, PREG_OFFSET_CAPTURE)) {
@@ -136,15 +129,14 @@ class DojoPackage
 		return $lines;
 	}
 	
-	public function getAliases()
-	{
-		if ($this->aliases) {
+	public function getAliases(){
+		if($this->aliases){
 			return $this->aliases;
 		}
 		
 		$lines = $this->getCode();
-		foreach ($this->calls as $calls) {
-			foreach ($calls as $call) {
+		foreach($this->calls as $calls){
+			foreach($calls as $call){
 				$lines = $call->removeCodeFrom($lines);
 			}
 		}
@@ -170,8 +162,7 @@ class DojoPackage
 	}
 	
 	
-	public function getObjects()
-	{
+	public function getObjects(){
 		if ($this->objects) {
 			return $this->objects;
 		}
@@ -200,8 +191,7 @@ class DojoPackage
 		return $this->objects;
 	}
 	
-	public function getSource()
-	{
+	public function getSource(){
 		if ($this->source) {
 			return $this->source;
 		}
@@ -226,8 +216,7 @@ class DojoPackage
 	/**
 	 * Removes comments and strings, preserving layout
 	 */
-	public function getCode()
-	{
+	public function getCode(){
 		if ($this->code) {
 			return $this->code;
 		}
@@ -337,7 +326,7 @@ class DojoPackage
 				++$position;
 			}
 			
-			if ($i == 500) {
+			if($i == 500){
 				die("\$i should not reach 500: $line");
 			}
 			
@@ -355,25 +344,24 @@ class DojoPackage
 	/**
 	 * Remove items from the passed objects if they are inside of existing calls or declarations
 	 */
-	public function removeSwallowed(&$objects)
-	{
-		foreach ($objects as $i => $object) {
-			foreach ($this->declarations as $declaration) {
-					if (($object->start[0] > $declaration->start[0] || ($object->start[0] == $declaration->start[0] && $object->start[1] > $declaration->start[1]))
+	public function removeSwallowed(&$objects){
+		foreach($objects as $i => $object){
+			foreach($this->declarations as $declaration){
+					if(($object->start[0] > $declaration->start[0] || ($object->start[0] == $declaration->start[0] && $object->start[1] > $declaration->start[1]))
 							&& ($object->end[0] < $declaration->end[0] || ($object->end[0] == $declaration->end[0] && $object->end[1] < $declaration->end[1]))) {
 					unset($objects[$i]);
 				}
 			}
-			foreach ($this->calls as $call_name => $calls) {
-				foreach ($calls as $call) {
-					if (($object->start[0] > $call->start[0] || ($object->start[0] == $call->start[0] && $object->start[1] > $call->start[1]))
+			foreach($this->calls as $call_name => $calls){
+				foreach($calls as $call){
+					if(($object->start[0] > $call->start[0] || ($object->start[0] == $call->start[0] && $object->start[1] > $call->start[1]))
 							&& ($object->end[0] < $call->end[0] || ($object->end[0] == $call->end[0] && $object->end[1] < $call->end[1]))) {
 						unset($objects[$i]);
 					}
 				}
 			}
-			foreach ($this->executions as $execution) {
-				if (($object->start[0] > $execution->start[0] || ($object->start[0] == $execution->start[0] && $object->start[1] > $execution->start[1]))
+			foreach($this->executions as $execution){
+				if(($object->start[0] > $execution->start[0] || ($object->start[0] == $execution->start[0] && $object->start[1] > $execution->start[1]))
 							&& ($object->end[0] < $execution->end[0] || ($object->end[0] == $execution->end[0] && $object->end[1] < $execution->end[1]))) {
 					unset($objects[$i]);
 				}
@@ -381,29 +369,27 @@ class DojoPackage
 		}
 	}
 
-	public function getPackageName()
-	{
+	public function getPackageName(){
 		$name = '';
 
-		if (file_exists('modules/' . $this->dojo->namespace . '.module')) {
+		if(file_exists('modules/' . $this->dojo->namespace . '.module')){
 			include_once('modules/' . $this->dojo->namespace . '.module');
 			$name = call_user_func($this->dojo->namespace . '_package_name', $this->dojo->namespace, $this->file);
 		}
 
-		if ($name) return $name;
+		if($name) return $name;
 		return 'null';
 	}
 
-	public function getResourceName()
-	{
+	public function getResourceName(){
 		$name = '';
 
-		if (file_exists('modules/' . $this->dojo->namespace . '.module')) {
+		if(file_exists('modules/' . $this->dojo->namespace . '.module')){
 			include_once('modules/' . $this->dojo->namespace . '.module');
 			$name = call_user_func($this->dojo->namespace . '_resource_name', $this->dojo->namespace, $this->file);
 		}
 
-		if ($name) return $name;
+		if($name) return $name;
 		return 'null';
 	}
 
