@@ -1100,7 +1100,7 @@ buildUtil.optimizeCss = function(/*String*/startDir, /*String*/optimizeType){
 	}
 }
 
-buildUtil.guardProvideRegExp = /dojo\.provide\((\".*\")\)/;
+buildUtil.guardProvideRegExp = /dojo\.provide\(([\'\"].*[\'\"])\)/;
 
 buildUtil.addGuards = function(/*String*/startDir){
 	//summary: adds a definition guard around code in a file to protect
