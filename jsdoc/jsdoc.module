@@ -1554,10 +1554,10 @@ function _jsdoc_detail_view($node) {
     }
 
     // Find all objects joined normally to this object, 
-    $query = db_query("SELECT n.nid, MAX(n.vid) AS vid FROM {jsdoc_variable_hierarchy} j JOIN {jsdoc_objects} jo ON (jo.vid = j.vid) JOIN {node_revisions} n ON (n.vid = j.vid) WHERE j.parent_vid = %d AND j.type = 'normal' AND jo.version  = %d AND jo.private = 0 GROUP BY n.nid ORDER BY BINARY n.title", $node->vid, $version->vid);
+    $query = db_query("SELECT n.title FROM {jsdoc_variable_hierarchy} j JOIN {jsdoc_objects} jo ON (jo.vid = j.vid) JOIN {node_revisions} n ON (n.vid = j.vid) WHERE j.parent_vid = %d AND j.type = 'normal' AND jo.version  = %d AND jo.private = 0 GROUP BY BINARY n.title ORDER BY BINARY n.title", $node->vid, $version->vid);
     $variables = array();
     while ($object = db_fetch_object($query)) {
-      $object = node_load($object->nid, $object->vid);
+      $object = jsdoc_object_node_load($node->jsdoc_project_name, $node->jsdoc_version_name, $object->title);
       $variables[$object->title] = $object;
     }
     uksort($variables, 'strnatcasecmp');
@@ -1690,7 +1690,7 @@ function jsdoc_child_objects($version, $node, $only_objects = false) {
 *   A node of type jsdoc_object
 */
 function _jsdoc_object_has_child($version, $node) {
-  $query = db_query("SELECT 1 FROM {jsdoc_variable_hierarchy} joh JOIN {jsdoc_resource_objects} jro ON (jro.vid = joh.vid) JOIN {node_revisions} nr ON (nr.vid = joh.vid) WHERE parent = %d AND joh.type = 'normal' AND jro.private = 0 AND jro.version = '%s' GROUP BY nr.nid", $node->vid, $version);
+  $query = db_query("SELECT 1 FROM {jsdoc_variable_hierarchy} joh JOIN {jsdoc_resources} jro ON (jro.vid = joh.vid) JOIN {node_revisions} nr ON (nr.vid = joh.vid) WHERE parent = %d AND joh.type = 'normal' AND jro.private = 0 AND jro.version = '%s' GROUP BY nr.nid", $node->vid, $version);
   if (db_num_rows($query)) {
     return true;
   }
@@ -1741,26 +1741,6 @@ function jsdoc_admin() {
   );
   
   return system_settings_form($form);
-}
-
-/**
- * Custom version of node_load for variables
- */
-function jsdoc_variable_node_load($version, $name, $resource = false) {
-  if ($resource) {
-    $object = db_fetch_object(db_query("SELECT nr.nid, MAX(nr.vid) AS vid FROM {jsdoc_resource_objects} jro JOIN {node_revisions} nr ON (nr.vid = jro.vid) JOIN {node_revisions} nr2 ON (nr2.vid = jro.resource) WHERE BINARY nr.title = '%s' AND BINARY nr2.title = '%s' AND jro.version = '%s' GROUP BY nr.nid", $name, $resource, $version));
-    if (!$object->nid) {
-      $resource = false;
-    }
-    else {
-      return node_load($object->nid, $object->vid);
-    }
-  }
-  if (!$resource) {
-    if ($object = db_fetch_object(db_query("SELECT nr.nid, MAX(nr.vid) AS vid FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (nr.vid = jo.vid) WHERE BINARY nr.title = '%s' AND jo.version = '%s' GROUP BY nr.nid", $name, $version))) {
-      return node_load($object->nid, $object->vid);
-    }
-  }
 }
 
 /**
