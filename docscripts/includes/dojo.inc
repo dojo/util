@@ -306,6 +306,9 @@ function dojo_get_contents($namespace, $file_name) {
     $is_prototype = false;
     if ($call->getParameter(0)->isA(DojoVariable)) {
       $object = $call->getParameter(0)->getVariable();
+      if (strpos($object, '(') !== false) {
+        continue;
+      }
       $call_name = $call->getName();
 
       if(strlen($object) > 10 && substr($object, -10) == '.prototype') {
