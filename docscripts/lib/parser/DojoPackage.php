@@ -353,7 +353,9 @@ class DojoPackage
 			foreach($this->declarations as $declaration){
 					if(($object->start[0] > $declaration->start[0] || ($object->start[0] == $declaration->start[0] && $object->start[1] > $declaration->start[1]))
 							&& ($object->end[0] < $declaration->end[0] || ($object->end[0] == $declaration->end[0] && $object->end[1] < $declaration->end[1]))) {
-					$swallowed[] = $objects[$i];
+					if ($objects[$i]) {
+					  $swallowed[] = $objects[$i];
+				  }
 					unset($objects[$i]);
 				}
 			}
@@ -361,7 +363,9 @@ class DojoPackage
 				foreach($calls as $call){
 					if(($object->start[0] > $call->start[0] || ($object->start[0] == $call->start[0] && $object->start[1] > $call->start[1]))
 							&& ($object->end[0] < $call->end[0] || ($object->end[0] == $call->end[0] && $object->end[1] < $call->end[1]))) {
-      					$swallowed[] = $objects[$i];
+      					if ($objects[$i]) {
+      					  $swallowed[] = $objects[$i];
+      				  }
       					unset($objects[$i]);
 					}
 				}
@@ -369,7 +373,9 @@ class DojoPackage
 			foreach($this->executions as $execution){
 				if(($object->start[0] > $execution->start[0] || ($object->start[0] == $execution->start[0] && $object->start[1] > $execution->start[1]))
 							&& ($object->end[0] < $execution->end[0] || ($object->end[0] == $execution->end[0] && $object->end[1] < $execution->end[1]))) {
-      					$swallowed[] = $objects[$i];
+      					if ($objects[$i]) {
+      					  $swallowed[] = $objects[$i];
+      				  }
       					unset($objects[$i]);
 				}
 			}
