@@ -19,9 +19,8 @@ class DojoExecutedFunction extends DojoFunctionDeclare
 		
 		$this->start = array($this->start[0], strpos($line, 'function'));
 
-		$this->end = parent::build();
+		$this->end = parent::build(); // Basically, the end array here will hold the position of the final } in the function declaration.
 		$lines = Text::chop($this->package->getCode(), $this->end[0], $this->end[1], false, false, true);
-		
 		$closed = false;
 		foreach($lines as $line_number => $line){
 			$offset = 0;

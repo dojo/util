@@ -13,6 +13,7 @@ class DojoFunctionBody extends DojoBlock
 	private $return_comments = array();
 	private $instance_variables = array();
 	private $externalized = array();
+	private $externalized_mixins = array();
 	private $this_inheritance_calls = array();
 	private $extra_initial_comment_block = array();
 
@@ -123,12 +124,8 @@ class DojoFunctionBody extends DojoBlock
     		}
     		return array_keys($this->comments);
   	}
-  
-  	public function getExternalizedFunctionDeclarations(){
-  		if($this->externalized){
-  			return $this->externalized;
-  		}
-  	
+
+		public function getLocalVariableNames() {
   		$internals = array();
   	
   		$this->build();
@@ -153,6 +150,44 @@ class DojoFunctionBody extends DojoBlock
   				$internals[$match[1]] = $match[2];
   			}
   		}
+
+			return $internals;
+		}
+
+    /**
+     * If these occur inside this function AND reference a local variable, remove them
+     */
+    public function removeSwallowedMixins(&$possible_mixins){
+      // If any of the mixins happened inside of an executed function, we need to see if
+      // they were used on external variables.
+      if ($this->externalized_mixins) {
+        return $this->externalized_mixins;
+      }
+
+      $this->build();
+      $internals = $this->getLocalVariableNames();
+
+      foreach ($possible_mixins as $i => $mixin) {
+        if(($mixin->start[0] > $this->start[0] || ($mixin->start[0] == $this->start[0] && $mixin->start[1] > $this->start[1]))
+          && ($mixin->end[0] < $this->end[0] || ($mixin->end[0] == $this->end[0] && $mixin->end[1] < $this->end[1]))) {
+            if ($mixin->getParameter(0)->isA(DojoVariable)) {
+              $object = $mixin->getParameter(0)->getVariable();
+              if (array_key_exists($object, $internals)) {
+                unset($possible_mixins[$i]);
+              }
+            }
+        }
+      }
+    }
+
+  	public function getExternalizedFunctionDeclarations(){
+  		if($this->externalized){
+  			return $this->externalized;
+  		}
+
+  		$this->build();
+  		$lines = Text::chop($this->package->getCode(), $this->start[0], $this->start[1], $this->end[0], $this->end[1], true);
+			$internals = $this->getLocalVariableNames();
   	
   		$matches = preg_grep('%function%', $lines);
   		foreach ($matches as $line_number => $line) {

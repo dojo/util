@@ -74,6 +74,10 @@ class DojoFunctionDeclare extends DojoBlock
 	public function getInstanceVariableNames(){
 		return array_unique($this->body->getInstanceVariableNames());
 	}
+
+  public function removeSwallowedMixins(&$mixins) {
+    return $this->body->removeSwallowedMixins($mixins);
+  }
 	
 	public function getReturnComments(){
 		return array_unique($this->body->getReturnComments());
@@ -85,6 +89,10 @@ class DojoFunctionDeclare extends DojoBlock
 	
 	public function getFunctionDeclarations(){
 		return $this->body->getExternalizedFunctionDeclarations();
+	}
+
+	public function getLocalVariableNames(){
+		return $this->body->getLocalVariableNames();
 	}
 	
 	public function removeCodeFrom($lines){

@@ -276,7 +276,7 @@ function dojo_get_contents($namespace, $file_name) {
   $executions = $package->getExecutedFunctions();
 
   // Since there can be chase conditions between declarations and calls, we need to find which were "swallowed" by larger blocks
-  $package->removeSwallowed($mixin_calls);
+  $swallowed_mixins = $package->removeSwallowed($mixin_calls);
   $package->removeSwallowed($declarations);
   $package->removeSwallowed($executions);
 
@@ -292,7 +292,10 @@ function dojo_get_contents($namespace, $file_name) {
     foreach ($execution_declarations as $declaration) {
         $declaration->rollOut($output);
     }
+    $execution->removeSwallowedMixins($swallowed_mixins);
   }
+  $mixin_calls = array_merge($mixin_calls, $swallowed_mixins);
+  unset($swallowed_mixins);
 	unset($executions);
 	unset($execution);
 	unset($execution_declarations);
