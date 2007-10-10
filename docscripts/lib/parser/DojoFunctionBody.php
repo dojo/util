@@ -170,10 +170,20 @@ class DojoFunctionBody extends DojoBlock
       foreach ($possible_mixins as $i => $mixin) {
         if(($mixin->start[0] > $this->start[0] || ($mixin->start[0] == $this->start[0] && $mixin->start[1] > $this->start[1]))
           && ($mixin->end[0] < $this->end[0] || ($mixin->end[0] == $this->end[0] && $mixin->end[1] < $this->end[1]))) {
-            if ($mixin->getParameter(0)->isA(DojoVariable)) {
-              $object = $mixin->getParameter(0)->getVariable();
+            $parameter = $mixin->getParameter(0);
+            if ($parameter->isA(DojoVariable)) {
+              $object = $parameter->getVariable();
               if (array_key_exists($object, $internals)) {
                 unset($possible_mixins[$i]);
+              }
+              else {
+                foreach ($internals as $internal_name => $external_name) {
+                  if (strpos($object, $internal_name . '.') === 0) {
+                    $object = $external_name . substr($name, strlen($internal_name));
+                  }
+                }
+
+                $parameter->setVariable($object);
               }
             }
         }
