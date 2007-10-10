@@ -203,26 +203,52 @@ function jsdoc_menu($may_cache) {
 }
 
 /**
+ * shutdown function to make sure we always mark the last node processed.
+ */
+function jsdoc_update_shutdown() {
+  global $last_change, $last_nid;
+
+  if ($last_change && $last_nid) {
+    variable_set('jsdoc_cron_last', $last_change);
+    variable_set('jsdoc_cron_last_nid', $last_nid);
+  }
+}
+
+/**
  * Implementation of hook_update_index().
+ *
+ * Handle node status the way that the node module does... through remembering nids, last change time,
+ * and last comment change time.
+ *
+ * We need to save things by version/node pair though. That way, we can keep things so that the latest
+ * update is always the latest version of the node.
  */
 function jsdoc_update_index() {
-  // TODO: Add a version: tag here
-  $result = db_query("SELECT n.nid, nr.vid FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (nr.vid = jo.vid) JOIN {node} n ON (n.nid = nr.nid) LEFT JOIN {search_dataset} sd ON (sd.sid = nr.vid) WHERE sd.sid IS NULL LIMIT 1000");
+  global $last_change, $last_nid;
+
+  register_shutdown_function('jsdoc_update_shutdown');
+
+  $last = variable_get('jsdoc_cron_last', 0);
+  $last_nid = variable_get('jsdoc_cron_last_nid', 0);
+  $limit = (int)variable_get('jsdoc_cron_limit', 100);
+
+  $result = db_query_range("SELECT GREATEST(IF(c.last_comment_timestamp IS NULL, 0, c.last_comment_timestamp), n.changed) as last_change, n.nid FROM {node} n LEFT JOIN {node_comment_statistics} c ON n.nid = c.nid WHERE n.type IN ('jsdoc_object', 'jsdoc_resource') AND n.status = 1 AND ((GREATEST(n.changed, c.last_comment_timestamp) = %d AND n.nid > %d) OR (n.changed > %d OR c.last_comment_timestamp > %d)) ORDER BY GREATEST(n.changed, c.last_comment_timestamp) ASC, n.nid ASC", $last, $last_nid, $last, $last, $last, 0, $limit);
+
   while ($node = db_fetch_object($result)) {
-    $node = node_load($node->nid, $node->vid);
+    $last_change = $node->last_change;
+    $last_nid = $node->nid;
+    $node = node_load($node->nid);
 
-    $text = '<h1>'. str_replace('.', ' ', $node->title) .'</h1>'. $node->title . ' ' . $node->teaser;
+    $text = '<h1>'. str_replace('.', ' ', $node->title) .'</h1>'. $node->title . ' ' . $node->teaser . ' ' . $node->body;
 
-    search_index($node->vid, 'jsdoc', $text);
-  }
+    // Fetch extra data normally not visible
+    $extra = node_invoke_nodeapi($node, 'update index');
+    foreach ($extra as $t) {
+      $text .= $t;
+    }
 
-  $result = db_query("SELECT n.nid, nr.vid FROM {node} n JOIN {node_revisions} nr ON (nr.nid = n.nid) LEFT JOIN {search_dataset} sd ON (sd.sid = nr.vid) WHERE n.type = 'jsdoc_resource' AND sd.sid IS NULL LIMIT 1000");
-  while ($node = db_fetch_object($result)) {
-    $node = node_load($node->nid, $node->vid);
-
-    $text = '<h1>'. str_replace('.', ' ', $node->title) .'</h1>'. $node->title . ' ' . $node->teaser;
-
-    search_index($node->vid, 'jsdoc', $text);
+    // Update index
+    search_index($node->nid, 'jsdoc_' . $node->jsdoc_version_name, $text);
   }
 }
 
@@ -234,22 +260,24 @@ function jsdoc_search($op = 'search', $keys = null) {
     case 'name':
       return t('JavaScript Documentation');
     case 'search':
-      $find = do_search(str_replace('.', ' ', $keys) . ' OR ' . $keys, 'jsdoc', 'INNER JOIN {node_revisions} nr ON (nr.vid = i.sid) INNER JOIN {node} n ON (n.nid = nr.nid)', 'n.status = 1');
+      // Get all projects
+      // Get all versions mared 'HEAD' in each project
+      $project = search_query_extract($keys, 'project');
+      $keys = search_query_insert($keys, 'project');
+      $version = search_query_extract($keys, 'version');
+      $keys = search_query_insert($keys, 'version');
+
+      $project = _jsdoc_project_get_or_create($project);
+      $version = _jsdoc_version_get_or_create($version, $project->nid);
+
+      $find = do_search(str_replace('.', ' ', $keys) . ' OR ' . $keys, 'jsdoc_' . $version->title, 'LEFT JOIN {jsdoc_objects} jo ON (i.sid = jo.nid) LEFT JOIN {jsdoc_resources} jr ON (i.sid = jr.nid)', '(jo.version = ' . $version->nid . ' OR jr.version = ' . $version->nid . ')');
       $results = array();
       foreach ($find as $item) {
-        $object = db_fetch_object(db_query("SELECT nid, vid FROM {node_revisions} WHERE vid = %d", $item->sid));
-        $node = node_load($object->nid, $object->vid);
-
-        if ($node->type == 'jsdoc_object') {
-          $url = 'jsdoc/HEAD/object/'. $node->title;
-        }
-        else {
-          $url = 'jsdoc/HEAD/resource/'. $node->title;
-        }
+        $node = node_load($item->sid);
 
         $info = jsdoc_node_info();
         $results[] = array(
-          'link' => url($url),
+          'link' => url($node->jsdoc_url),
           'type' => $info[$node->type]['name'],
           'title' => $node->title,
           'user' => theme('username', $node),
@@ -272,6 +300,14 @@ function jsdoc_cron() {
     return;
   }
 
+  $timestamp = variable_get('jsdoc_cron_time', 0);
+  if ($timestamp && time() - $timestamp < 43200) {
+    // 12 hours
+    return;
+  }
+
+  variable_set('jsdoc_cron_time', time());
+
   // Use the configuration settings to switch directories, and load the plugin file
   _jsdoc_cron_chdir(true);
 
@@ -291,6 +327,7 @@ function jsdoc_cron() {
       foreach ($files as $list) {
         list($namespace, $file_name) = $list;
         unset($list);
+        unset($contents);
 
         // Cache the results from a parse in the file and reuse it if we can.
         $cache_dir = _jsdoc_get_base_path() . '/' . drupal_get_path('module', 'jsdoc') . '/cache/';
@@ -502,6 +539,39 @@ function jsdoc_form_alter($form_id, &$form) {
   if ($form['type']['#value'] == 'jsdoc_object') {
     unset($form['taxonomy']);
   }
+  elseif ($form_id == 'search_form' && $form['module']['#value'] == 'jsdoc') {
+    $options = array();
+
+    $query = db_query("SELECT n.title AS project, n2.title AS version FROM {node} n JOIN {jsdoc_versions} j ON (j.project = n.nid) JOIN {node} n2 ON (n2.nid = j.nid) WHERE n.type = 'jsdoc_project' AND n.status = 1 AND n2.status = 1 ORDER BY n2.vid DESC");
+    while ($node = db_fetch_object($query)) {
+      $options[$node->project . '_' . $node->version] = $node->project . ' -- ' . $node->version;
+    }
+
+    $form['jsdoc_version'] = array(
+      '#title' => t('Version'),
+      '#type' => 'select',
+      '#options' => $options,
+      '#required' => true
+    );
+
+    $project = search_query_extract($form['basic']['inline']['keys']['#default_value'], 'project');
+    $version = search_query_extract($form['basic']['inline']['keys']['#default_value'], 'version');
+
+    if ($project && $version) {
+      $form['jsdoc_version']['#default_value'] = $project . '_' . $version;
+    }
+
+    $form['#validate']['jsdoc_search_validate'] = array();
+  }
+}
+
+function jsdoc_search_validate($form_id, $form_values, $form) {
+  list($project, $version) = explode('_', $form_values['jsdoc_version']);
+
+  $keys = search_query_insert($form_values['processed_keys'], 'project', $project);
+  $keys = search_query_insert($keys, 'version', $version);
+
+  form_set_value($form['basic']['inline']['processed_keys'], trim($keys));
 }
 
 /**
@@ -889,6 +959,8 @@ function jsdoc_object_load($node) {
 
   $node->jsdoc_url = 'jsdoc/' . $version->jsdoc_project_name . '/HEAD/object/' . db_result(db_query("SELECT title FROM {node_revisions} WHERE vid = %d", $additions->jsdoc_resource_vid)). '/' . $node->title;
 
+  $additions->skip_indexing = true;
+
   return $additions;
 }
 
@@ -924,9 +996,11 @@ function jsdoc_resource_load($node) {
   $additions = db_fetch_object(db_query("SELECT version AS jsdoc_version FROM {jsdoc_resources} WHERE vid = %d", $node->vid));
   $version = node_load($additions->jsdoc_version);
   $additions->jsdoc_project_name = $version->jsdoc_project_name;
-  $additions->jsdoc_version = $version->title;
+  $additions->jsdoc_version_name = $version->title;
+  $additions->jsdoc_version = $version->vid;
   $additions->jsdoc_url = 'jsdoc/' . $additions->jsdoc_project_name . '/HEAD/resource/' . $node->title;
   $additions->jsdoc_formatted = array();
+  $additions->skip_indexing = true;
   return $additions;
 }
 
@@ -1011,6 +1085,8 @@ function jsdoc_variable_load($node) {
   $additions->jsdoc_title = $node->title;
 
   $additions->jsdoc_formatted = _jsdoc_format_type($additions->jsdoc_type, $additions->jsdoc_classlike);
+
+  $additions->skip_indexing = true;
 
   return $additions;
 }
@@ -1702,13 +1778,29 @@ function jsdoc_resource_node_load($project, $revision, $name) {
  * Custom version of node_load for objects
  */
 function jsdoc_object_node_load($project, $revision, $name, $resource = false) {
+  if ($name == 'bool') {
+    $name = 'Boolean';
+  }
+  elseif ($name == 'int') {
+    $name = 'Number';
+  }
+
   $global_vars = array('Array', 'Boolean', 'Date', 'Error', 'Function', 'Number', 'Object', 'RegExp', 'String');
 
   if (in_array($name, $global_vars)) {
     return (object)array(
-      'jsdoc_url' => 'http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Reference:Global_Objects:' . $name,
-      'title' => $name
+      'jsdoc_url' => 'http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Reference:Global_Objects:' . $name
     );
+  }
+  elseif ($name == 'Node' || $name == 'HTMLElement') {
+    return (object)array(
+      'jsdoc_url' => 'http://developer.mozilla.org/en/docs/DOM:element'
+    );
+  }
+  elseif ($name == 'Class') {
+    return (object)array(
+      'jsdoc_url' => 'http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Guide:Class-Based_vs._Prototype-Based_Languages#Defining_a_Class'
+    );    
   }
 
   if ($version = db_fetch_object(db_query("SELECT n2.nid FROM {node} n JOIN {jsdoc_versions} j ON (j.project = n.nid) JOIN {node} n2 ON (n2.nid = j.nid) WHERE n.title = '%s' AND n2.title = '%s'", $project, $revision))) {
@@ -1862,7 +1954,7 @@ function _jsdoc_object_get_or_create($namespace, $name, $summary, $description, 
 
     if ($parameters) {
       foreach ($parameters as $parameter_name => $parameter) {
-        if (array_key_exists($parameter_name, $node->jsdoc_parameters)) {
+        if (is_array($node->jsdoc_parameters) && array_key_exists($parameter_name, $node->jsdoc_parameters)) {
           if (empty($parameter['summary'])) {
             $parameters[$parameter_name]['summary'] = $node->jsdoc_parameters[$parameter_name]->summary; // Database wins over source
           }
@@ -2018,6 +2110,7 @@ function _jsdoc_version_get_or_create($name, $project_nid) {
   else {
     $node = node_load($nid);
   }
+  return $node;
 }
 
 function _jsdoc_detail_update_joins($node) {
@@ -2199,6 +2292,8 @@ function _jsdoc_flags() {
  * Validate some of the expected global settings
  */
 function _jsdoc_cron_validate() {
+  ini_set('memory_limit', '192M');
+
   if (!_jsdoc_file_location() || !_jsdoc_dir_location()) {
     watchdog('jsdoc', t('jsdoc settings should be configured'), WATCHDOG_ERROR);
     return false;
