@@ -150,7 +150,7 @@ class DojoObject extends DojoBlock
 		foreach($variables as $key){
 			$full_variable_name = "{$name}.{$key}";
 			if($comment = $this->getBlockComment($key)){
-				list($type, $comment) = explode(' ', $comment, 2);
+				list($type, $comment) = preg_split('%\s%', $comment, 2);
 				$type = preg_replace('%(^[^a-zA-Z0-9._$]|[^a-zA-Z0-9._$?]$)%', '', $type);
 				if($type){
 					$output[$full_variable_name]['type'] = $type;

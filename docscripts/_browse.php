@@ -124,7 +124,7 @@ if(!empty($_REQUEST['ns'])){
 
 								// these are partially useless for our "overview" api, but set showall=1 in the
 								// url if you want to see these, too. sortof.
-								case "type" :
+								case "type" : $print .= "<li><em>".$key2."</em><div><pre>".htmlentities($val2)."</pre></div></li>"; break;
 								case "private_parent" :
 								case "prototype" :
 								case "instance" :
