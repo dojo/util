@@ -291,7 +291,7 @@ class DojoFunctionDeclare extends DojoBlock
           $output[$function_name]['parameters'][$key]['type'] = $parameter_type;
         }
         if($parameter_type && strpos($comment, $parameter_type) === 0){
-          $comment =  preg_replace('%' . preg_escape($parameter_type) . '\s*%', '', $comment);
+          $comment =  preg_replace('%' . preg_quote($parameter_type) . '\s*%', '', $comment);
         }
         $output[$function_name]['parameters'][$key]['summary'] = $comment;
       }
