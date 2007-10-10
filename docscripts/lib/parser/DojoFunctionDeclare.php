@@ -273,7 +273,11 @@ class DojoFunctionDeclare extends DojoBlock
         }
         $output[$key]['summary'] = $comment;
       }elseif (!empty($output[$function_name]['parameters']) && array_key_exists($key, $output[$function_name]['parameters']) && $comment = $this->getBlockComment($key)){
-        list($parameter_type, $comment) = explode(' ', $comment, 2);
+        list($parameter_type, $comment) = preg_split('%\s%', $comment, 2);
+        if (!empty($output[$function_name]['parameters'][$parameter_name]['type']) && $parameter_type != $output[$function_name]['parameters'][$parameter_name]['type']) {
+          $comment = $parameter_type . ' ' . $comment;
+          $parameter_type = $output[$function_name]['parameters'][$parameter_name]['type'];
+        }
         $parameter_type = preg_replace('%(^[^a-zA-Z0-9._$]|[^a-zA-Z0-9._$?]$)%', '', $parameter_type);
         if($parameter_type){
           if(strpos($parameter_type, '?')){
