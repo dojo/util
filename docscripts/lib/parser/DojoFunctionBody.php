@@ -187,7 +187,7 @@ class DojoFunctionBody extends DojoBlock
           else {
             foreach ($internals as $internal_name => $external_name) {
               if (strpos($object, $internal_name . '.') === 0) {
-                $object = $external_name . substr($name, strlen($internal_name));
+                $object = $external_name . substr($object, strlen($internal_name));
               }
             }
 
