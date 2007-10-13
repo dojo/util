@@ -51,6 +51,7 @@ var dir = arguments[0];
 djConfig={baseUrl: "../../../dojo/"};
 
 load("../../../dojo/dojo.js");
+load("../jslib/logger.js");
 load("../jslib/fileUtil.js");
 
 dojo.require("dojo.i18n");

@@ -39,6 +39,7 @@ djConfig={baseUrl: "../../../dojo/"};
 load("../../../dojo/dojo.js");
 dojo.require("dojo.i18n");
 
+load("../jslib/logger.js");
 load("../jslib/fileUtil.js");
 load("../jslib/buildUtil.js");
 
