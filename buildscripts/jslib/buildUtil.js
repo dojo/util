@@ -291,22 +291,13 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 				dojo._provide(resourceName);
 			}
 			
-			function removeComments(contents){
-				// if we get the contents of the file from Rhino, it might not be a JS
-				// string, but rather a Java string, which will cause the replace() method
-				// to bomb.
-				contents = contents ? new String(contents) : "";
-				// clobber all comments
-				return contents.replace( /(\/\*([\s\S]*?)\*\/|\/\/(.*)$)/mg , "");
-			}
-			
 			// over-write dojo.eval to prevent actual loading of subsequent files
 			dojo._oldEval = dojo["eval"];
 			dojo["eval"] = function(){ return true; }
 			var old_load = load;
 			load = function(uri){
 				try{
-					var text = removeComments(fileUtil.readFile(uri));
+					var text = buildUtil.removeComments(fileUtil.readFile(uri));
 					var requires = dojo._getRequiresAndProvides(text);
 					eval(requires.join(";"));
 					dojo._loadedUrls.push(uri);
@@ -424,6 +415,18 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 	}
 
 	return result; //Object with properties: name (String), depList (Array) and provideList (Array)
+}
+
+buildUtil.removeComments = function(/*String*/contents){
+	//summary: strips JS comments from a string. Not bulletproof, but does a good enough job
+	//for stripping out stuff that is not related to mapping resource dependencies.
+
+	//If we get the contents of the file from Rhino, it might not be a JS
+	//string, but rather a Java string, which will cause the replace() method
+	//to bomb.
+	contents = contents ? new String(contents) : "";
+	//clobber all comments
+	return contents.replace( /(\/\*([\s\S]*?)\*\/|\/\/(.*)$)/mg , "");
 }
 
 //Function to do the actual collection of file names to join.

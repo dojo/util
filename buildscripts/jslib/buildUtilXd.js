@@ -74,9 +74,9 @@ buildUtilXd.xdgen = function(
 //Function that generates the XD version of the module file's contents
 buildUtilXd.makeXdContents = function(fileContents, prefixes){
 	var dependencies = [];
-	
+
 	//Use the regexps to find resource dependencies for this module file.
-	var depMatches = fileContents.match(buildUtil.globalDependencyRegExp);
+	var depMatches = buildUtil.removeComments(fileContents).match(buildUtil.globalDependencyRegExp);
 	if(depMatches){
 		for(var i = 0; i < depMatches.length; i++){
 			var partMatches = depMatches[i].match(buildUtil.dependencyPartsRegExp);
