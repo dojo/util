@@ -38,9 +38,9 @@ function help(){
 
 	var helpText = "To run the build, you must have Java 1.4.2 or later installed.\n"
 		+ "To run a build run the following command from this directory:\n\n"
-		+ "> java -jar lib/custom_rhino.jar build.js [name=value...]\n\n"
+		+ "> java -jar ../shrinksafe/custom_rhino.jar build.js [name=value...]\n\n"
 		+ "Here is an example of a typical release build:\n\n"
-		+ "> java -jar lib/custom_rhino.jar build.js profile=base action=release\n\n"
+		+ "> java -jar ../shrinksafe/custom_rhino.jar build.js profile=base action=release\n\n"
 		+ "The possible name=value build options are shown below with the defaults as their values:\n\n"
 		+ buildOptionText;
 	

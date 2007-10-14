@@ -29,7 +29,7 @@ svn co svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/tags/$tagName $bu
 cd $buildName/util/buildscripts
 
 #Update the dojo version in the tag
-java -jar lib/custom_rhino.jar changeVersion.js $version ../../dojo/_base/_loader/bootstrap.js
+java -jar ../shrinksafe/custom_rhino.jar changeVersion.js $version ../../dojo/_base/_loader/bootstrap.js
 cd ../../dojo
 svn commit -m "Updating dojo version for the tag." _base/_loader/bootstrap.js
 

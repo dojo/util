@@ -39,11 +39,11 @@ cat index.html | sed "s/@VERSION@/$version/g" | sed "s|@XD_DOJO_URL@|$xdDojoUrl|
 mv index.out.html index.html
 
 #Generate the list of modules for the web build process.
-java -jar ../lib/custom_rhino.jar makeWebBuildModuleList.js ../../src treeData.js
+java -jar ../../shrinksafe/custom_rhino.jar makeWebBuildModuleList.js ../../src treeData.js
 
 #Got to buildscripts dir and run stripComments for web build.
 cd ..
-java -jar lib/custom_rhino.jar stripComments.js ../src true
+java -jar ../shrinksafe/custom_rhino.jar stripComments.js ../src true
 
 #Now in release folder. Bundle it all up.
 cd ../../..

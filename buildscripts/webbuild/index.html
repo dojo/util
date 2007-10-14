@@ -245,7 +245,7 @@ SELECT				{	background:#d1c6ae;	}
 		if(typeof treeData == "undefined"){
 			alert("Please run webbuild/makeWebBuildModuleList.js to generate list of modules:\n"
 				+ "cd to webbuild directory and run this command:\n\n"
-				+ "java -jar ../lib/custom_rhino.jar makeWebBuildModuleList.js ../../src treeData.js");
+				+ "java -jar ../../shrinksafe/custom_rhino.jar makeWebBuildModuleList.js ../../src treeData.js");
 		}else{
 			treeWidget.setChildren(treeData.children);
 			// expand the tree to the first level

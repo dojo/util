@@ -1,3 +1,3 @@
 #!/bin/sh
 
-java -jar lib/custom_rhino.jar build.js "$@"
+java -jar ../shrinksafe/custom_rhino.jar build.js "$@"
