@@ -1,0 +1,5 @@
+custom_rhino.jar is a modified version of Mozilla Rhino, which was initially
+developed by Netscape Communications Corporation.  The changes to the source code
+are provided in the file custom_rhino.diff.
+
+This software is provided by the Dojo Foundation "as is" under the MPL 1.1 license.
