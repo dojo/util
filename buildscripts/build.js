@@ -175,8 +175,14 @@ function release(){
 	//release area.
 	var layerIgnoreRegExp = new RegExp("(" + layerIgnoreString + ")");
 	var nlsIgnoreRegExp = new RegExp("\\/nls\\/(" + nlsIgnoreString + ")_");
+
 	for(var i = 0; i < prefixes.length; i++){
-		_optimizeReleaseDirs(prefixes[i][0], prefixes[i][1], kwArgs, layerIgnoreRegExp, nlsIgnoreRegExp);
+		var copyrightText = null;
+		if(prefixes[i][2]){
+			copyrightText = fileUtil.readFile(prefixes[i][2]);
+		}
+
+		_optimizeReleaseDirs(prefixes[i][0], prefixes[i][1], copyrightText, kwArgs, layerIgnoreRegExp, nlsIgnoreRegExp);
 	}
 	
 	//Copy over DOH if tests where copied.
@@ -214,7 +220,8 @@ function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kw
 //********* Start _optimizeReleaseDirs *********
 function _optimizeReleaseDirs(
 	/*String*/prefixName, 
-	/*String*/prefixPath, 
+	/*String*/prefixPath,
+	/*String*/copyrightText,
 	/*Object*/kwArgs,
 	/*RegExp*/layerIgnoreRegExp,
 	/*RegExp*/nlsIgnoreRegExp){	
@@ -238,7 +245,7 @@ function _optimizeReleaseDirs(
 
 	//FIXME: call stripComments. Maybe rename, inline with optimize? need build options too.
 	if(kwArgs.optimize){
-		buildUtil.stripComments(releasePath, layerIgnoreRegExp, false, kwArgs.optimize);
+		buildUtil.stripComments(releasePath, layerIgnoreRegExp, copyrightText, kwArgs.optimize);
 	}
 	
 	if(kwArgs.cssOptimize){

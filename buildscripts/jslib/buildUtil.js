@@ -1029,9 +1029,9 @@ buildUtil.setupPacker = function(){
 	}
 }
 
-buildUtil.stripComments = function(/*String*/startDir, /*RegeExp*/optimizeIgnoreRegExp, /*boolean*/suppressDojoCopyright, /*String*/optimizeType){
+buildUtil.stripComments = function(/*String*/startDir, /*RegeExp*/optimizeIgnoreRegExp, /*String*/copyrightText, /*String*/optimizeType){
 	//summary: strips the JS comments from all the files in "startDir", and all subdirectories.
-	var copyright = suppressDojoCopyright ? "" : (fileUtil.readFile("copyright.txt") + fileUtil.getLineSeparator());
+	var copyright = (copyrightText || fileUtil.readFile("copyright.txt")) + fileUtil.getLineSeparator();
 	var fileList = fileUtil.getFilteredFileList(startDir, /\.js$/, true);
 	if(fileList){
 		for(var i = 0; i < fileList.length; i++){
