@@ -2121,6 +2121,7 @@ function _jsdoc_object_get_or_create($namespace, $name, $summary, $description, 
       'comment' => 2,
       'promote' => 0,
       'sticky' => 0,
+      'jsdoc_cron' => 1,
       'jsdoc_namespace' => $namespace, // from source
       'jsdoc_resource' => $resource->nid, // from source,
       'jsdoc_resource_vid' => $resource->vid, // from source,
@@ -2316,7 +2317,7 @@ function _jsdoc_version_get_or_create($name, $project_nid) {
 }
 
 function _jsdoc_detail_update_joins($node) {
-  if (!isset($node->jsdoc_aliases)) return;
+  if (!isset($node->jsdoc_cron)) return;
 
   db_query("DELETE FROM {jsdoc_variable_hierarchy} WHERE vid = %d", $node->vid);
   if ($node->jsdoc_aliases) {
