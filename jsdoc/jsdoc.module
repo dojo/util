@@ -335,7 +335,7 @@ function jsdoc_cron() {
     $timestamp = variable_get('jsdoc_cron_time', 0);
     if ($timestamp && time() - $timestamp < 43200) {
       // 12 hours
-      // return;
+      return;
     }
 
     $files = call_user_func(_jsdoc_base() . '_get_files');
@@ -1111,7 +1111,7 @@ function jsdoc_load_children(&$node) {
 
   if ($node->type == "jsdoc_variable") {
     // Find all objects joined normally to this object, 
-    $query = db_query("SELECT n.nid, n.vid AS vid FROM {jsdoc_variable_hierarchy} j JOIN {jsdoc_objects} jo ON (jo.vid = j.vid) JOIN {node_revisions} n ON (n.vid = j.vid) WHERE j.parent_vid = %d AND j.type = 'normal' AND jo.version  = %d AND jo.private = 0 ORDER BY BINARY n.title", $node->vid, $node->jsdoc_version);
+    $query = db_query("SELECT n.nid, n.vid AS vid FROM {jsdoc_variable_hierarchy} j JOIN {jsdoc_objects} jo ON (jo.vid = j.vid) JOIN {node_revisions} n ON (n.vid = j.vid) WHERE j.parent_vid = %d AND j.type = 'normal' AND jo.version  = %d ORDER BY BINARY n.title", $node->vid, $node->jsdoc_version);
     $node->jsdoc_variables = array();
     while ($object = db_fetch_object($query)) {
       $object = node_load($object->nid, $object->vid);
