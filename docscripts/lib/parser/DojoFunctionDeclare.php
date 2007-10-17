@@ -202,6 +202,9 @@ class DojoFunctionDeclare extends DojoBlock
   public function rollOut(&$output){
     // Basically, any this.variables in here never impact this object, they apply to the "this" function
     $masquerading_as_function = $function_name = $this->getFunctionName();
+    if (substr($masquerading_as_function, 0, 7) == 'window.'){
+      $masquerading_as_function = $function_name = substr($masquerading_as_function, 7);
+    }
     $check_keys = array('summary','description','examples','returns','exceptions');
 
     if ($this->isThis()) {
@@ -269,9 +272,9 @@ class DojoFunctionDeclare extends DojoBlock
         list($type, $comment) = explode(' ', $comment, 2);
         $type = preg_replace('%(^[^a-zA-Z0-9._$]|[^a-zA-Z0-9._$?]$)%', '', $type);
         if($type){
-          $output[$key]['type'] = $type;
+          $output[$function_name . '.' . $key]['type'] = $type;
         }
-        $output[$key]['summary'] = $comment;
+        $output[$function_name . '.' . $key]['summary'] = $comment;
       }elseif (!empty($output[$function_name]['parameters']) && array_key_exists($key, $output[$function_name]['parameters']) && $comment = $this->getBlockComment($key)){
         list($parameter_type, $comment) = preg_split('%\s%', $comment, 2);
         if (!empty($output[$function_name]['parameters'][$parameter_name]['type']) && $parameter_type != $output[$function_name]['parameters'][$parameter_name]['type']) {

@@ -9,6 +9,7 @@ class DojoObject extends DojoBlock
   private $object = 'DojoObject';
 
   private $values = array();
+  public $declarations = array();
   private $name = '';
   private $body;
   private $extra_block_values = array();
@@ -123,6 +124,7 @@ class DojoObject extends DojoBlock
     foreach($values as $key => $value){
       if($value->isA(DojoFunctionDeclare)){
         $function = $value->getFunction();
+        $this->declarations[] = $function;
         if(!$function->isConstructor()){
           $function->setFunctionName("{$name}.{$key}");
           $function->rollOut($output);
