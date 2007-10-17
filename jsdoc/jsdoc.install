@@ -85,7 +85,8 @@ function jsdoc_install() {
         vid integer NOT NULL PRIMARY KEY REFERENCES {node_revisions} (vid),
         nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_resource
         version integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_version
-        used boolean NOT NULL DEFAULT 1
+        used boolean NOT NULL DEFAULT 1,
+        new boolean NOT NULL DEFAULT 1
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
 
       // jsdoc_variables is used for disambiguation
@@ -99,6 +100,7 @@ function jsdoc_install() {
         private_parent bool NOT NULL DEFAULT 0,
         version integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_version
         used boolean NOT NULL DEFAULT 1,
+        new boolean NOT NULL DEFAULT 1,
         PRIMARY KEY (vid, version)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
 
@@ -122,6 +124,7 @@ function jsdoc_install() {
         private_parent bool NOT NULL DEFAULT 0,
         version integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_version
         used boolean NOT NULL DEFAULT 1,
+        new boolean NOT NULL DEFAULT 1,
         PRIMARY KEY (vid, resource_vid),
         INDEX (version) 
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
@@ -164,7 +167,8 @@ function jsdoc_install() {
         summary longtext NOT NULL,
         optional bool NOT NULL,
         repeating bool NOT NULL,
-        used boolean NOT NULL DEFAULT 1,        
+        used boolean NOT NULL DEFAULT 1,
+        new boolean NOT NULL DEFAULT 1,
         PRIMARY KEY (vid, name)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
     break;
