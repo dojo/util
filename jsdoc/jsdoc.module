@@ -1072,7 +1072,7 @@ function jsdoc_load_parents(&$node) {
       $query = db_query("SELECT %d AS vid", $node->jsdoc_detail->vid);
     }
     else {
-      // Select all resources with this as a name
+      // Select all objects with this as a name
       $query = db_query("SELECT MAX(n.vid) AS vid FROM {jsdoc_objects} j JOIN {node_revisions} n ON (n.vid = j.vid) WHERE j.version = %d AND BINARY n.title = '%s' GROUP BY n.nid", $node->jsdoc_version, $node->title);
     }
     $vids = array(-1);
@@ -1111,10 +1111,10 @@ function jsdoc_load_children(&$node) {
 
   if ($node->type == "jsdoc_variable") {
     // Find all objects joined normally to this object, 
-    $query = db_query("SELECT n.nid, n.vid AS vid FROM {jsdoc_variable_hierarchy} j JOIN {jsdoc_objects} jo ON (jo.vid = j.vid) JOIN {node_revisions} n ON (n.vid = j.vid) WHERE j.parent_vid = %d AND j.type = 'normal' AND jo.version  = %d ORDER BY BINARY n.title", $node->vid, $node->jsdoc_version);
+    $query = db_query("SELECT n.title FROM {jsdoc_variable_hierarchy} j JOIN {jsdoc_objects} jo ON (jo.vid = j.vid) JOIN {node_revisions} n ON (n.vid = j.vid) WHERE j.parent_vid = %d AND j.type = 'normal' AND jo.version  = %d GROUP BY BINARY n.title ORDER BY BINARY n.title", $node->vid, $node->jsdoc_version);
     $node->jsdoc_variables = array();
     while ($object = db_fetch_object($query)) {
-      $object = node_load($object->nid, $object->vid);
+      $object = jsdoc_object_node_load($node->jsdoc_project_name, $node->jsdoc_version_name, $object->title);
       $node->jsdoc_variables[$object->title] = $object;
     }
     uksort($node->jsdoc_variables, 'strnatcasecmp');
@@ -1500,9 +1500,6 @@ function _jsdoc_detail_view($node) {
 
   if (trim($node->teaser) || trim($node->body)) {
     $node->content['detail']['body'] = $node->content['body'];
-    if (trim($node->teaser)) {
-      $node->content['detail']['body']['#value'] = '<p>' . $node->teaser . '</p>' . $node->content['body']['#value'];
-    }
     $node->content['detail']['body']['#type'] = 'item';
     $node->content['detail']['body']['#title'] = t('Description');
     $node->content['detail']['body']['#weight'] = -30;
@@ -1918,8 +1915,17 @@ function jsdoc_projects() {
  * Custom version of node_load for projects
  */
 function jsdoc_project_node_load($project_name) {
+  static $projects;
+  if (!$projects) {
+    $projects = array();
+  }
+  if ($projects[$project_name]) {
+    return $projects[$project_name];
+  }
+
   if($nid = db_result(db_query("SELECT nid FROM {node} WHERE type = 'jsdoc_project' AND BINARY title = '%s'", $project_name))) {
-    return node_load($nid);
+    $projects[$project_name] = node_load($nid);
+    return $projects[$project_name];
   }
 }
 
