@@ -34,11 +34,11 @@ options.
 
 TYPICAL BUILDS
 =======================
-This command will use the build profile at util/buildscripts/profiles/0.9.profile.js
+This command will use the build profile at util/buildscripts/profiles/standard.profile.js
 to do a build:
 
-> build.sh profile=0.9 action=release
+> build.sh profile=standard action=release
 
 To do an xdomain build, add the loader argument:
 
-> build.sh profile=0.9 loader=xdomain action=release
+> build.sh profile=standard loader=xdomain action=release
