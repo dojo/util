@@ -26,6 +26,9 @@ Configure
 =========
 
 * Fill in the configuration in: Administer->Site configuration->JavaScript Documentation
+** The file should be run from the docscripts directory
+** The file used to parse code is dojo.inc (in the includes directory).
+** Both should be full paths
 * Copy one of the files in docscripts/modules (dojox.module is the best) if you want to
   support your project. Function names should begin with the module name.
   eg dojo.module's functions start with "dojo"
