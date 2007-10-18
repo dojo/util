@@ -324,9 +324,6 @@ function jsdoc_cron() {
     return;
   }
 
-
-  variable_set('jsdoc_cron_time', time());
-
   // Use the configuration settings to switch directories, and load the plugin file
   _jsdoc_cron_chdir(true);
 
@@ -336,7 +333,7 @@ function jsdoc_cron() {
     if (!is_array($files)) {
       watchdog('jsdoc', _jsdoc_base() . '_get_files' . t(' does not return an array in ') . _jsdoc_file_location(), WATCHDOG_ERROR);
     }
-    else if (!count($files)) {
+    elseif (!count($files)) {
       watchdog('jsdoc', _jsdoc_base() . '_get_files' . t(' returns an empty array in ') . _jsdoc_file_location(), WATCHDOG_ERROR);
     }
     else {
@@ -345,6 +342,7 @@ function jsdoc_cron() {
         // 12 hours
         return;
       }
+      variable_set('jsdoc_cron_time', time());
 
       db_query("UPDATE {jsdoc_cache} SET used = 0");
       db_query("UPDATE {jsdoc_objects} SET used = 0");
