@@ -240,7 +240,7 @@ function jsdoc_update_index() {
   $last_nid = variable_get('jsdoc_cron_last_nid', 0);
   $limit = (int)variable_get('jsdoc_cron_limit', 100);
 
-  $result = db_query_range("SELECT GREATEST(IF(c.last_comment_timestamp IS NULL, 0, c.last_comment_timestamp), n.changed) as last_change, n.nid FROM {node} n LEFT JOIN {node_comment_statistics} c ON n.nid = c.nid WHERE n.type IN ('jsdoc_object', 'jsdoc_resource') AND n.status = 1 AND ((GREATEST(n.changed, c.last_comment_timestamp) = %d AND n.nid > %d) OR (n.changed > %d OR c.last_comment_timestamp > %d)) ORDER BY GREATEST(n.changed, c.last_comment_timestamp) ASC, n.nid ASC", $last, $last_nid, $last, $last, $last, 0, $limit);
+  $result = db_query_range("SELECT GREATEST(IF(c.last_comment_timestamp IS NULL, 0, c.last_comment_timestamp), n.changed) as last_change, n.nid FROM {node} n LEFT JOIN {node_comment_statistics} c ON n.nid = c.nid WHERE n.type IN ('jsdoc_variable', 'jsdoc_resource') AND n.status = 1 AND ((GREATEST(n.changed, c.last_comment_timestamp) = %d AND n.nid > %d) OR (n.changed > %d OR c.last_comment_timestamp > %d)) ORDER BY GREATEST(n.changed, c.last_comment_timestamp) ASC, n.nid ASC", $last, $last_nid, $last, $last, $last, 0, $limit);
 
   while ($node = db_fetch_object($result)) {
     $last_change = $node->last_change;
@@ -332,17 +332,20 @@ function jsdoc_cron() {
 
   // Validate the stuff added in the newly included file
   if (_jsdoc_cron_validate_include()) {
-    $timestamp = variable_get('jsdoc_cron_time', 0);
-    if ($timestamp && time() - $timestamp < 43200) {
-      // 12 hours
-      return;
-    }
-
     $files = call_user_func(_jsdoc_base() . '_get_files');
     if (!is_array($files)) {
       watchdog('jsdoc', _jsdoc_base() . '_get_files' . t(' does not return an array in ') . _jsdoc_file_location(), WATCHDOG_ERROR);
     }
+    else if (!count($files)) {
+      watchdog('jsdoc', _jsdoc_base() . '_get_files' . t(' returns an empty array in ') . _jsdoc_file_location(), WATCHDOG_ERROR);
+    }
     else {
+      $timestamp = variable_get('jsdoc_cron_time', 0);
+      if ($timestamp && time() - $timestamp < 43200) {
+        // 12 hours
+        return;
+      }
+
       db_query("UPDATE {jsdoc_cache} SET used = 0");
       db_query("UPDATE {jsdoc_objects} SET used = 0");
       db_query("UPDATE {jsdoc_parameters} SET used = 0");
@@ -2510,7 +2513,7 @@ function _jsdoc_cron_validate() {
     return false;
   }
   if (!file_exists(_jsdoc_file_location())) {
-    watchdog('jsdoc', t('Not able to load file ') . $file_location, WATCHDOG_ERROR);
+    watchdog('jsdoc', t('File does not exist ') . _jsdoc_file_location(), WATCHDOG_ERROR);
     return false;
   }
 
