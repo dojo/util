@@ -506,6 +506,9 @@ doh.register = doh.add = function(groupOrNs, testOrNull){
 doh.t = doh.assertTrue = function(/*Object*/ condition){
 	// summary:
 	//		is the passed item "truthy"?
+	if(arguments.length != 1){ 
+		throw doh._AssertFailure("assertTrue failed because it was not passed exactly 1 argument"); 
+	} 
 	if(!eval(condition)){
 		throw doh._AssertFailure("assertTrue('" + condition + "') failed");
 	}
@@ -514,6 +517,9 @@ doh.t = doh.assertTrue = function(/*Object*/ condition){
 doh.f = doh.assertFalse = function(/*Object*/ condition){
 	// summary:
 	//		is the passed item "falsey"?
+	if(arguments.length != 1){ 
+		throw doh._AssertFailure("assertFalse failed because it was not passed exactly 1 argument"); 
+	} 
 	if(eval(condition)){
 		throw doh._AssertFailure("assertFalse('" + condition + "') failed");
 	}
@@ -526,10 +532,10 @@ doh.is = doh.assertEqual = function(/*Object*/ expected, /*Object*/ actual){
 	if((expected == undefined)&&(actual == undefined)){ 
 		return true;
 	}
-	if(expected === actual){
-		return true;
-	}
-	if(expected == actual){ 
+	if(arguments.length < 2){ 
+		throw doh._AssertFailure("assertEqual failed because it was not passed 2 arguments"); 
+	} 
+	if((expected === actual)||(expected == actual)){ 
 		return true;
 	}
 	if(	(this._isArray(expected) && this._isArray(actual))&&
