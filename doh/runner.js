@@ -840,7 +840,7 @@ try{
 					}
 				});
 			}else{
-				dojo.require("doh._base");
+				// dojo.require("doh._base");
 			}
 		}
 	}else{
