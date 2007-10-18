@@ -139,7 +139,7 @@ function release(){
 		if(layerName.match(/\.xd\.js$/) && !layerName.match(/dojo(\.xd)?\.js/)){
 			uncompressedContents = buildUtilXd.makeXdContents(uncompressedContents, prefixes);
 		}
-		fileUtil.saveFile(uncompressedFileName, uncompressedContents);
+		fileUtil.saveUtf8File(uncompressedFileName, uncompressedContents);
 
 		//Intern strings if desired. Do this before compression, since, in the xd case,
 		//"dojo" gets converted to a shortened name.
@@ -158,7 +158,7 @@ function release(){
 		//Save compressed file.
 		logger.trace("Optimizing (" + kwArgs.layerOptimize + ") file: " + fileName);
 		var compressedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, kwArgs.layerOptimize);
-		fileUtil.saveFile(fileName, compressedContents);
+		fileUtil.saveUtf8File(fileName, compressedContents);
 
 	}
 

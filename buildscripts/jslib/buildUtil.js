@@ -855,7 +855,7 @@ buildUtil.internTemplateStrings = function(/*Object*/dependencies, /*String*/src
 buildUtil.internTemplateStringsInFile = function(resourceFile, srcRoot, prefixes, skiplist){
 	var resourceContent = fileUtil.readFile(resourceFile);
 	resourceContent = buildUtil.interningRegexpMagic(resourceFile, resourceContent, srcRoot, prefixes, skiplist);
-	fileUtil.saveFile(resourceFile, resourceContent);
+	fileUtil.saveUtf8File(resourceFile, resourceContent);
 }
 
 buildUtil.interningRegexpMagic = function(resourceFile, resourceContent, srcRoot, prefixes, skiplist){
@@ -1096,8 +1096,8 @@ buildUtil.optimizeCss = function(/*String*/startDir, /*String*/optimizeType){
 				}
 	
 				//Write out the file with appropriate copyright.
-				fileUtil.saveFile(fileName + ".commented.css", originalFileContents);
-				fileUtil.saveFile(fileName, fileContents);
+				fileUtil.saveUtf8File(fileName + ".commented.css", originalFileContents);
+				fileUtil.saveUtf8File(fileName, fileContents);
 			}
 		}
 	}
@@ -1125,7 +1125,7 @@ buildUtil.addGuards = function(/*String*/startDir){
 					+ '}'
 					+ lineSeparator;
 
-				fileUtil.saveFile(fileList[i], fileContents);
+				fileUtil.saveUtf8File(fileList[i], fileContents);
 			}
 		}
 	}
