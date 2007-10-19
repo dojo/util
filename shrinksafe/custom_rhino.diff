@@ -4,7 +4,7 @@ RCS file: /cvsroot/mozilla/js/rhino/src/org/mozilla/javascript/BaseFunction.java
 retrieving revision 1.63
 diff -u -8 -p -r1.63 BaseFunction.java
 --- src/org/mozilla/javascript/BaseFunction.java	16 May 2007 12:41:00 -0000	1.63
-+++ src/org/mozilla/javascript/BaseFunction.java	27 Sep 2007 16:54:23 -0000
++++ src/org/mozilla/javascript/BaseFunction.java	19 Oct 2007 11:28:27 -0000
 @@ -371,16 +371,38 @@ public class BaseFunction extends IdScri
          sb.append(getArity());
          sb.append("]\n");
@@ -50,7 +50,7 @@ RCS file: /cvsroot/mozilla/js/rhino/src/org/mozilla/javascript/Context.java,v
 retrieving revision 1.255.2.1
 diff -u -8 -p -r1.255.2.1 Context.java
 --- src/org/mozilla/javascript/Context.java	6 Jun 2007 14:58:49 -0000	1.255.2.1
-+++ src/org/mozilla/javascript/Context.java	27 Sep 2007 16:54:24 -0000
++++ src/org/mozilla/javascript/Context.java	19 Oct 2007 11:28:27 -0000
 @@ -1211,16 +1211,43 @@ public class Context
       * @param securityDomain an arbitrary object that specifies security
       *        information about the origin or owner of the script. For
@@ -175,7 +175,7 @@ RCS file: /cvsroot/mozilla/js/rhino/src/org/mozilla/javascript/Decompiler.java,v
 retrieving revision 1.23
 diff -u -8 -p -r1.23 Decompiler.java
 --- src/org/mozilla/javascript/Decompiler.java	4 Apr 2007 20:52:09 -0000	1.23
-+++ src/org/mozilla/javascript/Decompiler.java	27 Sep 2007 16:54:25 -0000
++++ src/org/mozilla/javascript/Decompiler.java	19 Oct 2007 11:28:28 -0000
 @@ -36,16 +36,21 @@
   * them with the notice and other provisions required by the GPL. If you do
   * not delete the provisions above, a recipient may use your version of this
@@ -481,7 +481,7 @@ diff -u -8 -p -r1.23 Decompiler.java
       */
      public static final int ONLY_BODY_FLAG = 1 << 0;
  
-@@ -265,16 +536,535 @@ public class Decompiler
+@@ -265,16 +536,536 @@ public class Decompiler
      }
  
      private String sourceToString(int offset)
@@ -649,6 +649,7 @@ diff -u -8 -p -r1.23 Decompiler.java
 +                            (getNext(encodedSource, length, i+1) != Token.SEMI) &&
 +                            (getNext(encodedSource, length, i+1) != Token.LP) &&
 +                            (getNext(encodedSource, length, i+1) != Token.RP) &&
++                            (getNext(encodedSource, length, i+1) != Token.RB) &&
 +                            (getNext(encodedSource, length, i+1) != Token.RC) &&
 +                            (getNext(encodedSource, length, i+1) != Token.COMMA) &&
 +                            (getNext(encodedSource, length, i+1) != Token.COLON) &&
@@ -1023,7 +1024,7 @@ RCS file: /cvsroot/mozilla/js/rhino/src/org/mozilla/javascript/NativeFunction.ja
 retrieving revision 1.65
 diff -u -8 -p -r1.65 NativeFunction.java
 --- src/org/mozilla/javascript/NativeFunction.java	24 May 2007 14:47:01 -0000	1.65
-+++ src/org/mozilla/javascript/NativeFunction.java	27 Sep 2007 16:54:25 -0000
++++ src/org/mozilla/javascript/NativeFunction.java	19 Oct 2007 11:28:28 -0000
 @@ -69,16 +69,36 @@ public abstract class NativeFunction ext
              return super.decompile(indent, flags);
          } else {
@@ -1067,7 +1068,7 @@ RCS file: /cvsroot/mozilla/js/rhino/src/org/mozilla/javascript/ScriptRuntime.jav
 retrieving revision 1.263.2.3
 diff -u -8 -p -r1.263.2.3 ScriptRuntime.java
 --- src/org/mozilla/javascript/ScriptRuntime.java	18 Jul 2007 12:45:45 -0000	1.263.2.3
-+++ src/org/mozilla/javascript/ScriptRuntime.java	27 Sep 2007 16:54:27 -0000
++++ src/org/mozilla/javascript/ScriptRuntime.java	19 Oct 2007 11:28:28 -0000
 @@ -642,32 +642,35 @@ public class ScriptRuntime {
              if (escape >= 0) {
                  // an \escaped sort of character
@@ -1110,7 +1111,7 @@ RCS file: /cvsroot/mozilla/js/rhino/src/org/mozilla/javascript/TokenStream.java,
 retrieving revision 1.66
 diff -u -8 -p -r1.66 TokenStream.java
 --- src/org/mozilla/javascript/TokenStream.java	4 Apr 2007 20:52:12 -0000	1.66
-+++ src/org/mozilla/javascript/TokenStream.java	27 Sep 2007 16:54:28 -0000
++++ src/org/mozilla/javascript/TokenStream.java	19 Oct 2007 11:28:28 -0000
 @@ -63,19 +63,22 @@ class TokenStream
      /*
       * For chars - because we need something out-of-range
@@ -1159,7 +1160,7 @@ RCS file: /cvsroot/mozilla/js/rhino/toolsrc/org/mozilla/javascript/tools/resourc
 retrieving revision 1.27.2.2.2.1
 diff -u -8 -p -r1.27.2.2.2.1 Messages.properties
 --- toolsrc/org/mozilla/javascript/tools/resources/Messages.properties	9 Aug 2007 13:17:37 -0000	1.27.2.2.2.1
-+++ toolsrc/org/mozilla/javascript/tools/resources/Messages.properties	27 Sep 2007 16:54:29 -0000
++++ toolsrc/org/mozilla/javascript/tools/resources/Messages.properties	19 Oct 2007 11:28:28 -0000
 @@ -60,16 +60,18 @@ msg.shell.usage =\
      Valid options are:\n\
      \    -?, -help          Displays help messages.\n\
@@ -1185,7 +1186,7 @@ RCS file: /cvsroot/mozilla/js/rhino/toolsrc/org/mozilla/javascript/tools/shell/M
 retrieving revision 1.72
 diff -u -8 -p -r1.72 Main.java
 --- toolsrc/org/mozilla/javascript/tools/shell/Main.java	4 Jun 2007 13:46:58 -0000	1.72
-+++ toolsrc/org/mozilla/javascript/tools/shell/Main.java	27 Sep 2007 16:54:29 -0000
++++ toolsrc/org/mozilla/javascript/tools/shell/Main.java	19 Oct 2007 11:28:28 -0000
 @@ -64,16 +64,21 @@ public class Main
          shellContextFactory = new ShellContextFactory();
  
