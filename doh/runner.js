@@ -525,11 +525,33 @@ doh.f = doh.assertFalse = function(/*Object*/ condition){
 	}
 }
 
+doh.e = doh.assertError = function(/*Error object*/expectedError, /*Object*/scope, /*String*/functionName, /*Array*/args){
+	//	summary:
+	//		Test for a certain error to be thrown by the given function.
+	//	example:
+	//		t.assertError(dojox.data.QueryReadStore.InvalidAttributeError, store, "getValue", [item, "NOT THERE"]);
+	//		t.assertError(dojox.data.QueryReadStore.InvalidItemError, store, "getValue", ["not an item", "NOT THERE"]);
+	try{
+		scope[functionName].apply(scope, args);
+	}catch (e){
+		if(e instanceof expectedError){
+			return true;
+		}else{
+			throw new doh._AssertFailure("assertError() failed: expected error |"+expectedError+"| but got |"+e+"|");
+		}
+	}
+	throw new doh._AssertFailure("assertError() failed: expected error |"+expectedError+"| but no error caught.");
+}
+
+
 doh.is = doh.assertEqual = function(/*Object*/ expected, /*Object*/ actual){
 	// summary:
 	//		are the passed expected and actual objects/values deeply
 	//		equivalent?
-	if((expected == undefined)&&(actual == undefined)){ 
+
+	// Compare undefined always with three equal signs, because undefined==null
+	// is true, but undefined===null is false. 
+	if((expected === undefined)&&(actual === undefined)){ 
 		return true;
 	}
 	if(arguments.length < 2){ 
