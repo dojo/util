@@ -99,8 +99,6 @@ function jsdoc_install() {
         private bool NOT NULL DEFAULT 0,
         private_parent bool NOT NULL DEFAULT 0,
         version integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_version
-        used boolean NOT NULL DEFAULT 1,
-        new boolean NOT NULL DEFAULT 1,
         PRIMARY KEY (vid, version)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
 
@@ -117,7 +115,7 @@ function jsdoc_install() {
         initialized bool NOT NULL, -- Whether or not this function has 'new' in front of it during declaration
         classlike bool NOT NULL DEFAULT 0, -- Whether or not this function acts as a class
         type varchar(255) NOT NULL,
-        updating bool NOT NULL, -- Flag for update the next go around
+        updating bool NOT NULL DEFAULT 1, -- Flag for update the next go around
         returns varchar(255) NOT NULL,
         source longtext NOT NULL,
         private boolean NOT NULL DEFAULT 0,
@@ -167,8 +165,6 @@ function jsdoc_install() {
         summary longtext NOT NULL,
         optional bool NOT NULL,
         repeating bool NOT NULL,
-        used boolean NOT NULL DEFAULT 1,
-        new boolean NOT NULL DEFAULT 1,
         PRIMARY KEY (vid, name)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
     break;

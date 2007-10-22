@@ -257,7 +257,7 @@ class DojoFunctionDeclare extends DojoBlock
       $full_variable_name = "{$masquerading_as_function}.{$instance_variable}";
       $output[$full_variable_name]['instance'] = $masquerading_as_function;
     }
-    
+
     $instance_functions = $this->getInstanceFunctions($function_name);
     foreach($instance_functions as $instance_function){
       $instance_function->rollOut($output);
@@ -277,9 +277,9 @@ class DojoFunctionDeclare extends DojoBlock
         $output[$function_name . '.' . $key]['summary'] = $comment;
       }elseif (!empty($output[$function_name]['parameters']) && array_key_exists($key, $output[$function_name]['parameters']) && $comment = $this->getBlockComment($key)){
         list($parameter_type, $comment) = preg_split('%\s%', $comment, 2);
-        if (!empty($output[$function_name]['parameters'][$parameter_name]['type']) && $parameter_type != $output[$function_name]['parameters'][$parameter_name]['type']) {
+        if (!empty($output[$function_name]['parameters'][$key]['type']) && $parameter_type != $output[$function_name]['parameters'][$key]['type']) {
           $comment = $parameter_type . ' ' . $comment;
-          $parameter_type = $output[$function_name]['parameters'][$parameter_name]['type'];
+          $parameter_type = $output[$function_name]['parameters'][$key]['type'];
         }
         $parameter_type = preg_replace('%(^[^a-zA-Z0-9._$]|[^a-zA-Z0-9._$?]$)%', '', $parameter_type);
         if($parameter_type){
