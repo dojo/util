@@ -848,81 +848,84 @@ doh.run = function(){
 
 tests = doh;
 
-try{
-	if(typeof dojo != "undefined"){
-		dojo.platformRequire({
-			browser: ["doh._browserRunner"],
-			rhino: ["doh._rhinoRunner"],
-			spidermonkey: ["doh._rhinoRunner"]
-		});
-		var _shouldRequire = (dojo.isBrowser) ? (dojo.global == dojo.global["parent"]) : true;
-		if(_shouldRequire){
-			if(dojo.isBrowser){
-				dojo.addOnLoad(function(){
-					if(dojo.byId("testList")){
-						var _tm = ( (dojo.global.testModule && dojo.global.testModule.length) ? dojo.global.testModule : "dojo.tests.module");
-						dojo.forEach(_tm.split(","), dojo.require, dojo);
-						setTimeout(function(){
-							doh.run();
-						}, 500);
-					}
-				});
-			}else{
-				// dojo.require("doh._base");
-			}
-		}
-	}else{
-		if(
-			(typeof load == "function")&&
-			(	(typeof Packages == "function")||
-				(typeof Packages == "object")	)
-		){
-			throw new Error();
-		}else if(typeof load == "function"){
-			throw new Error();
-		}
-	}
-}catch(e){
-	print("\n"+doh._line);
-	print("The Dojo Unit Test Harness, $Rev$");
-	print("Copyright (c) 2007, The Dojo Foundation, All Rights Reserved");
-	print(doh._line, "\n");
-
-	load("_rhinoRunner.js");
-
+(function(){
+	// scop protection
 	try{
-		var dojoUrl = "../../dojo/dojo.js";
-		var testUrl = "";
-		var testModule = "dojo.tests.module";
-		for(var x=0; x<arguments.length; x++){
-			if(arguments[x].indexOf("=") > 0){
-				var tp = arguments[x].split("=");
-				if(tp[0] == "dojoUrl"){
-					dojoUrl = tp[1];
-				}
-				if(tp[0] == "testUrl"){
-					testUrl = tp[1];
-				}
-				if(tp[0] == "testModule"){
-					testModule = tp[1];
+		if(typeof dojo != "undefined"){
+			dojo.platformRequire({
+				browser: ["doh._browserRunner"],
+				rhino: ["doh._rhinoRunner"],
+				spidermonkey: ["doh._rhinoRunner"]
+			});
+			var _shouldRequire = (dojo.isBrowser) ? (dojo.global == dojo.global["parent"]) : true;
+			if(_shouldRequire){
+				if(dojo.isBrowser){
+					dojo.addOnLoad(function(){
+						if(dojo.byId("testList")){
+							var _tm = ( (dojo.global.testModule && dojo.global.testModule.length) ? dojo.global.testModule : "dojo.tests.module");
+							dojo.forEach(_tm.split(","), dojo.require, dojo);
+							setTimeout(function(){
+								doh.run();
+							}, 500);
+						}
+					});
+				}else{
+					// dojo.require("doh._base");
 				}
 			}
-		}
-		if(dojoUrl.length){
-			if(!this["djConfig"]){
-				djConfig = {};
+		}else{
+			if(
+				(typeof load == "function")&&
+				(	(typeof Packages == "function")||
+					(typeof Packages == "object")	)
+			){
+				throw new Error();
+			}else if(typeof load == "function"){
+				throw new Error();
 			}
-			djConfig.baseUrl = dojoUrl.split("dojo.js")[0];
-			load(dojoUrl);
-		}
-		if(testUrl.length){
-			load(testUrl);
-		}
-		if(testModule.length){
-			dojo.forEach(testModule.split(","), dojo.require, dojo);
 		}
 	}catch(e){
-	}
+		print("\n"+doh._line);
+		print("The Dojo Unit Test Harness, $Rev$");
+		print("Copyright (c) 2007, The Dojo Foundation, All Rights Reserved");
+		print(doh._line, "\n");
 
-	doh.run();
-}
+		load("_rhinoRunner.js");
+
+		try{
+			var dojoUrl = "../../dojo/dojo.js";
+			var testUrl = "";
+			var testModule = "dojo.tests.module";
+			for(var x=0; x<arguments.length; x++){
+				if(arguments[x].indexOf("=") > 0){
+					var tp = arguments[x].split("=");
+					if(tp[0] == "dojoUrl"){
+						dojoUrl = tp[1];
+					}
+					if(tp[0] == "testUrl"){
+						testUrl = tp[1];
+					}
+					if(tp[0] == "testModule"){
+						testModule = tp[1];
+					}
+				}
+			}
+			if(dojoUrl.length){
+				if(!this["djConfig"]){
+					djConfig = {};
+				}
+				djConfig.baseUrl = dojoUrl.split("dojo.js")[0];
+				load(dojoUrl);
+			}
+			if(testUrl.length){
+				load(testUrl);
+			}
+			if(testModule.length){
+				dojo.forEach(testModule.split(","), dojo.require, dojo);
+			}
+		}catch(e){
+		}
+
+		doh.run();
+	}
+})();
