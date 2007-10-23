@@ -439,7 +439,7 @@ buildUtil.determineUriList = function(/*Array*/dependencies, /*Array*/layerUris,
 			//and mentions of dojo.require/provide, which will cause 
 			//havoc in the dojo._loadModule() method.
 			if(dep.indexOf("loader_xd.js") == -1){
-				dojo._loadModule(dep, null, true);
+				dojo._loadModule(dep, true);
 			}
 		}catch(e){
 			java.lang.System.err.println("Error loading module!" + e);
