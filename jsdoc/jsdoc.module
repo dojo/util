@@ -1188,10 +1188,13 @@ function jsdoc_load_parents(&$node) {
 function jsdoc_load_children(&$node) {
   if (isset($node->jsdoc_variables)) return;
 
-  $node->jsdoc_instance = array();
-  $node->jsdoc_prototype = array();
+  $node->jsdoc_instances = array();
+  $node->jsdoc_prototypes = array();
   $node->jsdoc_variables = array();
-  $node->jsdoc_chains = array();
+  $node->jsdoc_chains = array(
+    'prototype' => array(),
+    'call' => array()
+  );
 
   if ($node->type == "jsdoc_variable") {
     // Find all objects joined normally to this object, 
@@ -1211,10 +1214,10 @@ function jsdoc_load_children(&$node) {
         continue;
       }
       if ($join->type == 'instance') {
-        $node->jsdoc_instance = $object;
+        $node->jsdoc_instances[$object->title] = $object;
       }
       elseif ($join->type == 'prototype') {
-        $node->jsdoc_prototype = $object;
+        $node->jsdoc_prototypes[$object->title] = $object;
       }
       elseif ($join->type == 'normal') {
         $node->jsdoc_variables[$object->title] = $object;
@@ -1226,7 +1229,10 @@ function jsdoc_load_children(&$node) {
         $node->jsdoc_aliases = $object;
       }
     }
-    uksort($node->jsdoc_variables, 'strnatcasecmp');
+    uksort($node->jsdoc_instances, 'strnatcasecmp');
+    uksort($node->jsdoc_prototypes, 'strnatcasecmp');
+    uksort($node->jsdoc_chains['prototype'], 'strnatcasecmp');
+    uksort($node->jsdoc_chains['call'], 'strnatcasecmp');
   }
 }
 
@@ -1756,11 +1762,15 @@ function _jsdoc_detail_view($node) {
     
     jsdoc_load_children($detail);
     $variables = array();
-    if ($detail->jsdoc_instance && $detail->jsdoc_initialized) {
-      $variables[$detail->jsdoc_instance->title] = $detail->jsdoc_instance;
+    if ($detail->jsdoc_instances && $detail->jsdoc_initialized){
+      foreach ($detail->jsdoc_instances as $child) {
+        $variables[$child->title] = $child;
+      }
     }
-    if ($detail->jsdoc_prototype && $detail->jsdoc_initialized){
-      $variables[$detail->jsdoc_prototype->title] = $detail->jsdoc_prototype;
+    if ($detail->jsdoc_prototypes && $detail->jsdoc_initialized){
+      foreach ($detail->jsdoc_prototypes as $child) {
+        $variables[$child->title] = $child;
+      }
     }
     if ($detail->jsdoc_variables && !$detail->jsdoc_initialized){
       foreach ($detail->jsdoc_variables as $child) {
