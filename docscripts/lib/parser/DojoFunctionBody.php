@@ -9,6 +9,7 @@ class DojoFunctionBody extends DojoBlock
   private $comment_end;
 
   private $keys = array();
+  private $key_sets = array();
   private $comments = array();
   private $return_comments = array();
   private $instance_variables = array();
@@ -43,6 +44,15 @@ class DojoFunctionBody extends DojoBlock
     }
   }
 
+  /**
+   * This key can occur multiple times. eg: example
+   */
+  public function addBlockCommentKeySet($key) {
+    if ($key) {
+      $this->key_sets[] = $key;
+    }
+  }
+
   public function getSource() {
     $this->getBlockCommentKeys();
     $source = array();
@@ -55,11 +65,50 @@ class DojoFunctionBody extends DojoBlock
     return implode("\n", $source);
   }
 
+  private function cleanBlock($text){
+    $lines = explode("\n", trim($text));
+    $output = array();
+    $indented = false;
+    $blank = false;
+    foreach ($lines as $line) {
+      if ($line{0} == "|") {
+        if(!$indented){
+          $indented = true;
+          if (!$blank) {
+            $output[] = "";
+          }
+        }
+        $output[] = substr($line, 1);
+      }
+      else {
+        if($indented){
+          $indented = false;
+          if (empty($line)) {
+            if (!$blank) {
+              $output[] = "";
+            }
+          }
+        }
+        if (empty($line)) {
+          $blank = true;
+        }
+        $output[] = $line;
+      }
+    }
+    return implode("\n", $output);
+  }
+
   public function getBlockComment($key) {
-    $value = '';
-    $this->getBlockCommentKeys();
-    if (!empty($this->comments[$key])) {
-      $value = trim($this->comments[$key]);
+    $value = $this->comments[$key];
+    if (!empty($value)) {
+      if (is_array($value)) {
+        for ($i = 0; $i < count($value); $i++){
+          $value[$i] = $this->cleanBlock($value[$i]);
+        }
+      }
+      else {
+        $value = $this->cleanBlock($value);
+      }
     }
     return $value;
   }
@@ -71,7 +120,7 @@ class DojoFunctionBody extends DojoBlock
 
     $this->build();
 
-    $expression = '%^\b(' . implode('|', $this->keys) . ')\b\W*%';
+    $expression = '%^\b(' . implode('|', array_merge($this->keys, $this->key_sets)) . ')\b\W*%';
     $buffer = array();
     $key = '';
     $started = false;
@@ -94,7 +143,12 @@ class DojoFunctionBody extends DojoBlock
 
         if (preg_match($expression, $comment, $match)) {
           if ($buffer && $key) {
-            $this->comments[$key] = implode("\n", $buffer);
+            if (in_array($key, $this->key_sets)) {
+              $this->comments[$key][] = implode("\n", $buffer);
+            }
+            else {
+              $this->comments[$key] = implode("\n", $buffer);
+            }
             $buffer = array();
           }
           $key = $match[1];
@@ -110,13 +164,17 @@ class DojoFunctionBody extends DojoBlock
           break;
         }
 
-        if ($comment !== '') {
-          $buffer[] = $comment;
-        }
+        $buffer[] = $comment;
       }
 
       if ($buffer && $key) {
-        $this->comments[$key] = implode("\n", $buffer);
+        if (in_array($key, $this->key_sets)) {
+          $this->comments[$key][] = implode("\n", $buffer);
+        }
+        else {
+          $this->comments[$key] = implode("\n", $buffer);
+        }
+        $buffer = array();
       }
 
       if ($i == 0 && !$this->comment_end) {

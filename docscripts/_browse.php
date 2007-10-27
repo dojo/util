@@ -157,8 +157,12 @@ if(!empty($_REQUEST['ns'])){
 									break;
 
 								// these are the ones we care about, and are fulltext/sometimes html
-								case "returns" :
 								case "examples" :
+									foreach ($val2 as $example){
+									  $print .= "<li><em>example</em><div><pre>".htmlentities($example)."</pre></div></li>";
+									}
+									break;
+								case "returns" :
 								case "exceptions" :
 								case "description" :
 								case "summary" : $print .= "<li><em>".$key2."</em><div><pre>".htmlentities($val2)."</pre></div></li>"; break;

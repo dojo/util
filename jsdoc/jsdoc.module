@@ -442,6 +442,7 @@ function jsdoc_cron() {
               $content['returns'],
               $content['source'],
               $content['parameters'],
+              $content['examples'],
               $content['aliases'],
               $content['instance'],
               $content['prototype'],
@@ -674,6 +675,7 @@ function jsdoc_manage_submit($form_id, $form) {
                 $move_node->jsdoc_returns,
                 $move_node->jsdoc_source,
                 $move_node->jsdoc_parameters,
+                $move_node->jsdoc_examples,
                 $move_node->jsdoc_aliases->title,
                 $move_node->jsdoc_instance->title,
                 $move_node->jsdoc_prototype->title,
@@ -1004,6 +1006,31 @@ function jsdoc_resource_form(&$node, &$param) {
   return $form;
 }
 
+function _jsdoc_markup_text($text, $format = false){
+  ini_set('include_path', ini_get('include_path') . ':' . _jsdoc_get_base_path() . '/' . drupal_get_path('module', 'jsdoc') . '/lib');
+  include_once('Text/Highlighter.php');
+
+  $highlighter =& Text_Highlighter::factory('javascript', array('tabsize' => 2));
+  if ($highlighter instanceof PEAR_Error) {
+    watchdog('jsdoc', $highlighter->getMessage(), WATCHDOG_ERROR);
+  }
+  else {
+    drupal_add_css(drupal_get_path('module', 'jsdoc') . '/jsdoc.css');
+  }
+
+  if (!$format) {
+    $format = variable_get('jsdoc_input_format', 1);
+  }
+  $text = check_markup($text, $format, FALSE);
+  if (preg_match_all('%<code>(.*?)</code>%s', $text, $matches, PREG_SET_ORDER)) {
+    foreach ($matches as $match) {
+      $text = str_replace($match[0], $highlighter->highlight($match[1]), $text);
+    }
+  }
+
+  return $text;
+}
+
 /**
  * Implementation of hook_insert().
  */
@@ -1020,9 +1047,14 @@ function jsdoc_object_insert($node) {
   if (is_array($node->jsdoc_parameters)) {
     $i = 0;
     foreach ($node->jsdoc_parameters as $parameter_name => $parameter) {
-      if (!db_num_rows(db_query("SELECT 1 FROM {jsdoc_parameters} WHERE vid = %d AND name = '%s'", $node->vid, $parameter_name))) {
-        db_query("INSERT INTO {jsdoc_parameters} (vid, nid, weight, name, type, summary, optional, repeating) VALUES (%d, %d, %d, '%s', '%s', '%s', %d, %d)", $node->vid, $node->nid, $i++, $parameter_name, $parameter['type'], $parameter['summary'], $parameter['optional'], $parameter['repeating']);
-      }
+      db_query("INSERT INTO {jsdoc_parameters} (vid, nid, weight, name, type, summary, optional, repeating) VALUES (%d, %d, %d, '%s', '%s', '%s', %d, %d)", $node->vid, $node->nid, $i++, $parameter_name, $parameter['type'], $parameter['summary'], $parameter['optional'], $parameter['repeating']);
+    }
+  }
+
+  if (is_array($node->jsdoc_examples)) {
+    foreach ($node->jsdoc_examples as $weight => $example) {
+      $example = _jsdoc_markup_text($example);
+      db_query("INSERT INTO {jsdoc_examples} (vid, nid, weight, example) VALUES (%d, %d, %d, '%s')", $node->vid, $node->nid, $weight, $example);
     }
   }
 }
@@ -1084,6 +1116,15 @@ function jsdoc_object_update($node) {
       }
     }
   }
+
+  db_query("DELETE FROM {jsdoc_examples} WHERE vid = %d", $node->vid);
+
+  if (is_array($node->jsdoc_examples)) {
+    foreach ($node->jsdoc_examples as $weight => $example) {
+      $example = _jsdoc_markup_text($example);
+      db_query("INSERT INTO {jsdoc_examples} (vid, nid, weight, example) VALUES (%d, %d, %d, '%s')", $node->vid, $node->nid, $weight, $weight);
+    }
+  }
 }
 
 /**
@@ -1123,6 +1164,7 @@ function jsdoc_resource_update($node) {
 function jsdoc_object_delete(&$node) {
   db_query("DELETE FROM {jsdoc_objects} WHERE nid = %d", $node->nid);
   db_query("DELETE FROM {jsdoc_parameters} WHERE nid = %d", $node->nid);
+  db_query("DELETE FROM {jsdoc_examples} WHERE nid = %d", $node->nid);
 }
 
 /**
@@ -1256,6 +1298,12 @@ function jsdoc_object_load($node) {
   while ($parameter = db_fetch_array($query)) {
     $parameter['jsdoc_formatted'] = _jsdoc_format_type($parameter['type'], $parameter['optional'], $parameter['recurring']);
     $additions->jsdoc_parameters[$parameter['name']] = $parameter;
+  }
+
+  $additions->jsdoc_examples = array();
+  $query = db_query("SELECT example FROM {jsdoc_examples} WHERE vid = %d ORDER BY weight", $node->vid);
+  while ($example = db_fetch_object($query)) {
+    $additions->jsdoc_examples[] = $example->example;
   }
 
   if ($node->teaser) {
@@ -1613,19 +1661,27 @@ function _jsdoc_detail_view($node) {
     }
   }
 
-  if (trim($node->teaser) || trim($node->body)) {
-    $teaser = '';
-    if (trim($node->teaser)) {
-      $teaser = '<p>' . $node->teaser . '</p>';
-    }
-    $node->content['detail']['body']['#value'] = $teaser . check_markup($node->body, $node->format, FALSE);
+  if (trim($node->body)) {
+    $node->content['detail']['body']['#value'] = _jsdoc_markup_text($node->body, $node->format);
     $node->content['detail']['body']['#type'] = 'item';
     $node->content['detail']['body']['#title'] = t('Description');
     $node->content['detail']['body']['#weight'] = -30;
     unset($node->content['body']);
   }
-  
+
   if ($detail) {
+    if (!empty($detail->jsdoc_examples)) {
+      foreach ($detail->jsdoc_examples as $weight => $example) {
+        $node->content['detail']['examples'][] = array(
+          '#type' => 'item',
+          '#title' => 'Example',
+          '#value' => $example,
+          '#weight' => $weight
+        );
+      }
+      $node->content['detail']['examples']['#weight'] = -28;
+    }
+
     if ($detail->jsdoc_resource) {
       $detail->jsdoc_resource = node_load(db_result(db_query("SELECT nid FROM node_revisions WHERE vid = %d", $detail->jsdoc_resource_vid)));
     }
@@ -2026,7 +2082,7 @@ function jsdoc_admin() {
     '#type' => 'radios',
     '#options' => $options,
     '#required' => true,
-    '#default_value' => variable_get('jsdoc_input_format', 0)
+    '#default_value' => variable_get('jsdoc_input_format', 1)
   );
   
   return system_settings_form($form);
@@ -2261,7 +2317,7 @@ function _jsdoc_object_mixin($node, $object) {
  *
  * For the rest of the values, the values from JS win.
  */
-function _jsdoc_object_get_or_create($namespace, $name, $summary, $description, $resource, $provide, $private, $private_parent, $initialized, $classlike, $type, $returns, $source, $parameters, $aliases, $instance, $prototype, $chains) {
+function _jsdoc_object_get_or_create($namespace, $name, $summary, $description, $resource, $provide, $private, $private_parent, $initialized, $classlike, $type, $returns, $source, $parameters, $examples, $aliases, $instance, $prototype, $chains) {
   if (!$nid_vid = db_fetch_object(db_query("SELECT nr.nid, MAX(nr.vid) AS vid FROM {jsdoc_objects} j JOIN {node_revisions} nr ON (nr.vid = j.vid) WHERE BINARY nr.title = '%s' AND j.resource_vid = %d GROUP BY nr.nid", $name, $resource->vid))) {
     // Create a node for this object if we don't already have one
     $node = (object)array(
@@ -2288,13 +2344,14 @@ function _jsdoc_object_get_or_create($namespace, $name, $summary, $description, 
       'jsdoc_returns' => $returns, // from source
       'jsdoc_source' => $source, // from source
       'jsdoc_parameters' => $parameters, // from source
+      'jsdoc_examples' => $examples, // from source. Although I'd like to add a screen for new ones
       'jsdoc_aliases' => $aliases, // from source
       'jsdoc_instance' => $instance, // from source
       'jsdoc_prototype' => $prototype, // from source
       'jsdoc_chains' => $chains // from source
     );
     if (trim($description)) {
-      $node->format = variable_get('jsdoc_input_format', 0);
+      $node->format = variable_get('jsdoc_input_format', 1);
     }
     node_save($node);
     $node = node_load($node->nid);
@@ -2331,7 +2388,7 @@ function _jsdoc_object_get_or_create($namespace, $name, $summary, $description, 
 
     if ($new_version || !trim($node->body)) {
       $node->body = $description;
-      $node->format = variable_get('jsdoc_input_format', 0);
+      $node->format = variable_get('jsdoc_input_format', 1);
     }
 
     if ($new_version) {

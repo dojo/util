@@ -111,9 +111,14 @@ class Text
     return array_slice(preg_split('%%', $string), 1, -1);
   }
 
+  /**
+   * Splits a comment line up
+   *
+   * @returns Array(whitespace, comment data, non-comment data, comment data, has non-comment-data, comment continues on next line)
+   */
   public static function findComments($line, $started = false) {
     if (empty($line) && !$started) {
-      return array(false, false, false, false, false);
+      return array($line, false, false, false, false);
     }
 
     $first = array();
@@ -123,35 +128,38 @@ class Text
     $multiline = false;
 
     if ($started) {
+      // If we're already in a (multi-line) comment, look to close it up
       if (($pos = strpos($line, '*/')) !== false) {
         $first[] = trim(substr($line, 0, $pos));
         $line = substr($line, $pos + 2);
       }
       else {
+        // We didn't find a terminator, we're still in a multi-line comment
         $multiline = true;
       }
-    } 
+    }
 
-    $single_line = false;
+    $single_line = false; // Denotes that we're in a single-line comment.
     if (!$multiline) {
+      // Split by //, /*, and */ while ignoring any surrounding whitespace
       $parts = preg_split('%(\s*(?://|/\*|\*/)\s*)%', $line, -1, PREG_SPLIT_DELIM_CAPTURE);
       foreach ($parts as $part) {
-        if (!($part = trim($part))) continue;
-        if ($multiline && $part == '*/') {
-          $multiline = false;
+        if (!($trimmed = trim($part))) continue;
+        if ($multiline && $trimmed == '*/') {
+          $multiline = false; // Multi-line ends!
         }
-        elseif ($single_line || $multiline) {
+        elseif ($single_line || $multiline) { // If we're within a comment
           if (!$data) {
             $first[] = $part;
           }
-          else{
+          else { // If we've found any non-comment data, we start logging this as "after" the data
             $last[] = $part;
           }
         }
-        elseif ($part == '//') {
+        elseif ($trimmed == '//') {
           $single_line = true;
         }
-        elseif ($part == '/*') {
+        elseif ($trimmed == '/*') {
           $multiline = true;
         }
         else {
@@ -162,7 +170,7 @@ class Text
       }
     }
 
-    return array(implode(' ', $first), implode(' ', $middle), implode(' ', $last), $data, $multiline);
+    return array(trim(implode('', $first)), trim(implode('', $middle)), trim(implode('', $last)), $data, $multiline);
   }
 
 }

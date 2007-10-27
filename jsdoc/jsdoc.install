@@ -167,6 +167,15 @@ function jsdoc_install() {
         repeating bool NOT NULL,
         PRIMARY KEY (vid, name)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
+
+      // jsdoc_examples is for associating examples with objects
+      db_query("CREATE TABLE {jsdoc_examples} (
+        vid integer NOT NULL REFERENCES {node_revisions} (vid),
+        nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_object
+        weight integer NOT NULL,
+        example longtext NOT NULL,
+      PRIMARY KEY (vid, weight)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
     break;
   case 'pgsql':
     break;

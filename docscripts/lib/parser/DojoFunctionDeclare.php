@@ -182,7 +182,11 @@ class DojoFunctionDeclare extends DojoBlock
   public function addBlockCommentKey($key){
     $this->body->addBlockCommentKey($key);
   }
-  
+
+  public function addBlockCommentKeySet($key){
+    $this->body->addBlockCommentKeySet($key);
+  }
+
   public function getBlockCommentKeys(){
     return $this->body->getBlockCommentKeys();
   }
@@ -205,7 +209,7 @@ class DojoFunctionDeclare extends DojoBlock
     if (substr($masquerading_as_function, 0, 7) == 'window.'){
       $masquerading_as_function = $function_name = substr($masquerading_as_function, 7);
     }
-    $check_keys = array('summary','description','examples','returns','exceptions');
+    $check_keys = array('summary','description','returns','exceptions');
 
     if ($this->isThis()) {
       $masquerading_as_function = $this->getThis();
@@ -245,6 +249,8 @@ class DojoFunctionDeclare extends DojoBlock
     foreach($check_keys as $ck){
       $this->addBlockCommentKey($ck);
     }
+    $this->addBlockCommentKeySet('example');
+    $check_keys[] = 'example';
 
     $output[$function_name]['source'] = $this->getSource();
 
@@ -266,16 +272,18 @@ class DojoFunctionDeclare extends DojoBlock
     
     $comment_keys = $this->getBlockCommentKeys();
     foreach($comment_keys as $key){
-      if(in_array($key,$check_keys)){
+      if (in_array($key, $check_keys)) {
         $output[$function_name][$key] = $this->getBlockComment($key);
-      }elseif (in_array($key, $all_variables) && $comment = $this->getBlockComment($key)){
+      }
+      elseif (in_array($key, $all_variables) && $comment = $this->getBlockComment($key)) {
         list($type, $comment) = explode(' ', $comment, 2);
         $type = preg_replace('%(^[^a-zA-Z0-9._$]|[^a-zA-Z0-9._$?]$)%', '', $type);
         if($type){
           $output[$function_name . '.' . $key]['type'] = $type;
         }
         $output[$function_name . '.' . $key]['summary'] = $comment;
-      }elseif (!empty($output[$function_name]['parameters']) && array_key_exists($key, $output[$function_name]['parameters']) && $comment = $this->getBlockComment($key)){
+      }
+      elseif (!empty($output[$function_name]['parameters']) && array_key_exists($key, $output[$function_name]['parameters']) && $comment = $this->getBlockComment($key)) {
         list($parameter_type, $comment) = preg_split('%\s%', $comment, 2);
         if (!empty($output[$function_name]['parameters'][$key]['type']) && $parameter_type != $output[$function_name]['parameters'][$key]['type']) {
           $comment = $parameter_type . ' ' . $comment;
@@ -299,7 +307,7 @@ class DojoFunctionDeclare extends DojoBlock
         $output[$function_name]['parameters'][$key]['summary'] = $comment;
       }
     }
-  
+
     $returns = $this->getReturnComments();
     if (count($returns) == 1){
       $output[$function_name]['returns'] = $returns[0];
@@ -307,7 +315,12 @@ class DojoFunctionDeclare extends DojoBlock
     elseif ($returns){
       $output[$function_name]['returns'] = 'mixed';
     }
-    
+
+    if ($output[$function_name]['example']) {
+      $output[$function_name]['examples'] = $output[$function_name]['example'];
+      unset($output[$function_name]['example']);
+    }
+
     if($calls = $this->getThisInheritanceCalls()){
       foreach ($calls as $call) {
         $output[$function_name]['chains']['call'][] = $call;
