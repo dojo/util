@@ -70,12 +70,15 @@ class DojoFunctionBody extends DojoBlock
     $output = array();
     $indented = false;
     $blank = false;
-    foreach ($lines as $line) {
+    foreach ($lines as $i => $line) {
       if ($line{0} == "|") {
         if(!$indented){
           $indented = true;
           if (!$blank) {
             $output[] = "";
+            if (!$i) {
+              $output[] = "";
+            }
           }
         }
         $output[] = substr($line, 1);

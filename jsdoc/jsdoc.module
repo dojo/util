@@ -1674,7 +1674,7 @@ function _jsdoc_detail_view($node) {
       foreach ($detail->jsdoc_examples as $weight => $example) {
         $node->content['detail']['examples'][] = array(
           '#type' => 'item',
-          '#title' => 'Example',
+          '#title' => t('Example'),
           '#value' => $example,
           '#weight' => $weight
         );
