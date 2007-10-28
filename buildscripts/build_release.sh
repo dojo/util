@@ -41,6 +41,7 @@ svn export http://svn.dojotoolkit.org/dojo/tags/$tagName $buildName
 # clobber cruft that we don't want in builds
 rm -rf ./$buildName/dijit/themes/noir
 rm -rf ./$buildName/dojox/off/demos
+rm -rf ./$buildName/dojo/bench
 
 #Make a src bundle
 srcName=$buildName-src
