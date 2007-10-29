@@ -157,10 +157,10 @@ function dojo_get_contents($namespace, $file_name) {
       if ($args[3]->isA(DojoFunctionDeclare)) {
         $init = $args[3]->getFunction();
       }
-            if ($args[3]->isA(DojoObject)) {
-                $args[4] = $args[3];
-                $args[3] = null;
-            }
+      if ($args[3]->isA(DojoObject)) {
+        $args[4] = $args[3];
+        $args[3] = null;
+      }
     }
     else {
       if ($call->getParameter(3)->isA(DojoString)) {
@@ -211,6 +211,7 @@ function dojo_get_contents($namespace, $file_name) {
       $object->setAnonymous(true);
       $values = $object->getValues();
       foreach ($values as $key => $value) {
+        $object->addBlockCommentKey($key);
         $full_name = "$name.$key";
         if (($key == 'initializer' || $key == 'constructor') && $value->isA(DojoFunctionDeclare)) {
           $init = $value->getFunction();
@@ -226,12 +227,24 @@ function dojo_get_contents($namespace, $file_name) {
         }
       }
       $object->rollOut($output, 'function');
-      if ($object->getBlockComment('summary')) {
-        $output[$name]['summary'] = $object->getBlockComment('summary');
+
+      $keys = $object->getBlockCommentKeys();
+      foreach ($keys as $key) {
+        if ($key == 'summary') {
+          $output[$name]['summary'] = $object->getBlockComment('summary');
+        }
+        elseif ($key == 'description') {
+          $output[$name]['description'] = $object->getBlockComment('description');
+        }
+        else {
+          list($type, $comment) = preg_split('%\s+%', $object->getBlockComment($key), 2);
+          $output["$name.$key"]['type'] = $type;
+          $output["$name.$key"]['summary'] = $comment;
+          unset($type);
+          unset($comment);
+        }
       }
-      if ($object->getBlockComment('description')) {
-        $output[$name]['description'] = $object->getBlockComment('description');
-      }
+      unset($keys);
     }
     
     if ($init) {

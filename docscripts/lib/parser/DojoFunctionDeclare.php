@@ -276,7 +276,7 @@ class DojoFunctionDeclare extends DojoBlock
         $output[$function_name][$key] = $this->getBlockComment($key);
       }
       elseif (in_array($key, $all_variables) && $comment = $this->getBlockComment($key)) {
-        list($type, $comment) = explode(' ', $comment, 2);
+        list($type, $comment) = preg_split('%\s+%', $comment, 2);
         $type = preg_replace('%(^[^a-zA-Z0-9._$]|[^a-zA-Z0-9._$?]$)%', '', $type);
         if($type){
           $output[$function_name . '.' . $key]['type'] = $type;
