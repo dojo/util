@@ -74,8 +74,12 @@ tar -zcf $buildName.tar.gz $buildName/
 mv $buildName.zip ../../
 mv $buildName.tar.gz ../../
 
-#Finished.
+# md5sum the release files
 cd ../../
+for i in *.zip do; md5sum $i > $i.md5; done
+for i in *.gz do; md5sum $i > $i.md5; done
+
+#Finished.
 outDirName=`pwd`
 echo "Build complete. Files are in: $outDirName"
 cd ../util/buildscripts
