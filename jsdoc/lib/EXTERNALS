@@ -1,1 +1,1 @@
-Get the Text_Highlight package from: http://pear.php.net/package/Text_Highlighter/ and rename the Text_Highlighter-<version> directory to "Text" and place in this directory
+Get the GeSHi package from: http://qbnz.com/highlighter/ and place in the directory. It should be places so that geshi.php is in lib/geshi/geshi.php
