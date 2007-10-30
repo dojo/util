@@ -609,7 +609,7 @@ buildUtil.createLayerContents = function(
 		if(i != 0){
 			depRegExpString += "|";
 		}
-		depRegExpString += '("' + provideList[i] + '")';
+		depRegExpString += '([\'"]' + provideList[i] + '[\'"])';
 	}
 		
 	//If we have a string for a regexp, do the dojo.require() and requireIf() removal now.
