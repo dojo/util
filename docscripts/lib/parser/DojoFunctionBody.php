@@ -39,6 +39,7 @@ class DojoFunctionBody extends DojoBlock
   }
 
   public function addBlockCommentKey($key) {
+    $this->comments = array();
     if ($key) {
       $this->keys[] = $key;
     }
@@ -48,6 +49,7 @@ class DojoFunctionBody extends DojoBlock
    * This key can occur multiple times. eg: example
    */
   public function addBlockCommentKeySet($key) {
+    $this->comments = array();
     if ($key) {
       $this->key_sets[] = $key;
     }

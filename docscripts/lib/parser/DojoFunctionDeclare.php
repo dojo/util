@@ -269,7 +269,7 @@ class DojoFunctionDeclare extends DojoBlock
       $instance_function->rollOut($output);
       $output[$instance_function->getFunctionName()]['instance'] = $function_name;
     }
-    
+
     $comment_keys = $this->getBlockCommentKeys();
     foreach($comment_keys as $key){
       if (in_array($key, $check_keys)) {
