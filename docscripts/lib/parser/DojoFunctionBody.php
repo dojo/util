@@ -126,12 +126,12 @@ class DojoFunctionBody extends DojoBlock
     $this->build();
 
     $expression = '%^\b(' . implode('|', array_merge($this->keys, $this->key_sets)) . ')\b\W*%';
-    $buffer = array();
-    $key = '';
-    $started = false;
 
     $lines = Text::chop($this->package->getSource(), $this->start[0], $this->start[1], $this->end[0], $this->end[1], true);
     for ($i = 0; $i < 2; $i++) {
+      $started = false;
+      $buffer = array();
+      $key = '';
       if ($i == 1) {
         $lines = $this->extra_initial_comment_block;
       }
@@ -179,7 +179,6 @@ class DojoFunctionBody extends DojoBlock
         else {
           $this->comments[$key] = implode("\n", $buffer);
         }
-        $buffer = array();
       }
 
       if ($i == 0 && !$this->comment_end) {

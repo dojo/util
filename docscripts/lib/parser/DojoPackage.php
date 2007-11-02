@@ -45,7 +45,7 @@ class DojoPackage
         $declaration->setStart($line_number, strpos($line, $match[0]));
         $end = $declaration->build();
         $last_line = $end[0];
-        $this->declarations[$declaration->getFunctionName()] = $declaration;
+        $this->declarations[$declaration->getFunctionName()][] = $declaration;
       }
     }
     

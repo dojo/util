@@ -298,10 +298,13 @@ function dojo_get_contents($namespace, $file_name) {
 
   // Handle function declarations
   foreach ($declarations as $declaration) {
-    $declaration->rollOut($output);
+    foreach ($declaration as $declaration_instance){
+      $declaration_instance->rollOut($output);
+    }
   }
   unset($declarations);
   unset($declaration);
+  unset($declaration_instance);
   
   foreach ($executions as $execution) {
     $execution_declarations = $execution->getFunctionDeclarations();
