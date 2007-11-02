@@ -40,7 +40,7 @@ class DojoPackage
         continue;
       }
 
-      if(preg_match('%(\bfunction\s+[a-zA-Z0-9_.$]+\b\s*\(|\b[a-zA-Z0-9_.$]+\s*=\s*(new\s*)?function\s*\()%', $line, $match)) {
+      if(preg_match('%(\bfunction\s+[a-zA-Z0-9_.$]+\b\s*\(|\b[a-zA-Z_.$][\w.$]*(?:\.[a-zA-Z_.$][\w.$]|\["[^"]+"\])*\s*=\s*(new\s*)?function\s*\()%', $line, $match)) {
         $declaration = new DojoFunctionDeclare($this);
         $declaration->setStart($line_number, strpos($line, $match[0]));
         $end = $declaration->build();
@@ -64,9 +64,13 @@ class DojoPackage
       if ($line_number < $last_line) {
         continue;
       }
-      
-      if (preg_match('%\(\s*function\s*\(\s*\)\s*{%', $line, $match)) {
+
+      if (preg_match('%(?:([a-zA-Z_.$][\w.$]*)\s*=\s*)?(?:new\s*)?\(\s*function\s*\(\s*\)\s*{%', $line, $match)) {
         $execution = new DojoExecutedFunction($this);
+        $execution->setAnonymous(true);
+        if ($match[1]) {
+          $execution->setFunctionName($match[1]);
+        }
         $execution->setStart($line_number, strpos($line, $match[0]));
         $end = $execution->build();
         if ($end) {
@@ -147,7 +151,14 @@ class DojoPackage
       $lines = $declaration->removeCodeFrom($lines);
     }
     foreach ($this->objects as $objects) {
-      $lines = $objects->removeCodeFrom($lines);
+      foreach ($this->objects as $pobject) {
+        foreach ($pobject->declarations as $declaration) {
+          $lines = $declaration->removeCodeFrom($lines);
+        }
+      }
+    }
+    foreach($this->executions as $execution){
+      $lines = $execution->removeCodeFrom($lines);
     }
     $lines = $this->removeCodeFrom($lines);
     foreach ($lines as $line_number => $line) {
@@ -208,14 +219,14 @@ class DojoPackage
         $found = false;
         if (!$in_comment) {
           if (preg_match('%/\*={5,}%', $line, $match, PREG_OFFSET_CAPTURE, $pos)) {
-            $lines[$line_number] = Text::blankOut($match[0][0], $line);
+            $line = $lines[$line_number] = Text::blankOut($match[0][0], $line);
             $found = true;
             $in_comment = true;
             $pos = $match[0][1] + strlen($match[0][0]);
           }
         }
         elseif (preg_match('%={5,}\*/%', $line, $match, PREG_OFFSET_CAPTURE, $pos)) {
-          $lines[$line_number] = Text::blankOut($match[0], $line);
+          $line = $lines[$line_number] = Text::blankOut($match[0][0], $line);
           $found = true;
           $in_comment = false;
           $pos = $match[0][1] + strlen($match[0][0]);

@@ -31,6 +31,23 @@ class Text
     return array($line_number, $position);
   }
 
+  public static function blankOutAtPositions($to_blank, $start_line, $start_pos, $end_line = -1, $end_pos = -1) {
+    foreach ($to_blank as $line_number => $line) {
+      if ($line_number == $start_line) {
+        $to_blank[$line_number] = Text::blankOutAt($line, $start_pos);
+      }
+      if ($line_number > $start_line) {
+        if ($end_line == -1 || $line_number < $end_line) {
+          $to_blank[$line_number] = Text::blankOutAt($line, 0);
+        }
+        elseif ($line_number == $end_line) {
+          $to_blank[$line_number] = Text::blankOutAt($line, 0, $end_pos);
+        }
+      }
+    }
+    return $to_blank;
+  }
+
   public static function blankOutAt($to_blank, $start, $end = -1) {
     if ($end == -1) {
       $end = strlen($to_blank) - 1;
@@ -118,7 +135,7 @@ class Text
    */
   public static function findComments($line, $started = false) {
     if (empty($line) && !$started) {
-      return array($line, false, false, false, false);
+      return array(false, false, false, false, false);
     }
 
     $first = array();

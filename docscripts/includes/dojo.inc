@@ -293,11 +293,11 @@ function dojo_get_contents($namespace, $file_name) {
 
   // Since there can be chase conditions between declarations and calls, we need to find which were "swallowed" by larger blocks
   $swallowed_mixins = $package->removeSwallowed($mixin_calls);
-  $package->removeSwallowed($declarations);
   $package->removeSwallowed($executions);
 
   // Handle function declarations
   foreach ($declarations as $declaration) {
+    $package->removeSwallowed($declaration);
     foreach ($declaration as $declaration_instance){
       $declaration_instance->rollOut($output);
     }
@@ -305,20 +305,39 @@ function dojo_get_contents($namespace, $file_name) {
   unset($declarations);
   unset($declaration);
   unset($declaration_instance);
-  
+
   foreach ($executions as $execution) {
+    $execution_variables = $execution->getVariableNames();
+    foreach ($execution_variables as $execution_variable) {
+      if (empty($output[$execution_variable])) {
+        $output[$execution_variable] = array();
+      }
+    }
+    unset($execution_variables);
+    unset($execution_variable);
+
     $execution_declarations = $execution->getFunctionDeclarations();
     foreach ($execution_declarations as $declaration) {
+      $declaration->rollOut($output);
+    }
+    unset($execution_declarations);
+
+    if ($execution->getFunctionName()) {
+      $instance_declarations = $execution->getInstanceFunctions($execution->getFunctionName());
+      foreach ($instance_declarations as $declaration) {
         $declaration->rollOut($output);
+      }
     }
     $execution->removeSwallowedMixins($swallowed_mixins);
+
+    unset($declaration);
+    unset($instance_declarations);
+    unset($execution);
   }
   $mixin_calls = array_merge($mixin_calls, $swallowed_mixins);
+
   unset($swallowed_mixins);
   unset($executions);
-  unset($execution);
-  unset($execution_declarations);
-  unset($declaration);
 
   // Handle. dojo.lang.extend and dojo.lang.mixin calls
   foreach ($mixin_calls as $call) {

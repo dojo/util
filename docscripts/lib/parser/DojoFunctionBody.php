@@ -14,6 +14,9 @@ class DojoFunctionBody extends DojoBlock
   private $return_comments = array();
   private $instance_variables = array();
   private $externalized = array();
+  private $externalized_avariables = array();
+  private $externalized_ivariables = array();
+  private $externalized_variables = array();  
   private $externalized_mixins = array();
   private $this_inheritance_calls = array();
   private $extra_initial_comment_block = array();
@@ -142,7 +145,7 @@ class DojoFunctionBody extends DojoBlock
           $this->comment_end = array($line_number, 0);
           break;
         }
-        elseif ($comment) {
+        else {
           $started = true;
         }
 
@@ -194,7 +197,7 @@ class DojoFunctionBody extends DojoBlock
     $this->build();
     $lines = Text::chop($this->package->getCode(), $this->start[0], $this->start[1], $this->end[0], $this->end[1], true);
     // Find simple external variable assignment.
-    $matches = preg_grep('%var%', $lines);
+    $matches = preg_grep('%(?:var|this)%', $lines);
     foreach ($matches as $line_number => $line) {
       // Check for var groups, or var name =
       if (preg_match('%var\s+[a-zA-Z0-9_.$]+(\s*,\s*[a-zA-Z0-9_.$]+)*%', $line, $match)) {
@@ -208,9 +211,12 @@ class DojoFunctionBody extends DojoBlock
           }
         }
       }
-      if (preg_match('%var\s+([a-zA-Z0-9_.$]+)\s*=\s*([a-zA-Z_.$][a-zA-Z0-9_.$]*)\s*[;\n]%', $line, $match)) {
+      if (preg_match('%var\s+([a-zA-Z_.$][\w.$]*)\s*=\s*([a-zA-Z_.$][a-zA-Z0-9_.$]*)\s*[;\n]%', $line, $match)) {
         if (in_array($match[2], array('null', 'true', 'false', 'this'))) continue;
         $internals[$match[1]] = $match[2];
+      }
+      if (preg_match('%(this\.[a-zA-Z_.$][\w.$]*)\s*=\s*([a-zA-Z_.$][\w.$]*)%', $line, $match)) {
+        $internals[$match[2]] = $match[1];
       }
     }
 
@@ -260,7 +266,7 @@ class DojoFunctionBody extends DojoBlock
     }
   }
 
-  public function getExternalizedFunctionDeclarations() {
+  public function getExternalizedFunctionDeclarations($function_name=false) {
     if ($this->externalized) {
       return $this->externalized;
     }
@@ -271,10 +277,11 @@ class DojoFunctionBody extends DojoBlock
 
     $matches = preg_grep('%function%', $lines);
     foreach ($matches as $line_number => $line) {
-      if (preg_match('%(var)?\s*([a-zA-Z0-9_.$]+)\s*=\s*function\s*\(%', $line, $match)) {
+      if (preg_match('%(var)?\s*(\b[a-zA-Z_.$][\w.$]*(?:\.[a-zA-Z_.$][\w.$]|\["[^"]+"\])*)\s*=\s*function\s*\(%', $line, $match)) {
         if ($match[1] || array_key_exists($match[2], $internals)) continue;
 
         $externalized = new DojoFunctionDeclare($this->package, $line_number, strpos($line, $match[0]));
+        $externalized->setAnonymous(true);
         $end = $externalized->build();
 
         $name = $match[2];
@@ -287,12 +294,97 @@ class DojoFunctionBody extends DojoBlock
           }
         }
 
+        if (strpos($name, '[') !== false) {
+          $source_lines = Text::chop($this->package->getSource(), $line_number, 0);
+          $source_line = trim($source_lines[$line_number]);
+          preg_match('%\b([a-zA-Z_.$][\w.$]*(?:\.[a-zA-Z_.$][\w.$]|\["[^"]+"\])*)\s*=\s*function%', $source_line, $source_match);
+          $name = preg_replace('%\["([^"]+)"\]%', '.$1', $source_match[1]);
+        }
+
+        if (strpos($name, 'this.') === 0) {
+          if (!$function_name) continue;
+
+          $name = $function_name . substr($name, 4);
+        }
         $externalized->setFunctionName($name);
         $this->externalized[] = $externalized;
       }
     }
 
     return $this->externalized;
+  }
+
+  public function getExternalizedAllVariableNames() {
+    if ($this->externalized_avariables) {
+      return $this->externalized_avariables;
+    }
+
+    $this->build();
+    $lines = Text::chop($this->package->getCode(), $this->start[0], $this->start[1], $this->end[0], $this->end[1], true);
+    $internals = $this->getLocalVariableNames();
+
+    $declarations = $this->getExternalizedFunctionDeclarations($function_name);
+    foreach ($declarations as $declaration) {
+      $declaration->build();
+      $lines = Text::blankOutAtPositions($lines, $declaration->start[0], $declaration->start[1], $declaration->end[0], $declaration->end[1]);
+    }
+
+    $variables = array();
+
+    $matches = preg_grep('%=%', $lines);
+    foreach ($matches as $line_number => $line) {
+      if (preg_match('%(var\s*)?([a-zA-Z_.$][\w.$]*)\s*=(?!=)\s*(function\s*\()?%', $line, $match)) {
+        if ($match[1] || $match[3] || array_key_exists($match[2], $internals)) continue;
+
+        $name = $match[2];
+        if (strpos($name, 'this.') === 0) continue;
+
+        foreach ($internals as $internal_name => $external_name) {
+          if (strpos($name, $internal_name . '.') === 0) {
+            if (!$external_name) continue 2;
+            $name = $external_name . substr($name, strlen($internal_name));
+          }
+        }
+
+        $variables[] = $name;
+      }
+    }
+      
+    return $this->externalized_avariables = $variables;
+  }
+
+  public function getExternalizedInstanceVariableNames() {
+    if ($this->externalized_ivariables) {
+      return $this->externalized_ivariables;
+    }
+
+    $ivariables = array();
+
+    $variables = $this->getExternalizedAllVariableNames();
+    foreach ($variables as $variable) {
+      if (strpos($variable, 'this.') === 0) {
+        $ivariables[] = substr($variable, 5);
+      }
+    }
+
+    return $this->externalized_ivariables = $ivariables;
+  }
+
+  public function getExternalizedVariableNames() {
+    if ($this->externalized_variables) {
+      return $this->externalized_variables;
+    }
+
+    $evariables = array();
+
+    $variables = $this->getExternalizedAllVariableNames();
+    foreach ($variables as $variable) {
+      if (strpos($variable, 'this.') !== 0) {
+        $evariables[] = $variable;
+      }
+    }
+
+    return $this->externalized_variables = $evariables;
   }
 
   public function getInstanceVariableNames() {

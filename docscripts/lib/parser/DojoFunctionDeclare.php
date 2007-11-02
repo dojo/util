@@ -58,7 +58,11 @@ class DojoFunctionDeclare extends DojoBlock
   public function isConstructor(){
     return $this->constructor;
   }
-  
+
+  public function setAnonymous($anonymous) {
+    $this->anonymous = $anonymous;
+  }
+
   public function isAnonymous(){
     return $this->anonymous;
   }
@@ -86,7 +90,11 @@ class DojoFunctionDeclare extends DojoBlock
   public function getThisInheritanceCalls(){
     return array_unique($this->body->getThisInheritanceCalls());
   }
-  
+
+  public function getVariableNames(){
+    return $this->body->getExternalizedVariableNames();
+  }
+
   public function getFunctionDeclarations(){
     return $this->body->getExternalizedFunctionDeclarations();
   }
@@ -140,22 +148,30 @@ class DojoFunctionDeclare extends DojoBlock
         $this->instance = $this->getFunctionName();
         $name = $this->getFunctionName() . "." . preg_replace('%^this\.%', '', $name);
       }
-    
-      $full_lines = Text::chop($this->package->getCode(), $this->start[0], 0);
-      $full_line = substr($full_lines[$this->start[0]], 0, $this->start[1]);
-      if (preg_match('%(?:[a-zA-Z0-9._$]+\s*=\s*)+$%', $full_line, $matches)) {
-        $aliases = preg_split('%\s*=\s*%', $matches[0]);
-        foreach ($aliases as $alias) {
-          $alias = trim($alias);
-          if ($alias) {
-            if (strpos($alias, 'this.') === 0) {
-              $alias = $this->getFunctionName() . "." . preg_replace('%^this\.%', '', $alias);
+
+      if (!$this->isAnonymous()) {
+        $full_lines = Text::chop($this->package->getCode(), $this->start[0], 0);
+        $full_line = substr($full_lines[$this->start[0]], 0, $this->start[1]);
+        if (preg_match('%(?:[a-zA-Z0-9._$]+\s*=\s*)+$%', $full_line, $matches)) {
+          $aliases = preg_split('%\s*=\s*%', $matches[0]);
+          foreach ($aliases as $alias) {
+            $alias = trim($alias);
+            if ($alias) {
+              if (strpos($alias, 'this.') === 0) {
+                $alias = $this->getFunctionName() . "." . preg_replace('%^this\.%', '', $alias);
+              }
+              $this->aliases[] = $alias;
             }
-            $this->aliases[] = $alias;
           }
         }
       }
-      
+
+      if (strpos($name, '[') !== false) {
+        $source_lines = Text::chop($this->package->getSource(), $this->start[0], $this->start[1]);
+        $source_line = trim($source_lines[$this->start[0]]);
+        preg_match('%^\s*([a-zA-Z_.$][\w.$]*(?:\.[a-zA-Z_.$][\w.$]|\["[^"]+"\])*)\s*=\s*function%', $source_line, $match);
+        $name = preg_replace('%\["([^"]+)"\]%', '.$1', $match[1]);
+      }
       $this->function_name = $name;
     }
     
@@ -216,15 +232,14 @@ class DojoFunctionDeclare extends DojoBlock
     }
 
     $output[$function_name]['type'] = 'Function';
-    $output[$masquerading_as_function]['type'] = 'Function';
+    if (!empty($output[$masquerading_as_function])) {
+      $output[$masquerading_as_function]['type'] = 'Function';
+    }
 
     if ($aliases = $this->getAliases()) {
       foreach ($aliases as $alias) {
         $output[$alias]['aliases'] = $function_name;
       }
-    }
-    if ($this->isAnonymous()) {
-      $output[$function_name]['initialized'] = true;
     }
 
     $parameters = $this->getParameters();
@@ -243,6 +258,29 @@ class DojoFunctionDeclare extends DojoBlock
         $output[$function_name]['parameters'][$parameter_name]['type'] = $parameter_type;
 
         $this->addBlockCommentKey($parameter->getVariable());
+      }
+    }
+
+    if ($this->isAnonymous()) {
+      $output[$function_name]['initialized'] = true;
+
+      $declarations = $this->body->getExternalizedFunctionDeclarations($function_name);
+      foreach ($declarations as $declaration) {
+        $declaration->rollout($output);
+      }
+
+      $variables = $this->body->getExternalizedInstanceVariableNames($function_name);
+      foreach($variables as $variable) {
+        $output[$function_name . '.' . $variable]['instance'] = $function_name;
+      }
+
+      $variables = $this->body->getExternalizedVariableNames($function_name);
+      foreach($variables as $variable) {
+        if (!is_array($output[$function_name]['parameters']) || !array_key_exists($variable, $output[$function_name]['parameters'])) {
+          if (empty($output[$variable])) {
+            $output[$variable] = array();
+          }
+        }
       }
     }
 
@@ -275,35 +313,38 @@ class DojoFunctionDeclare extends DojoBlock
       if (in_array($key, $check_keys)) {
         $output[$function_name][$key] = $this->getBlockComment($key);
       }
-      elseif (in_array($key, $all_variables) && $comment = $this->getBlockComment($key)) {
-        list($type, $comment) = preg_split('%\s+%', $comment, 2);
+      if (in_array($key, $all_variables) && $comment = $this->getBlockComment($key)) {
+         list($type, $comment) = preg_split('%\s+%', $comment, 2);
         $type = preg_replace('%(^[^a-zA-Z0-9._$]|[^a-zA-Z0-9._$?]$)%', '', $type);
         if($type){
           $output[$function_name . '.' . $key]['type'] = $type;
         }
         $output[$function_name . '.' . $key]['summary'] = $comment;
       }
-      elseif (!empty($output[$function_name]['parameters']) && array_key_exists($key, $output[$function_name]['parameters']) && $comment = $this->getBlockComment($key)) {
-        list($parameter_type, $comment) = preg_split('%\s%', $comment, 2);
-        if (!empty($output[$function_name]['parameters'][$key]['type']) && $parameter_type != $output[$function_name]['parameters'][$key]['type']) {
-          $comment = $parameter_type . ' ' . $comment;
-          $parameter_type = $output[$function_name]['parameters'][$key]['type'];
-        }
-        $parameter_type = preg_replace('%(^[^a-zA-Z0-9._$]|[^a-zA-Z0-9._$?]$)%', '', $parameter_type);
+      if (!empty($output[$function_name]['parameters']) && array_key_exists($key, $output[$function_name]['parameters']) && $comment = $this->getBlockComment($key)) {
+        list($full_parameter_type, $comment) = preg_split('%\s%', $comment, 2);
+        $parameter_type = preg_replace('%(^[^a-zA-Z0-9._$]|[^a-zA-Z0-9._$?]$)%', '', $full_parameter_type);
+        $options = array();
         if($parameter_type){
           if(strpos($parameter_type, '?')){
             $parameter_type = substr($parameter_type, 0, strlen($parameter_type) - 1);
-            $output[$function_name]['parameters'][$key]['optional'] = true;
+            $options['optional'] = true;
           }
           if(strpos($parameter_type, '...')){
             $parameter_type = substr($parameter_type, 0, strlen($parameter_type) - 3);
-            $output[$function_name]['parameters'][$key]['repeating'] = true;
+            $options['repeating'] = true;
           }
-          $output[$function_name]['parameters'][$key]['type'] = $parameter_type;
         }
-        if($parameter_type && strpos($comment, $parameter_type) === 0){
-          $comment =  preg_replace('%' . preg_quote($parameter_type) . '\s*%', '', $comment);
+
+        if (!empty($output[$function_name]['parameters'][$key]['type']) && $parameter_type != $output[$function_name]['parameters'][$key]['type']) {
+          $comment = $parameter_type . ' ' . $comment;
+          $full_parameter_type = $parameter_type = $output[$function_name]['parameters'][$key]['type'];
         }
+        if ($full_parameter_type) {
+            $comment =  preg_replace('%^' . preg_quote($full_parameter_type) . '\s*%', '', $comment);
+        }
+        $output[$function_name]['parameters'][$key] = array_merge($output[$function_name]['parameters'][$key], $options); 
+        $output[$function_name]['parameters'][$key]['type'] = $parameter_type;
         $output[$function_name]['parameters'][$key]['summary'] = $comment;
       }
     }
