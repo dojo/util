@@ -202,15 +202,24 @@ class DojoPackage
     $lines[] = '';
     $in_comment = false;
     foreach ($lines as $line_number => $line) {
-      if (!$in_comment) {
-        if (preg_match('%/\*={5,}%', $line, $match)) {
-          $lines[$line_number] = Text::blankOut($match[0], $line);
-          $in_comment = true;
+      $pos = 0;
+      $found = true;
+      while ($found) {
+        $found = false;
+        if (!$in_comment) {
+          if (preg_match('%/\*={5,}%', $line, $match, PREG_OFFSET_CAPTURE, $pos)) {
+            $lines[$line_number] = Text::blankOut($match[0][0], $line);
+            $found = true;
+            $in_comment = true;
+            $pos = $match[0][1] + strlen($match[0][0]);
+          }
         }
-      }
-      elseif (preg_match('%={5,}\*/%', $line, $match)) {
-        $lines[$line_number] = Text::blankOut($match[0], $line);
-        $in_comment = false;
+        elseif (preg_match('%={5,}\*/%', $line, $match, PREG_OFFSET_CAPTURE, $pos)) {
+          $lines[$line_number] = Text::blankOut($match[0], $line);
+          $found = true;
+          $in_comment = false;
+          $pos = $match[0][1] + strlen($match[0][0]);
+        }
       }
     }
     return $this->source = $lines;
