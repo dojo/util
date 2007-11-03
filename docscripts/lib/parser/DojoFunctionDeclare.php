@@ -11,7 +11,8 @@ class DojoFunctionDeclare extends DojoBlock
   protected $parameter_values;
   private $function_name;
   private $body;
-  
+
+  private $in_executed_function = null;
   private $anonymous = false;
   private $prototype = '';
   private $constructor = false;
@@ -26,9 +27,23 @@ class DojoFunctionDeclare extends DojoBlock
   public function getFunctionName(){
     return $this->function_name;
   }
-  
+
   public function getAliases(){
     return $this->aliases;
+  }
+
+  public function rebuildAliases($map) {
+    if (is_array($this->aliases)) {
+      foreach ($this->aliases as $i => $alias) {
+        foreach ($map as $internal_name => $external_name) {
+          if (strpos($alias, $internal_name . '.') === 0) {
+            if (!$external_name) continue 2;
+            $alias = $external_name . substr($alias, strlen($internal_name));
+          }
+        }
+        $this->aliases[$i] = $alias;
+      }
+    }
   }
 
   public function setFunctionName($function_name){
@@ -74,6 +89,10 @@ class DojoFunctionDeclare extends DojoBlock
   public function getThis(){
     return ($this->prototype) ? $this->prototype : $this->instance;
   }
+
+  public function setExecutedFunction($function) {
+    $this->in_executed_function = $function;
+  }
   
   public function getInstanceVariableNames(){
     return array_unique($this->body->getInstanceVariableNames());
@@ -88,15 +107,40 @@ class DojoFunctionDeclare extends DojoBlock
   }
   
   public function getThisInheritanceCalls(){
-    return array_unique($this->body->getThisInheritanceCalls());
+    $output = array();
+    $calls = array_unique($this->body->getThisInheritanceCalls());
+
+    if ($this->in_executed_function) {
+      $internalized = $this->in_executed_function->getLocalVariableNames();
+    }
+
+    $parameters = $this->getParameterNames();
+    foreach ($calls as $call) {
+      if (!in_array($call, $parameters)) {
+        if ($internalized) {
+          foreach (array_keys($internalized) as $variable) {
+            if (strpos($call, $variable . '.') === 0) {
+              continue 2;
+            }
+          }
+        }
+        $output[] = $call;
+      }
+    }
+
+    return $output;
   }
 
-  public function getVariableNames(){
-    return $this->body->getExternalizedVariableNames();
+  public function getVariableNames($function_name){
+    return $this->body->getExternalizedVariableNames($function_name);
   }
 
   public function getFunctionDeclarations(){
     return $this->body->getExternalizedFunctionDeclarations();
+  }
+
+  public function getObjects(){
+    return $this->body->getExternalizedObjects();
   }
 
   public function getLocalVariableNames(){
@@ -104,17 +148,9 @@ class DojoFunctionDeclare extends DojoBlock
   }
   
   public function removeCodeFrom($lines){
-    for($i = $this->start[0]; $i <= $this->end[0]; $i++){
-      $line = $lines[$i];
-      if($i == $this->start[0]){
-        $lines[$i] = Text::blankOutAt($line, $this->start[1]);
-      }elseif ($i == $this->end[0]){
-        $lines[$i] = Text::blankOutAt($line, 0, $this->end[1]);
-      }else{
-        $lines[$i] = Text::blankOut($line, $line);
-      }
-    }
-    return $lines;
+    $this->build();
+
+    return Text::blankOutAtPositions($lines, $this->start[0], $this->start[1], $this->end[0], $this->end[1]);
   }
   
   public function build(){
@@ -194,6 +230,17 @@ class DojoFunctionDeclare extends DojoBlock
   public function getParameters(){
     return $this->parameters->getParameters();
   }
+
+  public function getParameterNames(){
+    $names = array();
+    $parameters = $this->getParameters();
+    foreach ($parameters as $parameter) {
+      if($parameter->isA(DojoVariable)){
+        $names[] = $parameter->getVariable();
+      }
+    }
+    return $names;
+  }
   
   public function addBlockCommentKey($key){
     $this->body->addBlockCommentKey($key);
@@ -227,6 +274,10 @@ class DojoFunctionDeclare extends DojoBlock
     }
     $check_keys = array('summary','description','returns','exceptions');
 
+    if (!empty($output[$function_name]['aliases'])) {
+      unset($output[$function_name]['aliases']); // This is implemented, it aliases nothing.
+    }
+
     if ($this->isThis()) {
       $masquerading_as_function = $this->getThis();
     }
@@ -238,7 +289,9 @@ class DojoFunctionDeclare extends DojoBlock
 
     if ($aliases = $this->getAliases()) {
       foreach ($aliases as $alias) {
-        $output[$alias]['aliases'] = $function_name;
+        if (empty($output[$alias])) {
+          $output[$alias]['aliases'] = $function_name;
+        }
       }
     }
 
@@ -255,7 +308,9 @@ class DojoFunctionDeclare extends DojoBlock
           $parameter_type = substr($parameter_type, 0, strlen($parameter_type) - 3);
           $output[$function_name]['parameters'][$parameter_name]['repeating'] = true;
         }
-        $output[$function_name]['parameters'][$parameter_name]['type'] = $parameter_type;
+        if (empty($output[$function_name]['parameters'][$parameter_name]['type']) || $parameter_type) {
+          $output[$function_name]['parameters'][$parameter_name]['type'] = $parameter_type;
+        }
 
         $this->addBlockCommentKey($parameter->getVariable());
       }
@@ -275,8 +330,10 @@ class DojoFunctionDeclare extends DojoBlock
       }
 
       $variables = $this->body->getExternalizedVariableNames($function_name);
+      print_r($variables);
       foreach($variables as $variable) {
-        if (!is_array($output[$function_name]['parameters']) || !array_key_exists($variable, $output[$function_name]['parameters'])) {
+        list($first,) = explode('.', $variable, 2);
+        if (!is_array($output[$function_name]['parameters']) || !array_key_exists($first, $output[$function_name]['parameters'])) {
           if (empty($output[$variable])) {
             $output[$variable] = array();
           }

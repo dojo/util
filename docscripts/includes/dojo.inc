@@ -276,7 +276,16 @@ function dojo_get_contents($namespace, $file_name) {
   unset($inherit_calls);
   unset($call);
 
+  $mixin_calls = array_merge($package->getFunctionCalls('dojo.extend'), $package->getFunctionCalls('dojo.lang.extend', true), $package->getFunctionCalls('dojo.mixin'), $package->getFunctionCalls('dojo.lang.mixin'));
+  $declarations = $package->getFunctionDeclarations();
+  $executions = $package->getExecutedFunctions();
   $objects = $package->getObjects();
+
+  // Since there can be chase conditions between declarations and calls, we need to find which were "swallowed" by larger blocks
+  $swallowed_mixins = $package->removeSwallowed($mixin_calls);
+  $package->removeSwallowed($executions);
+  $package->removeSwallowed($objects);
+
   foreach ($objects as $object) {
     $output[$object->getName()]['type'] = 'Object';
     $object->rollOut($output);
@@ -287,18 +296,11 @@ function dojo_get_contents($namespace, $file_name) {
   $aliases = $package->getAliases();
   unset($aliases);
 
-  $mixin_calls = array_merge($package->getFunctionCalls('dojo.extend'), $package->getFunctionCalls('dojo.lang.extend', true), $package->getFunctionCalls('dojo.mixin'), $package->getFunctionCalls('dojo.lang.mixin'));
-  $declarations = $package->getFunctionDeclarations();
-  $executions = $package->getExecutedFunctions();
-
-  // Since there can be chase conditions between declarations and calls, we need to find which were "swallowed" by larger blocks
-  $swallowed_mixins = $package->removeSwallowed($mixin_calls);
-  $package->removeSwallowed($executions);
-
   // Handle function declarations
   foreach ($declarations as $declaration) {
     $package->removeSwallowed($declaration);
     foreach ($declaration as $declaration_instance){
+      $declaration_instance->removeSwallowedMixins($swallowed_mixins);
       $declaration_instance->rollOut($output);
     }
   }
@@ -307,31 +309,9 @@ function dojo_get_contents($namespace, $file_name) {
   unset($declaration_instance);
 
   foreach ($executions as $execution) {
-    $execution_variables = $execution->getVariableNames();
-    foreach ($execution_variables as $execution_variable) {
-      if (empty($output[$execution_variable])) {
-        $output[$execution_variable] = array();
-      }
-    }
-    unset($execution_variables);
-    unset($execution_variable);
-
-    $execution_declarations = $execution->getFunctionDeclarations();
-    foreach ($execution_declarations as $declaration) {
-      $declaration->rollOut($output);
-    }
-    unset($execution_declarations);
-
-    if ($execution->getFunctionName()) {
-      $instance_declarations = $execution->getInstanceFunctions($execution->getFunctionName());
-      foreach ($instance_declarations as $declaration) {
-        $declaration->rollOut($output);
-      }
-    }
+    $execution->rollOut($output);
     $execution->removeSwallowedMixins($swallowed_mixins);
 
-    unset($declaration);
-    unset($instance_declarations);
     unset($execution);
   }
   $mixin_calls = array_merge($mixin_calls, $swallowed_mixins);
@@ -350,8 +330,11 @@ function dojo_get_contents($namespace, $file_name) {
       $call_name = $call->getName();
 
       if(strlen($object) > 10 && substr($object, -10) == '.prototype') {
-          $is_prototype = true;
-          $object = substr($object, 0, -10);
+        $is_prototype = true;
+        $object = substr($object, 0, -10);
+      }
+      if ($call_name == 'dojo.lang.extend' || $call_name == 'dojo.extend') {
+        $is_prototype = true;
       }
 
       if ($call->getParameter(1)->isA(DojoObject)) {
@@ -365,22 +348,23 @@ function dojo_get_contents($namespace, $file_name) {
           }
           if ($function->isA(DojoFunctionDeclare)) {
             $function = $function->getFunction();
-            if ($call_name == 'dojo.lang.extend' || $call_name == 'dojo.extend') {
+            if ($is_prototype) {
               $function->setPrototype($object);
             }
             $function->setFunctionName($full_variable_name);
             $function->rollOut($output);
           }
+          elseif ($function->isA(DojoObject)) {
+            $output[$full_variable_name]['type'] = 'Object';
+            $obj = $function->getObject();
+            $obj->setName($full_variable_name);
+            $obj->rollOut($output);
+          }
           else {
             if ($call_name == 'dojo.lang.mixin' || $call_name == 'dojo.mixin') {
-              if (empty($output[$full_variable_name])) {
+              if (!isset($output[$full_variable_name])) {
                 $output[$full_variable_name] = array();
               }
-            }
-            else {
-                if ($is_prototype) {
-                    $output[$full_variable_name]['prototype'] = $object;
-                }
             }
           }
         }
@@ -413,8 +397,16 @@ function dojo_get_contents($namespace, $file_name) {
   unset($variable_name);
   unset($full_variable_name);
 
+  $external_variables = $package->getExternalVariables();
+  foreach ($external_variables as $external_variable) {
+    if (empty($output[$external_variable])) {
+      $output[$external_variable] = array();
+    }
+  }
+  
+
   // Remember, dojo.provides creates new objects if needed
-  $parts = explode('.', $output['#resource']);
+  $parts = explode('.', $output['#provides']);
   while (count($parts)) {
       if (!array_key_exists(implode('.', $parts), $output)) {
           $output[implode('.', $parts)] = array('type' => 'Object');

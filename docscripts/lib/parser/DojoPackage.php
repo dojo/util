@@ -56,6 +56,10 @@ class DojoPackage
    * Searches the file for the format: (function(){})();
    */
   public function getExecutedFunctions(){
+    if ($this->executions) {
+      return $this->executions;
+    }
+
     $lines = $this->getCode();
     
     $matches = preg_grep('%function%', $lines);
@@ -109,7 +113,10 @@ class DojoPackage
   }
   
   public function removeCodeFrom($lines){
-    for($i = 0; $i < count($lines); $i++) {
+    $keys = array_keys($lines);
+    $first = array_shift($keys);
+    $last = array_pop($keys);
+    for($i = $first; $i <= $last; $i++) {
       $line = $lines[$i];
       if (preg_match('%function\s*\([^)]*\)\s*{%', $line, $match, PREG_OFFSET_CAPTURE)) {
         $declaration = new DojoFunctionDeclare($this, $i, $match[0][1]);
@@ -140,57 +147,16 @@ class DojoPackage
     if($this->aliases){
       return $this->aliases;
     }
-    
-    $lines = $this->getCode();
-    foreach($this->calls as $calls){
-      foreach($calls as $call){
-        $lines = $call->removeCodeFrom($lines);
-      }
-    }
-    foreach ($this->declarations as $declaration) {
-      $lines = $declaration->removeCodeFrom($lines);
-    }
-    foreach ($this->objects as $objects) {
-      foreach ($this->objects as $pobject) {
-        foreach ($pobject->declarations as $declaration) {
-          $lines = $declaration->removeCodeFrom($lines);
-        }
-      }
-    }
-    foreach($this->executions as $execution){
-      $lines = $execution->removeCodeFrom($lines);
-    }
-    $lines = $this->removeCodeFrom($lines);
-    foreach ($lines as $line_number => $line) {
-      if (empty($line)) continue;
-      if (preg_match('%(?:[a-zA-Z0-9._$]+\s*=\s*[a-zA-Z_$][a-zA-Z0-9._$]+)+(?=;|\n)%', $line, $match)) {
-        $aliases = preg_split('%\s*=\s*%', $match[0]);
-        $main_alias = array_pop($aliases);
-        if ($main_alias == 'true' || $main_alias == 'false' || $main_alias == 'null' || $main_alias == 'undefined' || $main_alias == 'this' || $main_alias == 'window' || substr($main_alias, 0, 5) == 'this.' || substr($main_alias, 0, 7) == 'window.') continue;
-        foreach ($aliases as $alias) {
-          $this->aliases[$alias] = $main_alias;
-        }
-      }
-    }
+
     return $this->aliases;
   }
-  
-  
+
   public function getObjects(){
     if ($this->objects) {
       return $this->objects;
     }
     
     $lines = $this->getCode();
-    foreach ($this->calls as $calls) {
-      foreach ($calls as $call) {
-        $lines = $call->removeCodeFrom($lines);
-      }
-    }
-    foreach ($this->declarations as $declaration) {
-      $lines = $declaration->removeCodeFrom($lines);
-    }
-    $lines = $this->removeCodeFrom($lines);
     foreach ($lines as $line_number => $line) {
       if ($line_number < $end_line_number) {
         continue;
@@ -363,6 +329,41 @@ class DojoPackage
     }
     return $this->code = $lines;
   }
+
+  /** 
+   * After all calls are done, return what's left
+   */
+  public function getExternalVariables(){
+    $lines = $this->getCode();
+
+    foreach ($this->objects as $pobject) {
+      foreach ($pobject->declarations as $declaration) {
+        $lines = Text::blankOutAtPositions($lines, $declaration->start[0], $declaration->start[1], $declaration->end[0], $declaration->end[1]);
+      }
+    }
+    foreach($this->declarations as $declarations){
+      foreach ($declarations as $declaration) {
+        $lines = Text::blankOutAtPositions($lines, $declaration->start[0], $declaration->start[1], $declaration->end[0], $declaration->end[1]);
+      }
+    }
+    foreach($this->calls as $call_name => $calls){
+      foreach($calls as $call){
+        $lines = Text::blankOutAtPositions($lines, $call->start[0], $call->start[1], $call->end[0], $call->end[1]);
+      }
+    }
+    foreach($this->executions as $execution){
+      $lines = Text::blankOutAtPositions($lines, $execution->start[0], $execution->start[1], $execution->end[0], $execution->end[1]);
+    }
+
+    $variables = array();
+    foreach (preg_grep('%=%', $lines) as $line_number => $line) {
+      if (preg_match('%\b([a-zA-Z_.$][\w.$]*)\s*=(?!=)\s*(function\s*\()?%', $line, $match)) {
+        $variables[] = $match[1];
+      }
+    }
+
+    return $variables;
+  }
   
   /**
    * Remove items from the passed objects if they are inside of existing calls or declarations
@@ -371,6 +372,13 @@ class DojoPackage
     $swallowed = array();
     foreach ($objects as $i => $object) {
       foreach ($this->objects as $pobject) {
+        if (($object->start[0] > $pobject->start[0] || ($object->start[0] == $pobject->start[0] && $object->start[1] > $pobject->start[1]))
+            && ($object->end[0] < $pobject->end[0] || ($object->end[0] == $pobject->end[0] && $object->end[1] < $pobject->end[1]))) {
+          if ($objects[$i]) {
+            $swallowed[] = $objects[$i];
+          }
+          unset($objects[$i]);
+        }        
         foreach ($pobject->declarations as $declaration) {
           if (($object->start[0] > $declaration->start[0] || ($object->start[0] == $declaration->start[0] && $object->start[1] > $declaration->start[1]))
               && ($object->end[0] < $declaration->end[0] || ($object->end[0] == $declaration->end[0] && $object->end[1] < $declaration->end[1]))) {
@@ -381,33 +389,35 @@ class DojoPackage
           }
         }
       }
-      foreach($this->declarations as $declaration){
-        if(($object->start[0] > $declaration->start[0] || ($object->start[0] == $declaration->start[0] && $object->start[1] > $declaration->start[1]))
-            && ($object->end[0] < $declaration->end[0] || ($object->end[0] == $declaration->end[0] && $object->end[1] < $declaration->end[1]))) {
-          if ($objects[$i]) {
-            $swallowed[] = $objects[$i];
+      foreach($this->declarations as $declarations){
+        foreach ($declarations as $declaration) {
+          if(($object->start[0] > $declaration->start[0] || ($object->start[0] == $declaration->start[0] && $object->start[1] > $declaration->start[1]))
+              && ($object->end[0] < $declaration->end[0] || ($object->end[0] == $declaration->end[0] && $object->end[1] < $declaration->end[1]))) {
+            if ($objects[$i]) {
+              $swallowed[] = $objects[$i];
+            }
+            unset($objects[$i]);
           }
-          unset($objects[$i]);
         }
       }
       foreach($this->calls as $call_name => $calls){
         foreach($calls as $call){
           if(($object->start[0] > $call->start[0] || ($object->start[0] == $call->start[0] && $object->start[1] > $call->start[1]))
               && ($object->end[0] < $call->end[0] || ($object->end[0] == $call->end[0] && $object->end[1] < $call->end[1]))) {
-                if ($objects[$i]) {
-                  $swallowed[] = $objects[$i];
-                }
-                unset($objects[$i]);
+            if ($objects[$i]) {
+              $swallowed[] = $objects[$i];
+            }
+            unset($objects[$i]);
           }
         }
       }
       foreach($this->executions as $execution){
         if(($object->start[0] > $execution->start[0] || ($object->start[0] == $execution->start[0] && $object->start[1] > $execution->start[1]))
               && ($object->end[0] < $execution->end[0] || ($object->end[0] == $execution->end[0] && $object->end[1] < $execution->end[1]))) {
-                if ($objects[$i]) {
-                  $swallowed[] = $objects[$i];
-                }
-                unset($objects[$i]);
+            if ($objects[$i]) {
+              $swallowed[] = $objects[$i];
+            }
+            unset($objects[$i]);
         }
       }
     }

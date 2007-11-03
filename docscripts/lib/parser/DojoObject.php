@@ -119,8 +119,8 @@ class DojoObject extends DojoBlock
     $name = $this->getName();
     $values = $this->getValues();
     $variables = array();
-    $check_keys = array('summary','description','examples','exceptions');
-  
+    $check_keys = array('summary','description');
+
     foreach($values as $key => $value){
       if($value->isA(DojoFunctionDeclare)){
         $function = $value->getFunction();
@@ -146,7 +146,15 @@ class DojoObject extends DojoBlock
     foreach($check_keys as $ck){
       $this->addBlockCommentKey($ck);
     }
-  
+
+    $output[$name]['type'] = 'Object';
+    if ($comment = $this->getBlockComment('summary')) {
+      $output[$name]['summary'] = $comment;
+    }
+    if ($comment = $this->getBlockComment('description')) {
+      $output[$name]['description'] = $comment;
+    }
+
     foreach($variables as $key){
       $full_variable_name = "{$name}.{$key}";
       if($comment = $this->getBlockComment($key)){

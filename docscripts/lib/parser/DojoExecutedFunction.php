@@ -6,6 +6,8 @@ require_once('Text.php');
 
 class DojoExecutedFunction extends DojoFunctionDeclare
 {
+  private $object = 'DojoExecutedFunction';
+
   public function build(){
     if(!$this->start){
       die("DojoExecutedFunction->build() used before setting a start position");
@@ -50,6 +52,34 @@ class DojoExecutedFunction extends DojoFunctionDeclare
       }
     }
     return $end;
+  }
+
+  public function rollOut(&$output) {
+    $execution_variables = $this->getVariableNames($this->getFunctionName);
+    foreach ($execution_variables as $execution_variable) {
+      if (empty($output[$execution_variable])) {
+        $output[$execution_variable] = array();
+      }
+    }
+
+    $execution_declarations = $this->getFunctionDeclarations();
+    foreach ($execution_declarations as $declaration) {
+      $declaration->rollOut($output);
+    }
+
+    $execution_objects = $this->getObjects();
+    foreach ($execution_objects as $object) {
+      $object->rollOut($output);
+    }
+    unset($object);
+    unset($execution_objects);
+
+    if ($this->getFunctionName()) {
+      $instance_declarations = $this->getInstanceFunctions($this->getFunctionName());
+      foreach ($instance_declarations as $declaration) {
+        $declaration->rollOut($output);
+      }
+    }
   }
 }
 
