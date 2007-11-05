@@ -226,7 +226,7 @@ function dojo_get_contents($namespace, $file_name) {
           $output[$full_name]['prototype'] = $name;
         }
       }
-      $object->rollOut($output, 'function');
+      $object->rollOut($output, 'Function');
 
       $keys = $object->getBlockCommentKeys();
       foreach ($keys as $key) {
