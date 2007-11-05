@@ -328,7 +328,7 @@ class DojoFunctionBody extends DojoBlock
     $last_line = 0;
     foreach ($matches as $line_number => $line) {
       if ($line_number < $last_line) continue;
-      if (preg_match('%(var)?\s*(\b[a-zA-Z_.$][\w.$]*(?:\.[a-zA-Z_.$][\w.$]|\["[^"]+"\])*)\s*=\s*function\s*\(%', $line, $match)) {
+      if (preg_match('%(var)?\s*(\b[a-zA-Z_.$][\w.$]*(?:\.[a-zA-Z_.$][\w.$]*|\["[^"]+"\])*)\s*=\s*function\s*\(%', $line, $match)) {
         if ($match[1] || array_key_exists($match[2], $internals)) continue;
 
         $externalized = new DojoFunctionDeclare($this->package, $line_number, strpos($line, $match[0]));

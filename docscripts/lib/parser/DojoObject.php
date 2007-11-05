@@ -113,8 +113,7 @@ class DojoObject extends DojoBlock
     return $this->values;
   }
   
-  public function rollOut(&$output, $item_type = 'object'){
-    $item_type .= 's';
+  public function rollOut(&$output, $item_type = 'Object'){
     $package_name = $this->package->getPackageName();
     $name = $this->getName();
     $values = $this->getValues();
@@ -147,7 +146,7 @@ class DojoObject extends DojoBlock
       $this->addBlockCommentKey($ck);
     }
 
-    $output[$name]['type'] = 'Object';
+    $output[$name]['type'] = $item_type;
     if ($comment = $this->getBlockComment('summary')) {
       $output[$name]['summary'] = $comment;
     }

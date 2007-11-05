@@ -2,6 +2,9 @@
 
 class Text
 {
+  public static $variable = '\b[a-zA-Z_.$][\w.$]*';
+  public static $namespace = '\b[a-zA-Z_.$][\w.$]*(?:\.[a-zA-Z_.$][\w.$]*|\["[^"]+"\])*';
+
   /**
    * Blanks out a portion of a string with whitespace
    * 
@@ -16,6 +19,21 @@ class Text
 
     $blanks = array_fill(0, $length, ' ');
     return preg_replace('%' . preg_quote($to_blank, '%') . '%', implode($blanks), $string, 1);
+  }
+
+  /**
+   * Makes sure a variable is formatted namespace.namespace.etc
+   *
+   * @param shell
+   *    Called shell because it might be missing some data
+   */
+  public static function normalizeVariableName($shell, $source, $start){
+    if (strpos($shell, '[') !== false) {
+      $source_line = array_shift(Text::chop($source, $start[0], $start[1], $start[0] + 1));
+      preg_match('%^\s*([a-zA-Z_.$][\w.$]*(?:\.[a-zA-Z_.$][\w.$]|\["[^"]+"\])*)\s*=\s*function%', $source_line, $match);
+      $shell = preg_replace('%\["([^"]+)"\]%', '.$1', $match[1]);
+    }
+    return $shell;
   }
 
   public static function getNextPosition($array, $line_position_pair) {
@@ -57,7 +75,7 @@ class Text
       return $to_blank;
     }
     if ($length < 0) {
-      print 'hi'; // FIXME: squelch errors?
+      throw new Exception("Length is less than 0");
     }
     $blanks = array_fill(0, $length, ' ');
     return substr($to_blank, 0, $start) . implode($blanks) .  substr($to_blank, $end + 1);
