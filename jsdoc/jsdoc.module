@@ -124,12 +124,15 @@ function jsdoc_menu($may_cache) {
       // jsdoc/namespace/'HEAD'/'object'/resource/object
       if (arg(5) && arg(5) != 'view' && arg(5) != 'edit' && arg(5) != 'private') {
         $item = arg(4) . '/' . arg(5);
-        $node = jsdoc_object_node_load(arg(1), arg(2), arg(5), arg(4));
+        $detail = $node = jsdoc_object_node_load(arg(1), arg(2), arg(5), arg(4));
       }
       // jsdoc/namespace/'HEAD'/'object'/object
       else {
         $item = arg(4);
-        $node = jsdoc_object_node_load(arg(1), arg(2), arg(4));
+        $detail = $node = jsdoc_object_node_load(arg(1), arg(2), arg(4));
+      }
+      if ($node->jsdoc_detail) {
+        $detail = $node->jsdoc_detail;
       }
       $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item,
         'title' => t('View'),
@@ -168,20 +171,22 @@ function jsdoc_menu($may_cache) {
         'type' => MENU_LOCAL_TASK
       );
 
-      if ($node->jsdoc_type == 'Function') {
-        if ($node->jsdoc_classlike) {
+      if ($detail->jsdoc_type == 'Function') {
+        if ($detail->jsdoc_classlike || $detail->jsdoc_initialized) {
           $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/view/init',
             'title' => t('Initialized'),
             'type' => MENU_DEFAULT_LOCAL_TASK,
             'weight' => -10
           );
-          $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/view/normal',
-            'title' => t('Uninitialized'),
-            'callback' => 'jsdoc_object_node_view',
-            'callback arguments' => array($node, false),
-            'access' => node_access('view', $node),
-            'type' => MENU_LOCAL_TASK
-          );
+          if (!$detail->jsdoc_initialized) {
+            $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/view/normal',
+              'title' => t('Uninitialized'),
+              'callback' => 'jsdoc_object_node_view',
+              'callback arguments' => array($node, false),
+              'access' => node_access('view', $node),
+              'type' => MENU_LOCAL_TASK
+            );
+          }
           $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/private/init',
             'title' => t('Initialized'),
             'type' => MENU_DEFAULT_LOCAL_TASK,
@@ -1782,7 +1787,16 @@ function _jsdoc_detail_view($node) {
 
     jsdoc_load_resource($detail);
 
-    if ($detail->jsdoc_provide_vid != $detail->jsdoc_resource_vid) {
+    if ($detail->jsdoc_resource_vid) {
+      $node->content['detail']['jsdoc_provides'] = array(
+        '#type' => 'item',
+        '#title' => t('In Resource'),
+        '#value' => l($detail->jsdoc_resource->title, $detail->jsdoc_resource->jsdoc_url),
+        '#weight' => -19
+      );
+    }
+
+    if ($detail->jsdoc_provide->title != $detail->jsdoc_resource->title) {
       $node->content['detail']['jsdoc_provides'] = array(
         '#type' => 'item',
         '#title' => t('To Include'),
@@ -1793,11 +1807,11 @@ function _jsdoc_detail_view($node) {
 
     jsdoc_load_parents($detail);
 
-    if ($detail->jsdoc_parents['all']) {
+    if ($detail->jsdoc_parents['normal']) {
       $node->content['detail']['jsdoc_parents'] = array(
         '#weight' => -18
       );
-      foreach ($detail->jsdoc_parents['all'] as $weight => $parent) {
+      foreach ($detail->jsdoc_parents['normal'] as $weight => $parent) {
         $parent = jsdoc_object_node_load($version->jsdoc_project_name, $version->title, $parent);
         $node->content['detail']['jsdoc_parents'][$parent->title] = array(
           '#type' => 'item',
@@ -1805,7 +1819,7 @@ function _jsdoc_detail_view($node) {
           '#weight' => $weight
         );
         if (!$weight) {
-          if (count($detail->jsdoc_parents['all']) == 1) {
+          if (count($detail->jsdoc_parents['normal']) == 1) {
             $node->content['detail']['jsdoc_parents'][$parent->title]['#title'] = t('Parent Object');
           }
           else {
@@ -1910,20 +1924,20 @@ function _jsdoc_detail_view($node) {
     if ($node->jsdoc_initialized) {
       $detail->jsdoc_initialized = true;
     }
-    
+
     jsdoc_load_children($detail, $view_as_private);
     $variables = array();
-    if ($detail->jsdoc_instances && $detail->jsdoc_initialized){
+    if ($detail->jsdoc_instances && $node->jsdoc_initialized){
       foreach ($detail->jsdoc_instances as $child) {
         $variables[$child->title] = $child;
       }
     }
-    if ($detail->jsdoc_prototypes && $detail->jsdoc_initialized){
+    if ($detail->jsdoc_prototypes && $node->jsdoc_initialized){
       foreach ($detail->jsdoc_prototypes as $child) {
         $variables[$child->title] = $child;
       }
     }
-    if ($detail->jsdoc_variables && !$detail->jsdoc_initialized){
+    if ($detail->jsdoc_variables && !$node->jsdoc_initialized){
       foreach ($detail->jsdoc_variables as $child) {
         $variables[$child->title] = $child;
       }
@@ -2331,7 +2345,10 @@ function jsdoc_object_node_view($node, $initialized = null, $allow_private = fal
   if ($node->type == 'jsdoc_variable' && !$node->jsdoc_detail && !count($node->jsdoc_disambiguations) && !count($node->jsdoc_renames)) {
     return drupal_not_found();    
   }
-  if (is_null($initialized)) {
+  if ($node->jsdoc_initialized || ($node->jsdoc_detail && $node->jsdoc_detail->jsdoc_initialized)) {
+    $node->jsdoc_initialized = true;
+  }
+  elseif (is_null($initialized)) {
     $node->jsdoc_initialized = $node->jsdoc_classlike;
   }
   else {
