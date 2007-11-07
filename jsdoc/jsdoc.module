@@ -186,19 +186,19 @@ function jsdoc_menu($may_cache) {
               'access' => node_access('view', $node),
               'type' => MENU_LOCAL_TASK
             );
+            $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/private/init',
+              'title' => t('Initialized'),
+              'type' => MENU_DEFAULT_LOCAL_TASK,
+              'weight' => -10
+            );
+            $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/private/normal',
+              'title' => t('Uninitialized'),
+              'callback' => 'jsdoc_object_node_view',
+              'callback arguments' => array($node, false, true),
+              'access' => node_access('view', $node),
+              'type' => MENU_LOCAL_TASK
+            );
           }
-          $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/private/init',
-            'title' => t('Initialized'),
-            'type' => MENU_DEFAULT_LOCAL_TASK,
-            'weight' => -10
-          );
-          $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/private/normal',
-            'title' => t('Uninitialized'),
-            'callback' => 'jsdoc_object_node_view',
-            'callback arguments' => array($node, false, true),
-            'access' => node_access('view', $node),
-            'type' => MENU_LOCAL_TASK
-          );
         }
         else {
           $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/view/normal',
