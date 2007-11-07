@@ -159,6 +159,14 @@ function jsdoc_menu($may_cache) {
         'weight' => 1,
         'type' => MENU_LOCAL_TASK
       );
+      $items[] = array('path' => 'jsdoc/'. arg(1) . '/' . arg(2) . '/object/' . $item . '/edit/' . arg(6),
+        'title' => t('Edit'),
+        'callback' => 'jsdoc_object_edit_redirect',
+        'callback arguments' => array($node, arg(6)),
+        'access' => node_access('update', $node),
+        'weight' => 1,
+        'type' => MENU_LOCAL_TASK
+      );
 
       if ($node->jsdoc_type == 'Function') {
         if ($node->jsdoc_classlike) {
@@ -871,12 +879,6 @@ function jsdoc_object_form(&$node) {
   );
 
   if ($node->jsdoc_parameters) {
-    $summaries = array();
-    $query = db_query("SELECT DISTINCT jp.summary FROM {node_revisions} nr JOIN {node_revisions} nr2 ON (nr.nid = nr2.nid) JOIN {jsdoc_parameters} jp ON (jp.vid = nr2.vid) JOIN {jsdoc_objects} jo ON (jp.vid = jo.vid) WHERE nr.vid = %d AND jo.version = %d AND jp.name NOT IN ('%s')", $node->vid, $node->jsdoc_version, implode("', '", array_keys($node->jsdoc_parameters)));
-    while ($summary = db_fetch_object($query)) {
-      $summaries[$summary->summary] = $summary->summary;
-    }
-
     foreach ($node->jsdoc_parameters as $parameter) {
       $form['jsdoc_parameters'][$parameter['name']] = array(
         '#type' => 'fieldset',
@@ -888,13 +890,6 @@ function jsdoc_object_form(&$node) {
         '#type' => 'textfield',
         '#default_value' => $parameter['summary']
       );
-      if (!$parameter['summary'] && $summaries) {
-        $form['jsdoc_parameters'][$parameter['name']]['previous_summary'] = array(
-          '#title' => t('Use Previous Summary'),
-          '#type' => 'radios',
-          '#options' => $summaries
-        );
-      }
       $form['jsdoc_parameters']['#type'] = 'fieldset';
       $form['jsdoc_parameters']['#title'] = t('Parameters');
       $form['jsdoc_parameters']['#tree'] = true;
@@ -924,21 +919,6 @@ function jsdoc_variable_form(&$node) {
     '#redirect' => $node->jsdoc_url
   );
 
-  $query = db_query("SELECT nid FROM {node} WHERE type = 'jsdoc' AND BINARY title = '%s'", $node->title);
-  if (db_num_rows($query)) {
-    $form['jsdoc_details'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Edit Specific Objects')
-    );
-  }
-  while ($detail = db_fetch_object($query)) {
-    $detail = node_load($detail->nid);
-    $form['jsdoc_details'][$detail->nid] = array(
-      '#type' => 'item',
-      '#value' => l(t('Edit object in: ') . db_result(db_query("SELECT title FROM {node_revisions} WHERE vid = %d", $detail->jsdoc_resource)), 'node/' . $detail->nid . '/edit')
-    );
-  }
-
   $form['jsdoc_disambiguation'] = array(
     '#type' => 'fieldset',
     '#title' => t('Disambiguation'),
@@ -952,12 +932,13 @@ function jsdoc_variable_form(&$node) {
     '#options' => array()
   );
 
-  $query = db_query("SELECT nr.nid, MAX(jo.vid) FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (jo.vid = nr.vid) WHERE BINARY nr.title = '%s' GROUP BY nr.nid", $node->title);
-  while ($detail = db_fetch_object($query)) {
-    $detail = node_load($detail->nid, $detail->vid);
-    $resource = db_result(db_query("SELECT title FROM {node_revisions} WHERE vid = %d", $detail->jsdoc_resource_vid));
-
-    $form['jsdoc_disambiguation']['jsdoc_disambiguation']['#options'][$detail->jsdoc_resource_vid] = t('Use the summary and description in ' . $resource);
+  $disambiguations = $node->jsdoc_disambiguations;
+  if ($node->jsdoc_detail) {
+    array_unshift($disambiguations, $node->jsdoc_detail);
+  }
+  foreach ($disambiguations as $disambiguation) {
+    jsdoc_load_resource($disambiguation);
+    $form['jsdoc_disambiguation']['jsdoc_disambiguation']['#options'][$disambiguation->jsdoc_resource->vid] = t('Use the summary and description in ' . $disambiguation->jsdoc_resource->title . ' (' . l('Edit object', 'jsdoc/' . $node->jsdoc_project_name . '/' . $node->jsdoc_version_name . '/object/' . $node->title . '/edit/' . $disambiguation->jsdoc_resource->vid) . ')');
   }
 
   $form['jsdoc_disambiguation']['jsdoc_disambiguation']['#options']['0'] = t('No cutomization'); 
@@ -1180,7 +1161,7 @@ function jsdoc_variable_update($node) {
     jsdoc_object_insert($node);
   }
   else {
-    if (!is_array($node->jsdoc_disamgibuation)) {
+    if (!is_array($node->jsdoc_disambiguation)) {
       $resource_nid = db_result(db_query("SELECT nid FROM {node_revisions} WHERE vid = %d", $node->jsdoc_disambiguation));
       $node->jsdoc_disambiguation = (object)array(
         'nid' => $resource_nid,
@@ -1282,6 +1263,13 @@ function jsdoc_load_parents(&$node) {
     while ($parent = db_fetch_object($query)) {
       $node->jsdoc_parents['all'] = $parent;
     }
+  }
+}
+
+function jsdoc_load_resource(&$node) {
+  if (is_numeric($node->jsdoc_resource)) {
+    $node->jsdoc_resource = node_load($node->jsdoc_resource, $node->jsdoc_resource_vid);
+    $node->jsdoc_provide = node_load($node->jsdoc_provide, $node->jsdoc_provide_vid);
   }
 }
 
@@ -1442,44 +1430,49 @@ function jsdoc_variable_load($node) {
   $additions->jsdoc_version_name = $version->title;
   $additions->jsdoc_url = 'jsdoc/' . $additions->jsdoc_project_name . '/' . $additions->jsdoc_version_name . '/object/' . $node->title;
 
-  if ($additions->jsdoc_disambiguation) {
-    // Narrow the resource object down by resource
-    $query = db_query("SELECT n.nid, MAX(n.vid) AS vid FROM {jsdoc_objects} j JOIN {node_revisions} n ON (j.vid = n.vid) WHERE BINARY n.title = '%s' AND j.resource_vid = %d AND j.used != -1 AND j.new = 0 AND j.version = %d GROUP BY n.nid", $node->title, $additions->jsdoc_disambiguation->vid, $additions->jsdoc_version);
-  }
-  else {
-    // Choose all resource objects, regardless of resource (might be more than one resource)
-    $query = db_query("SELECT n.nid, MAX(n.vid) AS vid FROM {jsdoc_objects} j JOIN {node_revisions} n ON (j.vid = n.vid) WHERE BINARY n.title = '%s' AND j.used != -1 AND j.new = 0 AND j.version = %d GROUP BY n.nid", $node->title, $additions->jsdoc_version);
+  $types = array();
+  $classlikes = array();
+
+  $query = db_query("SELECT j.nid, MAX(j.vid) AS vid, j.resource_nid, MAX(j.resource_vid) AS resource_vid, j.classlike, j.type, j.private FROM {jsdoc_objects} j JOIN {node_revisions} n ON (j.vid = n.vid) WHERE BINARY n.title = '%s' AND j.used != -1 AND j.new = 0 AND j.version = %d GROUP BY n.nid", $node->title, $additions->jsdoc_version);
+
+  while ($result = db_fetch_object($query)) {
+    if (db_num_rows($query) == 1 || ($additions->jsdoc_disambiguation && $additions->jsdoc_disambiguation->vid == $result->resource_vid)) {
+      $additions->jsdoc_detail = node_load($result->nid, $result->vid);
+      $sumdesc = db_fetch_object(db_query("SELECT j.type, j.classlike, n.teaser, n.body, n.format, n2.title AS resource FROM {jsdoc_objects} j JOIN {node_revisions} n ON (n.vid = j.vid) JOIN {node_revisions} n2 ON (n2.vid = j.resource_vid) WHERE j.vid = %d", $additions->jsdoc_detail->vid));
+      $additions->teaser = $sumdesc->teaser;
+      $additions->format = $sumdesc->format;
+      $additions->body = $sumdesc->body;
+      $additions->jsdoc_type = $sumdesc->type;
+      $additions->jsdoc_classlike = $sumdesc->classlike;
+      $additions->jsdoc_full_url = 'jsdoc/' . $version->jsdoc_project_name . '/' . $version->title . '/object/' . $sumdesc->resource . '/' . $node->title;
+      $additions->jsdoc_url = 'jsdoc/' . $version->jsdoc_project_name . '/' . $version->title . '/object/' . $node->title;
+    }
+    else {
+      if (!$node->jsdoc_disambiguation) {
+        $types[] = $result->type;
+        $classlikes[] = $result->classlike;
+      }
+      $additions->jsdoc_disambiguations[] = node_load($result->nid, $result->vid);      
+    }
   }
 
-  // If the object only exists in one resource, we can display this on the page
-  if (db_num_rows($query) == 1 && ($additions->jsdoc_detail = db_fetch_object($query)) && $additions->jsdoc_disambiguation != '-1' && arg(0) == 'jsdoc') {
-    // If we have a non-custom disambiguation...
-    $sumdesc = db_fetch_object(db_query("SELECT j.type, j.classlike, n.teaser, n.body, n.format, n2.title AS resource FROM {jsdoc_objects} j JOIN {node_revisions} n ON (n.vid = j.vid) JOIN {node_revisions} n2 ON (n2.vid = j.resource_vid) WHERE j.vid = %d", $additions->jsdoc_detail->vid));
-    $additions->teaser = $sumdesc->teaser;
-    $additions->format = $sumdesc->format;
-    $additions->body = $sumdesc->body;
-    $additions->jsdoc_type = $sumdesc->type;
-    $additions->jsdoc_classlike = $sumdesc->classlike;
-    $additions->jsdoc_full_url = 'jsdoc/' . $version->jsdoc_project_name . '/' . $version->title . '/object/' . $sumdesc->resource . '/' . $node->title;
-    $additions->jsdoc_url = 'jsdoc/' . $version->jsdoc_project_name . '/' . $version->title . '/object/' . $node->title;
-  }
-  else {
-    $additions->teaser = $node->teaser;
-    $additions->body = $node->body;
-    $types = array();
-    $query = db_query("SELECT n2.title, j.type, j.private FROM {jsdoc_objects} j JOIN {node_revisions} n ON (n.vid = j.vid) JOIN {node_revisions} n2 ON (j.resource_vid = n2.vid) WHERE j.used != -1 AND j.new = 0 AND j.version = %d AND BINARY n.title = '%s' GROUP BY BINARY n2.title, j.type ORDER BY BINARY n.title", $additions->jsdoc_version, $node->title);
-    while ($resource = db_fetch_object($query)) {
-      $types[] = $resource->type;
-      $node->jsdoc_disambiguations[] = $resource->title;
-      if ($resource->private) {
-        $node->jsdoc_private = true;
-      }
-    }
+  if (!empty($types)) {
     $types = array_unique($types);
-    if (count($types) === 1) {
+    if (count($types) == 1) {
       $additions->jsdoc_type = $types[0];
     }
-    unset($types);
+    else {
+      $additions->jsdoc_type = 'mixed';
+    }
+  }
+
+  if (!empty($classlikes)) {
+    $additions->jsdoc_classlike = false;
+
+    $classlikes = array_unique($classlikes);
+    if (count($types) == 1) {
+      $additions->jsdoc_classlike = $classlikes[0];
+    }
   }
 
   if ($additions->jsdoc_detail || count($additions->jsdoc_disambiguations)) {
@@ -1717,12 +1710,11 @@ function _jsdoc_detail_view($node) {
       '#collapsed' => true,
       '#weight' => -20
     );
-    foreach ($node->jsdoc_disambiguations as $resource) {
-      if ($resource == $node->jsdoc_disambiguation->title) continue;
-
+    foreach ($node->jsdoc_disambiguations as $disambiguation) {
+      jsdoc_load_resource($disambiguation);
       $node->content['detail']['jsdoc_disambiguations'][] = array(
         '#type' => 'item',
-        '#value' => l($resource, 'jsdoc/' . $node->jsdoc_project_name . '/HEAD/object/' . $resource . '/' . $node->title)
+        '#value' => l($disambiguation->jsdoc_resource->title, 'jsdoc/' . $node->jsdoc_project_name . '/HEAD/object/' . $disambiguation->jsdoc_resource->title . '/' . $node->title)
       );
     }
   }
@@ -1768,37 +1760,27 @@ function _jsdoc_detail_view($node) {
       $node->content['detail']['examples']['#weight'] = -28;
     }
 
-    if ($prototype_chain = jsdoc_get_prototype_chain($detail, array(3, 4))) {
-      $value = '';
-      foreach ($prototype_chain as $chain) {
-        if (!$value) {
-          $value = l($chain->title, $chain->jsdoc_url);
+    if ($node->jsdoc_initialized) {
+      if ($prototype_chain = jsdoc_get_prototype_chain($detail, array(3, 4))) {
+        $value = '';
+        foreach ($prototype_chain as $chain) {
+          if (!$value) {
+            $value = l($chain->title, $chain->jsdoc_url);
+          }
+          else {
+            $value .= ' -> ' . l($chain->title, $chain->jsdoc_url);
+          }
         }
-        else {
-          $value .= ' -> ' . l($chain->title, $chain->jsdoc_url);
-        }
+        $node->content['detail']['prototype_chain'] = array(
+          '#type' => 'item',
+          '#title' => t('Prototype'),
+          '#value' => $value,
+          '#weight' => -26
+        );
       }
-      $node->content['detail']['prototype_chain'] = array(
-        '#type' => 'item',
-        '#title' => t('Prototype'),
-        '#value' => $value,
-        '#weight' => -26
-      );
     }
 
-    if ($detail->jsdoc_resource) {
-      $detail->jsdoc_resource = node_load(db_result(db_query("SELECT nid FROM node_revisions WHERE vid = %d", $detail->jsdoc_resource_vid)));
-    }
-    if ($detail->jsdoc_provide) {
-      $detail->jsdoc_provide = node_load(db_result(db_query("SELECT nid FROM node_revisions WHERE vid = %d", $detail->jsdoc_provide_vid)));
-    }
-
-    $node->content['detail']['jsdoc_resource'] = array(
-      '#type' => 'item',
-      '#title' => t('In Resource'),
-      '#value' => l($detail->jsdoc_resource->title, $detail->jsdoc_resource->jsdoc_url),
-      '#weight' => -20
-    );
+    jsdoc_load_resource($detail);
 
     if ($detail->jsdoc_provide_vid != $detail->jsdoc_resource_vid) {
       $node->content['detail']['jsdoc_provides'] = array(
@@ -1809,7 +1791,7 @@ function _jsdoc_detail_view($node) {
       );
     }
 
-    jsdoc_load_parents($parent);
+    jsdoc_load_parents($detail);
 
     if ($detail->jsdoc_parents['all']) {
       $node->content['detail']['jsdoc_parents'] = array(
@@ -1854,10 +1836,19 @@ function _jsdoc_detail_view($node) {
       foreach ($detail->jsdoc_parameters as $parameter) {
         $worth_displaying = true;
         $type = $parameter['jsdoc_formatted']['type'];
-        $obj = jsdoc_object_node_load($node->jsdoc_project_name, $node->jsdoc_version_name, $parameter['type'], $node->jsdoc_resource->title);
-        if ($obj) {
-          $type = l($parameter['jsdoc_formatted']['type'], $obj->jsdoc_url);
+        if (strpos($type, '|') !== false) {
+          $types = preg_split('%\|+%', $type);
         }
+        else {
+          $types = array($type);
+        }
+        foreach ($types as $i => $type) {
+          $obj = jsdoc_object_node_load($node->jsdoc_project_name, $node->jsdoc_version_name, $type, $node->jsdoc_resource->title);
+          if ($obj) {
+            $types[$i] = l($type, $obj->jsdoc_url);
+          }
+        }
+        $type = implode('|', $types);
         $parameters[] = $parameter['jsdoc_formatted']['html_type_prefix'] . $parameter['jsdoc_formatted']['type'] . $parameter['jsdoc_formatted']['html_type_suffix'] . $parameter['jsdoc_formatted']['separator'] . $parameter['name'];
         $node->content['detail']['jsdoc_parameters'][$parameter['name']] = array(
           '#type' => 'item',
@@ -1895,7 +1886,16 @@ function _jsdoc_detail_view($node) {
       }
       $source .= '}';
 
-      $source = _jsdoc_markup_code($source, $detail->jsdoc_version, $detail->title);
+      $base = $detail->title;
+      if (!$node->jsdoc_initialized) {
+        if (count($detail->jsdoc_parents['instance'])) {
+          $base = $detail->jsdoc_parents['instance'][0];
+        }
+        if (count($detail->jsdoc_parents['prototype'])) {
+          $base = $detail->jsdoc_parents['prototype'][0];
+        }
+      }
+      $source = _jsdoc_markup_code($source, $detail->jsdoc_version, $base);
 
       if (!isset($_GET['source'])) {
         $source = str_replace('<span class="st0">&quot;View source&quot;</span>', '<span class="st0">&quot;</span>' . l('<span class="st0" style="text-decoration: underline;">View source</span>', $_GET['q'], array(), 'source', null, false, true) . '<span class="st0">&quot;</span>', $source);
@@ -2246,10 +2246,12 @@ function jsdoc_resource_node_load($project, $revision, $name) {
  * Custom version of node_load for objects
  */
 function jsdoc_object_node_load($project, $version, $name, $resource = false) {
-  if ($name == 'bool') {
+  $lower_name = strtolower($name);
+
+  if ($lower_name == 'bool') {
     $name = 'Boolean';
   }
-  elseif ($name == 'int') {
+  elseif ($lower_name == 'int') {
     $name = 'Number';
   }
 
@@ -2261,7 +2263,13 @@ function jsdoc_object_node_load($project, $version, $name, $resource = false) {
       'jsdoc_url' => 'http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Reference:Global_Objects:' . $name
     );
   }
-  elseif ($name == 'Node' || $name == 'HTMLElement') {
+  elseif ($lower_name == 'documentelement' || $lower_name == 'document') {
+    return (object)array(
+      'title' => $name,
+      'jsdoc_url' => 'http://developer.mozilla.org/en/docs/DOM:document'
+    );
+  }
+  elseif (in_array($lower_name, array('node', 'htmlelment', 'domnode'))) {
     return (object)array(
       'title' => $name,
       'jsdoc_url' => 'http://developer.mozilla.org/en/docs/DOM:element'
@@ -2344,19 +2352,19 @@ function jsdoc_resource_node_view($node) {
 /**
  * Path: jsdoc/VERSION/object/NAME/edit
  */
-function jsdoc_object_edit_redirect($node) {
-  if ($node->jsdoc_detail) {
-    drupal_goto('node/' . $node->jsdoc_detail->nid . '/edit');
+function jsdoc_object_edit_redirect($node, $resource=false) {
+  if ($resource) {
+    if ($node->jsdoc_detail and $node->jsdoc_detail->jsdoc_resource_vid == $resource) {
+      drupal_goto('node/' . $node->jsdoc_detail->nid . '/edit');
+      return;      
+    }
+    foreach ($node->jsdoc_disambiguations as $disambiguation) {
+      if ($disambiguation->jsdoc_resource_vid == $resource) {
+        drupal_goto('node/' . $disambiguation->nid . '/edit');
+        return;
+      }
+    }
   }
-  else {
-    drupal_goto('node/' . $node->nid . '/edit');
-  }
-}
-
-/**
- * Path: jsdoc/VERSION/object/NAME/edit
- */
-function jsdoc_variable_edit_redirect($node) {
   drupal_goto('node/' . $node->nid . '/edit');
 }
 
