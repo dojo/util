@@ -1459,6 +1459,7 @@ function jsdoc_variable_load($node) {
 
   $version = node_load($additions->jsdoc_version);
 
+  $additions->jsdoc_disambiguations = array();
   $additions->jsdoc_project = $version->jsdoc_project;
   $additions->jsdoc_project_name = $version->jsdoc_project_name;
   $additions->jsdoc_version_name = $version->title;
@@ -1746,7 +1747,7 @@ function _jsdoc_detail_view($node) {
     );
   }
 
-  if (is_array($node->jsdoc_disambiguations)) {
+  if (!empty($node->jsdoc_disambiguations)) {
     $node->content['detail']['jsdoc_disambiguations'] = array(
       '#type' => 'fieldset',
       '#title' => ($node->jsdoc_disambiguation && $node->jsdoc_disambiguation != 0) ? t('Also in Resources') : t('Appears in Resources'),
@@ -2413,7 +2414,7 @@ function jsdoc_object_node_view($node, $initialized = null, $allow_private = fal
   if ($node->type == 'jsdoc_object' && $node->jsdoc_used == -1) {
     return drupal_not_found();
   }
-  if ($node->type == 'jsdoc_variable' && !$node->jsdoc_detail && !count($node->jsdoc_disambiguations) && !count($node->jsdoc_renames)) {
+  if ($node->type == 'jsdoc_variable' && !$node->jsdoc_detail && empty($node->jsdoc_disambiguations) && !count($node->jsdoc_renames)) {
     return drupal_not_found();    
   }
   if ($node->jsdoc_initialized || ($node->jsdoc_detail && $node->jsdoc_detail->jsdoc_initialized)) {
