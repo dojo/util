@@ -945,7 +945,7 @@ function jsdoc_variable_form(&$node) {
 
   $form['jsdoc_disambiguation']['jsdoc_disambiguation'] = array(
     '#type' => 'radios',
-    '#default_value' => round($node->jsdoc_disambiguation->vid),
+    '#default_value' => ($node->jsdoc_disambiguation == -1) ? -1 : round($node->jsdoc_disambiguation->vid),
     '#options' => array()
   );
 
@@ -958,7 +958,7 @@ function jsdoc_variable_form(&$node) {
     $form['jsdoc_disambiguation']['jsdoc_disambiguation']['#options'][$disambiguation->jsdoc_resource->vid] = t('Use the summary and description in ' . $disambiguation->jsdoc_resource->title . ' (' . l('Edit object', 'jsdoc/' . $node->jsdoc_project_name . '/' . $node->jsdoc_version_name . '/object/' . $node->title . '/edit/' . $disambiguation->jsdoc_resource->vid) . ')');
   }
 
-  $form['jsdoc_disambiguation']['jsdoc_disambiguation']['#options']['0'] = t('No cutomization'); 
+  $form['jsdoc_disambiguation']['jsdoc_disambiguation']['#options']['0'] = t('No customization (use default if only one resource)'); 
   $form['jsdoc_disambiguation']['jsdoc_disambiguation']['#options']['-1'] = t('Provide a custom summary and description (below)');
 
   $form['teaser'] = array(
@@ -1392,11 +1392,6 @@ function jsdoc_object_load($node) {
     $additions->jsdoc_examples[] = $example->example;
   }
 
-  if ($node->teaser) {
-    $additions->jsdoc_teaser = $node->teaser;
-    $additions->jsdoc_body = $node->body;
-  }
-
   $node->jsdoc_full_url = 'jsdoc/' . $version->jsdoc_project_name . '/HEAD/object/' . str_replace('/', '__', db_result(db_query("SELECT title FROM {node_revisions} WHERE vid = %d", $additions->jsdoc_resource_vid))) . '/' . $node->title;
   $node->jsdoc_url = 'jsdoc/' . $version->jsdoc_project_name . '/HEAD/object/' . $node->title;
 
@@ -1451,7 +1446,10 @@ function jsdoc_resource_load($node) {
 function jsdoc_variable_load($node) {
   // An object might have a "default" disambiguation package.
   $additions = db_fetch_object(db_query("SELECT version AS jsdoc_version, resource_nid AS jsdoc_resource, resource_vid AS jsdoc_resource_vid, private AS jsdoc_private FROM {jsdoc_variables} WHERE vid = %d", $node->vid));
-  if ($additions->jsdoc_resource) {
+  if ($additions->jsdoc_resource_vid == -1) {
+    $additions->jsdoc_disambiguation = -1;
+  }
+  elseif ($additions->jsdoc_resource) {
     $additions->jsdoc_disambiguation = node_load($additions->jsdoc_resource, $additions->jsdoc_resource_vid);
   }
   unset($additions->jsdoc_resource);
@@ -1465,8 +1463,12 @@ function jsdoc_variable_load($node) {
   $additions->jsdoc_version_name = $version->title;
   $additions->jsdoc_url = 'jsdoc/' . $additions->jsdoc_project_name . '/' . $additions->jsdoc_version_name . '/object/' . $node->title;
 
-  $additions->teaser = $node->teaser;
-  $additions->body = $node->body;
+  $additions->teaser = '';
+  $additions->body = '';
+  if ($additions->jsdoc_disambiguation == -1) {
+    $additions->teaser = $node->teaser;
+    $additions->body = $node->body;
+  }
 
   $types = array();
   $classlikes = array();
@@ -1477,7 +1479,7 @@ function jsdoc_variable_load($node) {
     if (db_num_rows($query) == 1 || ($additions->jsdoc_disambiguation && $additions->jsdoc_disambiguation->vid == $result->resource_vid)) {
       $additions->jsdoc_detail = node_load($result->nid, $result->vid);
       $sumdesc = db_fetch_object(db_query("SELECT j.type, j.classlike, n.teaser, n.body, n.format, n2.title AS resource FROM {jsdoc_objects} j JOIN {node_revisions} n ON (n.vid = j.vid) JOIN {node_revisions} n2 ON (n2.vid = j.resource_vid) WHERE j.vid = %d", $additions->jsdoc_detail->vid));
-      if ($node->disambigation) {
+      if ($additions->jsdoc_disambiguation != -1) {
         $additions->teaser = $sumdesc->teaser;
         $additions->format = $sumdesc->format;
         $additions->body = $sumdesc->body;
@@ -1534,8 +1536,10 @@ function jsdoc_variable_load($node) {
     }
   }
 
-  $additions->jsdoc_teaser = $additions->teaser;
-  $additions->jsdoc_body = $additions->body;
+  if(arg(0) == 'node' && arg(2) == 'edit') {
+    unset($additions->teaser);
+    unset($additions->body);
+  }
 
   $additions->jsdoc_title = $node->title;
 
@@ -1772,11 +1776,11 @@ function _jsdoc_detail_view($node) {
     }
   }
 
-  if (trim($node->jsdoc_teaser)) {
+  if (trim($node->teaser)) {
     $node->content['detail']['teaser'] = array(
       '#type' => 'item',
       '#weight' => -35,
-      '#value' => $node->jsdoc_teaser
+      '#value' => $node->teaser
     );
   }
 
