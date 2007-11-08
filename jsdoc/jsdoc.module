@@ -1474,9 +1474,11 @@ function jsdoc_variable_load($node) {
     if (db_num_rows($query) == 1 || ($additions->jsdoc_disambiguation && $additions->jsdoc_disambiguation->vid == $result->resource_vid)) {
       $additions->jsdoc_detail = node_load($result->nid, $result->vid);
       $sumdesc = db_fetch_object(db_query("SELECT j.type, j.classlike, n.teaser, n.body, n.format, n2.title AS resource FROM {jsdoc_objects} j JOIN {node_revisions} n ON (n.vid = j.vid) JOIN {node_revisions} n2 ON (n2.vid = j.resource_vid) WHERE j.vid = %d", $additions->jsdoc_detail->vid));
-      $additions->teaser = $sumdesc->teaser;
-      $additions->format = $sumdesc->format;
-      $additions->body = $sumdesc->body;
+      if ($node->disambigation) {
+        $additions->teaser = $sumdesc->teaser;
+        $additions->format = $sumdesc->format;
+        $additions->body = $sumdesc->body;
+      }
       $additions->jsdoc_type = $sumdesc->type;
       $additions->jsdoc_classlike = $sumdesc->classlike;
       $additions->jsdoc_full_url = 'jsdoc/' . $version->jsdoc_project_name . '/' . $version->title . '/object/' . str_replace('/', '__', $sumdesc->resource) . '/' . $node->title;
@@ -1699,6 +1701,9 @@ function jsdoc_variable_view($node, $teaser = false, $page = false) {
 }
 
 function _jsdoc_detail_view($node) {
+  if (!$node->jsdoc_version) {
+    return $node;
+  }
   if ($node->type == 'jsdoc_variable') {
     if ($node->jsdoc_detail) {
       $detail = node_load($node->jsdoc_detail->nid, $node->jsdoc_detail->vid);
