@@ -108,12 +108,16 @@ if(!empty($_REQUEST['ns'])){
         case "#resource" : break;
         case "#requires" : 
           $print .= "<li><h3>Requires:</h3><ul>";
-                foreach($val[0] as $resource){
-            $print .= "<li>".$resource."</li>"; 
-                }
+          foreach($val as $resource){
+            $print .= "<li>{$resource[1]} in {$resource[0]}</li>"; 
+          }
           $print .= "</ul></li>"; 
-                break;
-        case "#provides" : break;
+          break;
+        case "#provides" :
+          $print .= "<li><h3>Provides:</h3><ul>";
+          $print .= "<li>$val</li>"; 
+          $print .= "</ul></li>"; 
+          break;
         default:
           $print .= "<li><h4>".$key."</h4><ul> ";
           foreach($val as $key2 => $val2){
@@ -157,8 +161,9 @@ if(!empty($_REQUEST['ns'])){
                   break;
 
                 case "chains" :
+                case "mixins" :
                   if (!empty($val2)) {
-                    $print .= "<li><em>chain:</em> <ul>";
+                    $print .= "<li><em>" . $key2 . ":</em> <ul>";
                     foreach ($val2 as $subtype => $chains) {
                       foreach ($chains as $chain) {
                         $print .= "<li>$chain: <em>($subtype)</em></li>";

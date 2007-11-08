@@ -330,7 +330,6 @@ class DojoFunctionDeclare extends DojoBlock
       }
 
       $variables = $this->body->getExternalizedVariableNames($function_name);
-      print_r($variables);
       foreach($variables as $variable) {
         list($first,) = explode('.', $variable, 2);
         if (!is_array($output[$function_name]['parameters']) || !array_key_exists($first, $output[$function_name]['parameters'])) {

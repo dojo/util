@@ -18,6 +18,15 @@ function _dojo_get_namespaces(){
   return $namespaces;
 }
 
+function dojo_get_include($node, $provide) {
+  if ($node->jsdoc_project_name == $provide->title) {
+    return 'Included automatically';
+  }
+  else {
+    return 'dojo.require("%s");';
+  }
+}
+
 function dojo_get_file_time($namespace, $file) {
   return filectime(call_user_func($namespace . '_code_location') . $file);
 }
@@ -193,14 +202,16 @@ function dojo_get_contents($namespace, $file_name) {
     if ($args[2]->isA(DojoVariable)) {
       $output[$name]['chains']['prototype'][] = $args[2]->getVariable();
       $output[$name]['chains']['call'][] = $args[2]->getVariable();
+      $output[$name]['mixins']['prototype'][] = $args[2]->getVariable() . '.prototype';
     }
     elseif ($args[2]->isA(DojoArray)) {
       $items = $args[2]->getArray()->getItems();
       foreach ($items as $item) {
-        if ($item->isA(DojoString)) {
-          $item = $item->getString();
+        if ($item->isA(DojoVariable)) {
+          $item = $item->getVariable();
           $output[$name]['chains']['prototype'][] = $item;
           $output[$name]['chains']['call'][] = $item;
+          $output[$name]['mixins']['prototype'][] = $item . '.prototype';
         }
       }
     }
@@ -337,50 +348,63 @@ function dojo_get_contents($namespace, $file_name) {
         $is_prototype = true;
       }
 
-      if ($call->getParameter(1)->isA(DojoObject)) {
-        $properties = $call->getParameter(1)->getObject();
-        $keys = $properties->getValues();
-        foreach ($keys as $key => $function) {
-          $full_variable_name = "$object.$key";
+      $parameters = $call->getParameters();
+      array_shift($parameters);
+      foreach ($parameters as $parameter) {
+        if ($parameter->isA(DojoObject)) {
+          $properties = $parameter->getObject();
+          $keys = $properties->getValues();
+          foreach ($keys as $key => $function) {
+            $full_variable_name = "$object.$key";
 
-          if ($is_prototype) {
-              $output[$full_variable_name]['prototype'] = $object;
-          }
-          if ($function->isA(DojoFunctionDeclare)) {
-            $function = $function->getFunction();
             if ($is_prototype) {
-              $function->setPrototype($object);
+                $output[$full_variable_name]['prototype'] = $object;
             }
-            $function->setFunctionName($full_variable_name);
-            $function->rollOut($output);
-          }
-          elseif ($function->isA(DojoObject)) {
-            $output[$full_variable_name]['type'] = 'Object';
-            $obj = $function->getObject();
-            $obj->setName($full_variable_name);
-            $obj->rollOut($output);
-          }
-          else {
-            if ($call_name == 'dojo.lang.mixin' || $call_name == 'dojo.mixin') {
-              if (!isset($output[$full_variable_name])) {
-                $output[$full_variable_name] = array();
+            if ($function->isA(DojoFunctionDeclare)) {
+              $function = $function->getFunction();
+              if ($is_prototype) {
+                $function->setPrototype($object);
+              }
+              $function->setFunctionName($full_variable_name);
+              $function->rollOut($output);
+            }
+            elseif ($function->isA(DojoObject)) {
+              $output[$full_variable_name]['type'] = 'Object';
+              $obj = $function->getObject();
+              $obj->setName($full_variable_name);
+              $obj->rollOut($output);
+            }
+            else {
+              if ($call_name == 'dojo.lang.mixin' || $call_name == 'dojo.mixin') {
+                if (!isset($output[$full_variable_name])) {
+                  $output[$full_variable_name] = array();
+                }
               }
             }
           }
         }
-      }
-      elseif ($call->getParameter(1)->isA(DojoString)) {
-        $properties = $call->getParameter(1)->getString();
-        // Note: inherits expects to be reading from prototype values
-        if (($call_name == 'dojo.lang.extend' || $call_name == 'dojo.extend') && strpos($properties, '.prototype') !== false) {
-          $output[$object]['chains']['prototye'][] = str_replace('.prototype', '', $properties);
+        elseif ($parameter->isA(DojoVariable)) {
+          if ($call_name == 'dojo.lang.extend' || $call_name == 'dojo.extend') {
+            $output[$object]['mixins']['prototype'][] = $parameter->getVariable();
+          }
+          elseif ($call_name == 'dojo.lang.mixin' || $call_name == 'dojo.mixin') {
+            $output[$object]['mixins']['normal'][] = $parameter->getVariable();
+          }
         }
-        elseif (($call_name == 'dojo.lang.extend' || $call_name == 'dojo.extend') && strpos($properties, 'new ') !== false) {
-          $output[$object]['chains']['prototype'][] = str_replace('new ', '', $properties);
-          $output[$object]['chains']['prototype'][] = str_replace('new ', '', $properties);
-        }
-        else {
-          $output[$properties]['inherits'] = $object;
+        elseif ($parameter->isA(DojoString)) {
+          print_r($call);
+          throw new Exception('Odd string');
+          $properties = $parameter->getString();
+          // Note: inherits expects to be reading from prototype values
+          if (($call_name == 'dojo.lang.extend' || $call_name == 'dojo.extend') && strpos($properties, '.prototype') !== false) {
+            $output[$object]['chains']['prototype'][] = str_replace('.prototype', '', $properties);
+          }
+          elseif (($call_name == 'dojo.lang.extend' || $call_name == 'dojo.extend') && strpos($properties, 'new ') !== false) {
+            $output[$object]['chains']['prototype'][] = str_replace('new ', '', $properties);
+          }
+          else {
+            $output[$properties]['inherits'] = $object;
+          }
         }
       }
     }

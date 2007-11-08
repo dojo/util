@@ -1,35 +1,28 @@
 <?php
 
 function dojo_code_location() {
-	return '../../dojo/';
+  return '../../dojo/';
 }
 
 function dojo_project_name() {
-	return 'dojo';
+  return 'dojo';
 }
 
 function dojo_resource_name($namespace, $file) {
-  //return;
-  $parts = explode('/', $file);
-	$file_parts = explode('.', array_pop($parts));
-	if (in_array('tests', $parts)) return;
-	array_pop($file_parts);
-	array_push($parts, implode('.', $file_parts));
-	array_unshift($parts, $namespace);
-  return implode('.', $parts);
+  return $file;
 }
 
 function dojo_package_name($namespace, $file) {
   //return;
   $parts = explode('/', $file);
   if ($parts[0] == '_base') {
-		return $namespace;
+    return $namespace;
   }
-	$file_parts = explode('.', array_pop($parts));
-	if (in_array('tests', $parts)) return;
-	array_pop($file_parts);
-	array_push($parts, implode('.', $file_parts));
-	array_unshift($parts, $namespace);
+  $file_parts = explode('.', array_pop($parts));
+  if (in_array('tests', $parts)) return;
+  array_pop($file_parts);
+  array_push($parts, implode('.', $file_parts));
+  array_unshift($parts, $namespace);
   return implode('.', $parts);
 }
 
