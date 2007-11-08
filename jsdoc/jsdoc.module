@@ -1465,6 +1465,9 @@ function jsdoc_variable_load($node) {
   $additions->jsdoc_version_name = $version->title;
   $additions->jsdoc_url = 'jsdoc/' . $additions->jsdoc_project_name . '/' . $additions->jsdoc_version_name . '/object/' . $node->title;
 
+  $additions->teaser = $node->teaser;
+  $additions->body = $node->body;
+
   $types = array();
   $classlikes = array();
 
