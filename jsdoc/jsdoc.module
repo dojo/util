@@ -1279,9 +1279,9 @@ function jsdoc_load_parents(&$node) {
     while ($child = db_fetch_object($query)) {
       $vids[] = $child->vid;
     }
-    $query = db_query("SELECT n.nid, MAX(n.vid) AS vid FROM {jsdoc_variable_hierarchy} j JOIN {node_revisions} n ON (n.vid = j.parent_vid) WHERE j.vid IN (%s) GROUP BY n.nid ORDER BY n.title", implode(", ", array_unique($vids)));
+    $query = db_query("SELECT n.title FROM {jsdoc_variable_hierarchy} j JOIN {node_revisions} n ON (n.vid = j.parent_vid) WHERE j.vid IN (%s) GROUP BY n.nid ORDER BY n.vid DESC, n.title", implode(", ", array_unique($vids)));
     while ($parent = db_fetch_object($query)) {
-      $node->jsdoc_parents['all'] = $parent;
+      $node->jsdoc_parents['all'][] = $parent->title;
     }
   }
 }
@@ -1923,7 +1923,7 @@ function _jsdoc_detail_view($node) {
         '#weight' => -15
       );
     }
-    
+
     if ($detail->jsdoc_source) {
       $node->content['detail']['jsdoc_source'] = array(
         '#type' => 'fieldset',
@@ -2109,19 +2109,24 @@ function _jsdoc_detail_view($node) {
     }
 
     jsdoc_load_parents($node);
-    if ($node->jsdoc_parents) {
+    if ($node->jsdoc_parents['all']) {
       $node->content['detail']['jsdoc_parents'] = array(
         '#weight' => -12
       );
-      foreach ($node->jsdoc_parents as $weight => $parent) {
-        $parent = node_load($parent->nid, $parent->vid);
+      foreach ($node->jsdoc_parents['all'] as $weight => $parent) {
+        $parent = jsdoc_object_node_load($node->jsdoc_project, $node->jsdoc_version, $parent);
         $node->content['detail']['jsdoc_parents'][$parent->title] = array(
           '#type' => 'item',
-          '#value' => ($parent->title == 'window') ? 'window' : l($parent->title, $parent->jsdoc_url),
           '#weight' => $weight
         );
+        if ($parent->jsdoc_url) {
+          $node->content['detail']['jsdoc_parents'][$parent->title]['#value'] = l($parent->title, $parent->jsdoc_url);
+        }
+        else {
+          $node->content['detail']['jsdoc_parents'][$parent->title]['#value'] = $parent->title;
+        }
         if (!$weight) {
-          if (count($node->jsdoc_parents) == 1) {
+          if (count($node->jsdoc_parents['all']) == 1) {
             $node->content['detail']['jsdoc_parents'][$parent->title]['#title'] = t('Parent Object');
           }
           else {
@@ -2363,6 +2368,12 @@ function jsdoc_object_node_load($project, $version, $name, $resource = false) {
     return (object)array(
       'title' => $name,
       'jsdoc_url' => 'http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Reference:Global_Objects:' . $name
+    );
+  }
+  elseif ($name == 'window') {
+    return (object)array(
+      'title' => $name,
+      'jsdoc_url' => 'http://developer.mozilla.org/en/docs/DOM:window'
     );
   }
   elseif ($lower_name == 'documentelement' || $lower_name == 'document') {
