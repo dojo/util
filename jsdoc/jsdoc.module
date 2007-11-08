@@ -1836,15 +1836,31 @@ function _jsdoc_detail_view($node) {
       $mixin_list = array();
       if ($mixins) {
         foreach ($mixins as $mixin) {
-          $mixin = jsdoc_object_node_load($node->jsdoc_project, $node->jsdoc_version, $mixin);
-          $mixin_list[] = l($mixin->title, $mixin->jsdoc_url);
+          if (substr($mixin, -9) == 'prototype') {
+            $my_mixin = jsdoc_object_node_load($node->jsdoc_project, $node->jsdoc_version, substr($mixin, 0, -10));
+            $my_mixin->title = $mixin;
+            $mixin = $my_mixin;
+          }
+          else {
+            $mixin = jsdoc_object_node_load($node->jsdoc_project, $node->jsdoc_version, $mixin);
+          }
+          if ($mixin) {
+            if ($mixin->jsdoc_url) {
+              $mixin_list[] = l($mixin->title, $mixin->jsdoc_url);
+            }
+            else {
+              $mixin_list[] = $mixin->title;
+            }
+          }
         }
-        $node->content['detail']['mixins'] = array(
-          '#type' => 'item',
-          '#title' => t('Mixins'),
-          '#value' => implode(', ', $mixin_list),
-          '#weight' => -25
-        );
+        if (!empty($mixin_list)) {
+          $node->content['detail']['mixins'] = array(
+            '#type' => 'item',
+            '#title' => t('Mixins'),
+            '#value' => implode(', ', $mixin_list),
+            '#weight' => -25
+          );
+        }
       }
     }
 
