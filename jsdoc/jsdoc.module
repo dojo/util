@@ -360,6 +360,8 @@ function jsdoc_cron() {
       watchdog('jsdoc', _jsdoc_base() . '_get_files' . t(' returns an empty array in ') . _jsdoc_file_location(), WATCHDOG_ERROR);
     }
     else {
+      set_time_limit(60 * 60); // 1 hour
+
       $timestamp = variable_get('jsdoc_cron_time', 0);
       if ($timestamp && time() - $timestamp < 43200) {
         // 12 hours
