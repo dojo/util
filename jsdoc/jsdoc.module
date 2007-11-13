@@ -1037,7 +1037,7 @@ function _jsdoc_markup_code($text, $version, $base=false) {
       $variables[$result->title] = $result->version;
     }
   }
-
+  
   $highlighter =& new GeSHi($text, 'javascript');
   $highlighter->enable_classes();
   $highlighter->set_overall_style('color: #666;', true);
@@ -1780,7 +1780,7 @@ function _jsdoc_detail_view($node) {
   if (trim($node->teaser)) {
     $node->content['detail']['teaser'] = array(
       '#type' => 'item',
-      '#weight' => -35,
+      '#weight' => -55,
       '#value' => $node->teaser
     );
   }
@@ -1789,7 +1789,7 @@ function _jsdoc_detail_view($node) {
     $node->content['detail']['body']['#value'] = _jsdoc_markup_text($node->body, $node->jsdoc_version, $node->format);
     $node->content['detail']['body']['#type'] = 'item';
     $node->content['detail']['body']['#title'] = t('Description');
-    $node->content['detail']['body']['#weight'] = -30;
+    $node->content['detail']['body']['#weight'] = -50;
     unset($node->content['body']);
   }
 
@@ -1799,23 +1799,23 @@ function _jsdoc_detail_view($node) {
     if (count($detail->jsdoc_examples)) {
       $example = array_shift($detail->jsdoc_examples);
       $node->content['detail']['example'] = array(
-        '#type' => 'item',
+        '#type' => 'fieldset',
         '#title' => t('Example'),
         '#value' => $example,
-        '#weight' => -32
+        '#weight' => -36
       );
     }
 
     if (!empty($detail->jsdoc_examples)) {
       foreach ($detail->jsdoc_examples as $weight => $example) {
         $node->content['detail']['examples'][] = array(
-          '#type' => 'item',
+          '#type' => 'fieldset',
           '#title' => t('Example'),
-          '#value' => $example,
+          '#value' => $example."foo",
           '#weight' => $weight
         );
       }
-      $node->content['detail']['examples']['#weight'] = -28;
+      $node->content['detail']['examples']['#weight'] = -35;
     }
 
     if ($node->jsdoc_initialized) {
@@ -1833,7 +1833,7 @@ function _jsdoc_detail_view($node) {
           '#type' => 'item',
           '#title' => t('Prototype'),
           '#value' => $value,
-          '#weight' => -26
+          '#weight' => -28
         );
       }
     }
@@ -1871,7 +1871,7 @@ function _jsdoc_detail_view($node) {
             '#type' => 'item',
             '#title' => t('Mixins'),
             '#value' => implode(', ', $mixin_list),
-            '#weight' => -25
+            '#weight' => -29
           );
         }
       }
@@ -1899,7 +1899,7 @@ function _jsdoc_detail_view($node) {
           '#type' => 'item',
           '#title' => t('To Include'),
           '#value' => $call,
-          '#weight' => -19
+          '#weight' => -30
         );
       }
     }
@@ -2064,20 +2064,20 @@ function _jsdoc_detail_view($node) {
         if ($object->jsdoc_type == 'Function') {
           if ($object->jsdoc_classlike) {
             $section_title = 'Classes';
-            $section_weight = '-28';
+            $section_weight = '-24';
             $section_index = 'jsdoc_classes';
             $section_prefix = "";
           }
           else {
             $section_title = 'Functions';
-            $section_weight = '-24';
+            $section_weight = '-25';
             $section_index = 'jsdoc_functions';
             $section_prefix = "";
           }
         }
         else {
           $section_title = 'Fields';
-          $section_weight = '-23';
+          $section_weight = '-27';
           $section_index = 'jsdoc_fields';
           $section_prefix = l($object->jsdoc_formatted['type'], jsdoc_object_node_load($object->jsdoc_project_name, $object->jsdoc_version_name, $object->jsdoc_type)->jsdoc_url) . $object->jsdoc_formatted['separator'];
         }
@@ -2163,20 +2163,20 @@ function _jsdoc_detail_view($node) {
       if ($object->jsdoc_type == 'Function') {
         if ($object->jsdoc_classlike) {
           $section_title = 'Classes';
-          $section_weight = '-28';
+          $section_weight = '-24';
           $section_index = 'jsdoc_classes';
           $section_prefix = "";
         }
         else {
           $section_title = 'Functions';
-          $section_weight = '-26';
+          $section_weight = '-25';
           $section_index = 'jsdoc_functions';
           $section_prefix = "";
         }
       }
       else {
         $section_title = 'Fields';
-        $section_weight = '-24';
+        $section_weight = '-27';
         $section_index = 'jsdoc_fields';
         $section_prefix = l($object->jsdoc_formatted['type'], jsdoc_object_node_load($object->jsdoc_project_name, $object->jsdoc_version_name, $object->jsdoc_type)->jsdoc_url) . $object->jsdoc_formatted['separator'];
       }
@@ -3015,7 +3015,7 @@ function _jsdoc_flags() {
  * Validate some of the expected global settings
  */
 function _jsdoc_cron_validate() {
-  ini_set('memory_limit', '192M');
+  ini_set('memory_limit', '256M');
 
   if (!_jsdoc_file_location() || !_jsdoc_dir_location()) {
     watchdog('jsdoc', t('jsdoc settings should be configured'), WATCHDOG_ERROR);
