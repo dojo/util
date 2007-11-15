@@ -3,6 +3,7 @@
 var version = new String(arguments[0]);
 var fileName = new String(arguments[1]);
 
+load("jslib/logger.js");
 load("jslib/fileUtil.js");
 load("jslib/buildUtil.js");
 
