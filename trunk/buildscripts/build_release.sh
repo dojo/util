@@ -38,7 +38,7 @@ svn commit -m "Updating dojo version for the tag." _base/_loader/bootstrap.js
 #Erase the SVN dir and replace with an exported SVN contents.
 cd ../..
 rm -rf ./$buildName/
-svn export http://svn.dojotoolkit.org/dojo/tags/$tagName $buildName
+svn --quiet export http://svn.dojotoolkit.org/dojo/tags/$tagName $buildName
 
 # clobber cruft that we don't want in builds
 rm -rf ./$buildName/dijit/themes/noir
@@ -78,8 +78,8 @@ mv $buildName.tar.gz ../../
 
 # md5sum the release files
 cd ../../
-for i in *.zip do; /usr/bin/md5sum $i > $i.md5; done
-for i in *.gz do; /usr/bin/md5sum $i > $i.md5; done
+for i in *.zip; do md5sum $i > $i.md5; done
+for i in *.gz; do md5sum $i > $i.md5; done
 
 #Finished.
 outDirName=`pwd`
