@@ -6,6 +6,8 @@ version=$1
 svnUserName=$2
 #The svn revision number to use for tag. Should be a number, like 11203
 svnRevision=$3
+#The branch in svn (e.g. branches/1.0)
+svnBranch=$4
 
 #If no svnRevision number, get the latest one from he repo.
 if [ "$svnRevision" = "" ]; then
@@ -17,15 +19,15 @@ buildName=dojo-$tagName
 
 #Make the SVN tag.
 svn mkdir -m "Using r$svnRevision to create a tag for the $version release." svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/tags/$tagName
-svn copy -r $svnRevision svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/dojo/trunk svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/tags/$tagName/dojo -m "Using r$svnRevision to create a tag for the $version release."
-svn copy -r $svnRevision svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/dijit/trunk svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/tags/$tagName/dijit -m "Using r$svnRevision to create a tag for the $version release."
-svn copy -r $svnRevision svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/dojox/trunk svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/tags/$tagName/dojox -m "Using r$svnRevision to create a tag for the $version release."
-svn copy -r $svnRevision svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/util/trunk svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/tags/$tagName/util -m "Using r$svnRevision to create a tag for the $version release."
+svn copy -r $svnRevision svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/$svnBranch/dojo/trunk svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/tags/$tagName/dojo -m "Using r$svnRevision to create a tag for the $version release."
+svn copy -r $svnRevision svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/$svnBranch/dijit/trunk svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/tags/$tagName/dijit -m "Using r$svnRevision to create a tag for the $version release."
+svn copy -r $svnRevision svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/$svnBranch/dojox/trunk svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/tags/$tagName/dojox -m "Using r$svnRevision to create a tag for the $version release."
+svn copy -r $svnRevision svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/$svnBranch/util/trunk svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/tags/$tagName/util -m "Using r$svnRevision to create a tag for the $version release."
 
 #Check out the tag
 mkdir ../../build
 cd ../../build
-svn co svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/tags/$tagName $buildName
+svn co --quiet svn+ssh://$svnUserName@svn.dojotoolkit.org/var/src/dojo/tags/$tagName $buildName
 cd $buildName/util/buildscripts
 
 #Update the dojo version in the tag
@@ -76,8 +78,8 @@ mv $buildName.tar.gz ../../
 
 # md5sum the release files
 cd ../../
-for i in *.zip do; md5sum $i > $i.md5; done
-for i in *.gz do; md5sum $i > $i.md5; done
+for i in *.zip do; /usr/bin/md5sum $i > $i.md5; done
+for i in *.gz do; /usr/bin/md5sum $i > $i.md5; done
 
 #Finished.
 outDirName=`pwd`
