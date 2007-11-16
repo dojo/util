@@ -76,8 +76,8 @@ mv $buildName.tar.gz ../../
 
 # md5sum the release files
 cd ../../
-for i in *.zip do; md5sum $i > $i.md5; done
-for i in *.gz do; md5sum $i > $i.md5; done
+for i in *.zip; do md5sum $i > $i.md5; done
+for i in *.gz; do md5sum $i > $i.md5; done
 
 #Finished.
 outDirName=`pwd`
