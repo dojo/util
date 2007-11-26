@@ -924,8 +924,9 @@ tests = doh;
 				dojo.forEach(testModule.split(","), dojo.require, dojo);
 			}
 		}catch(e){
+			print("An exception occurred: " + e);
 		}
 
 		doh.run();
 	}
-})();
+}).apply(this, arguments);
