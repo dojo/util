@@ -91,12 +91,20 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/fileCo
 		}else{
 			throw "Invalid module prefix for flattened bundle: " + modulePrefix;
 		}
-		
+
 		for (jsLocale in djBundlesByLocale){
 			var locale = jsLocale.replace(/\_/g, '-');
 			if(!mkdir){ dir.mkdir(); mkdir = true; }
 			
 			var outFile = new java.io.File(dir, nlsNamePrefix + "_" + locale + ".js");
+			//Make sure we can create the final file.
+			var parentDir = outFile.getParentFile();
+			if(!parentDir.exists()){
+				if(!parentDir.mkdirs()){
+					throw "Could not create directory: " + parentDir.getAbsolutePath();
+				}
+			}
+
 			var os = new java.io.BufferedWriter(
 					new java.io.OutputStreamWriter(new java.io.FileOutputStream(outFile), "utf-8"));
 			try{
