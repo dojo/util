@@ -84,6 +84,11 @@ function release(){
 			finalPrefixPath = dojoPrefixPath + "/" + prefixPath;
 		}
 		_copyToRelease(prefixName, finalPrefixPath, kwArgs);
+
+		if(kwArgs.symbol){
+			var releasePath = kwArgs.releaseDir + "/"  + prefixName.replace(/\./g, "/");
+			buildUtil.insertSymbols(releasePath, kwArgs);
+		}
 	}
 
 	//Fix all the prefix paths to be in the release directory.

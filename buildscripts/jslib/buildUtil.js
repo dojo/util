@@ -82,6 +82,15 @@ buildUtil.DojoBuildOptions = {
 			+ "will be used to call dojo.registerModulePath() for dojo, dijit and dojox. "
 			+ "The xdDojoPath should be the directory that contains the dojo, dijit and dojox "
 			+ "directories, and it should NOT end in a slash. For instance: 'http://some.domain.com/path/to/dojo090'."
+	},
+	"symbol": {
+		defaultValue: "",
+		helpText: "Inserts function symbols as global references so that anonymous "
+			+ "functions will show up in all debuggers (esp. IE which does not attempt "
+			+ "to infer function names from the context of their definition). Valid values "
+			+ "are \"long\" and \"short\". If \"short\" is used, then a symboltables.txt file "
+			+ "will be generated in each module prefix's release directory which maps the "
+			+ "short symbol names to more descriptive names."
 	}
 };
 
@@ -1205,5 +1214,80 @@ buildUtil.processConditionals = function(/*String*/fileName, /*String*/fileConte
 	return fileContents;
 }
 
+buildUtil.symctr = 0;
+buildUtil.symtbl = null;
+buildUtil.generateSym = function(/*String*/name){
+	var m = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+	var len = m.length;
+	var s;
+	if(buildUtil.symctr < len*len){
+		s = m.charAt(Math.floor(buildUtil.symctr/len))
+			+m.charAt(buildUtil.symctr%len);
+	}else{
+		s = m.charAt(Math.floor(buildUtil.symctr/(len*len))-1)
+			+m.charAt(Math.floor(buildUtil.symctr/len)%len)
+			+m.charAt(buildUtil.symctr%len);
+	}
+	s = "$D" + s;
+	buildUtil.symctr++;
+	var ret;
+	if(kwArgs.symbol == "long"){
+		ret = name; // + "_" + s;
+	}else if(kwArgs.symbol == "short"){
+		buildUtil.symtbl[s + "_"] = name;
+		ret = s + "_";
+	}
+	return ret;
+}
 
+buildUtil.insertSymbols = function(/*String*/startDir, /*Object*/kwArgs){
+	//summary: add global function symbols to anonymous functions.
+	buildUtil.symtbl = {};
+	var fileList = fileUtil.getFilteredFileList(startDir, /\.js$/, true);
+	if(fileList){
+		logger.trace("Inserting global function symbols in: "+startDir);
+		for(var i = 0; i < fileList.length; i++){
+			//Don't process loader_debug.js since global symbols conflict with loader.js.
+			//Don't process dojo.js.uncompressed.js because it is huge.
+			//Don't process anything that might be in a buildscripts folder (only a concern for webbuild.sh)
+			if(!fileList[i].match(/loader_debug\.js/)
+				&& !fileList[i].match(/\.uncompressed\.js/)
+				&& !fileList[i].match(/buildscripts/)
+				&& !fileList[i].match(/nls/)
+				&& !fileList[i].match(/tests\//)){
+				
+				//Read in the file. Make sure we have a JS string.
+				var fileContents = fileUtil.readFile(fileList[i]);
 
+				//Do insertion.
+				var className;
+				if(fileContents.match(/dojo\.provide\("(.*)"\);/)){
+					className = RegExp.$1.replace(/\./g, "_")+"_";
+				}
+				if(className){
+					fileContents = fileContents.replace(/^(\s*)(\w+)(\s*:\s*function)\s*(\(.*)$/mg, function(str, p1, p2, p3, p4){
+						return p1+p2+p3+" "+buildUtil.generateSym(className+p2)+p4;
+					});
+					fileContents = fileContents.replace(/^(\s*this\.)(\w+)(\s*=\s*function)\s*(\(.*)$/mg, function(str, p1, p2, p3, p4){
+						return p1+p2+p3+" "+buildUtil.generateSym(className+p2)+p4;
+					});
+				}
+				fileContents = fileContents.replace(/^(\s*)([\w\.]+)(\s*=\s*function)\s*(\(.*)/mg, function(str, p1, p2, p3, p4){
+					return p1+p2+p3+" "+buildUtil.generateSym(p2.replace(/\./g, "_"))+p4;
+				});
+
+				//Write out the file
+				fileUtil.saveUtf8File(fileList[i], fileContents);
+			}
+		}
+
+		if(kwArgs.symbol == "short"){
+			var symbolText = "";
+			var lineSeparator = fileUtil.getLineSeparator();
+			for(var key in buildUtil.symtbl){
+				symbolText += key + ": \"" + buildUtil.symtbl[key] + "\"" + lineSeparator;
+			}
+			fileUtil.saveFile(startDir + "/symboltable.txt", symbolText);
+		}
+	}
+}
