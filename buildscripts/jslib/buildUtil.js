@@ -580,9 +580,6 @@ buildUtil.loadDependencyList = function(/*Object*/profile, /*String?*/buildscrip
 	//summary: Traverses the dependencies in the profile object.
 	//profile:
 	//		The profile object that is a result of a buildUtil.evalProfile() call.
-	if(profile.hostenvType){
-		profile.hostenvType = profile.hostenvType.join(",\n");
-	}
 	var depResult = buildUtil.getDependencyList(profile.dependencies, profile.hostenvType, buildscriptsPath);
 	depResult.dependencies = profile.dependencies;
 	
