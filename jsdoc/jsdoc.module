@@ -2895,7 +2895,7 @@ function _jsdoc_get_tree($environments, $parent = 0, $depth = -1) {
     while ($term = db_fetch_object($result)) {
       if ($term->parent_vid) {
         $children[$term->parent_vid][] = $term->vid;
-        $parents[$term->vid][] = array($term->parent_vid, $term->parent_vid);
+        $parents[$term->vid][] = array($term->parent_nid, $term->parent_vid);
       }
       $terms[$term->vid] = $term;
     }
