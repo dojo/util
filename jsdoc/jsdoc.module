@@ -1474,7 +1474,7 @@ function jsdoc_variable_load($node) {
   $types = array();
   $classlikes = array();
 
-  $query = db_query("SELECT j.nid, MAX(j.vid) AS vid, j.resource_nid, MAX(j.resource_vid) AS resource_vid, j.classlike, j.type, j.private FROM {jsdoc_objects} j JOIN {node_revisions} n ON (j.vid = n.vid) WHERE n.title = '%s' AND BINARY n.title = '%s' AND j.used != -1 AND j.new = 0 AND j.version = %d GROUP BY n.nid", $node->title, $node->title, $version->nid);
+  $query = db_query("SELECT n.teaser, n.body, j.nid, MAX(j.vid) AS vid, j.resource_nid, MAX(j.resource_vid) AS resource_vid, j.classlike, j.type, j.private FROM {jsdoc_objects} j JOIN {node_revisions} n ON (j.vid = n.vid) WHERE n.title = '%s' AND BINARY n.title = '%s' AND j.used != -1 AND j.new = 0 AND j.version = %d GROUP BY n.nid", $node->title, $node->title, $version->nid);
 
   while ($result = db_fetch_object($query)) {
     if (db_num_rows($query) == 1 || ($additions->jsdoc_disambiguation && $additions->jsdoc_disambiguation->vid == $result->resource_vid)) {
@@ -1494,6 +1494,12 @@ function jsdoc_variable_load($node) {
       if (!$node->jsdoc_disambiguation) {
         $types[] = $result->type;
         $classlikes[] = $result->classlike;
+        if ($result->teaser && !$node->teaser && !$additions->teaser) {
+          $additions->teaser = $result->teaser;
+        }
+        if ($result->body && !$node->body && !$additions->body) {
+          $additions->body = $result->body;
+        }
       }
       $additions->jsdoc_disambiguations[] = _jsdoc_node_load($result->nid, $result->vid);      
     }
