@@ -86,7 +86,8 @@ function jsdoc_install() {
         nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_resource
         version integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_version
         used boolean NOT NULL DEFAULT 1,
-        new boolean NOT NULL DEFAULT 1
+        new boolean NOT NULL DEFAULT 1,
+        INDEX (used)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
 
       // jsdoc_variables is used for disambiguation
@@ -106,7 +107,7 @@ function jsdoc_install() {
       // Note: resource is what resource the object actually exists in
       //    while bundle is what resource the object gets bundled
       db_query("CREATE TABLE {jsdoc_objects} (
-        vid integer NOT NULL REFERENCES {node_revisions} (vid),
+        vid integer NOT NULL PRIMARY KEY REFERENCES {node_revisions} (vid),
         nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_object
         resource_vid integer NOT NULL REFERENCES {node_revisions} (vid),
         resource_nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_resource
@@ -123,8 +124,11 @@ function jsdoc_install() {
         version integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_version
         used boolean NOT NULL DEFAULT 1,
         new boolean NOT NULL DEFAULT 1,
-        PRIMARY KEY (vid, resource_vid),
-        INDEX (version) 
+        UNIQUE (vid, resource_vid),
+        INDEX (resource_vid),
+        INDEX (provide_vid),
+        INDEX (version),
+        INDEX (used)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
 
       // jsdoc_variable_hierarchy is for showing how variables are associated with each other
@@ -137,7 +141,8 @@ function jsdoc_install() {
         type enum('normal', 'prototype', 'instance', 'alias', 'chain', 'mixin'), -- The type of join
         subtype enum('call', 'prototype', '') DEFAULT '', -- The subtype of the join
         version integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_version
-        PRIMARY KEY (vid, parent_vid, type, subtype, version)
+        PRIMARY KEY (vid, parent_vid, type, subtype, version),
+        INDEX (parent_vid)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
 
       // jsdoc_resource_hierarchy is for showing which resources require which resources
