@@ -76,15 +76,15 @@ function jsdoc_install() {
 
       // jsdoc_versions is used for storing what project a version is used in
       db_query("CREATE TABLE {jsdoc_versions} (
-        nid integer NOT NULL PRIMARY KEY REFERENCES {nodes} (nid), -- node-type: jsdoc_version
-        project integer NOT NULL REFERENCES {nodes} (nid) --  node-type: jsdoc_project
+        nid integer NOT NULL PRIMARY KEY REFERENCES {node} (nid), -- node-type: jsdoc_version
+        project integer NOT NULL REFERENCES {node} (nid) --  node-type: jsdoc_project
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
 
       // jsdoc_resources is used for referencing files
       db_query("CREATE TABLE {jsdoc_resources} (
         vid integer NOT NULL PRIMARY KEY REFERENCES {node_revisions} (vid),
-        nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_resource
-        version integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_version
+        nid integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_resource
+        version integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_version
         used boolean NOT NULL DEFAULT 1,
         new boolean NOT NULL DEFAULT 1,
         INDEX (used)
@@ -94,12 +94,12 @@ function jsdoc_install() {
       // There should be one of these for each variable for each version
       db_query("CREATE TABLE {jsdoc_variables} (
         vid integer NOT NULL REFERENCES {node_revisions} (vid),
-        nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_variable
+        nid integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_variable
         resource_vid integer NOT NULL REFERENCES {node_revisions} (vid), -- Give a specific resource priority
-        resource_nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_resource
+        resource_nid integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_resource
         private bool NOT NULL DEFAULT 0,
         private_parent bool NOT NULL DEFAULT 0,
-        version integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_version
+        version integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_version
         PRIMARY KEY (vid, version)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
 
@@ -108,11 +108,11 @@ function jsdoc_install() {
       //    while bundle is what resource the object gets bundled
       db_query("CREATE TABLE {jsdoc_objects} (
         vid integer NOT NULL PRIMARY KEY REFERENCES {node_revisions} (vid),
-        nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_object
+        nid integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_object
         resource_vid integer NOT NULL REFERENCES {node_revisions} (vid),
-        resource_nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_resource
+        resource_nid integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_resource
         provide_vid integer NOT NULL REFERENCES {node_revisions} (vid),
-        provide_nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_resource
+        provide_nid integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_resource
         initialized bool NOT NULL, -- Whether or not this function has 'new' in front of it during declaration
         classlike bool NOT NULL DEFAULT 0, -- Whether or not this function acts as a class
         type varchar(255) NOT NULL,
@@ -121,7 +121,7 @@ function jsdoc_install() {
         source longtext NOT NULL,
         private boolean NOT NULL DEFAULT 0,
         private_parent bool NOT NULL DEFAULT 0,
-        version integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_version
+        version integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_version
         used boolean NOT NULL DEFAULT 1,
         new boolean NOT NULL DEFAULT 1,
         UNIQUE (vid, resource_vid),
@@ -135,12 +135,12 @@ function jsdoc_install() {
       // There should be one of these for each type of join, for each variable pair, for each version
       db_query("CREATE TABLE {jsdoc_variable_hierarchy} (
         vid integer NOT NULL REFERENCES {node_revisions} (vid),
-        nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_variable
+        nid integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_variable
         parent_vid integer NOT NULL REFERENCES {node_revisions} (vid),
-        parent_nid integer NOT NULL REFERENCES {nodes} (vid), -- node-type: jsdoc_variable
+        parent_nid integer NOT NULL REFERENCES {node} (vid), -- node-type: jsdoc_variable
         type enum('normal', 'prototype', 'instance', 'alias', 'chain', 'mixin'), -- The type of join
         subtype enum('call', 'prototype', '') DEFAULT '', -- The subtype of the join
-        version integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_version
+        version integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_version
         PRIMARY KEY (vid, parent_vid, type, subtype, version),
         INDEX (parent_vid)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
@@ -149,11 +149,11 @@ function jsdoc_install() {
       // There should be on of these for each type of join, for each resource pair, for each version 
       db_query("CREATE TABLE {jsdoc_resource_hierarchy} (
         vid integer NOT NULL REFERENCES {node_revisions} (vid),
-        nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_resource
+        nid integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_resource
         parent_vid integer NOT NULL REFERENCES {node_revisions} (vid),
-        parent_nid integer NOT NULL REFERENCES {nodes} (vid), -- node-type: jsdoc_resource
+        parent_nid integer NOT NULL REFERENCES {node} (vid), -- node-type: jsdoc_resource
         tid integer REFERENCES {term_data} (tid), -- We use this for saying how a resource joins to a resource
-        version integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_version
+        version integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_version
         PRIMARY KEY (vid, parent_vid, tid, version),
         INDEX (parent_vid),
         INDEX (tid)
@@ -163,7 +163,7 @@ function jsdoc_install() {
       // We need to have a set of these for every single object, to keep track of changes
       db_query("CREATE TABLE {jsdoc_parameters} (
         vid integer NOT NULL REFERENCES {node_revisions} (vid),
-        nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_object
+        nid integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_object
         weight integer NOT NULL,
         name varchar(255) NOT NULL,
         type varchar(255) NOT NULL,
@@ -176,7 +176,7 @@ function jsdoc_install() {
       // jsdoc_examples is for associating examples with objects
       db_query("CREATE TABLE {jsdoc_examples} (
         vid integer NOT NULL REFERENCES {node_revisions} (vid),
-        nid integer NOT NULL REFERENCES {nodes} (nid), -- node-type: jsdoc_object
+        nid integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_object
         weight integer NOT NULL,
         example longtext NOT NULL,
       PRIMARY KEY (vid, weight)

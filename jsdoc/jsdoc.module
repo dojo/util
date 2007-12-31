@@ -36,14 +36,6 @@ function jsdoc_perm() {
 }
 
 /**
- * Implementation of hook_init().
- */
-function jsdoc_init() {
-  include_once('./' . drupal_get_path('module', 'jsdoc') . '/lib/geshi/geshi.php');
-  drupal_add_css(drupal_get_path('module', 'jsdoc') . '/jsdoc.css');
-}
-
-/**
  * Implementation of hook_menu().
  */
 function jsdoc_menu($may_cache) {
@@ -380,6 +372,8 @@ function jsdoc_cron() {
       watchdog('jsdoc', _jsdoc_base() . '_get_files' . t(' returns an empty array in ') . _jsdoc_file_location(), WATCHDOG_ERROR);
     }
     else {
+      _jsdoc_init();
+
       $timestamp = variable_get('jsdoc_cron_time', 0);
       if ($timestamp && time() - $timestamp < 43200) {
         // 12 hours
@@ -995,6 +989,7 @@ function jsdoc_object_delete(&$node) {
  */
 function jsdoc_object_load($node) {
   // TODO: Deal with alias
+  _jsdoc_init();
   $additions = db_fetch_object(db_query("SELECT jo.type AS jsdoc_type, jo.returns AS jsdoc_returns, jo.updating AS jsdoc_updating, jo.classlike AS jsdoc_classlike, jo.private AS jsdoc_private, jo.private_parent AS jsdoc_private_parent, jo.resource_nid AS jsdoc_resource, jo.resource_vid AS jsdoc_resource_vid, jo.provide_nid AS jsdoc_provide, jo.provide_vid AS jsdoc_provide_vid, jo.initialized AS jsdoc_initialized, jo.used AS jsdoc_used, jo.version AS jsdoc_version, source AS jsdoc_source, jo.resource_vid != n.vid AS has_revisions FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (jo.resource_vid = nr.vid) JOIN {node} n ON (nr.nid = n.nid) WHERE jo.vid = %d", $node->vid));
 
   $additions->jsdoc_used = round($additions->jsdoc_used);
@@ -1115,7 +1110,7 @@ function jsdoc_variable_update($node) {
 function jsdoc_variable_delete(&$node) {
   db_query("DELETE FROM {jsdoc_variables} WHERE nid = %d", $node->nid);
   db_query("DELETE FROM {jsdoc_variable_hierarchy} WHERE nid = %d OR parent_nid = %d", $node->nid, $node->nid);
-  $query = db_query("SELECT nid FROM {nodes} WHERE type = 'jsdoc_object' AND title = '%s'", $node->title);
+  $query = db_query("SELECT nid FROM {node} WHERE type = 'jsdoc_object' AND title = '%s'", $node->title);
   while ($object = db_fetch_object($query)) {
     jsdoc_object_delete($object);
   }
@@ -3238,4 +3233,9 @@ function _jsdoc_markup_text($text, $version, $format = false){
   }
 
   return $text;
+}
+
+function _jsdoc_init() {
+  include_once('./' . drupal_get_path('module', 'jsdoc') . '/lib/geshi/geshi.php');
+  drupal_add_css(drupal_get_path('module', 'jsdoc') . '/jsdoc.css');
 }
