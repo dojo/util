@@ -91,7 +91,28 @@ buildUtil.DojoBuildOptions = {
 			+ "are \"long\" and \"short\". If \"short\" is used, then a symboltables.txt file "
 			+ "will be generated in each module prefix's release directory which maps the "
 			+ "short symbol names to more descriptive names."
-	}
+	},
+	"scopeMap": {
+		defaultValue: "",
+		helpText: "Change the default dojo, dijit and dojox scope names to soemthing else. Useful if you want to "
+			+ "use Dojo as part of a JS library, but want to make a self-contained library with no external dojo/dijit/dojox "
+			+ "references. Format is a string that contains no spaces, and is similar to the djConfig.scopeMap value (note that the "
+			+ "backslashes below are required to avoid shell escaping):\n"
+			+ "scopeMap: [[\\\"dojo\\\",\\\"mydojo\\\"],[\\\"dijit\\\",\\\"mydijit\\\"][\\\"dojox\\\",\\\"mydojox\\\"]]"
+	},
+	"xdScopeArgs": {
+		defaultValue: "",
+		helpText: "If the loader=xdomain build option is used, then the value of this option "
+			+ "will be used as the arguments to the function that defines the modules in the .xd.js files. "
+			+ "This allows for more than one version of the same module to be in a page. See documentation on "
+			+ "djConfig.scopeMap for more information."
+	},
+	"xdDojoScopeName": {
+		defaultValue: "dojo",
+		helpText: "If the loader=xdomain build option is used, then the value of this option "
+			+ "will be used instead of 'dojo' for the 'dojo._xdResourceLoaded()' calls that are done in the .xd.js files. "
+			+ "This allows for dojo to be under a different scope name but still allow xdomain loading with that scope name."
+	}    
 };
 
 buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
@@ -182,8 +203,6 @@ buildUtil.includeLoaderFiles = function(/*String*/dojoLoader, /*String or Array*
 	}else{
 		dojo._loadedUrls.push(buildscriptsPath + "../../dojo/_base/_loader/hostenv_"+hostenvType+".js");
 	}
-
-	dojo._loadedUrls.push(buildscriptsPath + "jslib/dojoGuardEnd.jsfrag");
 }
 
 buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array*/hostenvType, /*String?*/buildscriptsPath){
@@ -371,7 +390,8 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 				dependencies["dojoLoaded"]();
 			}
 		
-		
+			
+			//Add the loader files if this is a loader layer.
 			if(layerName == "dojo.js"){
 				buildUtil.includeLoaderFiles("default", hostenvType, buildscriptsPath);
 			}else if(layerName == "dojo.xd.js"){
@@ -397,6 +417,12 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 			//Get the final list of dependencies in this layer
 			var depList = buildUtil.determineUriList(layer.dependencies, layerUris, dependencies["filters"]); 
 			
+			
+			//Add the final closure guard to the list.
+			if(layerName == "dojo.js" || layerName == "dojo.xd.js"){
+				depList.push(buildscriptsPath + "jslib/dojoGuardEnd.jsfrag");
+			}
+
 			//Store the layer URIs that are in this file as well as all files it depends on.
 			namedLayerUris[layer.name] = layerUris.concat(depList);
 		
@@ -1209,6 +1235,13 @@ buildUtil.processConditionals = function(/*String*/fileName, /*String*/fileConte
 	}
 
 	return fileContents;
+}
+
+buildUtil.setScopeNames = function(/*String*/fileContents, /*String*/scopeMap){
+	//summary: burns in the scope names into the file contents.
+	//scopeMap should be a [["name","value"],["name","value"]] string. Notice the lack of spaces.
+	//Single quotes can be used instead of double quotes.
+	return fileContents.replace(/var\s+sMap\s+=\s+null/, "var sMap = " + scopeMap);
 }
 
 buildUtil.symctr = 0;

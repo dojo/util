@@ -130,6 +130,12 @@ function release(){
 		}
 		nlsIgnoreString += (nlsIgnoreString ? "|" : "") + buildUtil.regExpEscape(nameSegment);
 		
+		
+		//Burn in scope names for dojo.js/xd.js if requested.
+		if(kwArgs.scopeMap && (layerName.match(/dojo\.xd\.js$/) || layerName.match(/dojo\.js$/))){
+			fileContents = buildUtil.setScopeNames(fileContents, kwArgs.scopeMap);
+		}
+
 		//Burn in xd path for dojo if requested, and only do this in dojo.xd.js.
 		if(layerName.match(/dojo\.xd\.js/) && kwArgs.xdDojoPath){
 			fileContents = buildUtilXd.setXdDojoConfig(fileContents, kwArgs.xdDojoPath);
@@ -142,7 +148,7 @@ function release(){
 		var uncompressedFileName = fileName + ".uncompressed.js";
 		var uncompressedContents = layerLegalText + fileContents;
 		if(layerName.match(/\.xd\.js$/) && !layerName.match(/dojo(\.xd)?\.js/)){
-			uncompressedContents = buildUtilXd.makeXdContents(uncompressedContents, prefixes);
+			uncompressedContents = buildUtilXd.makeXdContents(uncompressedContents, prefixes, kwArgs);
 		}
 		fileUtil.saveUtf8File(uncompressedFileName, uncompressedContents);
 
@@ -245,7 +251,7 @@ function _optimizeReleaseDirs(
 	i18nUtil.flattenDirBundles(prefixName, prefixPath, kwArgs, nlsIgnoreRegExp);
 
 	if(kwArgs.loader == "xdomain"){
-		buildUtilXd.xdgen(prefixName, prefixPath, prefixes, layerIgnoreRegExp);
+		buildUtilXd.xdgen(prefixName, prefixPath, prefixes, layerIgnoreRegExp, kwArgs);
 	}
 
 	//FIXME: call stripComments. Maybe rename, inline with optimize? need build options too.
