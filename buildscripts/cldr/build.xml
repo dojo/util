@@ -243,6 +243,7 @@
 		<java jar="lib/js.jar" failonerror="true" fork="true" logError="true" >
 			<arg value="specialLocale.js" />
 			<arg value="${json}" />
+			<arg value="${locales}" />
 			<sysproperty key="DOJO_LOADER" value="${dojoLoader}" />
 		</java>
 	</target>

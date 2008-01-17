@@ -149,7 +149,7 @@
             <xsl:if test="name()='pm'">
         'pm</xsl:if>
             <xsl:text>':"</xsl:text>
-            <xsl:value-of select="."/><xsl:text>"</xsl:text>
+            <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/><xsl:text>"</xsl:text>
         </xsl:if>
         </xsl:otherwise>
     </xsl:choose>
@@ -276,7 +276,7 @@
                       <xsl:value-of select='$width'/>
           </xsl:if>
            <xsl:text>': "</xsl:text>
-           <xsl:value-of select="."/><xsl:text>" </xsl:text>          
+           <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/><xsl:text>" </xsl:text>          
         </xsl:for-each>
         <!-- availableFormats -->
         <xsl:if test="name()='availableFormats'">
@@ -292,7 +292,7 @@
                 <xsl:call-template name="insert_comma"/>
         'dateTimeFormats-appendItem-<xsl:value-of select="@request"></xsl:value-of>
             <xsl:text>':"</xsl:text>
-            <xsl:value-of select="."></xsl:value-of>
+            <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"></xsl:value-of>
             <xsl:text>"</xsl:text>
         </xsl:for-each>
      </xsl:if>
@@ -329,7 +329,7 @@
                 <xsl:call-template name="insert_comma"/>
         'field-<xsl:value-of select="$width"></xsl:value-of>
                <xsl:text>':"</xsl:text>
-               <xsl:value-of select="."/>
+               <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/>
                 <xsl:text>"</xsl:text>
             </xsl:for-each>                    
                 </xsl:otherwise>
