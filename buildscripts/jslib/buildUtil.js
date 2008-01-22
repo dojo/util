@@ -92,13 +92,22 @@ buildUtil.DojoBuildOptions = {
 			+ "will be generated in each module prefix's release directory which maps the "
 			+ "short symbol names to more descriptive names."
 	},
+	"scopeDjConfig": {
+		defaultValue: "",
+		helpText: "Burn in a djConfig object into the built dojo.js file. Useful if you are making your own scoped dojo and you want a "
+			+ "djConfig object local to your version that will not be affected by any globally declared djConfig object in the page. "
+			+ "Value must be a string that will look like a javascript object literal once it is placed in the built source. "
+			+ "use Dojo as part of a JS library, but want to make a self-contained library with no external dojo/dijit/dojox. Example "
+			+ "(note that the backslashes below are required to avoid shell escaping if you type this on the command line):\n"
+			+ "scopeDjConfig={isDebug:true,scopeMap:[[\\\"dojo\\\",\\\"mydojo\\\"],[\\\"dijit\\\",\\\"mydijit\\\"][\\\"dojox\\\",\\\"mydojox\\\"]]}"
+	},
 	"scopeMap": {
 		defaultValue: "",
 		helpText: "Change the default dojo, dijit and dojox scope names to soemthing else. Useful if you want to "
 			+ "use Dojo as part of a JS library, but want to make a self-contained library with no external dojo/dijit/dojox "
 			+ "references. Format is a string that contains no spaces, and is similar to the djConfig.scopeMap value (note that the "
 			+ "backslashes below are required to avoid shell escaping):\n"
-			+ "scopeMap: [[\\\"dojo\\\",\\\"mydojo\\\"],[\\\"dijit\\\",\\\"mydijit\\\"][\\\"dojox\\\",\\\"mydojox\\\"]]"
+			+ "scopeMap=[[\\\"dojo\\\",\\\"mydojo\\\"],[\\\"dijit\\\",\\\"mydijit\\\"][\\\"dojox\\\",\\\"mydojox\\\"]]"
 	},
 	"xdScopeArgs": {
 		defaultValue: "",
@@ -1235,6 +1244,13 @@ buildUtil.processConditionals = function(/*String*/fileName, /*String*/fileConte
 	}
 
 	return fileContents;
+}
+
+buildUtil.setScopeDjConfig = function(/*String*/fileContents, /*String*/djConfigString){
+	//summary: burns in a local djConfig for the file contents.
+	//djConfigString should be a string.
+	//Have to use eval to avoid name condensing by shrinksafe.
+	return fileContents.replace(/\/\*\*Build will replace this comment with a scoped djConfig \*\*\//, 'eval("var djConfig = ' + djConfigString.replace(/(['"])/g, '\\$1') + ';");');
 }
 
 buildUtil.setScopeNames = function(/*String*/fileContents, /*String*/scopeMap){

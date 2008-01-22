@@ -129,8 +129,12 @@ function release(){
 			nameSegment = nameSegment.substring(nameSegment.lastIndexOf("/") + 1, nameSegment.length);
 		}
 		nlsIgnoreString += (nlsIgnoreString ? "|" : "") + buildUtil.regExpEscape(nameSegment);
-		
-		
+
+		//Burn in djConfig for dojo.js/xd.js if requested.
+		if(kwArgs.scopeDjConfig && (layerName.match(/dojo\.xd\.js$/) || layerName.match(/dojo\.js$/))){
+			fileContents = buildUtil.setScopeDjConfig(fileContents, kwArgs.scopeDjConfig);
+		}
+
 		//Burn in scope names for dojo.js/xd.js if requested.
 		if(kwArgs.scopeMap && (layerName.match(/dojo\.xd\.js$/) || layerName.match(/dojo\.js$/))){
 			fileContents = buildUtil.setScopeNames(fileContents, kwArgs.scopeMap);

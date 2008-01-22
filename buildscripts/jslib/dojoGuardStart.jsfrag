@@ -10,9 +10,11 @@
 	]
 	*/
 
-	//The null below can be relaced by a build-time value.
+	/**Build will replace this comment with a scoped djConfig **/
+
+	//The null below can be relaced by a build-time value used instead of djConfig.scopeMap.
 	var sMap = null;
-	
+
 	//See if new scopes need to be defined.
 	if((sMap || (typeof djConfig != "undefined" && djConfig.scopeMap)) && (typeof window != "undefined")){
 		var scopeDef = "", scopePrefix = "", scopeSuffix = "", scopeMap = {}, scopeMapRev = {};
