@@ -27,8 +27,8 @@ buildUtilXd.setXdDojoConfig = function(/*String*/fileContents, /*String*/url){
 	var lineSeparator = fileUtil.getLineSeparator();
 	return fileContents.substring(0, endIndex)
 		+ lineSeparator
-		+ "if(typeof djConfig[\"useXDomain\"] == \"undefined\"){"
-		+ "djConfig.useXDomain = true;};\ndojo.registerModulePath(\"dojo\", \""
+		+ "if(typeof dojo.config[\"useXDomain\"] == \"undefined\"){"
+		+ "dojo.config.useXDomain = true;};\ndojo.registerModulePath(\"dojo\", \""
 		+ url + "/dojo"
 		+ "\");\ndojo.registerModulePath(\"dijit\", \""
 		+ url + "/dijit"
