@@ -1114,8 +1114,8 @@ buildUtil.optimizeCss = function(/*String*/startDir, /*String*/optimizeType){
 				
 				//Read in the file. Make sure we have a JS string.
 				var originalFileContents = fileUtil.readFile(fileName);
-				var fileContents = originalFileContents;
-	
+				var fileContents = buildUtil.flattenCss(fileName, originalFileContents);
+
 				//Do comment removal.
 				try{
 					var startIndex = -1;
@@ -1130,6 +1130,9 @@ buildUtil.optimizeCss = function(/*String*/startDir, /*String*/optimizeType){
 					//Get rid of newlines.
 					if(optimizeType.indexOf(".keepLines") == -1){
 						fileContents = fileContents.replace(/[\r\n]/g, "");
+						fileContents = fileContents.replace(/\s+/g, " ");
+						fileContents = fileContents.replace(/\{\s/g, "{");
+						fileContents = fileContents.replace(/\s\}/g, "}");
 					}
 				}catch(e){
 					fileContents = originalFileContents;
@@ -1142,6 +1145,92 @@ buildUtil.optimizeCss = function(/*String*/startDir, /*String*/optimizeType){
 			}
 		}
 	}
+}
+
+buildUtil.backSlashRegExp = /\\/g;
+buildUtil.cssImportRegExp = /\@import\s+url\(\s*([^)]+)\s*\)(;)?/g;
+buildUtil.cssUrlRegExp = /\url\(\s*([^\)]+)\s*\)?/g;
+
+buildUtil.cleanCssUrlQuotes = function(/*String*/url){
+	//summary: If an URL from a CSS url value contains start/end quotes, remove them.
+	//This is not done in the regexp, since my regexp fu is not that strong,
+	//and the CSS spec allows for ' and " in the URL if they are backslash escaped.
+
+	//Make sure we are not ending in whitespace.
+	//Not very confident of the css regexps above that there will not be ending
+	//whitespace.
+	url = url.replace(/\s+$/, "");
+
+	if(url.charAt(0) == "'" || url.charAt(0) == "\""){
+		url = url.substring(1, url.length - 1);
+	}
+
+	return url;
+}
+
+buildUtil.flattenCss = function(/*String*/fileName, /*String*/fileContents){
+	//summary: inlines nested stylesheets that have @import calls in them.
+
+	//Find the last slash in the name.
+	fileName = fileName.replace(buildUtil.backSlashRegExp, "/");
+	var endIndex = fileName.lastIndexOf("/");
+
+	//Make a file path based on the last slash.
+	//If no slash, so must be just a file name. Use empty string then.
+	var filePath = (endIndex != -1) ? fileName.substring(0, endIndex + 1) : "";
+
+	return fileContents.replace(buildUtil.cssImportRegExp, function(fullMatch, importFileName){
+		importFileName = buildUtil.cleanCssUrlQuotes(importFileName);
+		importFileName = importFileName.replace(buildUtil.backSlashRegExp, "/");
+
+		try{
+			//if a relative path, then tack on the filePath.
+			//If it is not a relative path, then the readFile below will fail,
+			//and we will just skip that import.
+			var importContents = fileUtil.readFile(importFileName.charAt(0) == "/" ? importFileName : filePath + importFileName);
+
+			//Make sure to flatten any nested imports.
+			importContents = buildUtil.flattenCss(importFileName, importContents);
+			
+			//Make the full import path
+			var importEndIndex = importFileName.lastIndexOf("/");
+
+			//Make a file path based on the last slash.
+			//If no slash, so must be just a file name. Use empty string then.
+			var importPath = (importEndIndex != -1) ? importFileName.substring(0, importEndIndex + 1) : "";
+
+			//Modify URL paths to match the path represented by this file.
+			importContents = importContents.replace(buildUtil.cssUrlRegExp, function(fullMatch, urlMatch){
+				var fixedUrlMatch = buildUtil.cleanCssUrlQuotes(urlMatch);
+				fixedUrlMatch = fixedUrlMatch.replace(buildUtil.backSlashRegExp, "/");
+				if(fixedUrlMatch.charAt(0) != "/"){
+					//It is a relative URL, tack on the path prefix
+					urlMatch = importPath + fixedUrlMatch;
+				}else{
+					logger.trace(importFileName + "\n  URL not a relative URL, skipping: " + urlMatch);
+				}
+
+				//Collapse .. and .
+				var parts = urlMatch.split("/");
+				for(var i = parts.length - 1; i > 0; i--){
+					if(parts[i] == "."){
+						parts.splice(i, 1);
+					}else if(parts[i] == ".."){
+						if(i != 0 && parts[i - 1] != "..");
+						parts.splice(i - 1, 2);
+						i -= 1;
+					}
+				}
+
+				return "url(" + parts.join("/") + ")";
+			});
+
+			return importContents;
+		}catch(e){
+			logger.trace(fileName + "\n  Cannot inline css import, skipping: " + importFileName);
+			return fullMatch;
+		}
+	});
 }
 
 buildUtil.guardProvideRegExp = /dojo\.provide\(([\'\"].*[\'\"])\)/;
