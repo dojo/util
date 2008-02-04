@@ -72,7 +72,7 @@ var layerLegalText = fileUtil.readFile(buildscriptDir + "copyright.txt")
 dependencies.loader = kwArgs.loader;
 
 //Build the layer contents.
-var depResult = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileProperties, buildscriptDir), kwArgs.version, kwArgs);
+var depResult = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileProperties, null, buildscriptDir), kwArgs.version, kwArgs);
 
 //Grab the content from the "dojo.xd.js" layer.
 var layerName = depResult[1].layerName;

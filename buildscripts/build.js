@@ -105,7 +105,7 @@ function release(){
 	}
 
 	logger.trace("Building dojo.js and layer files");
-	var result = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileProperties), kwArgs.version, kwArgs);
+	var result = buildUtil.makeDojoJs(buildUtil.loadDependencyList(kwArgs.profileProperties, kwArgs), kwArgs.version, kwArgs);
 
 	//Save the build layers. The first layer is dojo.js.
 	var defaultLegalText = copyrightText + buildNoticeText;

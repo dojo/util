@@ -214,7 +214,7 @@ buildUtil.includeLoaderFiles = function(/*String*/dojoLoader, /*String or Array*
 	}
 }
 
-buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array*/hostenvType, /*String?*/buildscriptsPath){
+buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array*/hostenvType, /*Object?*/kwArgs, /*String?*/buildscriptsPath){
 	//summary: Main function that traces the files that are needed for a give list of dependencies.
 
 	if(!dependencies){
@@ -334,7 +334,11 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 			var old_load = load;
 			load = function(uri){
 				try{
-					var text = buildUtil.removeComments(fileUtil.readFile(uri));
+					//Strip comments and pply conditional directives before tracing the dependencies.
+					var text = fileUtil.readFile(uri);
+					var text = (kwArgs ? buildUtil.processConditionals(layerName, text, kwArgs) : text);
+					var text = buildUtil.removeComments(text);
+
 					var requires = dojo._getRequiresAndProvides(text);
 					eval(requires.join(";"));
 					dojo._loadedUrls.push(uri);
@@ -611,11 +615,11 @@ buildUtil.addPrefixesFromDependencies = function(/*Array*/prefixStore, /*Array*/
 	}
 }
 
-buildUtil.loadDependencyList = function(/*Object*/profile, /*String?*/buildscriptsPath){
+buildUtil.loadDependencyList = function(/*Object*/profile, /*Object?*/kwArgs, /*String?*/buildscriptsPath){
 	//summary: Traverses the dependencies in the profile object.
 	//profile:
 	//		The profile object that is a result of a buildUtil.evalProfile() call.
-	var depResult = buildUtil.getDependencyList(profile.dependencies, profile.hostenvType, buildscriptsPath);
+	var depResult = buildUtil.getDependencyList(profile.dependencies, profile.hostenvType, kwArgs, buildscriptsPath);
 	depResult.dependencies = profile.dependencies;
 	
 	return depResult;
