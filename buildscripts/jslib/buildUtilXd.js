@@ -49,9 +49,10 @@ buildUtilXd.xdgen = function(
 	//summary: generates the .xd.js files for a build.
 	var jsFileNames = fileUtil.getFilteredFileList(prefixPath, /\.js$/, true);
 	
-	//Construct a regexp to avoid xd generating anything for the dojo/_base/_loader directory
-	//Since it is likely to make invalid javascript, and those files are never xd-loaded.
-	var loaderIgnoreRegExp = /dojo\/_base\/_loader\//;
+	//Construct a regexp to avoid xd generating loader_xd.js, since shrinksafe
+	//does not like the resulting javascript that is generated, because of
+	//bug http://trac.dojotoolkit.org/ticket/2766
+	var loaderIgnoreRegExp = /dojo\/_base\/_loader\/loader_xd/;
 
 	for(var i = 0; i < jsFileNames.length; i++){
 		var jsFileName = jsFileNames[i];
