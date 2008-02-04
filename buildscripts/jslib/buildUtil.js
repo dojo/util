@@ -443,6 +443,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 			if(!layer["discard"]){
 				result.push({
 					layerName: layerName,
+					resourceName: layer.resourceName,
 					copyrightFile: layer.copyrightFile,
 					depList: depList,
 					provideList: currentProvideList
@@ -627,6 +628,7 @@ buildUtil.loadDependencyList = function(/*Object*/profile, /*Object?*/kwArgs, /*
 
 buildUtil.createLayerContents = function(
 	/*String*/layerName,
+	/*String*/resourceName,
 	/*Array*/depList,
 	/*Array*/provideList,
 	/*String*/version,
@@ -635,7 +637,7 @@ buildUtil.createLayerContents = function(
 
 	//Concat the files together, and mark where we should insert all the
 	//provide statements.
-	var dojoContents = "";
+	var dojoContents = resourceName ? "dojo.provide(\"" + resourceName + "\");\r\n" : "";
 	for(var i = 0; i < depList.length; i++){
 		//Run the file contents through the include/exclude "preprocessor".
 		var depContents = fileUtil.readFile(depList[i]);
@@ -702,7 +704,7 @@ buildUtil.makeDojoJs = function(/*Object*/dependencyResult, /*String*/version, /
 	//Cycle through the layers to create the content for each layer.
 	for(var i = 0; i< dependencyResult.length; i++){
 		var layerResult = dependencyResult[i];
-		layerResult.contents = buildUtil.createLayerContents(layerResult.layerName, layerResult.depList, layerResult.provideList, version, kwArgs);
+		layerResult.contents = buildUtil.createLayerContents(layerResult.layerName, layerResult.resourceName, layerResult.depList, layerResult.provideList, version, kwArgs);
 	}
 
 	//Object with properties:
