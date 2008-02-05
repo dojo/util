@@ -1154,7 +1154,7 @@ buildUtil.optimizeCss = function(/*String*/startDir, /*String*/optimizeType){
 }
 
 buildUtil.backSlashRegExp = /\\/g;
-buildUtil.cssImportRegExp = /\@import\s+url\(\s*([^)]+)\s*\)(;)?/g;
+buildUtil.cssImportRegExp = /\@import\s+(url\()?\s*([^);]+)\s*(\))?([\w, ]*)(;)?/g;
 buildUtil.cssUrlRegExp = /\url\(\s*([^\)]+)\s*\)?/g;
 
 buildUtil.cleanCssUrlQuotes = function(/*String*/url){
@@ -1185,7 +1185,12 @@ buildUtil.flattenCss = function(/*String*/fileName, /*String*/fileContents){
 	//If no slash, so must be just a file name. Use empty string then.
 	var filePath = (endIndex != -1) ? fileName.substring(0, endIndex + 1) : "";
 
-	return fileContents.replace(buildUtil.cssImportRegExp, function(fullMatch, importFileName){
+	return fileContents.replace(buildUtil.cssImportRegExp, function(fullMatch, urlStart, importFileName, urlEnd, mediaTypes){
+		//Only process media type "all" or empty media type rules.
+		if(mediaTypes && ((mediaTypes.replace(/^\s\s*/, '').replace(/\s\s*$/, '')) != "all")){
+			return fullMatch;
+		}
+
 		importFileName = buildUtil.cleanCssUrlQuotes(importFileName);
 		importFileName = importFileName.replace(buildUtil.backSlashRegExp, "/");
 
