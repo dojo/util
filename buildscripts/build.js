@@ -59,8 +59,10 @@ function clean(){
 function release(){
 	logger.info("Using profile: " + kwArgs.profileFile);
 	logger.info("Using version number: " + kwArgs.version + " for the release.");
-	
-	clean();
+
+	if(!kwArgs.buildLayers){
+		clean();
+	}
 
 	var dependencies = kwArgs.profileProperties.dependencies;
 	var prefixes = dependencies.prefixes;
@@ -70,6 +72,14 @@ function release(){
 	
 	//Find the dojo prefix path. Need it to process other module prefixes.
 	var dojoPrefixPath = buildUtil.getDojoPrefixPath(prefixes);
+
+	//Convert targeted build layers to an array.
+	var buildLayers = null;
+	if(kwArgs.buildLayers){
+		//Make sure to copy over any "source" files for the layers be targeted by
+		//buildLayers. Otherwise dependencies will not be calculated correctly.
+		buildLayers = kwArgs.buildLayers.split(",");
+	}
 
 	//Get the list of module directories we need to process.
 	//They will be in the dependencies.prefixes array.
@@ -83,7 +93,7 @@ function release(){
 		if(finalPrefixPath.indexOf(".") == 0 && prefixName != "dojo"){
 			finalPrefixPath = dojoPrefixPath + "/" + prefixPath;
 		}
-		_copyToRelease(prefixName, finalPrefixPath, kwArgs);
+		_copyToRelease(prefixName, finalPrefixPath, kwArgs, buildLayers);
 
 		if(kwArgs.symbol){
 			var releasePath = kwArgs.releaseDir + "/"  + prefixName.replace(/\./g, "/");
@@ -112,6 +122,13 @@ function release(){
 	var dojoReleaseDir = kwArgs.releaseDir + "/dojo/";
 	var layerIgnoreString = "";
 	var nlsIgnoreString = "";
+	
+	//Add an ending comma to the list to make matches easier.
+	//Also make sure we normalize to unix path separators.
+	if(kwArgs.buildLayers){
+		kwArgs.buildLayers += ",";
+		kwArgs.buildLayers = kwArgs.buildLayers.replace(/\\/g, "/");
+	}
 	for(var i = 0; i < result.length; i++){
 		var currentLayer = result[i];
 		var layerName = currentLayer.layerName;
@@ -129,6 +146,11 @@ function release(){
 			nameSegment = nameSegment.substring(nameSegment.lastIndexOf("/") + 1, nameSegment.length);
 		}
 		nlsIgnoreString += (nlsIgnoreString ? "|" : "") + buildUtil.regExpEscape(nameSegment);
+
+		//If only want to build certain layers, skip ones that do not match.
+		if(kwArgs.buildLayers && kwArgs.buildLayers.indexOf(layerName + ",") == -1){
+			continue;
+		}
 
 		//Burn in djConfig for dojo.js/xd.js if requested.
 		if(kwArgs.scopeDjConfig && (layerName.match(/dojo\.xd\.js$/) || layerName.match(/dojo\.js$/))){
@@ -197,9 +219,12 @@ function release(){
 			copyrightText = fileUtil.readFile(prefixes[i][2]);
 		}
 
-		_optimizeReleaseDirs(prefixes[i][0], prefixes[i][1], copyrightText, kwArgs, layerIgnoreRegExp, nlsIgnoreRegExp);
+		//Optimize the release dirs, but only if we are not building just a layer.
+		if(!kwArgs.buildLayers){
+			_optimizeReleaseDirs(prefixes[i][0], prefixes[i][1], copyrightText, kwArgs, layerIgnoreRegExp, nlsIgnoreRegExp);
+		}
 	}
-	
+
 	//Copy over DOH if tests where copied.
 	if(kwArgs.copyTests){
 		copyRegExp = new RegExp(prefixName.replace(/\\/g, "/") + "/(?!tests)");
@@ -211,10 +236,11 @@ function release(){
 //********* End release *********
 
 //********* Start _copyToRelease *********
-function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kwArgs){
+function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kwArgs, /*Array?*/buildLayers){
 	//summary: copies modules and supporting files from the prefix path to the release
 	//directory. Also adds code guards to module resources.
-	var releasePath = kwArgs.releaseDir + "/"  + prefixName.replace(/\./g, "/");
+	var prefixSlashName = prefixName.replace(/\./g, "/");
+	var releasePath = kwArgs.releaseDir + "/"  + prefixSlashName;
 	var copyRegExp = /./;
 	
 	//Use the copyRegExp to filter out tests if requested.
@@ -223,14 +249,42 @@ function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kw
 	}
 
 	logger.info("Copying: " + prefixPath + " to: " + releasePath);
-	fileUtil.copyDir(prefixPath, releasePath, copyRegExp);
-	
+	var copiedFiles = fileUtil.copyDir(prefixPath, releasePath, copyRegExp, true);
+
+	//Make sure to copy over any "source" files for the layers be targeted by
+	//buildLayers. Otherwise dependencies will not be calculated correctly.
+	if(buildLayers){
+		for(i = 0; i < buildLayers.length; i++){		
+			var relativeLayerPath = buildLayers[i].replace(/\.\.\//g, "");
+			
+			//See if relativeLayerPath has teh prefix slash name in it.
+			//This means the layer is probably in this prefix dir (but no guarantee)
+			//This is a bit hacky.
+			if(relativeLayerPath.indexOf(prefixSlashName) == 0){
+				
+				//Remove the prefix part from the dir and add the prefix path to get a
+				//full path.
+				var layerPathSuffix = relativeLayerPath.replace(prefixSlashName, "");
+				relativeLayerPath = prefixPath + layerPathSuffix;
+				
+				//If that source path exists, it means we need to copy over the source
+				//layer file.
+				if((new java.io.File(relativeLayerPath)).exists()){
+					//Need to copy over from the source area.
+					var destPath = releasePath + layerPathSuffix;
+					fileUtil.copyFile(relativeLayerPath, destPath);
+				}
+			}
+		}
+	}
+
 	//Put in code guards for each resource, to protect against redefinition of
 	//code in the layered build cases. Do this here before the layers are built.
-	buildUtil.addGuards(releasePath);
+	if(copiedFiles){
+		buildUtil.addGuards(copiedFiles);
+	}
 }
 //********* End _copyToRelease *********
-
 
 //********* Start _optimizeReleaseDirs *********
 function _optimizeReleaseDirs(

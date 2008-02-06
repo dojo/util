@@ -121,7 +121,13 @@ buildUtil.DojoBuildOptions = {
 		helpText: "If the loader=xdomain build option is used, then the value of this option "
 			+ "will be used instead of 'dojo' for the 'dojo._xdResourceLoaded()' calls that are done in the .xd.js files. "
 			+ "This allows for dojo to be under a different scope name but still allow xdomain loading with that scope name."
-	}    
+	},
+	"buildLayers": {
+		defaultValue: "",
+		helpText: "A comma-separated list of layer names to build. Using this option means that only those layers will be built. "
+			+ "This helps if you are doing quick development and test cycles with layers. If you have problems using this option, "
+			+ "try removing it and doing a full build with action=clean,release. This build option assumes you have done at least one full build first."
+	}
 };
 
 buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
@@ -1246,27 +1252,44 @@ buildUtil.flattenCss = function(/*String*/fileName, /*String*/fileContents){
 
 buildUtil.guardProvideRegExp = /dojo\.provide\(([\'\"].*[\'\"])\)/;
 
-buildUtil.addGuards = function(/*String*/startDir){
+buildUtil.addGuards = function(/*String || Array*/startDir){
 	//summary: adds a definition guard around code in a file to protect
-	//against redefinition cases when layered builds are used.
+	//against redefinition cases when layered builds are used. Accepts a string
+	//of the start directory to use, or an array of file name strings to process.
 	var lineSeparator = fileUtil.getLineSeparator();
-	var fileList = fileUtil.getFilteredFileList(startDir, /\.js$/, true);
+
+	var fileList = startDir;
+	if(fileList instanceof String){
+		fileList = fileUtil.getFilteredFileList(fileList, /\.js$/, true);
+	}else{
+		//Make sure we only process .js files
+		for(var i = fileList.length - 1; i >= 0; i--){
+			if(!fileList[i].match(/\.js$/)){
+				fileList.splice(i, 1);
+			}
+		}
+	}
+
 	if(fileList){
 		for(var i = 0; i < fileList.length; i++){
 			var fileContents = fileUtil.readFile(fileList[i]);
 			buildUtil.guardProvideRegExp.lastIndex = 0;
 			var match = buildUtil.guardProvideRegExp.exec(fileContents);
 			if(match){
-				fileContents = 'if(!dojo._hasResource[' + match[1] + ']){ //_hasResource checks added by build. Do not use _hasResource directly in your code.'
-					+ lineSeparator
-					+ 'dojo._hasResource[' + match[1] + '] = true;'
-					+ lineSeparator
-					+ fileContents
-					+ lineSeparator
-					+ '}'
-					+ lineSeparator;
-
-				fileUtil.saveUtf8File(fileList[i], fileContents);
+				//Only add the guard if there is not already one in the file.
+				var existingGuardRegExp = new RegExp('if\\(\\!dojo\\._hasResource\\[' + match[1] + '\\]\\)');
+				if(!fileContents.match(existingGuardRegExp)){
+					fileContents = 'if(!dojo._hasResource[' + match[1] + ']){ //_hasResource checks added by build. Do not use _hasResource directly in your code.'
+						+ lineSeparator
+						+ 'dojo._hasResource[' + match[1] + '] = true;'
+						+ lineSeparator
+						+ fileContents
+						+ lineSeparator
+						+ '}'
+						+ lineSeparator;
+	
+					fileUtil.saveUtf8File(fileList[i], fileContents);
+				}
 			}
 		}
 	}

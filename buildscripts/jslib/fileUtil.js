@@ -45,34 +45,57 @@ fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilt
 }
 
 
-fileUtil.copyDir = function(/*String*/srcDir, /*String*/destDir, /*RegExp*/regExpFilter){
+fileUtil.copyDir = function(/*String*/srcDir, /*String*/destDir, /*RegExp*/regExpFilter, /*boolean?*/onlyCopyNew){
 	//summary: copies files from srcDir to destDir using the regExpFilter to determine if the
-	//file should be copied.
+	//file should be copied. Returns a list file name strings of the destinations that were copied.
 	var fileNames = fileUtil.getFilteredFileList(srcDir, regExpFilter, true);
+	var copiedFiles = [];
 	
 	for(var i = 0; i < fileNames.length; i++){
 		var srcFileName = fileNames[i];
 		var destFileName = srcFileName.replace(srcDir, destDir);
 
-		//logger.trace("Src filename: " + srcFileName);
-		//logger.trace("Dest filename: " + destFileName);
-
-		//Make sure destination dir exists.
-		var destFile = new java.io.File(destFileName);
-		var parentDir = destFile.getParentFile();
-		if(!parentDir.exists()){
-			if(!parentDir.mkdirs()){
-				throw "Could not create directory: " + parentDir.getAbsolutePath();
-			}
+		if(fileUtil.copyFile(srcFileName, destFileName, onlyCopyNew)){
+			copiedFiles.push(destFileName);
 		}
-
-		//Java's version of copy file.
-		var srcChannel = new java.io.FileInputStream(srcFileName).getChannel();
-		var destChannel = new java.io.FileOutputStream(destFileName).getChannel();
-		destChannel.transferFrom(srcChannel, 0, srcChannel.size());
-		srcChannel.close();
-		destChannel.close();
 	}
+
+	return copiedFiles.length ? copiedFiles : null; //Array or null
+}
+
+fileUtil.copyFile = function(/*String*/srcFileName, /*String*/destFileName, /*boolean?*/onlyCopyNew){
+	//summary: copies srcFileName to destFileName. If onlyCopyNew is set, it only copies the file if
+	//srcFileName is newer than destFileName. Returns a boolean indicating if the copy occurred.
+	var destFile = new java.io.File(destFileName);
+
+	//logger.trace("Src filename: " + srcFileName);
+	//logger.trace("Dest filename: " + destFileName);
+
+	//If onlyCopyNew is true, then compare dates and only copy if the src is newer
+	//than dest.
+	if(onlyCopyNew){
+		var srcFile = new java.io.File(srcFileName);
+		if(destFile.exists() && destFile.lastModified() >= srcFile.lastModified()){
+			return false; //Boolean
+		}
+	}
+
+	//Make sure destination dir exists.
+	var parentDir = destFile.getParentFile();
+	if(!parentDir.exists()){
+		if(!parentDir.mkdirs()){
+			throw "Could not create directory: " + parentDir.getAbsolutePath();
+		}
+	}
+
+	//Java's version of copy file.
+	var srcChannel = new java.io.FileInputStream(srcFileName).getChannel();
+	var destChannel = new java.io.FileOutputStream(destFileName).getChannel();
+	destChannel.transferFrom(srcChannel, 0, srcChannel.size());
+	srcChannel.close();
+	destChannel.close();
+	
+	return true; //Boolean
 }
 
 fileUtil.readFile = function(/*String*/path, /*String?*/encoding){
