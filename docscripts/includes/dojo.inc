@@ -206,12 +206,16 @@ function dojo_get_contents($namespace, $file_name) {
     }
     elseif ($args[2]->isA(DojoArray)) {
       $items = $args[2]->getArray()->getItems();
-      foreach ($items as $item) {
+      foreach ($items as $i => $item) {
         if ($item->isA(DojoVariable)) {
           $item = $item->getVariable();
-          $output[$name]['chains']['prototype'][] = $item;
+          if (!$i) {
+            $output[$name]['chains']['prototype'][] = $item;
+          }
+          else {
+            $output[$name]['mixins']['prototype'][] = $item . '.prototype';
+          }
           $output[$name]['chains']['call'][] = $item;
-          $output[$name]['mixins']['prototype'][] = $item . '.prototype';
         }
       }
     }
