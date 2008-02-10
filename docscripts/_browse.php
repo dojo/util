@@ -151,13 +151,11 @@ if(!empty($_REQUEST['ns'])){
                 
                 // the stripped source, and some minimal toggling to show/hide  
                 case "source" : 
-                  /*  
                   $print .= "<li class=\"source\"><em>source: [<a onclick=\"tgShow('unique".++$u."');\">view</a>]</em> 
                     <div class=\"nosho\" id=\"unique".$u."\">\n
                     ".ltrim(str_replace("\n","<br>",str_replace("\t","&nbsp;",$val2)))."
                     </div>
                     ";  
-                  */
                   break;
 
                 case "chains" :

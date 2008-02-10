@@ -220,6 +220,7 @@ function dojo_get_contents($namespace, $file_name) {
       }
     }
 
+    unset($init);
     if ($args[4]->isA(DojoObject)) {
       $object = $args[4]->getObject();
       $object->setName($name);
@@ -228,12 +229,12 @@ function dojo_get_contents($namespace, $file_name) {
       foreach ($values as $key => $value) {
         $object->addBlockCommentKey($key);
         $full_name = "$name.$key";
-        if (($key == 'initializer' || $key == 'constructor') && $value->isA(DojoFunctionDeclare)) {
-          $init = $value->getFunction();
-          $init->setConstructor(true);
-          continue;
-        }
         if ($value->isA(DojoFunctionDeclare)) {
+          if (($key == 'initializer' || $key == 'constructor')) {
+            $init = $value->getFunction();
+            $init->setConstructor(true);
+            continue;
+          }
           $function = $value->getFunction($value);
           $function->setPrototype($name);
         }
