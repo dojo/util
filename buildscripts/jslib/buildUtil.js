@@ -1204,10 +1204,11 @@ buildUtil.flattenCss = function(/*String*/fileName, /*String*/fileContents){
 			//if a relative path, then tack on the filePath.
 			//If it is not a relative path, then the readFile below will fail,
 			//and we will just skip that import.
-			var importContents = fileUtil.readFile(importFileName.charAt(0) == "/" ? importFileName : filePath + importFileName);
+			var fullImportFileName = importFileName.charAt(0) == "/" ? importFileName : filePath + importFileName;
+			var importContents = fileUtil.readFile(fullImportFileName);
 
 			//Make sure to flatten any nested imports.
-			importContents = buildUtil.flattenCss(importFileName, importContents);
+			importContents = buildUtil.flattenCss(fullImportFileName, importContents);
 			
 			//Make the full import path
 			var importEndIndex = importFileName.lastIndexOf("/");
