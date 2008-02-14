@@ -202,7 +202,6 @@ function dojo_get_contents($namespace, $file_name) {
     if ($args[2]->isA(DojoVariable)) {
       $output[$name]['chains']['prototype'][] = $args[2]->getVariable();
       $output[$name]['chains']['call'][] = $args[2]->getVariable();
-      $output[$name]['mixins']['prototype'][] = $args[2]->getVariable() . '.prototype';
     }
     elseif ($args[2]->isA(DojoArray)) {
       $items = $args[2]->getArray()->getItems();
