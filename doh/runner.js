@@ -929,4 +929,4 @@ tests = doh;
 
 		doh.run();
 	}
-}).apply(this, typeof arguments != "undefined" ? arguments : null);
+}).apply(this, typeof arguments != "undefined" ? arguments : [null]);
