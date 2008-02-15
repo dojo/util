@@ -66,14 +66,23 @@ class DojoObject extends DojoBlock
           if ($end[0] != $this->start[0] && $end[1] != $this->start[1]) {
             $between_lines = Text::chop($this->package->getSource(), $end[0], $end[1], $line_number, strlen($match[1]), true);
             $between_started = false;
+            $between_buffer = array();
+            $place_between = true;
             foreach ($between_lines as $between_line) {
               if ($between_started && empty($between_line)) {
-                break;
+                $place_between = false;
               }
               if(trim($between_line)){
                 $between_started = true;
               }
-              $this->body->addBlockCommentLine($between_line);
+              if ($between_started) {
+                $between_buffer[] = $between_line;
+              }
+            }
+            if ($place_between){
+              foreach ($between_buffer as $between_line) {
+                $this->body->addBlockCommentLine($between_line);
+              }
             }
           }
           $end = array($line_number, strlen($match[0]));
