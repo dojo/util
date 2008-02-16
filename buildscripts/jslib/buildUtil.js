@@ -65,9 +65,19 @@ buildUtil.DojoBuildOptions = {
 	"cssOptimize": {
 		defaultValue: "",
 		helpText: "Specifies how to optimize CSS files. If \"comments\" is specified, "
-			+ "then code comments and line returns are stripped. If \"comments.keepLines\" "	
-			+ "is specified, then code comments are stripped, but line returns are preserved."
+			+ "then code comments and line returns are stripped, and files referenced via @import "
+			+ "are inlined. If \"comments.keepLines\" "	
+			+ "is specified, then code comments are stripped and @import calls are inlined, but line returns are preserved."
 	},
+
+	"cssImportIgnore": {
+		defaultValue: "",
+		helpText: "If using cssOptimize=\"comments\", then you can force the @import inlining step "
+			+ "to ignore a set of files by using this option. The value of this option should be a comma "	
+			+ "separated list of CSS files names to ignore. The file names should match whatever strings "
+			+ "are used for the @import calls."
+	},
+
 	"copyTests": {
 		defaultValue: true,
 		helpText: "Turn on or off copying of test files."
@@ -1114,10 +1124,15 @@ buildUtil.stripComments = function(/*String*/startDir, /*RegeExp*/optimizeIgnore
 	}
 }
 
-buildUtil.optimizeCss = function(/*String*/startDir, /*String*/optimizeType){
+buildUtil.optimizeCss = function(/*String*/startDir, /*String*/optimizeType, /*String?*/cssImportIgnore){
 	//summmary: Optimizes CSS files in a directory.
 	
 	if(optimizeType.indexOf("comments") != -1){
+		//Make sure we have a delimited ignore list to make matching faster
+		if(cssImportIgnore){
+			cssImportIgnore = cssImportIgnore + ",";
+		}
+
 		var fileList = fileUtil.getFilteredFileList(startDir, /\.css$/, true);
 		if(fileList){
 			for(var i = 0; i < fileList.length; i++){
@@ -1126,7 +1141,7 @@ buildUtil.optimizeCss = function(/*String*/startDir, /*String*/optimizeType){
 				
 				//Read in the file. Make sure we have a JS string.
 				var originalFileContents = fileUtil.readFile(fileName);
-				var fileContents = buildUtil.flattenCss(fileName, originalFileContents);
+				var fileContents = buildUtil.flattenCss(fileName, originalFileContents, cssImportIgnore);
 
 				//Do comment removal.
 				try{
@@ -1145,6 +1160,10 @@ buildUtil.optimizeCss = function(/*String*/startDir, /*String*/optimizeType){
 						fileContents = fileContents.replace(/\s+/g, " ");
 						fileContents = fileContents.replace(/\{\s/g, "{");
 						fileContents = fileContents.replace(/\s\}/g, "}");
+					}else{
+						//Remove multiple empty lines.
+						fileContents = fileContents.replace(/(\r\n)+/g, "\r\n");
+						fileContents = fileContents.replace(/(\n)+/g, "\n");
 					}
 				}catch(e){
 					fileContents = originalFileContents;
@@ -1180,7 +1199,7 @@ buildUtil.cleanCssUrlQuotes = function(/*String*/url){
 	return url;
 }
 
-buildUtil.flattenCss = function(/*String*/fileName, /*String*/fileContents){
+buildUtil.flattenCss = function(/*String*/fileName, /*String*/fileContents, /*String?*/cssImportIgnore){
 	//summary: inlines nested stylesheets that have @import calls in them.
 
 	//Find the last slash in the name.
@@ -1198,6 +1217,13 @@ buildUtil.flattenCss = function(/*String*/fileName, /*String*/fileContents){
 		}
 
 		importFileName = buildUtil.cleanCssUrlQuotes(importFileName);
+		
+		//Ignore the file import if it is part of an ignore list.
+		if(cssImportIgnore && cssImportIgnore.indexOf(importFileName + ",") != -1){
+			return fullMatch;
+		}
+
+		//Make sure we have a unix path for the rest of the operation.
 		importFileName = importFileName.replace(buildUtil.backSlashRegExp, "/");
 
 		try{

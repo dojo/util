@@ -60,7 +60,7 @@ mv $buildScriptsName $buildName
 #Run the build.
 cd $buildName/util/buildscripts/
 chmod +x ./build.sh
-./build.sh profile=standard version=$1 releaseName=$buildName action=release
+./build.sh profile=standard version=$1 releaseName=$buildName cssOptimize=comments.keepLines cssImportIgnore=../dijit.css action=release
 cd ../../release/
 
 #Pause to allow manual process of packing Dojo.

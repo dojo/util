@@ -318,7 +318,7 @@ function _optimizeReleaseDirs(
 	}
 	
 	if(kwArgs.cssOptimize){
-		buildUtil.optimizeCss(releasePath, kwArgs.cssOptimize);
+		buildUtil.optimizeCss(releasePath, kwArgs.cssOptimize, kwArgs.cssImportIgnore);
 	}
 }
 //********* End _optimizeReleaseDirs *********
