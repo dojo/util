@@ -581,6 +581,18 @@ doh._arrayEq = function(expected, actual){
 }
 
 doh._objPropEq = function(expected, actual){
+	// That seems the way to compare Date-instances, since they have no properties
+	// so we can only compare using instanceof it seems. Better ideas?
+	if(expected instanceof Date){
+		return actual instanceof Date && expected==actual;
+	}
+	// Make sure ALL THE SAME properties are in both objects!
+	for(var x in actual){ // Lets check "actual" here, expected is checked below.
+		if(typeof expected[x]=="undefined"){
+			return false;
+		}
+	};
+
 	for(var x in expected){
 		if(!doh.assertEqual(expected[x], actual[x])){
 			return false;
