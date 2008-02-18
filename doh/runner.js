@@ -264,7 +264,7 @@ doh.extend(doh.Deferred, {
 		var res = this.results[fired];
 		var self = this;
 		var cb = null;
-		while (chain.length > 0 && this.paused == 0) {
+		while (chain.length > 0 && this.paused == 0){
 			// Array
 			var pair = chain.shift();
 			var f = pair[fired];
@@ -581,14 +581,12 @@ doh._arrayEq = function(expected, actual){
 }
 
 doh._objPropEq = function(expected, actual){
-	// That seems the way to compare Date-instances, since they have no properties
-	// so we can only compare using instanceof it seems. Better ideas?
 	if(expected instanceof Date){
-		return actual instanceof Date && expected==actual;
+		return actual instanceof Date && expected.getTime()==actual.getTime();
 	}
 	// Make sure ALL THE SAME properties are in both objects!
 	for(var x in actual){ // Lets check "actual" here, expected is checked below.
-		if(typeof expected[x]=="undefined"){
+		if(expected[x] === undefined){
 			return false;
 		}
 	};
@@ -602,7 +600,7 @@ doh._objPropEq = function(expected, actual){
 }
 
 doh._isArray = function(it){
-	return (it && it instanceof Array || typeof it == "array" || ((typeof dojo["NodeList"] != "undefined") && (it instanceof dojo.NodeList)));
+	return (it && it instanceof Array || typeof it == "array" || (dojo["NodeList"] !== undefined && it instanceof dojo.NodeList));
 }
 
 //
