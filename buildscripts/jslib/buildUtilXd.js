@@ -61,8 +61,8 @@ buildUtilXd.xdgen = function(
 		//processed, so be sure to skip those.
 		if(!jsFileName.match(optimizeIgnoreRegExp) && !jsFileName.match(loaderIgnoreRegExp)){
 			var xdFileName = jsFileName.replace(/\.js$/, ".xd.js");
-			var fileContents = readText(jsFileName);
-			
+			var fileContents = fileUtil.readFile(jsFileName);
+
 			//Files in nls directories, except for the ones that have multiple
 			//bundles flattened (therefore have a dojo.provide call),
 			//need to have special xd contents.
