@@ -1260,9 +1260,10 @@ buildUtil.flattenCss = function(/*String*/fileName, /*String*/fileContents, /*St
 					if(parts[i] == "."){
 						parts.splice(i, 1);
 					}else if(parts[i] == ".."){
-						if(i != 0 && parts[i - 1] != "..");
-						parts.splice(i - 1, 2);
-						i -= 1;
+						if(i != 0 && parts[i - 1] != ".."){
+							parts.splice(i - 1, 2);
+							i -= 1;
+						}
 					}
 				}
 
