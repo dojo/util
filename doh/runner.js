@@ -328,7 +328,7 @@ doh.registerTestNs = function(/*String*/ group, /*Object*/ ns){
 	//		fixtures (setUp(), tearDown(), and runTest()), please use
 	//		registerTest() or registerTests().
 	for(var x in ns){
-		if(	(x.charAt(0) == "_") &&
+		if(	(x.charAt(0) != "_") &&
 			(typeof ns[x] == "function") ){
 			this.registerTest(group, ns[x]);
 		}
