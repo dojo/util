@@ -224,6 +224,7 @@ function dojo_get_contents($namespace, $file_name) {
       $object = $args[4]->getObject();
       $object->setName($name);
       $object->setAnonymous(true);
+      $object->addBlockCommentKeySet('example');
       $values = $object->getValues();
       foreach ($values as $key => $value) {
         $object->addBlockCommentKey($key);
@@ -245,7 +246,10 @@ function dojo_get_contents($namespace, $file_name) {
 
       $keys = $object->getBlockCommentKeys();
       foreach ($keys as $key) {
-        if ($key == 'summary') {
+        if ($key == 'example') {
+          $output[$name]['examples'] = $object->getBlockComment('example');
+        }
+        elseif ($key == 'summary') {
           $output[$name]['summary'] = $object->getBlockComment('summary');
         }
         elseif ($key == 'description') {

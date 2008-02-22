@@ -47,7 +47,11 @@ class DojoObject extends DojoBlock
   public function addBlockCommentKey($key){
     return $this->body->addBlockCommentKey($key);
   }
-  
+
+  public function addBlockCommentKeySet($key){
+    return $this->body->addBlockCOmmentKeySet($key);
+  }
+
   public function build(){
     if(!$this->start){
       die("DojoObject->build() used before setting a start position");
