@@ -341,10 +341,18 @@ function dojo_get_contents($namespace, $file_name) {
   // Handle. dojo.lang.extend and dojo.lang.mixin calls
   foreach ($mixin_calls as $call) {
     $is_prototype = false;
-    if ($call->getParameter(0)->isA(DojoVariable)) {
-      $object = $call->getParameter(0)->getVariable();
-      if (strpos($object, '(') !== false) {
-        continue;
+    if ($call->getParameter(0)->isA(DojoVariable) || $call->getParameter(0)->isA(DojoFunctionDeclare)) {
+      if ($call->getParameter(0)->isA(dojoVariable)) {
+        $object = $call->getParameter(0)->getVariable();
+        if (strpos($object, '(') !== false) {
+          continue;
+        }
+      }
+      else {
+        $function = $call->getParameter(0)->getFunction();
+        $function->setConstructor(true);
+        $function->rollOut($output);
+        $object = $function->getFunctionName();
       }
       $call_name = $call->getName();
 

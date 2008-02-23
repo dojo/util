@@ -29,6 +29,13 @@ class DojoFunctionCall extends DojoBlock
       return $end;
   }
 
+  public function getAssignment() {
+    $this->build();
+    $code = $this->package->getCode();
+    $line = $code[$this->start[1]];
+    print $line;
+  }
+
   public function removeCodeFrom($lines){
     for($i = $this->start[0]; $i <= $this->end[0]; $i++){
       $line = $lines[$i];

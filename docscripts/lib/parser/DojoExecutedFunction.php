@@ -55,7 +55,9 @@ class DojoExecutedFunction extends DojoFunctionDeclare
   }
 
   public function rollOut(&$output) {
-    parent::rollOut($output);
+    if ($this->getFunctionName()) {
+      parent::rollOut($output);
+    }
 
     $execution_variables = $this->getVariableNames($this->getFunctionName());
     foreach ($execution_variables as $execution_variable) {

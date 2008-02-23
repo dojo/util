@@ -240,10 +240,29 @@ class DojoFunctionBody extends DojoBlock
 
     foreach ($possible_mixins as $i => $mixin) {
       $parameter = $mixin->getParameter(0);
-      if (!$parameter->isA(DojoVariable)) {
-        unset($possible_mixins[$i]);
+      if ($mixin->getName() == 'dojo.extend' && $parameter->isA(DojoFunctionDeclare)) {
+        $code = $this->package->getCode();
+        $line = substr($code[$parameter->start[0]], 0, $parameter->start[1]);
+        $line = substr($line, 0, strrpos($line, $mixin->getName()));
+        preg_match_all('%(?:([a-zA-Z0-9_.$\s]+)\s*=\s*)+%', $line, $matches);
+        foreach ($matches[1] as $match) {
+          $match = trim($match);
+          if (!preg_match('%^var\s+%', $match)) {
+            $found = true;
+            while ($found) {
+              $found = false;
+              foreach ($internals as $internal_name => $external_name) {
+                if (strpos($match, $internal_name . '.') === 0) {
+                  $match = $external_name . substr($match, strlen($internal_name));
+                  $found = true;
+                }
+              }
+            }
+            $parameter->getFunction()->setFunctionName($match);
+          }
+        }
       }
-      else {
+      elseif ($parameter->isA(DojoVariable)) {
         $object = $parameter->getVariable();
         if ($object == "this") {
           unset($possible_mixins[$i]);
@@ -264,6 +283,9 @@ class DojoFunctionBody extends DojoBlock
             $parameter->setVariable($object);
           }
         }
+      }
+      else {
+        unset($possible_mixins[$i]);
       }
     }
   }
@@ -440,10 +462,15 @@ class DojoFunctionBody extends DojoBlock
           }
         }
 
-        foreach ($internals as $internal_name => $external_name) {
-          if (strpos($name, $internal_name . '.') === 0) {
-            if (!$external_name) continue 2;
-            $name = $external_name . substr($name, strlen($internal_name));
+        $found = true;
+        while ($found) {
+          $found = false;
+          foreach ($internals as $internal_name => $external_name) {
+            if (strpos($name, $internal_name . '.') === 0) {
+              if (!$external_name) continue 2;
+              $found = true;
+              $name = $external_name . substr($name, strlen($internal_name));
+            }
           }
         }
 
