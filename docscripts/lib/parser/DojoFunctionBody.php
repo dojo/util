@@ -252,6 +252,7 @@ class DojoFunctionBody extends DojoBlock
             while ($found) {
               $found = false;
               foreach ($internals as $internal_name => $external_name) {
+                if ($internal_name == 'this') continue;
                 if (strpos($match, $internal_name . '.') === 0) {
                   $last = $match;
                   $match = $external_name . substr($match, strlen($internal_name));
@@ -469,6 +470,7 @@ class DojoFunctionBody extends DojoBlock
         while ($found) {
           $found = false;
           foreach ($internals as $internal_name => $external_name) {
+            if ($internal_name == 'this') continue;
             if (strpos($name, $internal_name . '.') === 0) {
               if (!$external_name) continue 2;
               $last = $name;
