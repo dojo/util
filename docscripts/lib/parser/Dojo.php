@@ -43,7 +43,7 @@ class Dojo
         }
         $output = array_merge($output, $this->getFileList($file, true));
       }else{
-        if (substr($file, -3) == '.js') {
+        if (substr($file, -3) == '.js' && substr($file, -6) != '.xd.js') {
           if ($recurse) {
             $file = $dir . '/' . $file;
           }
