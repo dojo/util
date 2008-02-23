@@ -253,8 +253,11 @@ class DojoFunctionBody extends DojoBlock
               $found = false;
               foreach ($internals as $internal_name => $external_name) {
                 if (strpos($match, $internal_name . '.') === 0) {
+                  $last = $match;
                   $match = $external_name . substr($match, strlen($internal_name));
-                  $found = true;
+                  if ($last != $match) {
+                    $found = true;
+                  }
                 }
               }
             }
@@ -468,8 +471,11 @@ class DojoFunctionBody extends DojoBlock
           foreach ($internals as $internal_name => $external_name) {
             if (strpos($name, $internal_name . '.') === 0) {
               if (!$external_name) continue 2;
-              $found = true;
+              $last = $name;
               $name = $external_name . substr($name, strlen($internal_name));
+              if ($last != $name) {
+                $found = true;
+              }
             }
           }
         }
