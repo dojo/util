@@ -301,11 +301,6 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 				layerName = layerName.replace(/\.js$/, ".xd.js");
 			}
 
-			//Add dojo.i18n to dojo.xd.js. Too complicated to dynamically load it in that case.
-			if(isXd && layerName == "dojo.xd.js"){
-				layer.dependencies.splice(1, 0, "dojo.i18n");
-			}
-
 			djConfig = {
 				baseRelativePath: "../../dojo/"
 				// isDebug: true
