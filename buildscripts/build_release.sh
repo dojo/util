@@ -57,6 +57,17 @@ zip -rq $buildScriptsName.zip $buildScriptsName/util/buildscripts/ $buildScripts
 tar -zcf $buildScriptsName.tar.gz $buildScriptsName/util/buildscripts/ $buildScriptsName/util/shrinksafe/
 mv $buildScriptsName $buildName
 
+#Make a shrinksafe bundle
+shrinksafeName=$buildName-shrinksafe
+cp -r $buildName/util/shrinksafe $buildName/util/$shrinksafeName
+cd $buildName/util
+zip -rq $shrinksafeName.zip $shrinksafeName/
+tar -zcf $shrinksafeName.tar.gz $shrinksafeName/
+mv $shrinksafeName.zip ../../
+mv $shrinksafeName.tar.gz ../../
+cd ../..
+rm -rf $buildName/util/$shrinksafeName
+
 #Run the build.
 cd $buildName/util/buildscripts/
 chmod +x ./build.sh
