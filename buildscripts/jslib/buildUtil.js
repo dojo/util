@@ -301,6 +301,11 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 				layerName = layerName.replace(/\.js$/, ".xd.js");
 			}
 
+			//Add dojo.i18n to dojo.xd.js. Too complicated to dynamically load it in that case.
+			if(isXd && layerName == "dojo.xd.js"){
+				layer.dependencies.splice(1, 0, "dojo.i18n");
+			}
+
 			djConfig = {
 				baseRelativePath: "../../dojo/"
 				// isDebug: true
@@ -440,6 +445,34 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 
 			//Get the final list of dependencies in this layer
 			var depList = buildUtil.determineUriList(layer.dependencies, layerUris, dependencies["filters"]); 
+			
+			
+			//If dojo.xd.js, need to put dojo.i18n before the code in dojo._base.browser that does the 
+			//auto dojo.require calls based on dojo.config.require array.
+			//This is a little bit hackish, but it allows dojo.i18n to use any Base methods
+			//in the future.
+			if(layerName == "dojo.xd.js"){
+				//Find the dojo.i18n line. Start at the end of depList because it is likely closer
+				//to the end than the beginning.
+				var i18nXdEntry = null;
+				for(var i18nIndex = depList.length - 1; i18nIndex >= 0; i--){
+					if(depList[i18nIndex].match(/\/dojo\/i18n\.js$/)){
+						i18nXdEntry = depList.splice(i18nIndex, 1)[0];
+						break;
+					}
+				}
+				
+				//Only operate if we have an i18n entry. We may allow building without
+				//dojo.i18n as part of the xd file.
+				if(i18nXdEntry){
+					for(i18nIndex = depList.length - 1; i18nIndex >= 0; i18nIndex--){
+						if(depList[i18nIndex].match(/dojo\/_base\/browser\.js$/)){
+							depList.splice(i18nIndex, 0, i18nXdEntry);
+							break;
+						}
+					}
+				}
+			}
 			
 			
 			//Add the final closure guard to the list.
