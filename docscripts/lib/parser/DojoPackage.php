@@ -175,7 +175,7 @@ class DojoPackage
     if ($this->source) {
       return $this->source;
     }
-    $lines = explode("\n", file_get_contents($this->dojo->getDir() . $this->file));
+    $lines = preg_split("%\r?\n%", file_get_contents($this->dojo->getDir() . $this->file));
     $lines[] = '';
     $in_comment = false;
     foreach ($lines as $line_number => $line) {
