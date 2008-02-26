@@ -443,7 +443,6 @@ function dojo_get_contents($namespace, $file_name) {
       $output[$external_variable] = array();
     }
   }
-  
 
   // Remember, dojo.provides creates new objects if needed
   $parts = explode('.', $output['#provides']);
@@ -467,6 +466,7 @@ function dojo_get_contents($namespace, $file_name) {
     if (preg_match('%^_?[A-Z]%', $last) && $object['type'] == 'Function') {
         $output[$object_name]['classlike'] = true;
     }
+    $output[$object_name]['summary'] = htmlentities($object['summary']);
   }
 
   return $output;
