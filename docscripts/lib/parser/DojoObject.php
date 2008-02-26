@@ -154,10 +154,11 @@ class DojoObject extends DojoBlock
       $variables[] = $key;
       }
     }
-  
+
     foreach($check_keys as $ck){
       $this->addBlockCommentKey($ck);
     }
+    $this->addBlockCommentKeySet("example");
 
     $output[$name]['type'] = $item_type;
     if ($comment = $this->getBlockComment('summary')) {
@@ -165,6 +166,10 @@ class DojoObject extends DojoBlock
     }
     if ($comment = $this->getBlockComment('description')) {
       $output[$name]['description'] = $comment;
+    }
+    $examples = $this->getBlockComment('example');
+    if ($examples && count($examples)) {
+      $output[$name]['examples'] = $examples;
     }
 
     foreach($variables as $key){
