@@ -74,6 +74,20 @@ class DojoFunctionBody extends DojoBlock
       }
       $source[] = $line;
     }
+    while (!empty($source)) {
+      if (trim($source[0]) === '') {
+        array_shift($source);
+        continue;
+      }
+      break;
+    }
+    while (!empty($source)) {
+      if (trim($source[count($source) - 1]) === '') {
+        array_pop($source);
+        continue;
+      }
+      break;
+    }
     return implode("\n", $source);
   }
 
