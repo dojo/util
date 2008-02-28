@@ -62,10 +62,16 @@ class DojoFunctionBody extends DojoBlock
   public function getSource() {
     $this->getBlockCommentKeys();
     $source = array();
-    $lines = Text::chop($this->package->getSource(), $this->comment_end[0], $this->comment_end[1], $this->end[0], $this->end[1], true);
+    $lines = Text::chop($this->package->getSource(), $this->comment_end[0], $this->comment_end[1], $this->end[0], $this->end[1]);
+    if ($this->start[0] == $this->comment_end[0] && $this->start[1] == $this->comment_end[1]) {
+      $lines[$this->start[0]] = substr($lines[$this->start[0]], $this->start[1] + 1);
+    }
+    $lines[$this->end[0]] = substr($lines[$this->end[0]], 0, $this->end[1]);
     foreach ($lines as $line_number => $line) {
       $trimmed_line = trim($line);
-      if ($trimmed_line === '') continue;
+      if ($trimmed_line === '') {
+        $source[] = '';
+      }
       $source[] = $line;
     }
     return implode("\n", $source);
