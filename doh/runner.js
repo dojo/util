@@ -537,10 +537,10 @@ doh.e = doh.assertError = function(/*Error object*/expectedError, /*Object*/scop
 		if(e instanceof expectedError){
 			return true;
 		}else{
-			throw new doh._AssertFailure("assertError() failed: expected error |"+expectedError+"| but got |"+e+"|");
+			throw new doh._AssertFailure("assertError() failed:\n\texpected error\n\t\t"+expectedError+"\n\tbut got\n\t\t"+e+"\n\n");
 		}
 	}
-	throw new doh._AssertFailure("assertError() failed: expected error |"+expectedError+"| but no error caught.");
+	throw new doh._AssertFailure("assertError() failed:\n\texpected error\n\t\t"+expectedError+"\n\tbut no error caught\n\n");
 }
 
 
@@ -568,7 +568,7 @@ doh.is = doh.assertEqual = function(/*Object*/ expected, /*Object*/ actual){
 		(this._objPropEq(expected, actual)) ){
 		return true;
 	}
-	throw new doh._AssertFailure("assertEqual() failed: expected |"+expected+"| but got |"+actual+"|");
+	throw new doh._AssertFailure("assertEqual() failed:\n\texpected\n\t\t"+expected+"\n\tbut got\n\t\t"+actual+"\n\n");
 }
 
 doh._arrayEq = function(expected, actual){
@@ -634,6 +634,12 @@ doh._handleFailure = function(groupName, fixture, e){
 	}else{
 		this.debug("\tERROR IN:\n\t\t", fixture.runTest);
 	}
+
+	if(e.rhinoException){
+		e.rhinoException.printStackTrace();
+	}else if(e.javaException){
+		e.javaException.printStackTrace();
+	} 
 }
 
 try{
