@@ -50,13 +50,6 @@ zip -rq $srcName.zip $srcName/
 tar -zcf $srcName.tar.gz $srcName/
 mv $srcName $buildName
 
-#Make a buildscripts bundle
-buildScriptsName=$buildName-buildscripts
-mv $buildName $buildScriptsName
-zip -rq $buildScriptsName.zip $buildScriptsName/util/buildscripts/ $buildScriptsName/util/shrinksafe/
-tar -zcf $buildScriptsName.tar.gz $buildScriptsName/util/buildscripts/ $buildScriptsName/util/shrinksafe/
-mv $buildScriptsName $buildName
-
 #Make a shrinksafe bundle
 shrinksafeName=$buildName-shrinksafe
 cp -r $buildName/util/shrinksafe $buildName/util/$shrinksafeName
