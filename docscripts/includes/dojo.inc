@@ -238,9 +238,7 @@ function dojo_get_contents($namespace, $file_name) {
           $function = $value->getFunction($value);
           $function->setPrototype($name);
         }
-        elseif (!$value->isA(DojoObject)) {
-          $output[$full_name]['prototype'] = $name;
-        }
+        $output[$full_name]['prototype'] = $name;
       }
       $object->rollOut($output, 'Function');
 
@@ -472,6 +470,7 @@ function dojo_get_contents($namespace, $file_name) {
     $output[$object_name]['summary'] = htmlentities($object['summary']);
   }
 
+  print_r($output);
   return $output;
 }
 
