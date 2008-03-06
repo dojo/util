@@ -68,13 +68,12 @@ class DojoObject extends DojoBlock
         }
         if (preg_match('%^(\s*)([a-zA-Z0-9_$]+|"\s+")\s*:%', $line, $match)) {
           if ($end[0] != $this->start[0] && $end[1] != $this->start[1]) {
-            $between_lines = Text::chop($this->package->getSource(), $end[0], $end[1], $line_number, strlen($match[1]), true);
+            $between_lines = Text::chop($this->package->getSource(), $end[0]+1, 0, $line_number, strlen($match[1]), true);
             $between_started = false;
             $between_buffer = array();
-            $place_between = true;
             foreach ($between_lines as $between_line) {
               if ($between_started && empty($between_line)) {
-                $place_between = false;
+                break;
               }
               if(trim($between_line)){
                 $between_started = true;
@@ -83,11 +82,12 @@ class DojoObject extends DojoBlock
                 $between_buffer[] = $between_line;
               }
             }
-            if ($place_between){
+            if ($between_started){
               foreach ($between_buffer as $between_line) {
                 $this->body->addBlockCommentLine($between_line);
               }
             }
+            $this->body->addBlockCommentBreak();
           }
           $end = array($line_number, strlen($match[0]));
           if ($match[2]{0} == '"' || $match[2]{0} == "'") {

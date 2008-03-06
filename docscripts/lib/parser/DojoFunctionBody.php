@@ -42,6 +42,10 @@ class DojoFunctionBody extends DojoBlock
     }
   }
 
+  public function addBlockCommentBreak() {
+    $this->extra_initial_comment_block[] = -1;
+  }
+
   public function addBlockCommentKey($key) {
     $this->comments = array();
     if ($key) {
@@ -161,6 +165,21 @@ class DojoFunctionBody extends DojoBlock
         $lines = $this->extra_initial_comment_block;
       }
       foreach ($lines as $line_number =>  $line) {
+        if ($line === -1) {
+          if ($buffer && $key) {
+            if (in_array($key, $this->key_sets)) {
+              $this->comments[$key][] = implode("\n", $buffer);
+            }
+            else {
+              $this->comments[$key] = implode("\n", $buffer);
+            }
+            $buffer = array();
+          }
+          $buffer = array();
+          $key = '';
+          continue;
+        }
+
         list($comment, , , $data, $multiline) = Text::findComments($line, $multiline);
 
         if ($started && $comment === false) {
