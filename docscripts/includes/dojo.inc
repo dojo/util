@@ -470,7 +470,6 @@ function dojo_get_contents($namespace, $file_name) {
     $output[$object_name]['summary'] = htmlentities($object['summary']);
   }
 
-  print_r($output);
   return $output;
 }
 
