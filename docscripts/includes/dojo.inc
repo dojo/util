@@ -466,7 +466,7 @@ function dojo_get_contents($namespace, $file_name) {
     if (strpos($object_name, '._') !== false) {
         $output[$object_name]['private_parent'] = true;
     }
-    if (preg_match('%^_?[A-Z]%', $last) && $object['type'] == 'Function') {
+    if (preg_match('%^_*[A-Z]%', $last) && $object['type'] == 'Function') {
         $output[$object_name]['classlike'] = true;
     }
     $output[$object_name]['summary'] = htmlentities($object['summary']);
