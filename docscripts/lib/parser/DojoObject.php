@@ -68,6 +68,9 @@ class DojoObject extends DojoBlock
         }
         if (preg_match('%^(\s*)([a-zA-Z0-9_$]+|"\s+")\s*:%', $line, $match)) {
           if ($end[0] != $this->start[0] && $end[1] != $this->start[1]) {
+            if ($end[0]+1 > $line_number) {
+              continue;
+            }
             $between_lines = Text::chop($this->package->getSource(), $end[0]+1, 0, $line_number, strlen($match[1]), true);
             $between_started = false;
             $between_buffer = array();
