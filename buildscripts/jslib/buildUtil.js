@@ -1306,7 +1306,7 @@ buildUtil.flattenCss = function(/*String*/fileName, /*String*/fileContents, /*St
 	});
 }
 
-buildUtil.guardProvideRegExp = /dojo\.provide\(([\'\"].*[\'\"])\)/;
+buildUtil.guardProvideRegExp = /dojo\.provide\(([\'\"][^\'\"]*[\'\"])\)/;
 
 buildUtil.addGuards = function(/*String || Array*/startDir){
 	//summary: adds a definition guard around code in a file to protect
