@@ -401,7 +401,7 @@ class DojoFunctionDeclare extends DojoBlock
         }
         $output[$function_name]['parameters'][$key] = array_merge($output[$function_name]['parameters'][$key], $options); 
         $output[$function_name]['parameters'][$key]['type'] = $parameter_type;
-        $output[$function_name]['parameters'][$key]['summary'] = $comment;
+        $output[$function_name]['parameters'][$key]['summary'] = htmlentities($comment);
       }
     }
 
