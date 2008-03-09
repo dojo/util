@@ -178,6 +178,7 @@ if(!empty($_REQUEST['ns'])){
                   }
                   break;
                 case "returns" :
+                case "return_summary" :
                 case "exceptions" :
                 case "description" :
                 case "summary" : $print .= "<li><em>".$key2."</em><div><pre>".htmlentities($val2)."</pre></div></li>"; break;

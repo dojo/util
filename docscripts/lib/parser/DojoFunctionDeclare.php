@@ -366,7 +366,10 @@ class DojoFunctionDeclare extends DojoBlock
 
     $comment_keys = $this->getBlockCommentKeys();
     foreach($comment_keys as $key){
-      if (in_array($key, $check_keys)) {
+      if ($key == 'returns') {
+        $output[$function_name]['return_summary'] = $this->getBlockComment($key);
+      }
+      elseif (in_array($key, $check_keys)) {
         $output[$function_name][$key] = $this->getBlockComment($key);
       }
       if (in_array($key, $all_variables) && $comment = $this->getBlockComment($key)) {
@@ -406,11 +409,8 @@ class DojoFunctionDeclare extends DojoBlock
     }
 
     $returns = $this->getReturnComments();
-    if (count($returns) == 1){
-      $output[$function_name]['returns'] = $returns[0];
-    }
-    elseif ($returns){
-      $output[$function_name]['returns'] = 'mixed';
+    if (count($returns)){
+      $output[$function_name]['returns'] = implode('|', $returns);
     }
 
     if ($output[$function_name]['example']) {
