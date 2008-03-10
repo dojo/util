@@ -351,6 +351,9 @@ function dojo_get_contents($namespace, $file_name) {
         $function->setConstructor(true);
         $function->rollOut($output);
         $object = $function->getFunctionName();
+        if (!$object) {
+          $object = $call->getAssignment();
+        }
       }
       $call_name = $call->getName();
 

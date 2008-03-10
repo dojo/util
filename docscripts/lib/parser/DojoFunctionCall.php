@@ -32,8 +32,10 @@ class DojoFunctionCall extends DojoBlock
   public function getAssignment() {
     $this->build();
     $code = $this->package->getCode();
-    $line = $code[$this->start[1]];
-    print $line;
+    $line = Text::blankOutAt($code[$this->start[0]], $this->start[1]);
+    if (preg_match('%([\w_.$]+)\s*=\s*$%', $line, $match)) {
+      return $match[1];
+    }
   }
 
   public function removeCodeFrom($lines){
