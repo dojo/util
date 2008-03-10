@@ -348,12 +348,13 @@ function dojo_get_contents($namespace, $file_name) {
       }
       else {
         $function = $call->getParameter(0)->getFunction();
-        $function->setConstructor(true);
-        $function->rollOut($output);
         $object = $function->getFunctionName();
         if (!$object) {
           $object = $call->getAssignment();
+          $function->setFunctionName($object);
         }
+        $function->setConstructor(true);
+        $function->rollOut($output);
       }
       $call_name = $call->getName();
 
