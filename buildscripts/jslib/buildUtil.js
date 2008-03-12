@@ -109,7 +109,7 @@ buildUtil.DojoBuildOptions = {
 			+ "Value must be a string that will look like a javascript object literal once it is placed in the built source. "
 			+ "use Dojo as part of a JS library, but want to make a self-contained library with no external dojo/dijit/dojox. Example "
 			+ "(note that the backslashes below are required to avoid shell escaping if you type this on the command line):\n"
-			+ "scopeDjConfig={isDebug:true,scopeMap:[[\\\"dojo\\\",\\\"mydojo\\\"],[\\\"dijit\\\",\\\"mydijit\\\"][\\\"dojox\\\",\\\"mydojox\\\"]]}"
+			+ "scopeDjConfig={isDebug:true,scopeMap:[[\\\"dojo\\\",\\\"mydojo\\\"],[\\\"dijit\\\",\\\"mydijit\\\"],[\\\"dojox\\\",\\\"mydojox\\\"]]}"
 	},
 	"scopeMap": {
 		defaultValue: "",
@@ -117,7 +117,7 @@ buildUtil.DojoBuildOptions = {
 			+ "use Dojo as part of a JS library, but want to make a self-contained library with no external dojo/dijit/dojox "
 			+ "references. Format is a string that contains no spaces, and is similar to the djConfig.scopeMap value (note that the "
 			+ "backslashes below are required to avoid shell escaping):\n"
-			+ "scopeMap=[[\\\"dojo\\\",\\\"mydojo\\\"],[\\\"dijit\\\",\\\"mydijit\\\"][\\\"dojox\\\",\\\"mydojox\\\"]]"
+			+ "scopeMap=[[\\\"dojo\\\",\\\"mydojo\\\"],[\\\"dijit\\\",\\\"mydijit\\\"],[\\\"dojox\\\",\\\"mydojox\\\"]]"
 	},
 	"xdScopeArgs": {
 		defaultValue: "",
