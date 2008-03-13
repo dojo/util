@@ -1351,6 +1351,23 @@ buildUtil.addGuards = function(/*String || Array*/startDir){
 	}
 }
 
+buildUtil.processConditionalsForDir = function(/*String*/startDir, /*RegExp*/layerIgnoreRegExp, /*Object*/kwArgs){
+	//summary: processes build conditionals for a directory, but ignores files in the layerIgnoreRegExp argument.
+	var fileList = fileUtil.getFilteredFileList(startDir, /\.js$/, true);
+	if(fileList){
+		for(var i = 0; i < fileList.length; i++){
+			//Skip nls directories.
+			var fileName = fileList[i];
+			if(!fileName.match(layerIgnoreRegExp)){
+				var fileContents = fileUtil.readFile(fileName);
+				if(fileContents.indexOf("//>>") != -1){
+					fileUtil.saveFile(fileName, buildUtil.processConditionals(fileName, fileContents, kwArgs));
+				}
+			}
+		}
+	}
+}
+
 buildUtil.conditionalRegExp = /(exclude|include)Start\s*\(\s*["'](\w+)["']\s*,(.*)\)/;
 buildUtil.processConditionals = function(/*String*/fileName, /*String*/fileContents, /*Object*/kwArgs){
 	//summary: processes the fileContents for some Dojo-specific conditional comments.

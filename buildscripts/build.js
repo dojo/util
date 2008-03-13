@@ -305,9 +305,12 @@ function _optimizeReleaseDirs(
 		buildUtil.internTemplateStrings(kwArgs.profileProperties.dependencies, releasePath, layerIgnoreRegExp);
 	}
 
-	//Flatten bundles inside the directory
-	i18nUtil.flattenDirBundles(prefixName, prefixPath, kwArgs, nlsIgnoreRegExp);
+	//Process build conditionals in non-layer module files.
+	buildUtil.processConditionalsForDir(releasePath, layerIgnoreRegExp, kwArgs);
 
+	//Flatten bundles inside the directory
+	i18nUtil.flattenDirBundles(prefixName, prefixPath, kwArgs, nlsIgnoreRegExp);	
+	
 	if(kwArgs.loader == "xdomain"){
 		buildUtilXd.xdgen(prefixName, prefixPath, prefixes, layerIgnoreRegExp, kwArgs);
 	}
