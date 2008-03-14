@@ -113,7 +113,7 @@ buildUtil.DojoBuildOptions = {
 	},
 	"scopeMap": {
 		defaultValue: "",
-		helpText: "Change the default dojo, dijit and dojox scope names to soemthing else. Useful if you want to "
+		helpText: "Change the default dojo, dijit and dojox scope names to something else. Useful if you want to "
 			+ "use Dojo as part of a JS library, but want to make a self-contained library with no external dojo/dijit/dojox "
 			+ "references. Format is a string that contains no spaces, and is similar to the djConfig.scopeMap value (note that the "
 			+ "backslashes below are required to avoid shell escaping):\n"
@@ -350,7 +350,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 			var old_load = load;
 			load = function(uri){
 				try{
-					//Strip comments and pply conditional directives before tracing the dependencies.
+					//Strip comments and apply conditional directives before tracing the dependencies.
 					var text = fileUtil.readFile(uri);
 					var text = (kwArgs ? buildUtil.processConditionals(layerName, text, kwArgs) : text);
 					var text = buildUtil.removeComments(text);
