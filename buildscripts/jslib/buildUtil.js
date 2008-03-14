@@ -161,8 +161,8 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 			dependencies = kwArgs.profileProperties.dependencies;
 			
 			//Allow setting build options from on the profile's dependencies object
-			for(var param in buildUtil.DojoBuildOptions){
-				if(typeof dependencies[param] != "undefined"){
+			for(var param in dependencies){
+				if(param != "layers" && param != "prefixes"){
 					kwArgs[param] = dependencies[param];
 				}
 			}
