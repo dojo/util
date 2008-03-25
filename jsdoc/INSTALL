@@ -4,7 +4,7 @@ Drupal
 Installing Drupal
 =================
 
-http://drupal.org/drupal-5.1 (tested on 5.1 at the time of this writing)
+http://drupal.org/drupal-5.7 (tested on 5.7 at the time of this writing)
 http://drupal.org/getting-started/5/install
 
 Installing Libraries
@@ -15,6 +15,7 @@ Read the EXTERNALS file in jsdoc/lib
 Installing the Module
 =====================
 
+http://drupal.org/node/70151
 Drop the jsdoc folder into sites/all/modules
 
 Enable the Module
