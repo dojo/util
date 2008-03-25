@@ -1,4 +1,4 @@
-<? /*
+<?php /*
 
   _browse.php - rudimentary api browser designed to expose flaws in
   either the dojo doc parser or the effort to document the Dojo Toolkit
@@ -13,37 +13,62 @@
   it covers all files in dojtool's modules/ directory dynamically, so
   can be used to preview documentation in custom namespace code, as well.
 
-*/ ?>
+*/
 
-<? if (empty($_REQUEST['ajaxy'])){ ?>
-<html>
-<head>
-  <title>API Preview tool | The Dojo Toolkit <title>
-  <script type="text/javascript" src="../../dojo/dojo.js" djConfig="parseOnLoad:true"></script>
-  <script type="text/javascript">
-    dojo.require("dijit.layout.LayoutContainer"); 
-    dojo.require("dijit.layout.SplitContainer");
-    dojo.require("dijit.layout.ContentPane");
-    function tgShow(id){
-      var identity=document.getElementById(id);
-            if(identity.className=="sho"){ identity.className="nosho";
-            }else{ identity.className="sho"; }
-    }
-  </script>
-  <style type="text/css">
-    @import "../../dijit/themes/tundra/tundra.css"; 
-    @import "../../dojo/resources/dojo.css"; 
-    body, html { width:100%; height:100%; margin:0; padding:0; }
-    .sho { display:block; }
-    .nosho { display:none; } 
-    .topbar li { display:inline; padding:5px; } 
-    .source code { 
-    </style>
-  </style>
-</head>
-<body class="tundra">
-<?
-} // empty($_REQUEST['ajaxy']
+// hide warnings
+error_reporting(1);
+$ajaxy = !empty($_REQUEST['ajaxy']);
+
+?>
+
+<?php if(!$ajaxy){ ?>
+	<html>
+		<head>
+		
+		  <title>API Preview tool | The Dojo Toolkit <title>
+		
+		  <script type="text/javascript" src="../../dojo/dojo.js" djConfig="parseOnLoad:true"></script>
+		
+		  <script type="text/javascript">
+			dojo.require("dijit.layout.BorderContainer");
+			dojo.require("dojox.layout.ExpandoPane");
+			dojo.require("dijit.layout.ContentPane");
+			dojo.require("dijit.layout.TabContainer");
+			dojo.require("dojox.fx.easing");
+			dojo.require("dijit.TitlePane");
+			function tgShow(id){
+			  var identity=document.getElementById(id);
+					if(identity.className=="sho"){ identity.className="nosho";
+					}else{ identity.className="sho"; }
+			}
+			dojo.addOnLoad(function(e){
+				dojo.connect(window,"onclick",function(e){
+					if(e.target && e.target.href){
+						e.preventDefault();
+						dijit.byId('apiPane').setHref(e.target.href + "&ajaxy=true");
+					}
+				});
+			});
+		  </script>
+		  <style type="text/css">
+			@import "../../dijit/themes/soria/soria.css";
+			@import "../../dojox/layout/resources/ExpandoPane.css";
+			@import "../../dojo/resources/dojo.css"; 
+			body, html { width:100%; height:100%; margin:0; padding:0; }
+			.sho { display:block; }
+			.nosho { display:none; } 
+			.topbar li { display:inline; padding:5px; } 
+			.pad {
+				padding:20px;
+				padding-top:8px;
+			}
+			</style>
+		  </style>
+		</head>
+	<body class="soria">
+<?php
+
+} // $ajaxy
 
 include_once('includes/dojo.inc');
 
@@ -53,44 +78,14 @@ $u = 0;
 $files = dojo_get_files(); 
 foreach ($files as $set){ 
   list($namespace, $file) = $set;
-  $data[$namespace][] = $file; 
-  $tmptree = explode("/",$file);
-  if(count($tmptree)>1){
-    $treefilename = array_pop($tmptree);
-    $treepath = join("/",$tmptree);
-  }else{
-    $treefilename = array_pop($tmptree);
-    $treepath = '/'; 
-  }
-  $tree['items'][] = array(
-    'label' => $treefilename,
-    'ns' => $namespace,
-    'type' => "file",
-    'id' => "node".$node++
-  );
+  $data[$namespace][] = $file;
 }
 $namespaces = array_keys($data); 
 
-$nshtml = "<ul>";
+$trees = array();
 $regexp = "";
-foreach ($namespaces as $ns){
-  $regexp .= $ns."|";
-  if($_REQUEST['ns'] != $ns){
-    $nshtml .= "<li><a href=\"?ns=".$ns."\">".$ns."</a></li>"; 
-  }else{
-    $nshtml .= "<li>".$ns."</li>"; 
-  }
-}
-define('REGEXP','('.$regexp.')'); 
-
-$nshtml .= "</ul>"; 
-unset($files); 
-
-if(!empty($_REQUEST['ns'])){
-  $ns = $_REQUEST['ns'];
-  $ifile = $_REQUEST['file'];
-  
-  $tree .= "<ul>";
+foreach ($data as $ns => $file){
+  $tree = "<ul>";
   foreach ($data[$ns] as $file){
     if(!preg_match('/tests\//i',$file)){
       if($ifile == $file){ $tree .= "<li>".$file."</li>"; 
@@ -98,6 +93,16 @@ if(!empty($_REQUEST['ns'])){
     }else{ $testfiles[] = $ns."/".$file; } 
   }
   $tree .= "</ul>";
+  $trees[$ns] = $tree;
+}
+
+
+unset($files); 
+
+if(!empty($_REQUEST['ns'])){
+  $ns = $_REQUEST['ns'];
+  $ifile = $_REQUEST['file'];
+  
 
   if($ifile){
     $apiData = dojo_get_contents($ns,$ifile);
@@ -197,16 +202,29 @@ if(!empty($_REQUEST['ns'])){
 // ... aaaaaand some basic dijit layout to make this quick thing somewhat user friendly. i have guilt in my heart loading all this 
 // dijit-ness, and not just capturing the onclick of the links and just targeting #apiPane ... would have to only echo $print.
 // set ?ajaxy=1 on a url to only print the content part of a request. 
-if(empty($_REQUEST['ajaxy'])){ ?>
-<div dojoType="dijit.layout.LayoutContainer" style="width:100%; height:100%;">
-  <div dojoType="dijit.layout.ContentPane" class="topbar" layoutAlign="top"><? echo $nshtml; ?></div>
-  <div dojoType="dijit.layout.SplitContainer" layoutAlign="bottom" orientation="horizontal" sizerWidth="7" style="height:90%; border-top:1px solid #a0a0a0;">
-    <div dojoType="dijit.layout.ContentPane"><? echo $tree; ?></div>
-    <div dojoType="dijit.layout.ContentPane" id="apiPane">
-      <? echo $print; ?>
+if(!$ajaxy){ ?>
+<div dojoType="dijit.layout.BorderContainer" style="width:100%; height:100%;">
+	<div dojoType="dojox.layout.ExpandoPane" easeOut="dojox.fx.easing.backIn" easeIn="dojox.fx.easing.backOut" title="Namespaces" region="left" style="width:250px" splitter="true">
+		<div dojoType="dijit.layout.TabContainer" tabPosition="bottom">
+			<?php
+				foreach($trees as $ns => $list){
+					print "<div attachParent=\"true\" dojoType=\"dijit.layout.ContentPane\" title=\"".$ns."\">";
+					print $list;
+					print "</div>";
+				}
+			?>
+		</div>
+	</div>
+    <div dojoType="dijit.layout.TabContainer" closeable="false" region="center">
+		<div dojoType="dijit.layout.ContentPane" id="apiPane" title="Crude API Browser">
+			<div class="pad"><?php echo $print; ?></div>
+		</div>
     </div>
-  </div>
 </div>
-<? }else{ echo $print; }?>
 </body>
 </html>
+<?php }else{
+	// we just want the content we parsed
+	echo '<div class="pad">'.$print.'</div>';
+}
+?>
