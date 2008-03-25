@@ -199,9 +199,6 @@ if(!empty($_REQUEST['ns'])){
   }
 }
 
-// ... aaaaaand some basic dijit layout to make this quick thing somewhat user friendly. i have guilt in my heart loading all this 
-// dijit-ness, and not just capturing the onclick of the links and just targeting #apiPane ... would have to only echo $print.
-// set ?ajaxy=1 on a url to only print the content part of a request. 
 if(!$ajaxy){ ?>
 <div dojoType="dijit.layout.BorderContainer" style="width:100%; height:100%;">
 	<div dojoType="dojox.layout.ExpandoPane" easeOut="dojox.fx.easing.backIn" easeIn="dojox.fx.easing.backOut" title="Namespaces" region="left" style="width:250px" splitter="true">
