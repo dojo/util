@@ -326,8 +326,8 @@ function dojo_get_contents($namespace, $file_name) {
   unset($declaration_instance);
 
   foreach ($executions as $execution) {
-    $execution->rollOut($output);
     $execution->removeSwallowedMixins($swallowed_mixins);
+    $execution->rollOut($output);
 
     unset($execution);
   }
@@ -340,7 +340,7 @@ function dojo_get_contents($namespace, $file_name) {
   foreach ($mixin_calls as $call) {
     $is_prototype = false;
     if ($call->getParameter(0)->isA(DojoVariable) || $call->getParameter(0)->isA(DojoFunctionDeclare)) {
-      if ($call->getParameter(0)->isA(dojoVariable)) {
+      if ($call->getParameter(0)->isA(DojoVariable)) {
         $object = $call->getParameter(0)->getVariable();
         if (strpos($object, '(') !== false) {
           continue;

@@ -131,8 +131,8 @@ class DojoFunctionDeclare extends DojoBlock
     return $output;
   }
 
-  public function getVariableNames($function_name){
-    return $this->body->getExternalizedVariableNames($function_name);
+  public function getVariableNames($function_name, $parameter_names=array()){
+    return $this->body->getExternalizedVariableNames($function_name, $parameter_names);
   }
 
   public function getFunctionDeclarations(){
@@ -140,7 +140,7 @@ class DojoFunctionDeclare extends DojoBlock
   }
 
   public function getObjects(){
-    return $this->body->getExternalizedObjects();
+    return $this->body->getExternalizedObjects(false, $this->getParameterNames());
   }
 
   public function getLocalVariableNames(){
@@ -324,12 +324,12 @@ class DojoFunctionDeclare extends DojoBlock
         $declaration->rollout($output);
       }
 
-      $variables = $this->body->getExternalizedInstanceVariableNames($function_name);
+      $variables = $this->body->getExternalizedInstanceVariableNames($function_name, $this->getParameterNames());
       foreach($variables as $variable) {
         $output[$function_name . '.' . $variable]['instance'] = $function_name;
       }
 
-      $variables = $this->body->getExternalizedVariableNames($function_name);
+      $variables = $this->body->getExternalizedVariableNames($function_name, $this->getParameterNames());
       foreach($variables as $variable) {
         list($first,) = explode('.', $variable, 2);
         if (!is_array($output[$function_name]['parameters']) || !array_key_exists($first, $output[$function_name]['parameters'])) {

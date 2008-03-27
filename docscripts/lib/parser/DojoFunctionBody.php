@@ -278,68 +278,76 @@ class DojoFunctionBody extends DojoBlock
     $internals = $this->getLocalVariableNames();
 
     foreach ($possible_mixins as $i => $mixin) {
-      $parameter = $mixin->getParameter(0);
-      if ($mixin->getName() == 'dojo.extend' && $parameter->isA(DojoFunctionDeclare)) {
-        $code = $this->package->getCode();
-        $line = substr($code[$parameter->start[0]], 0, $parameter->start[1]);
-        $line = substr($line, 0, strrpos($line, $mixin->getName()));
-        preg_match_all('%(?:([a-zA-Z0-9_.$\s]+)\s*=\s*)+%', $line, $matches);
-        foreach ($matches[1] as $match) {
-          $match = trim($match);
-          if (!preg_match('%^var\s+%', $match)) {
-            $found = true;
-            while ($found) {
-              $found = false;
-              foreach ($internals as $internal_name => $external_name) {
-                if ($internal_name == 'this') continue;
-                if (strpos($match, $internal_name . '.') === 0) {
-                  $last = $match;
-                  $match = $external_name . substr($match, strlen($internal_name));
-                  if ($last != $match) {
-                    $found = true;
+      if (($this->start[0] < $mixin->start[0] || ($this->start[0] == $mixin->start[0] && $this->start[1] < $mixin->start[1])) &&
+          ($this->end[0] > $mixin->end[0] || ($this->end[0] == $mixin->end[0] && $this->end[1] > $mixin->end[1]))) {
+        $parameter = $mixin->getParameter(0);
+        if ($mixin->getName() == 'dojo.extend' && $parameter->isA(DojoFunctionDeclare)) {
+          $code = $this->package->getCode();
+          $line = substr($code[$parameter->start[0]], 0, $parameter->start[1]);
+          $line = substr($line, 0, strrpos($line, $mixin->getName()));
+          preg_match_all('%(?:([a-zA-Z0-9_.$\s]+)\s*=\s*)+%', $line, $matches);
+          foreach ($matches[1] as $match) {
+            $match = trim($match);
+            if (!preg_match('%^var\s+%', $match)) {
+              $found = true;
+              while ($found) {
+                $found = false;
+                foreach ($internals as $internal_name => $external_name) {
+                  if ($internal_name == 'this') continue;
+                  if (strpos($match, $internal_name . '.') === 0) {
+                    $last = $match;
+                    $match = $external_name . substr($match, strlen($internal_name));
+                    if ($last != $match) {
+                      $found = true;
+                    }
                   }
                 }
               }
+              $parameter->getFunction()->setFunctionName($match);
             }
-            $parameter->getFunction()->setFunctionName($match);
           }
+          $this->externalized_mixins[] = $mixin;
         }
-      }
-      elseif ($parameter->isA(DojoVariable)) {
-        $object = $parameter->getVariable();
-        if ($object == "this") {
-          unset($possible_mixins[$i]);
-          continue;
-        }
-        if (($mixin->start[0] > $this->start[0] || ($mixin->start[0] == $this->start[0] && $mixin->start[1] > $this->start[1]))
-            && ($mixin->end[0] < $this->end[0] || ($mixin->end[0] == $this->end[0] && $mixin->end[1] < $this->end[1]))) {
-          if (array_key_exists($object, $internals)) {
-              unset($possible_mixins[$i]);
+        elseif ($parameter->isA(DojoVariable)) {
+          $object = $parameter->getVariable();
+          if ($object == "this") {
+            unset($possible_mixins[$i]);
           }
-          else {
-            foreach ($internals as $internal_name => $external_name) {
-              if (strpos($object, $internal_name . '.') === 0) {
-                $object = $external_name . substr($object, strlen($internal_name));
+          elseif (($mixin->start[0] > $this->start[0] || ($mixin->start[0] == $this->start[0] && $mixin->start[1] > $this->start[1]))
+              && ($mixin->end[0] < $this->end[0] || ($mixin->end[0] == $this->end[0] && $mixin->end[1] < $this->end[1]))) {
+            if (array_key_exists($object, $internals)) {
+                unset($possible_mixins[$i]);
+            }
+            else {
+              foreach ($internals as $internal_name => $external_name) {
+                if (strpos($object, $internal_name . '.') === 0) {
+                  $object = $external_name . substr($object, strlen($internal_name));
+                }
               }
-            }
 
-            $parameter->setVariable($object);
+              $parameter->setVariable($object);
+            }
           }
+          $this->externalized_mixins[] = $mixin;
         }
-      }
-      else {
-        unset($possible_mixins[$i]);
+        else {
+          $this->externalized_mixins[] = $mixin;
+          array_splice($possible_mixins, $i--, 1);
+        }
       }
     }
   }
 
-  public function getExternalizedObjects($function_name=false){
+  public function getExternalizedObjects($function_name=false, $parameter_names=array()){
     if ($this->externalized_objects) {
       return $this->externalized_objects;
     }
 
     $this->build();
     $lines = Text::chop($this->package->getCode(), $this->start[0], $this->start[1], $this->end[0], $this->end[1], true);
+    foreach ($this->externalized_mixins as $mixin) {
+      $lines = Text::blankOutAtPositions($lines, $mixin->start[0], $mixin->start[1], $mixin->end[0], $mixin->end[1]);
+    }
     $internals = $this->getLocalVariableNames();
 
     $matches = preg_grep('%=\s*\{%', $lines);
@@ -372,6 +380,11 @@ class DojoFunctionBody extends DojoBlock
 
           $name = $function_name . substr($name, 4);
         }
+
+        if (in_array($name, $parameter_names)) {
+          continue;
+        }
+
         $externalized_object->setName($name);
         $this->externalized_objects[] = $externalized_object;
       }
@@ -447,7 +460,7 @@ class DojoFunctionBody extends DojoBlock
     return $this->externalized;
   }
 
-  public function getExternalizedAllVariableNames($function_name) {
+  public function getExternalizedAllVariableNames($function_name, $parameter_names=array()) {
     if ($this->externalized_avariables) {
       return $this->externalized_avariables;
     }
@@ -462,7 +475,7 @@ class DojoFunctionBody extends DojoBlock
       $lines = Text::blankOutAtPositions($lines, $declaration->start[0], $declaration->start[1], $declaration->end[0], $declaration->end[1]);
     }
 
-    $objects = $this->getExternalizedObjects();
+    $objects = $this->getExternalizedObjects(false, $parameter_names);
     foreach ($objects as $object) {
       $object->build();
       $lines = Text::blankOutAtPositions($lines, $object->start[0], $object->start[1], $object->end[0], $object->end[1]);
@@ -524,18 +537,18 @@ class DojoFunctionBody extends DojoBlock
         $variables[] = $name;
       }
     }
-      
+
     return $this->externalized_avariables = $variables;
   }
 
-  public function getExternalizedInstanceVariableNames($function_name) {
+  public function getExternalizedInstanceVariableNames($function_name, $parameter_names=array()) {
     if ($this->externalized_ivariables) {
       return $this->externalized_ivariables;
     }
 
     $ivariables = array();
 
-    $variables = $this->getExternalizedAllVariableNames($function_name);
+    $variables = $this->getExternalizedAllVariableNames($function_name, $parameter_names);
     foreach ($variables as $variable) {
       if (strpos($variable, 'this.') === 0) {
         $ivariables[] = substr($variable, 5);
@@ -545,14 +558,14 @@ class DojoFunctionBody extends DojoBlock
     return $this->externalized_ivariables = $ivariables;
   }
 
-  public function getExternalizedVariableNames($function_name) {
+  public function getExternalizedVariableNames($function_name, $parameter_names=array()) {
     if ($this->externalized_variables) {
       return $this->externalized_variables;
     }
 
     $evariables = array();
 
-    $variables = $this->getExternalizedAllVariableNames($function_name);
+    $variables = $this->getExternalizedAllVariableNames($function_name, $parameter_names);
     foreach ($variables as $variable) {
       if (strpos($variable, 'this.') !== 0) {
         $evariables[] = $variable;
