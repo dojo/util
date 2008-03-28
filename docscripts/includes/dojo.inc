@@ -156,11 +156,11 @@ function dojo_get_contents($namespace, $file_name) {
   unset($env);
   unset($req);
 
-  $declare_calls = array_merge($package->getFunctionCalls('dojo.declare'), $package->getFunctionCalls('dojo.widget.defineWidget'));
+  $declare_calls = array_merge($package->getFunctionCalls('dojo.declare'), $package->getFunctionCalls('d.declare'), $package->getFunctionCalls('dojo.widget.defineWidget'));
   // This closely matches dojo.widget.defineWidget as declared in src/widget/Widget.js
   foreach ($declare_calls as $call) {
     $init = null;
-    if ($call->getName() == 'dojo.declare') {
+    if ($call->getName() == 'dojo.declare' || $call->getName() == 'd.declare') {
       $args = array($call->getParameter(0), null, $call->getParameter(1), $call->getParameter(2), $call->getParameter(3));
       $name = $args[0]->getString();
       if ($args[3]->isA(DojoFunctionDeclare)) {
