@@ -877,6 +877,11 @@ tests = doh;
 			if(_shouldRequire){
 				if(dojo.isBrowser){
 					dojo.addOnLoad(function(){
+						if (dojo.global.registerModulePath){
+							dojo.forEach(dojo.global.registerModulePath, function(m){
+								dojo.registerModulePath(m[0], m[1]);
+							});
+						}
 						if(dojo.byId("testList")){
 							var _tm = ( (dojo.global.testModule && dojo.global.testModule.length) ? dojo.global.testModule : "dojo.tests.module");
 							dojo.forEach(_tm.split(","), dojo.require, dojo);

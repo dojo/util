@@ -29,6 +29,13 @@
 					if(tp[0] == "testModule"){
 						window.testModule = tp[1];
 					}
+					if(tp[0] == "registerModulePath"){
+						var modules = tp[1].split(";");
+						window.registerModulePath=[];
+						for (var i=0; i<modules.length;i++){
+							window.registerModulePath.push(modules[i].split(","));
+						}
+					}
 				}
 			}
 
