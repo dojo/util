@@ -16,6 +16,8 @@ try{
 
 doh.selfTest = false;
 
+doh.global = this;
+
 doh.hitch = function(/*Object*/thisObject, /*Function|String*/method /*, ...*/){
 	var args = [];
 	for(var x=2; x<arguments.length; x++){
@@ -130,7 +132,7 @@ doh.extend(doh.Deferred, {
 		var _this = this;
 		return function(){
 			try{
-				cb.apply(scope||dojo.global||_this, arguments);
+				cb.apply(scope||doh.global||_this, arguments);
 			}catch(e){
 				_this.errback(e);
 				return;
@@ -145,7 +147,7 @@ doh.extend(doh.Deferred, {
 			if(typeof a[0] == "function"){
 				return a[0];
 			}else if(typeof a[0] == "string"){
-				return dojo.global[a[0]];
+				return doh.global[a[0]];
 			}
 		}else if((a[0])&&(a[1])){
 			return doh.hitch(a[0], a[1]);
@@ -865,7 +867,7 @@ doh.run = function(){
 tests = doh;
 
 (function(){
-	// scop protection
+	// scope protection
 	try{
 		if(typeof dojo != "undefined"){
 			dojo.platformRequire({
@@ -903,6 +905,21 @@ tests = doh;
 				throw new Error();
 			}else if(typeof load == "function"){
 				throw new Error();
+			}
+
+			if(this["document"]){
+				// if we survived all of that, we're probably in a browser but
+				// don't have Dojo handy. Load _browserRunner.js using a
+				// document.write() call.
+
+				// find runner.js, load _browserRunner relative to it
+				var scripts = document.getElementsByTagName("script");
+				for(var x=0; x<scripts.length; x++){
+					var s = scripts[x].src;
+					if(s && (s.substr(-9) == "runner.js")){
+						document.write("<scri"+"pt src='"+s.substr(0, s.length-9)+"_browserRunner.js' type='text/javascript'></scr"+"ipt>");
+					}
+				}
 			}
 		}
 	}catch(e){
