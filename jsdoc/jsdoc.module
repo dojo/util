@@ -2670,7 +2670,7 @@ function jsdoc_variable_node_view($node) {
     $function->parameters = $parameters;
   }
   $form['function'] = array(
-    '#value' => theme('jsdoc_function_information', $function, array()),
+    '#value' => theme('jsdoc_function_information', $function, array(), $node->title),
     '#weight' => 15
   );
 
@@ -2890,7 +2890,7 @@ function jsdoc_object_node_view($node, $initialized = null, $allow_private = fal
       $function->parameters = $parameters;
     }
     $form['function'] = array(
-      '#value' => theme('jsdoc_function_information', $function, $children),
+      '#value' => theme('jsdoc_function_information', $function, $children, $node->title),
       '#weight' => 30
     );
   }
@@ -4337,7 +4337,7 @@ function theme_jsdoc_object_parent($node) {
  *  because the constructor isn't always listed as the
  *  constructor because of the famous dojo.declare
  */
-function theme_jsdoc_function_information($function, $fields) {
+function theme_jsdoc_function_information($function, $fields, $title) {
   $output .= '<div class="jsdoc_function_information">';
   $output .= '<fieldset class="collapsible">';
   $output .= '<legend>' . 'Function Information' . '</legend>';
