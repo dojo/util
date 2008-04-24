@@ -35,6 +35,13 @@ Configure
   support your project. Function names should begin with the module name.
   eg dojo.module's functions start with "dojo"
 
+example (strings taken from UI, indented values are example values from a real config):
+	Directory to run your file from:
+		/srv/www/vhosts/api-staging.dojotoolkit.org/dojo-trunk/util/docscripts
+	Location of file used to parse your code:
+		/srv/www/vhosts/api-staging.dojotoolkit.org/dojo-trunk/util/docscripts/includes/dojo.inc
+	This will be used as a base of our functions:
+		dojo
 Run Cron
 ========
 
