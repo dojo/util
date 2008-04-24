@@ -1776,7 +1776,7 @@ function jsdoc_is_namespace(&$node) {
   $namespace = false;
 
   if (jsdoc_get_type($node) == 'Object' || jsdoc_is_initialized($node)) {
-    $query = db_query("SELECT 1 FROM node n JOIN jsdoc_objects jo ON (jo.vid = n.vid) WHERE jo.type = 'Function' AND n.title LIKE '%s.%%' AND n.title NOT LIKE '%.toString' LIMIT 1", $node->title);
+    $query = db_query("SELECT 1 FROM {node} n JOIN {jsdoc_objects} jo ON (jo.vid = n.vid) WHERE jo.type = 'Function' AND n.title LIKE '%s.%%' AND n.title NOT LIKE '%.toString' LIMIT 1", $node->title);
     if (db_num_rows($query)) {
       $namespace = true;
     }
