@@ -176,10 +176,10 @@ function jsdoc_menu($may_cache) {
  */
 function jsdoc_block($op='list', $delta=0) {
   if ($op == 'list') {
-    $block[0]['info'] = t('JavaScript Documentation Search');
     if (module_exists('search')) {
-      $block[1]['info'] = t('JavaScript Namespace List');
+      $block[0]['info'] = t('JavaScript Documentation Search');
     }
+    $block[1]['info'] = t('JavaScript Namespace List');
     return $block;
   }
   elseif ($op == 'view') {
