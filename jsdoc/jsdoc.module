@@ -175,103 +175,103 @@ function jsdoc_menu($may_cache) {
  * Impelementation of hook_block
  */
 function jsdoc_block($op='list', $delta=0) {
-  if (module_exists('search')) {
-    if ($op == 'list') {
-      $block[0]['info'] = t('JavaScript Documentation Search');
+  if ($op == 'list') {
+    $block[0]['info'] = t('JavaScript Documentation Search');
+    if (module_exists('search')) {
       $block[1]['info'] = t('JavaScript Namespace List');
+    }
+    return $block;
+  }
+  elseif ($op == 'view') {
+    if ($delta == 0 && module_exists('search')) {
+      $block['subject'] = 'Search';
+      $block['content'] = preg_replace('%ignore.*endignore%s', theme('jsdoc_search', 'search'), drupal_get_form('_jsdoc_block_search'));
       return $block;
     }
-    elseif ($op == 'view') {
-      if ($delta == 0) {
-        $block['subject'] = 'Search';
-        $block['content'] = preg_replace('%ignore.*endignore%s', theme('jsdoc_search', 'search'), drupal_get_form('_jsdoc_block_search'));
-        return $block;
-      }
-      elseif ($delta == 1) {
-        $namespaces = array();
+    elseif ($delta == 1) {
+      $namespaces = array();
 
-        $current = jsdoc_current_node();
+      $current = jsdoc_current_node();
 
-        if ($_GET['jsdoc_project'] || $current) {
-          if ($_GET['jsdoc_project']) {
-            $project_title = $_GET['jsdoc_project'];
-          }
-          else {
-            $project_title = jsdoc_get_project($current)->title;
-          }
-
-          foreach (jsdoc_projects() as $project) {
-            if ($project->title != $project_title) {
-              $namespaces[] = (object)array(
-                'title' => $project->title,
-                'url' => url($_GET['q'], 'jsdoc_project=' . $project->title),
-                'a' => l($project->title, $_GET['q'], array(), 'jsdoc_project=' . $project->title)
-              );
-            }
-            else {
-              if ($_GET['jsdoc_project']) {
-                $version = jsdoc_version_node_load('HEAD', $_GET['jsdoc_project']);
-                $project = jsdoc_get_project($version);
-              }
-              else {
-                $version = jsdoc_get_version($current);
-                $project = jsdoc_get_project($current);
-              }
-
-              if (!($all_namespaces = cache_get('jsdoc_namespaces_' . $project->title, 'cache'))) {
-                $all_namespaces = array();
-              }
-              else {
-                $all_namespaces = unserialize($all_namespaces->data);
-              }
-              if (empty($all_namespaces[$version->nid])) {
-                $query = db_query("SELECT n.title, n.nid, n.vid, jo.type AS jsdoc_type, jo.initialized AS jsdoc_initialized FROM {jsdoc_objects} jo JOIN {node} n ON (n.vid = jo.vid) WHERE jo.private = 0 AND jo.private_parent = 0 AND jo.version = %d AND (n.title = '%s' OR n.title LIKE '%s.%%') AND (jo.type = 'Object' OR (jo.type = 'Function' AND jo.initialized = 1)) GROUP BY BINARY n.title ORDER BY n.title", $version->nid, $project->title, $project->title);
-                while ($result = db_fetch_object($query)) {
-                  if (jsdoc_is_namespace($result)) {
-                    $all_namespaces[$version->nid][] = array($result->nid, $result->vid);
-                  }
-                }
-                cache_set('jsdoc_namespaces_' . $project->title, 'cache', serialize($all_namespaces));
-              }
-
-              foreach ($all_namespaces[$version->nid] as $namespace) {
-                $namespace = _jsdoc_node_load($namespace[0], $namespace[1]);
-                $children = false;
-
-                if ($_GET['jsdoc_object'] == $namespace->title) {
-                  $variables = jsdoc_get_child_variables($namespace);
-                  if (!empty($variables)) {
-                    foreach ($variables as $child) {
-                      $children[$child->title] = _jsdoc_get_object_themed($child);
-                    }
-                    uksort($children, "strnatcasecmp");
-                  }
-                }
-
-                $namespace = _jsdoc_get_object_themed($namespace);
-                $namespace->children = $children;
-                $namespace->url = url($namespace->title, $_GET['q'], 'jsdoc_project=' . $_GET['jsdoc_project'] . '&jsdoc_object=' . $namespace->title);
-                $namespace->a = l($namespace->title, $_GET['q'], array(), 'jsdoc_project=' . $_GET['jsdoc_project'] . '&jsdoc_object=' . $namespace->title);
-
-                $namespaces[] = $namespace;
-              }
-            }
-          }
+      if ($_GET['jsdoc_project'] || $current) {
+        if ($_GET['jsdoc_project']) {
+          $project_title = $_GET['jsdoc_project'];
         }
         else {
-          foreach (jsdoc_projects() as $project) {
+          $project_title = jsdoc_get_project($current)->title;
+        }
+
+        foreach (jsdoc_projects() as $project) {
+          if ($project->title != $project_title) {
             $namespaces[] = (object)array(
               'title' => $project->title,
               'url' => url($_GET['q'], 'jsdoc_project=' . $project->title),
               'a' => l($project->title, $_GET['q'], array(), 'jsdoc_project=' . $project->title)
             );
           }
+          else {
+            if ($_GET['jsdoc_project']) {
+              $version = jsdoc_version_node_load('HEAD', $_GET['jsdoc_project']);
+              $project = jsdoc_get_project($version);
+            }
+            else {
+              $version = jsdoc_get_version($current);
+              $project = jsdoc_get_project($current);
+            }
+
+            if (!($all_namespaces = cache_get('jsdoc_namespaces_' . $project->title, 'cache'))) {
+              $all_namespaces = array();
+            }
+            else {
+              $all_namespaces = unserialize($all_namespaces->data);
+            }
+            if (empty($all_namespaces[$version->nid])) {
+              $query = db_query("SELECT n.title, n.nid, n.vid, jo.type AS jsdoc_type, jo.initialized AS jsdoc_initialized FROM {jsdoc_objects} jo JOIN {node} n ON (n.vid = jo.vid) WHERE jo.private = 0 AND jo.private_parent = 0 AND jo.version = %d AND (n.title = '%s' OR n.title LIKE '%s.%%') AND (jo.type = 'Object' OR (jo.type = 'Function' AND jo.initialized = 1)) GROUP BY BINARY n.title ORDER BY n.title", $version->nid, $project->title, $project->title);
+              while ($result = db_fetch_object($query)) {
+                if (jsdoc_is_namespace($result)) {
+                  $all_namespaces[$version->nid][] = array($result->nid, $result->vid);
+                }
+              }
+              cache_set('jsdoc_namespaces_' . $project->title, 'cache', serialize($all_namespaces));
+            }
+
+            foreach ($all_namespaces[$version->nid] as $namespace) {
+              $namespace = _jsdoc_node_load($namespace[0], $namespace[1]);
+              $children = false;
+
+              if ($_GET['jsdoc_object'] == $namespace->title) {
+                $variables = jsdoc_get_child_variables($namespace);
+                if (!empty($variables)) {
+                  foreach ($variables as $child) {
+                    $children[$child->title] = _jsdoc_get_object_themed($child);
+                  }
+                  uksort($children, "strnatcasecmp");
+                }
+              }
+
+              $namespace = _jsdoc_get_object_themed($namespace);
+              $namespace->children = $children;
+              $namespace->url = url($namespace->title, $_GET['q'], 'jsdoc_project=' . $_GET['jsdoc_project'] . '&jsdoc_object=' . $namespace->title);
+              $namespace->a = l($namespace->title, $_GET['q'], array(), 'jsdoc_project=' . $_GET['jsdoc_project'] . '&jsdoc_object=' . $namespace->title);
+
+              $namespaces[] = $namespace;
+            }
+          }
         }
-        //$namespaces = unserialize(cache_get('jsdoc_namespaces', 'cache')->data);
-        $block['subject'] = 'Objects';
-        $block['content'] = theme('jsdoc_namespaces', $namespaces);
-        return $block;
       }
+      else {
+        foreach (jsdoc_projects() as $project) {
+          $namespaces[] = (object)array(
+            'title' => $project->title,
+            'url' => url($_GET['q'], 'jsdoc_project=' . $project->title),
+            'a' => l($project->title, $_GET['q'], array(), 'jsdoc_project=' . $project->title)
+          );
+        }
+      }
+      //$namespaces = unserialize(cache_get('jsdoc_namespaces', 'cache')->data);
+      $block['subject'] = 'Objects';
+      $block['content'] = theme('jsdoc_namespaces', $namespaces);
+      return $block;
     }
   }
 }
@@ -2297,13 +2297,112 @@ function jsdoc_ide($ide, $download=false) {
     $overview = $javascript->appendChild($document->createElement('overview'));
     $overview->appendChild($document->createTextNode('The Dojo Toolkit is awesome'));
 
+    $header = array();
+    $footer = array();
+    foreach (explode("\n", $document->saveXML()) as $line) {
+      if ($line == '</javascript>') {
+        $footer[] = $line;
+      }
+      else {
+        if (empty($footer)) {
+          $header[] = $line;
+        }
+        else {
+          $footer[] = $line;
+        }
+      }
+    }
+
+    $base = file_directory_path();
+    if (!file_exists($base . '/jsdoc/ides/docs/api')) {
+      mkdir($base . '/jsdoc');
+      mkdir($base . '/jsdoc/ides');
+      mkdir($base . '/jsdoc/ides/docs');
+      mkdir($base . '/jsdoc/ides/docs/api');
+      mkdir($base . '/jsdoc/ides/docs/api/js');
+      mkdir($base . '/jsdoc/ides/docs/api/css');
+      mkdir($base . '/jsdoc/ides/docs/api/nodes');
+      mkdir($base . '/jsdoc/ides/docs/book');
+      mkdir($base . '/jsdoc/ides/docs/book/js');
+      mkdir($base . '/jsdoc/ides/docs/book/css');
+      mkdir($base . '/jsdoc/ides/docs/book/nodes');
+    }
+    file_save_data(implode("\n", $header), 'jsdoc/ides/scriptdoc.xml.tmp', FILE_EXISTS_REPLACE);
+    $handle = fopen($base . '/jsdoc/ides/scriptdoc.xml.tmp', 'a');
+    $document->removeChild($javascript);
+
+    $toc_document = new DomDocument();
+    $toc_document->encoding = 'utf-8';
+    $toc_document->formatOutput = true;
+    $toc = $toc_document->appendChild($toc_document->createElement('toc'));
+    $toc->setAttribute('label', 'Dojo API Reference');
+    $toc->setAttribute('link_to', '../com.aptana.ide.documentation/tocreference.xml#libraries');
+    $toc = $toc->appendChild($toc_document->createElement('topic'));
+    $toc->setAttribute('label', 'Dojo 1.1');
+
+    $root = $toc->appendChild($toc_document->createElement('topic'));
+    $root->setAttribute('label', 'Book');
+
+    foreach (explode("\n", file_get_contents($base . '/jsdoc/ides/bookpages.txt')) as $line) {
+      set_time_limit(300);
+      list($parents, $nid, $title) = explode("|", $line, 3);
+      $parents = explode(",", $parents);
+      if (!file_exists("$base/jsdoc/ides/docs/book/nodes/$nid.html")) {
+        $content = file_get_contents("http://dojotoolkit.org/node/$nid");
+        if (preg_match('%<a href="(/book/[^"]+)" class="active">%', $content, $match)) {
+          $content = file_get_contents('http://dojotoolkit.org' . $match[1]);
+        }
+        $content = preg_replace('%(<style[^>]*>)[^<]+(</style>)%', '$1@import "../css/aptana.css";$2', $content);
+        $content = preg_replace('%src="/sites/all/themes/dtk/img%', 'src="../img', $content);
+        $content = str_replace('%src="/sites/all/modules/dojo/dtk_build/dojo/dojo.js"', 'src="../../../libraries/lib/dojo/dojo.js"', $content);
+        $content = str_replace('<script type="text/javascript" src="/dojo/config/6"></script>', '', $content);
+        $content = str_replace('src="/sites/all/themes/dtk/js/common.js"', 'src="../js/common.js"', $content);
+        file_save_data($content, "jsdoc/ides/docs/book/nodes/$nid.html", FILE_EXISTS_REPLACE);
+      }
+      _jsdoc_ide_build_toc($toc_document, $root, $parents, $title, 'book', $nid);
+    }
+    die();
+
+    $root = $toc->appendChild($toc_document->createElement('topic'));
+    $root->setAttribute('label', 'API');
+
+    foreach (jsdoc_projects() as $project) {
+      $version = jsdoc_version_node_load('HEAD', $project);
+
+      if (!file_exists($base . '/jsdoc/ides/docs/api/nodes/' . $project->title)) {
+        mkdir($base . '/jsdoc/ides/docs/api/nodes/' . $project->title);
+      }
+
+      $namespaces = unserialize(cache_get('jsdoc_namespaces_' . $project->title, 'cache')->data);
+      foreach ($namespaces[$version->nid] as $node) {
+        $node = _jsdoc_node_load($node[0], $node[1]);
+        _jsdoc_ide_build_toc($toc_document, $root, $project->title, $node->title, 'api');
+      }
+
+      $query = db_query("SELECT n.nid, MAX(n.vid) AS vid FROM {node} n INNER JOIN {jsdoc_variables} j ON (j.vid = n.vid) WHERE j.version = %d GROUP BY n.nid", $version->nid);
+      while ($result = db_fetch_object($query)) {
+        $node = _jsdoc_node_load($result->nid, $result->vid);
+        $node = jsdoc_get_variable_object($node);
+        set_time_limit(300);
+        if ($node->type == 'jsdoc_variable') {
+          $content = jsdoc_variable_node_view($node);
+        }
+        else {
+          $content = jsdoc_object_node_view($node);
+        }
+        file_put_contents($base . '/jsdoc/ides/docs/api/nodes/' . $project->title . '/' . $node->title . '.html', theme('jsdoc_ide', $content));
+      }
+    }
+
+    file_put_contents($base . '/jsdoc/ides/docs/index.xml', $toc_document->saveXML());
+
     foreach (jsdoc_projects() as $project) {
       $query = jsdoc_get_query_variables($project);
       while ($result = db_fetch_object($query)) {
-        set_time_limit(60);
+        set_time_limit(300);
         if (jsdoc_is_namespace($result) || jsdoc_get_type($result) == 'Constructor') {
           $node = _jsdoc_node_load($result->nid, $result->vid);
-          $class = $javascript->appendChild($document->createElement('class'));
+          $class = $document->createElement('class');
           $class->setAttribute('type', $node->title);
 
           if (jsdoc_get_teaser($node)) {
@@ -2424,11 +2523,75 @@ function jsdoc_ide($ide, $download=false) {
               $methods_element->appendChild($method);
             }
           }
+
+          fwrite($handle, "\n" . preg_replace('%(^|\n)%', '$1  ', $document->saveXML($class)));
         }
       }
     }
 
-    print $document->saveXML();
+    fwrite($handle, "\n" . implode("\n", $footer));
+    rename($base . '/jsdoc/ides/scriptdoc.xml.tmp', $base . '/jsdoc/ides/scriptdoc.xml');
+  }
+}
+
+function _jsdoc_ide_build_toc(&$document, &$root, $project, $title, $type, $nid=false) {
+  if ($type == 'api') {
+    $title = explode('.', $title);
+
+    $found = false;
+    foreach ($root->childNodes as $node) {
+      if ($node->getAttribute('label') == $title[0]) {
+        $found = true;
+        $topic = $node;
+        break;
+      }
+    }
+
+    if (!$found) {
+      $topic = $root->appendChild($document->createElement('topic'));
+      $topic->setAttribute('href', "docs/api/nodes/$project/{$title[0]}.html");
+      $topic->setAttribute('label', $title[0]);
+    }
+
+    foreach ($title as $i => $part) {
+      if (!$i) { continue; }
+
+      $label = implode('.', array_slice($title, 0, $i+1));
+
+      $found = false;
+      foreach ($topic->childNodes as $node) {
+        if ($node->getAttribute('label') == $label) {
+          $found = true;
+          $topic = $node;
+          break;
+        }
+      }
+
+      if (!$found) {
+        $topic = $topic->appendChild($document->createElement('topic'));
+        $topic->setAttribute('href', "docs/api/nodes/$project/$label.html");
+        $topic->setAttribute('label', $label);
+      }
+    }
+  }
+  elseif ($type == 'book') {
+    $parents = $project;
+    $topic = $root;
+
+    foreach ($parents as $parent) {
+      $found = false;
+      foreach ($topic->childNodes as $node) {
+        if ($node->getAttribute('href') == "docs/book/nodes/$parent.html") {
+          $found = true;
+          $topic = $node;
+          break;
+        }
+      }
+    }
+
+    $topic = $topic->appendChild($document->createElement('topic'));
+    $topic->setAttribute('href', "docs/book/nodes/$nid.html");
+    $topic->setAttribute('label', $title);
   }
 }
 
@@ -3856,7 +4019,7 @@ function _jsdoc_cron_validate() {
 function _jsdoc_cron_validate_include() {
   $files_function = _jsdoc_base() . '_get_files';
   if (!function_exists($files_function)) {
-    watchdog('jsdoc', $files_function . t(' does not exist in ') . $file_location, WATCHDOG_ERROR);
+    watchdog('jsdoc', $files_function . t(' does not exist in ') . _jsdoc_file_location(), WATCHDOG_ERROR);
     return false;
   }
 
