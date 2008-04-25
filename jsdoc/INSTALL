@@ -32,7 +32,7 @@ Enable in: Administer->Site building->Modules
 Configure
 =========
 
-* Make sure that PHP has write persmissions to the util/docscripts/cache directory
+* Make sure that PHP has write persmissions to the util/jsdoc/cache directory
 * Fill in the configuration in: Administer->Site configuration->JavaScript Documentation
 ** Under "Directory to run your file from",
    enter the FULL PATH to util/docscripts (eg /var/www/dojotoolkit/util/docscripts)
