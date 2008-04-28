@@ -455,7 +455,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 				//Find the dojo.i18n line. Start at the end of depList because it is likely closer
 				//to the end than the beginning.
 				var i18nXdEntry = null;
-				for(var i18nIndex = depList.length - 1; i18nIndex >= 0; i--){
+				for(var i18nIndex = depList.length - 1; i18nIndex >= 0; i18nIndex--){
 					if(depList[i18nIndex].match(/\/dojo\/i18n\.js$/)){
 						i18nXdEntry = depList.splice(i18nIndex, 1)[0];
 						break;
