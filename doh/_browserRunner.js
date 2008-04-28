@@ -76,6 +76,7 @@ if(window["dojo"]){
 						lb.removeChild(lb.firstChild);
 					}
 				}
+				this._suiteCount = 0;
 				oi.apply(doh, arguments);
 			}
 		})(doh._init);
@@ -152,7 +153,7 @@ if(window["dojo"]){
 			cb.onclick = function(evt){
 				doh._groups[group].skip = (!this.checked);
 			}
-			tds[2].innerHTML = group;
+			tds[2].innerHTML = "<div class='testGroupName'>"+group+"</div><div style='width:0;'>&nbsp;</div>";
 			tds[3].innerHTML = "";
 
 			tb.appendChild(tg);
@@ -223,7 +224,18 @@ if(window["dojo"]){
 		doh._testRegistered = doh._updateTestList;
 
 		doh._groupStarted = function(group){
+			if(this._suiteCount == 0){
+				this._runedSuite = 0;
+				this._currentGlobalProgressBarWidth = 0;
+				this._suiteCount = this._testCount;
+			}
+			this._runedSuite++;
 			// console.debug("_groupStarted", group);
+			if(doh._inGroup != group){
+				doh._totalTime = 0;
+				doh._runed = 0;
+				doh._inGroup = group;
+			}
 			var gn = getGroupNode(group);
 			if(gn){
 				gn.className = "inProgress";
@@ -233,8 +245,19 @@ if(window["dojo"]){
 		doh._groupFinished = function(group, success){
 			// console.debug("_groupFinished", group);
 			var gn = getGroupNode(group);
-			if(gn){
+			if(gn && doh._inGroup == group){
 				gn.className = (success) ? "success" : "failure";
+				gn.getElementsByTagName("td")[3].innerHTML = doh._totalTime+"ms";
+				gn.getElementsByTagName("td")[2].lastChild.className = "";
+				doh._inGroup = null;
+				//doh._runedSuite++;
+				doh._updateGlobalProgressBar(this._runedSuite/this._suiteCount,success);
+				//doh._runedSuite--;
+				doh._currentGlobalProgressBarWidth = parseInt(this._runedSuite/this._suiteCount*10000)/100;
+				//byId("progressOuter").style.width = parseInt(this._runedSuite/this._suiteCount*100)+"%";
+			}
+			if(doh._inGroup == group){
+				this.debug("Total time for GROUP \"",group,"\" is ",doh._totalTime,"ms");
 			}
 		}
 
@@ -261,10 +284,28 @@ if(window["dojo"]){
 			}
 		}
 
+		doh._updateGlobalProgressBar = function(p,success){
+			var outerContainer=byId("progressOuter");
+					
+			var gdiv=outerContainer.childNodes[doh._runedSuite-1];
+			if(!gdiv){
+				gdiv=document.createElement('div');
+				outerContainer.appendChild(gdiv);
+				gdiv.className='success';
+			}
+			if(!success){
+				gdiv._failure=true;
+				gdiv.className='failure';
+			}
+			var tp=parseInt(p*10000)/100;
+			gdiv.style.width = (tp-doh._currentGlobalProgressBarWidth)+"%";
+			return gdiv._failure;
+		}
 		doh._testFinished = function(group, fixture, success){
 			var fn = getFixtureNode(group, fixture);
+			var elapsed = fixture.endTime-fixture.startTime;
 			if(fn){
-				fn.getElementsByTagName("td")[3].innerHTML = (fixture.endTime-fixture.startTime)+"ms";
+				fn.getElementsByTagName("td")[3].innerHTML = elapsed+"ms";
 				fn.className = (success) ? "success" : "failure";
 
 				if(!success){
@@ -276,7 +317,21 @@ if(window["dojo"]){
 					}
 				}
 			}
-			this.debug(((success) ? "PASSED" : "FAILED"), "test:", fixture.name);
+			if(doh._inGroup == group){
+				var gn = getGroupNode(group);
+				doh._runed++;
+				if(gn && doh._curTestCount){
+					var p = doh._runed/doh._curTestCount;
+					var groupfail = this._updateGlobalProgressBar((doh._runedSuite+p-1)/doh._suiteCount,success);
+					
+					var pbar = gn.getElementsByTagName("td")[2].lastChild;
+					pbar.className = groupfail?"failure":"success";
+					pbar.style.width = parseInt(p*100)+"%";
+					gn.getElementsByTagName("td")[3].innerHTML = parseInt(p*10000)/100+"%";
+				}
+			}
+			this._totalTime += elapsed;
+			this.debug(((success) ? "PASSED" : "FAILED"), "test:", fixture.name,elapsed,'ms');
 		}
 
 		// FIXME: move implementation to _browserRunner?
@@ -457,6 +512,13 @@ if(window["dojo"]){
 			}
 			doh._testFinished = function(g, f, s){
 				_doh._testFinished(_thisGroup, f, s);
+			}
+			doh._groupStarted = function(g){
+				if(!this._setParent){
+					_doh._curTestCount = this._testCount;
+					_doh._curGroupCount = this._groupCount;
+					this._setParent = true;
+				}
 			}
 			doh._report = function(){};
 		}

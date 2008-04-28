@@ -116,19 +116,20 @@
 			}
 
 			#progressOuter {
-				background:#e9e9e9 url("http://svn.dojotoolkit.org/dojo/dijit/trunk/themes/tundra/images/dojoTundraGradientBg.png") repeat-x 0 0;
+				background:#e9e9e9 url("http://svn.dojotoolkit.org/src/dijit/trunk/themes/tundra/images/dojoTundraGradientBg.png") repeat-x 0 0;
+				height: 1em;
+				/*the following trick is necessary to prevent IE from wrapping the last piece of progress bar into a new line*/
+				_margin:1px;
+				_padding: -1px;
+				
 				/*
 				border-color: #e8e8e8;
 				*/
 			}
 
-			#progressInner {
-				background: blue;
-				width: 0%;
-				position: relative;
-				left: 0px;
-				top: 0px;
-				height: 100%;
+			#progressOuter .success, #progressOuter .failure{
+				float: left;
+				height: 1em;
 			}
 
 			#play, #pause {
@@ -186,15 +187,19 @@
 				background-color: #DEDEDE;
 			}
 
-			tr.inProgress {
+			div.testGroupName {
+				position: absolute;
+			}
+
+			.inProgress {
 				background-color: #85afde;
 			}
 
-			tr.success {
+			.success {
 				background-color: #7cdea7;
 			}
 
-			tr.failure {
+			.failure {
 				background-color: #de827b;
 			}
 		</style>
@@ -211,13 +216,9 @@
 					</span>
 				</td>
 			</tr>
-			<!--
 			<tr valign="top" height="10">
-				<td colspan="2" id="progressOuter">
-					<div id="progressInner">blah</div>
-				</td>
+				<td colspan="2"><div id="progressOuter"></div></td>
 			</tr>
-			-->
 			<tr valign="top" height="30">
 				<td width="30%" class="header">
 					<span id="toggleButtons" onclick="doh.togglePaused();">
