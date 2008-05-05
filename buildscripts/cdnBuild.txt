@@ -1,0 +1,32 @@
+CDN build process
+===================
+First, generate the locale bundles for all available locales:
+> cd cldr
+> ant
+> cd ..
+
+Then run the build command below. This build command was updated for 1.1, when multiversion support and CSS optimizations were added. 
+
+1) Replace the xdDojoPath with the URL path that will contain the Dojo release. It should be the directory that contains the dojo, dijit and dojox directories, and SHOULD NOT end in a trailing slash. 
+
+2) Replace releaseName and version with the appropriate values.
+
+./build.sh profile=standard releaseName=1.1.0 cssOptimize=comments.keepLines cssImportIgnore=../dijit.css optimize=shrinksafe loader=xdomain xdDojoPath=http://o.aolcdn.com/dojo/1.1.0 version=1.1.0 copyTests=false action=release xdDojoScopeName=window[\(typeof\(djConfig\)\!\=\"undefined\"\&\&djConfig.scopeMap\&\&djConfig.scopeMap[0][1]\)\|\|\"dojo\"]
+
+The result will be in the release/releaseName where releaseName matches the string above (1.1.0).
+
+After placing the build on the CDN, I normally update a link for the MAJOR.MINOR version number to the latest MAJOR.MINOR.PATCH number. So, if releaseName was 1.1.1, then update http://o.aolcdn.com/dojo/1.1 to point to http://o.aolcdn.com/dojo/1.1.1 (where http://o.aolcdn.com/dojo will be different based on the xdDojoPath build option).
+
+Also, because of this bug:
+http://trac.dojotoolkit.org/ticket/4462
+
+I also made a dojo.js file that included dojox.gfx, to work around the bug. I hope to fix the bug in the Dojo 1.2 timeframe, but until then, I use this build command to generate the dojo.js + dojox.gfx (do this build after the normal build above, and be sure to modify releaseName, version and xdDojoPath as you did for the first build command):
+
+./build.sh profile=standardCdnGfx releaseName=1.1.0gfx cssOptimize=comments.keepLines cssImportIgnore=../dijit.css optimize=shrinksafe loader=xdomain xdDojoPath=http://o.aolcdn.com/dojo/1.1.0 version=1.1.0 copyTests=false action=release xdDojoScopeName=window[\(typeof\(djConfig\)\!\=\"undefined\"\&\&djConfig.scopeMap\&\&djConfig.scopeMap[0][1]\)\|\|\"dojo\"]
+
+After the build is done, go to release/1.1.0gfx/dojo, then do:
+> cp dojo.xd.js ../../1.1.0/dojo/gfx-dojo.xd.js
+> cp dojo.xd.js.uncompressed.js ../../1.1.0/dojo/gfx-dojo.xd.js.uncompressed.js
+
+(change the 1.1.0 references above to the appropriate value used in the releasName arguments).
+
