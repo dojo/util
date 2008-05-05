@@ -144,10 +144,10 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 	//summary: constructs the build options by combining the scriptArgs with
 	//default build options and anything specified in a profile file.
 
-	var kwArgs = {};
+	var kwArgs = {}, param;
 
 	//Parse the command line arguments
-	var kwArgs = buildUtil.convertArrayToObject(scriptArgs);
+	kwArgs = buildUtil.convertArrayToObject(scriptArgs);
 	if(!kwArgs["profileFile"] && kwArgs["profile"]){
 		kwArgs.profileFile = "profiles/" + kwArgs.profile + ".profile.js";
 	}
@@ -161,7 +161,7 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 			dependencies = kwArgs.profileProperties.dependencies;
 			
 			//Allow setting build options from on the profile's dependencies object
-			for(var param in dependencies){
+			for(param in dependencies){
 				if(param != "layers" && param != "prefixes"){
 					kwArgs[param] = dependencies[param];
 				}
@@ -170,7 +170,7 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 	}
 
 	//Set up default options
-	for(var param in buildUtil.DojoBuildOptions){
+	for(param in buildUtil.DojoBuildOptions){
 		//Only use default if there is no value so far.
 		if(typeof kwArgs[param] == "undefined"){
 			kwArgs[param] = buildUtil.DojoBuildOptions[param].defaultValue;
@@ -352,8 +352,8 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 				try{
 					//Strip comments and apply conditional directives before tracing the dependencies.
 					var text = fileUtil.readFile(uri);
-					var text = (kwArgs ? buildUtil.processConditionals(layerName, text, kwArgs) : text);
-					var text = buildUtil.removeComments(text);
+					text = (kwArgs ? buildUtil.processConditionals(layerName, text, kwArgs) : text);
+					text = buildUtil.removeComments(text);
 
 					var requires = dojo._getRequiresAndProvides(text);
 					eval(requires.join(";"));
@@ -387,7 +387,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 				var deps = [];
 				var tmp;
 				RegExp.lastIndex = 0;
-				var testExp = /dojo.(require|platformRequire|provide)\([\w\W]*?\)/mg;
+				var testExp = /dojo.(require|platformRequire|provide)\s*\([\w\W]*?\)/mg;
 				while((tmp = testExp.exec(contents)) != null){
 					deps.push(tmp[0]);
 				}
@@ -436,7 +436,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 			}
 			
 			if(layer["layerDependencies"]){
-				for(var j = 0; j < layer.layerDependencies.length; j++){
+				for(j = 0; j < layer.layerDependencies.length; j++){
 					if(namedLayerUris[layer.layerDependencies[j]]){
 						layerUris = layerUris.concat(namedLayerUris[layer.layerDependencies[j]]);
 					}
@@ -542,7 +542,7 @@ buildUtil.determineUriList = function(/*Array*/dependencies, /*Array*/layerUris,
 
 	var depList = [];
 	var seen = {};
-	uris: for(var x=0; x<dojo._loadedUrls.length; x++){
+	uris: for(x=0; x<dojo._loadedUrls.length; x++){
 		var curi = dojo._loadedUrls[x];
 		if(!seen[curi]){
 			seen[curi] = true;
@@ -557,7 +557,7 @@ buildUtil.determineUriList = function(/*Array*/dependencies, /*Array*/layerUris,
 			//If the uri is already accounted for in another
 			//layer, skip it.
 			if(layerUris){
-				for(var i = 0; i < layerUris.length; i++){ 
+				for(i = 0; i < layerUris.length; i++){ 
 					if(curi == layerUris[i]){ 
 						continue uris; 
 					} 
@@ -609,7 +609,7 @@ buildUtil.evalProfile = function(/*String*/profileFile, /*Boolean*/fileIsProfile
 	//Now add to the real prefix array.
 	//If not already in the prefix array, assume the default
 	//location, as a sibling to dojo (and util).
-	for(var i = 0; i < usedPrefixes.length; i++){
+	for(i = 0; i < usedPrefixes.length; i++){
 		var hasPrefix = false;
 		for(var j = 0; j < dependencies.prefixes.length; j++){
 			if(dependencies.prefixes[j][0] == usedPrefixes[i]){
@@ -696,7 +696,7 @@ buildUtil.createLayerContents = function(
 	//Order of provide statements do not matter.
 	provideList = provideList.sort(); 
 	var depRegExpString = "";
-	for(var i = 0; i < provideList.length; i++){
+	for(i = 0; i < provideList.length; i++){
 		if(i != 0){
 			depRegExpString += "|";
 		}
@@ -1327,7 +1327,7 @@ buildUtil.addGuards = function(/*String || Array*/startDir){
 	}
 
 	if(fileList){
-		for(var i = 0; i < fileList.length; i++){
+		for(i = 0; i < fileList.length; i++){
 			var fileContents = fileUtil.readFile(fileList[i]);
 			buildUtil.guardProvideRegExp.lastIndex = 0;
 			var match = buildUtil.guardProvideRegExp.exec(fileContents);
