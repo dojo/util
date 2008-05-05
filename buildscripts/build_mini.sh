@@ -80,7 +80,6 @@ if [ -d ../../release ]; then
 
 	# remove uncompressed .js files
 	find . -name *.uncompressed.js -exec rm '{}' ';'
-	find . -name *.commented.css -exec rm '{}' ';'
 
 	# WARNING: templates have been inlined into the .js -- if you are using dynamic templates,
 	# or other build trickery, these lines might not work!

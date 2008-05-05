@@ -1199,7 +1199,6 @@ buildUtil.optimizeCss = function(/*String*/startDir, /*String*/optimizeType, /*S
 				}
 	
 				//Write out the file with appropriate copyright.
-				fileUtil.saveUtf8File(fileName + ".commented.css", originalFileContents);
 				fileUtil.saveUtf8File(fileName, fileContents);
 			}
 		}
