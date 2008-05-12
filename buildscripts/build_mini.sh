@@ -18,6 +18,16 @@
 #
 #	NOTE: This is a fairly difinitive example of what is not needed (except in testing) ...
 
+rm_dojo_files ()
+{
+	for d in "$@"
+	do
+		if [ -e "dojo/$d" ]; then
+			rm -rf "dojo/$d"
+		fi
+	done
+}
+
 echo "release: mini started"
 
 # FIXME: refs #6616 - could be able to set a global copyright file and null out build_release.txt
@@ -46,27 +56,8 @@ if [ -d ../../release ]; then
 	# FIXME: any shell masters out there? this is just a list ...
 
 	# removed dijit tests
-	if [ -d dojo/dijit/tests ]; then
-		rm -rf dojo/dijit/tests/ 
-	fi
-	# and demos
-	if [ -d dojo/dijit/demos ]; then
-		rm -rf dojo/dijit/demos
-	fi
-	# and the benchTool
-	if [ -d dojo/dijit/bench ]; then
-		rm -rf dojo/dijit/bench/
-	fi
-	# the dojo tests
-	if [ -d dojo/dojo/tests ]; then
-		rm -rf dojo/dojo/tests/
-		rm -f dojo/dojo/tests.js
-	fi	
-	# and stray utils
-	if [ -d dojo/util ]; then 
-		rm -rf dojo/util/
-	fi
-	
+	rm_dojo_files "dijit/tests" "dijit/demos" "dijit/bench" "dojo/tests" "dojo/tests.js" "util"
+
 	# noir isn't worth including yet
 	if [ -d dojo/dijit/themes/noir ]; then
 		rm -rf dojo/dijit/themes/noir/
@@ -83,9 +74,8 @@ if [ -d ../../release ]; then
 
 	# WARNING: templates have been inlined into the .js -- if you are using dynamic templates,
 	# or other build trickery, these lines might not work!
-	rm -rf dojo/dijit/templates/
-	rm -rf dojo/dijit/form/templates/
-	rm -rf dojo/dijit/layout/templates/
+	rm_dojo_files "dijit/templates" "dijit/form/templates" "dijit/layout/templates"
+
 	# NOTE: we're not doing this in DojoX because the resources/ folder (to me) is deemed
 	# ambigious, and should be treated on a per-project basis
 
@@ -95,17 +85,14 @@ if [ -d ../../release ]; then
 	# .. assume you didn't, and clean up all the README's (leaving LICENSE, mind you)
 	find ./dojo/dojox/ -name README -exec rm '{}' ';'
 	
-	# WARNING: if you care about _base existing (and not _always_ just dojo.js providing it) ...
-	if [ -d dojo/dojo/_base ]; then
-		# ... then comment out theses lines:
-		rm -rf dojo/dojo/_base/
-		rm -f dojo/dojo/_base.js
-	fi
+	# WARNING: if you care about _base existing (and not _always_ just dojo.js providing it) then comment this line:
+	rm_dojo_files "dojo/_base" "dojo/_base.js"
+
 	# NOTE: we're not doing the above to dijit/_base/ because I secretly use dijit/_base functions
 	# when only using dojo.js (place.js and sniff.js in particular), and mini would break stuff ...
 
 	# last but not least
-	rm -f dojo/dojo/build.txt
+	rm_dojo_files "dojo/build.txt"
 	
 	cd ../util/buildscripts/
 
