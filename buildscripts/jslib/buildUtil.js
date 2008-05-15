@@ -807,7 +807,7 @@ buildUtil.configPrefixes = function(/*Object*/prefixes){
 
 
 //The regular expressions that will help find dependencies in the file contents.
-buildUtil.masterDependencyRegExpString = "dojo.(requireLocalization|require|requireIf|provide|requireAfterIf|platformRequire|i18n\._preloadLocalizations)\s*\\(([\\w\\W]*?)\\)";
+buildUtil.masterDependencyRegExpString = "dojo.(requireLocalization|require|requireIf|provide|requireAfterIf|platformRequire|i18n\._preloadLocalizations)\\s*\\(([\\w\\W]*?)\\)";
 buildUtil.globalDependencyRegExp = new RegExp(buildUtil.masterDependencyRegExpString, "mg");
 buildUtil.dependencyPartsRegExp = new RegExp(buildUtil.masterDependencyRegExpString);
 
