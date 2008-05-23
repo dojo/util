@@ -16,15 +16,15 @@
  *    	'dateFormat-long': "yyyy MMMM d",
  *    	'dateTimeFormat': "{1} {0}"
  *    })
- *    
+ *
  *   child locale - "en-us":
  *    // generated from ldml/main/*.xml, xpath: ldml/calendars/calendar-ethiopic
  *    ({
  *    	'months-format-abbr':[undefined,undefined,"March",undefined,undefined,"June"],
  *    	'dateFormat-long': "yyyy-MMMM-d"
  *    })
- *    
- *   After process, the reuslt will be:
+ *
+ *   After process, the result will be:
  *    child locale - "en-us":
  *    // generated from ldml/main/*.xml, xpath: ldml/calendars/calendar-ethiopic
  *    ({
@@ -78,10 +78,10 @@ for(var i= 0; i < fileList.length; i++){
 				if(dojo.isArray(data[prop])){
 					var variantArray = variantData[prop];
 					dojo.forEach(data[prop], function(element, index, list){
-						if(typeof element == "undefined" && dojo.isArray(variantArray)){
+						if(element === undefined && dojo.isArray(variantArray)){
 							list[index] = variantArray[index];
 							hasChanged = true;
-							if(typeof list[index] == "undefined"){
+							if(!("index" in list)){
 								isComplete = false;
 							}
 						}
@@ -89,7 +89,6 @@ for(var i= 0; i < fileList.length; i++){
 					if(dojo.isArray(variantArray) && variantArray.length > data[prop].length){
 						data[prop] = data[prop].concat(variantArray.slice(data[prop].length));
 						hasChanged = true;
-
 					}
 				}
 			}
@@ -97,6 +96,6 @@ for(var i= 0; i < fileList.length; i++){
 		return isComplete;
 	});
 	if(hasChanged){
-		fileUtil.saveUtf8File(jsFileName, dojo.toJson(data));
+		fileUtil.saveUtf8File(jsFileName, "(" + dojo.toJson(data, true) + ")");
 	}
 }

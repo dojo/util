@@ -124,9 +124,8 @@ for(var i= 0; i < srcLocaleList.length; i++){
 		}else if(aliasBundle && !srcBundle){
 			//add the new bundle to source locale
 			validateDir(srcLocalePath);
-			fileUtil.saveUtf8File(srcLocalePath + '/' + BUNDLE_MAP[len] + '.js', NLS_JSON_HEAD[len] + '(' + dojo.toJson(aliasBundle) + ')');
-			logMsg = "specailLocale.js : copyed " + BUNDLE_MAP[len] + '.js to ' + srcLocalePath;
-						
+			fileUtil.saveUtf8File(srcLocalePath + '/' + BUNDLE_MAP[len] + '.js', NLS_JSON_HEAD[len] + '(' + dojo.toJson(aliasBundle, true) + ')');
+			logMsg = "specialLocale.js : copied " + BUNDLE_MAP[len] + '.js to ' + srcLocalePath;
 		}else if(aliasBundle && srcBundle){
 			var isUpdated = false;
 			var nativeSrcBundle = null;//the bundle whose content is not flattened
@@ -151,8 +150,8 @@ for(var i= 0; i < srcLocaleList.length; i++){
 						
 			if(isUpdated){
 				validateDir(srcLocalePath);
-				fileUtil.saveUtf8File(srcLocalePath + '/' + BUNDLE_MAP[len] + '.js', NLS_JSON_HEAD[len] + '(' + dojo.toJson(nativeSrcBundle) + ')');
-				logMsg = 'specailLocale.js : updated ' + BUNDLE_MAP[len] + '.js in ' + srcLocalePath;				
+				fileUtil.saveUtf8File(srcLocalePath + '/' + BUNDLE_MAP[len] + '.js', NLS_JSON_HEAD[len] + '(' + dojo.toJson(nativeSrcBundle, true) + ')');
+				logMsg = 'specialLocale.js : updated ' + BUNDLE_MAP[len] + '.js in ' + srcLocalePath;				
 			}
 		}
 		print(logMsg);

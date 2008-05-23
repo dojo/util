@@ -74,7 +74,7 @@
         <xsl:otherwise>
             <xsl:for-each select="*[not(@draft)] | *[@draft!='provisional' and @draft!='unconfirmed']">
                 <xsl:call-template name="insert_comma"/>
-        '<xsl:value-of select="name()"></xsl:value-of>
+	'<xsl:value-of select="name()"></xsl:value-of>
                 <xsl:text>':"</xsl:text>
                 <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"></xsl:value-of>
                 <xsl:text>"</xsl:text>
@@ -115,7 +115,7 @@
                         </xsl:if><xsl:for-each select=".//pattern[not(@draft)] | 
                           .//pattern[@draft!='provisional' and @draft!='unconfirmed']">
 			                <xsl:call-template name="insert_comma"/>
-        '<xsl:value-of select="name(..)"></xsl:value-of>                            
+	'<xsl:value-of select="name(..)"></xsl:value-of>                            
                             <xsl:if test="string-length($width)>0">
                                 <xsl:text>-</xsl:text>
                                 <xsl:value-of select="$width"></xsl:value-of>
@@ -159,7 +159,7 @@
                 <xsl:otherwise>
                    <xsl:if test=".[(not(@draft) or @draft!='provisional' and @draft!='unconfirmed')]">
 	                <xsl:call-template name="insert_comma"/>
-        '<xsl:value-of select="name(../..)"></xsl:value-of>
+	'<xsl:value-of select="name(../..)"></xsl:value-of>
                     <xsl:text>-</xsl:text>
                     <xsl:value-of select="name(..)"></xsl:value-of>
                     <xsl:text>-</xsl:text>
