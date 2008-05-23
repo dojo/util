@@ -97,11 +97,11 @@
                     <xsl:call-template name="months_days_quarters"></xsl:call-template>
                 </xsl:for-each>
             </xsl:if>
-            <xsl:if test="name()='monthWidth' or name()='dayWidth'">
+            <xsl:if test="name()='monthWidth' or name()='dayWidth' or name()='quarterWidth'">
                 <xsl:variable name="item" select="substring-before(name(), 'Width')"/>
                 <xsl:if test="count(*[not(@draft)])>0 or count(*[@draft!='provisional' and @draft!='unconfirmed'])>0">
                     <xsl:call-template name="insert_comma"/>
-        '<xsl:value-of select="$item"/>
+	'<xsl:value-of select="$item"/>
                 <xsl:text>s-</xsl:text>
                 <xsl:call-template name="camel_case">
                     <xsl:with-param name="name"><xsl:value-of select="$ctx"></xsl:value-of></xsl:with-param>
@@ -120,12 +120,12 @@
             <xsl:if test="name()='quarterWidth'">
              <xsl:if test="count(*[not(@draft)])>0 or count(*[@draft!='provisional' and @draft!='unconfirmed'])>0">
                  <xsl:call-template name="insert_comma"/>
-        'quarters-<xsl:value-of select="concat($ctx,'-',$width)"></xsl:value-of> <xsl:text>':</xsl:text>
+	'quarters-<xsl:value-of select="concat($ctx,'-',$width)"></xsl:value-of> <xsl:text>':</xsl:text>
                 <xsl:call-template name="subSelect_in_place"><xsl:with-param name="name" select="'quarter'"></xsl:with-param></xsl:call-template>            
-             </xsl:if> 
+             </xsl:if>
              </xsl:if>
         </xsl:otherwise>
-    </xsl:choose>    
+    </xsl:choose>
 </xsl:template>
     
 <!--process am & pm -->
@@ -145,9 +145,9 @@
         <xsl:if test="not(@draft) or @draft!='provisional' and @draft!='unconfirmed'">
             <xsl:call-template name="insert_comma"/>
         <xsl:if test="name()='am'">
-        'am</xsl:if>
+	'am</xsl:if>
             <xsl:if test="name()='pm'">
-        'pm</xsl:if>
+	'pm</xsl:if>
             <xsl:text>':"</xsl:text>
             <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/><xsl:text>"</xsl:text>
         </xsl:if>
@@ -181,7 +181,7 @@
 					    <xsl:if test="count(*[not(@draft)])>0 
 					        or count(*[@draft!='provisional' and @draft!='unconfirmed'])>0">
 					        <xsl:call-template name="insert_comma"/>
-        '<xsl:value-of select="$name"></xsl:value-of>
+	'<xsl:value-of select="$name"></xsl:value-of>
 						<xsl:text>':</xsl:text>
 					           <xsl:choose>
 					               <xsl:when test="name()='eraNarrow'">
@@ -231,7 +231,7 @@
                          <xsl:for-each select=".//pattern[not(@draft)] | 
                           .//pattern[@draft!='provisional' and @draft!='unconfirmed']">
                              <xsl:call-template name="insert_comma"/>
-        '<xsl:value-of select="name(..)"></xsl:value-of>
+	'<xsl:value-of select="name(..)"></xsl:value-of>
                          <xsl:text>-</xsl:text>
                          <xsl:value-of select='$width'/>': "<xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/>
                          <xsl:text>"</xsl:text>
@@ -270,7 +270,7 @@
         <xsl:for-each select=".//pattern[not(@draft)] | 
             .//pattern[@draft!='provisional' and @draft!='unconfirmed']">
             <xsl:call-template name="insert_comma"/>
-        '<xsl:value-of select="name(..)"></xsl:value-of>
+	'<xsl:value-of select="name(..)"></xsl:value-of>
          <xsl:if test="string-length($width) > 0">
          	<xsl:text>-</xsl:text>
                       <xsl:value-of select='$width'/>
@@ -283,7 +283,7 @@
          <xsl:if test="count(*[not(@draft)])>0 or 
                 count(*[@draft!='provisional' and @draft!='unconfirmed'])>0">
              <xsl:call-template name="insert_comma"/>
-        'dateTimeAvailableFormats':<xsl:call-template name="subSelect"><xsl:with-param name="name" select="dateFormatItem"></xsl:with-param></xsl:call-template>
+	'dateTimeAvailableFormats':<xsl:call-template name="subSelect"><xsl:with-param name="name" select="dateFormatItem"></xsl:with-param></xsl:call-template>
         </xsl:if>
         </xsl:if>
         <!-- appendItems -->
