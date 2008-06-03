@@ -1147,7 +1147,7 @@ function jsdoc_variable_access($op, $node) {
 function jsdoc_version_form(&$node) {
   $form = array();
 
-  $form['jsdoc_project'] = 
+//  $form['jsdoc_project'] = 
 }
 
 /**
