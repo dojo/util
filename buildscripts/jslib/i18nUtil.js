@@ -130,15 +130,26 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/fileCo
 		//Remove dojo.requireLocalization calls from the file.
 		fileContents = fileContents.replace(/dojo\.requireLocalization\(.*\)\;/g, "");
 
+
+		var preloadCall = '\ndojo.i18n._preloadLocalizations("' + modulePrefix + '", ' + dojo.toJson(localeList) + ');\n';
 		//Inject the dojo._preloadLocalizations call into the file.
 		//Do this at the end of the file, since we need to make sure dojo.i18n has been loaded.
 		//The assumption is that if dojo.i18n is not in this layer file, dojo.i18n is
 		//in one of the layer files this layer file depends on.
-		fileContents += '\ndojo.i18n._preloadLocalizations("' + modulePrefix + '", ' + dojo.toJson(localeList) + ');\n';
+		//Allow call to be inserted in the dojo.js closure, if that is in play.
+		i18nUtil.preloadInsertionRegExp.lastIndex = 0;
+		if(fileContents.match(i18nUtil.preloadInsertionRegExp)){
+			i18nUtil.preloadInsertionRegExp.lastIndex = 0;
+			fileContents = fileContents.replace(i18nUtil.preloadInsertionRegExp, preloadCall);
+		}else{
+			fileContents += preloadCall;
+		}
 	}
 
 	return fileContents; //String
 }
+
+i18nUtil.preloadInsertionRegExp = /\/\/INSERT dojo.i18n._preloadLocalizations HERE/;
 
 i18nUtil.flattenDirBundles = function(/*String*/prefixName, /*String*/prefixDir, /*Object*/kwArgs, /*RegExp*/nlsIgnoreRegExp){
 	//summary: Flattens the i18n bundles inside a directory so that only request

@@ -1,3 +1,4 @@
+	//INSERT dojo.i18n._preloadLocalizations HERE
 
 	if(dojo.config.afterOnLoad && dojo.isBrowser){
 		//Dojo is being added to the page after page load, so just trigger
