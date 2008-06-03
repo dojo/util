@@ -1144,6 +1144,15 @@ function jsdoc_variable_access($op, $node) {
 /**
  * Implementation of hook_form().
  */
+function jsdoc_version_form(&$node) {
+  $form = array();
+
+  $form['jsdoc_project'] = 
+}
+
+/**
+ * Implementation of hook_form().
+ */
 function jsdoc_variable_form(&$node) {
   $form = array(
     '#redirect' => $node->jsdoc_url
