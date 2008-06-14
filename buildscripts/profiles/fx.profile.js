@@ -1,9 +1,11 @@
 dependencies = {
 	layers: [
 		{
-			name: "../dojo/dtkapi.js",
+			name: "../dojox/fx.js",
 			dependencies: [
-				"dojox.widget.Dialog",
+				"dojo.NodeList-fx",
+				"dojox.fx.ext-dojo.NodeList",
+				"dojox.fx",
 				"dojo.fx.easing"
 			]
 		}
@@ -14,4 +16,3 @@ dependencies = {
 		[ "dojox", "../dojox" ]
 	]
 };
-

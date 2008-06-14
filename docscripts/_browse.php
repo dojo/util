@@ -34,7 +34,7 @@ $ajaxy = !empty($_REQUEST['ajaxy']);
 			dojo.require("dojox.layout.ExpandoPane");
 			dojo.require("dijit.layout.ContentPane");
 			dojo.require("dijit.layout.TabContainer");
-			dojo.require("dojox.fx.easing");
+			dojo.require("dojo.fx.easing");
 			dojo.require("dijit.TitlePane");
 			function tgShow(id){
 			  var identity=document.getElementById(id);
@@ -200,8 +200,8 @@ if(!empty($_REQUEST['ns'])){
 }
 
 if(!$ajaxy){ ?>
-<div dojoType="dijit.layout.BorderContainer" style="width:100%; height:100%;">
-	<div dojoType="dojox.layout.ExpandoPane" easeOut="dojox.fx.easing.backIn" easeIn="dojox.fx.easing.backOut" title="Namespaces" region="left" style="width:250px" splitter="true">
+<div dojoType="dijit.layout.BorderContainer" style="width:100%; height:100%;">q
+	<div dojoType="dojox.layout.ExpandoPane" easeOut="dojo.fx.easing.backIn" easeIn="dojo.fx.easing.backOut" title="Namespaces" region="left" style="width:250px" splitter="true">
 		<div dojoType="dijit.layout.TabContainer" tabPosition="bottom">
 			<?php
 				foreach($trees as $ns => $list){
