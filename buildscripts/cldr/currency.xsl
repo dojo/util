@@ -107,6 +107,7 @@
         <xsl:param name="templateName"></xsl:param>
         <xsl:param name="name"></xsl:param> 
         <xsl:param name="width"></xsl:param>
+		<xsl:param name="ctx"></xsl:param>
         <xsl:if test="$templateName='top'">
             <xsl:call-template name="top"></xsl:call-template>
         </xsl:if>

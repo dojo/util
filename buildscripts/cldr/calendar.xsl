@@ -76,8 +76,9 @@
     
 <!-- process months -->
     <xsl:template name="months_days_quarters" match="months | days | quarters">
+    <xsl:param name="name" select="name()"/>
     <xsl:param name="width" select="@type"/>
-    <xsl:variable name="ctx" select="../@type"/>
+    <xsl:param name="ctx" select="../@type"/>
     <xsl:choose>       
         <xsl:when test="count(./alias)>0">
             <!-- Handle Alias -->
@@ -86,6 +87,9 @@
                     <xsl:with-param name="templateToCall">months_days_quarters</xsl:with-param>
                     <xsl:with-param name="source" select="@source"></xsl:with-param>
                     <xsl:with-param name="xpath" select="@path"></xsl:with-param>
+                    <xsl:with-param name="name" select="$name"></xsl:with-param>
+					<xsl:with-param name="width" select="$width"></xsl:with-param>
+                    <xsl:with-param name="ctx" select="$ctx"></xsl:with-param>
                 </xsl:call-template>
             </xsl:for-each>            
         </xsl:when>
@@ -117,13 +121,13 @@
                 <xsl:call-template name="subSelect_in_place"><xsl:with-param name="name" select="$item"></xsl:with-param></xsl:call-template>
                 </xsl:if>
                 </xsl:if>
-            <xsl:if test="name()='quarterWidth'">
+            <!--xsl:if test="name()='quarterWidth'">
              <xsl:if test="count(*[not(@draft)])>0 or count(*[@draft!='provisional' and @draft!='unconfirmed'])>0">
                  <xsl:call-template name="insert_comma"/>
 	'quarters-<xsl:value-of select="concat($ctx,'-',$width)"></xsl:value-of> <xsl:text>':</xsl:text>
                 <xsl:call-template name="subSelect_in_place"><xsl:with-param name="name" select="'quarter'"></xsl:with-param></xsl:call-template>            
              </xsl:if>
-             </xsl:if>
+             </xsl:if-->
         </xsl:otherwise>
     </xsl:choose>
 </xsl:template>
@@ -166,6 +170,7 @@
 					<xsl:with-param name="templateToCall">eras</xsl:with-param>
 					<xsl:with-param name="source" select="@source"></xsl:with-param>
 					<xsl:with-param name="xpath" select="@path"></xsl:with-param>
+					<xsl:with-param name="name" select="$name"></xsl:with-param>
 				</xsl:call-template>
 			</xsl:for-each>	   
 		</xsl:when>
@@ -216,6 +221,7 @@
                      <xsl:with-param name="templateToCall">date_time_Formats</xsl:with-param>
                      <xsl:with-param name="source" select="@source"></xsl:with-param>
                      <xsl:with-param name="xpath" select="@path"></xsl:with-param>
+					 <xsl:with-param name="width" select="$width"></xsl:with-param>
                  </xsl:call-template>
              </xsl:for-each>       
          </xsl:when>
@@ -254,6 +260,7 @@
                 <xsl:with-param name="templateToCall">dateTimeFormats</xsl:with-param>
                 <xsl:with-param name="source" select="@source"></xsl:with-param>
                 <xsl:with-param name="xpath" select="@path"></xsl:with-param>
+				<xsl:with-param name="width" select="$width"></xsl:with-param>
             </xsl:call-template>
         </xsl:for-each>
     </xsl:when>
@@ -313,6 +320,7 @@
                     <xsl:with-param name="templateToCall">fields</xsl:with-param>
                     <xsl:with-param name="source" select="@source"></xsl:with-param>
                     <xsl:with-param name="xpath" select="@path"></xsl:with-param>
+					<xsl:with-param name="width" select="$width"></xsl:with-param>
                 </xsl:call-template>
             </xsl:for-each>
         </xsl:when>
@@ -457,6 +465,7 @@
      <xsl:param name="templateName"></xsl:param>
      <xsl:param name="name"></xsl:param> 
      <xsl:param name="width"></xsl:param>
+	 <xsl:param name="ctx"></xsl:param>
      <xsl:if test="$templateName='top'">
          <xsl:call-template name="top"></xsl:call-template>
      </xsl:if>
@@ -465,7 +474,9 @@
      </xsl:if>
      <xsl:if test="$templateName='months_days_quarters'">
          <xsl:call-template name="months_days_quarters">
+		  	  <xsl:with-param name="name" select="$name"></xsl:with-param>
               <xsl:with-param name="width" select="$width"></xsl:with-param>
+			  <xsl:with-param name="ctx" select="$ctx"></xsl:with-param>
           </xsl:call-template>
       </xsl:if>
      <xsl:if test="$templateName='apm'">

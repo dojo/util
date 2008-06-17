@@ -35,27 +35,29 @@
         </xsl:for-each>
     </xsl:template>
 
-    <xsl:template name="invoke_template_by_name">
+    <!--xsl:template name="invoke_template_by_name">
         <xsl:param name="templateName"></xsl:param>
         <xsl:param name="name"></xsl:param> 
         <xsl:param name="width"></xsl:param>
-    </xsl:template>
+    </xsl:template-->
 
     <!-- recursive process for alias -->
     <xsl:template name="alias_template">
         <xsl:param name="templateToCall"></xsl:param>
         <xsl:param name="source"></xsl:param>
         <xsl:param name="xpath"></xsl:param>
-        <xsl:variable name="cur_name" select="../name()"></xsl:variable>
-        <xsl:variable name="cur_width" select="../@type"></xsl:variable>
+        <xsl:param name="name"></xsl:param>
+        <xsl:param name="width"></xsl:param>
+        <xsl:param name="ctx"></xsl:param>
         <xsl:choose>            
             <xsl:when test="compare($source,'locale')=0">
                 <!-- source="locale" -->
                 <xsl:for-each select="saxon:evaluate(concat('../',$xpath))">   
                     <xsl:call-template name="invoke_template_by_name">
                         <xsl:with-param name="templateName" select="$templateToCall"></xsl:with-param>
-                        <xsl:with-param name="name" select="$cur_name"></xsl:with-param>
-                        <xsl:with-param name="width" select="$cur_width"></xsl:with-param>
+                        <xsl:with-param name="name" select="$name"></xsl:with-param>
+                        <xsl:with-param name="width" select="$width"></xsl:with-param>
+                        <xsl:with-param name="ctx" select="$ctx"></xsl:with-param>
                     </xsl:call-template>
                 </xsl:for-each>
             </xsl:when>
@@ -74,8 +76,9 @@
                         <xsl:for-each select="saxon:evaluate($xpath)">
                             <xsl:call-template name="invoke_template_by_name">
                                 <xsl:with-param name="templateName" select="$templateToCall"></xsl:with-param>
-                                <xsl:with-param name="name" select="$cur_name"></xsl:with-param>
-                                <xsl:with-param name="width" select="$cur_width"></xsl:with-param>
+                                <xsl:with-param name="name" select="$name"></xsl:with-param>
+                                <xsl:with-param name="width" select="$width"></xsl:with-param>
+                                <xsl:with-param name="ctx" select="$ctx"></xsl:with-param>
                             </xsl:call-template>
                         </xsl:for-each>
                     </xsl:for-each>
