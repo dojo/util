@@ -499,7 +499,46 @@ doh.register = doh.add = function(groupOrNs, testOrNull){
 		return;
 	}
 	this.registerTest(groupOrNs, testOrNull);
-}
+};
+
+doh.registerDocTests = function(module){
+	// no-op for when Dojo isn't loaded into the page
+	this.debug("registerDocTests() requires dojo to be loaded into the environment. Skipping doctest set for module:", module);
+};
+(function(){
+	if(typeof dojo != "undefined"){
+		dojo.require("dojox.testing.DocTest");
+		doh.registerDocTests = function(module){
+			//	summary:
+			//		Get all the doctests from the given module and register each of them
+			//		as a single test case here.
+			//
+			
+			var docTest = new dojox.testing.DocTest();
+			var docTests = docTest.getTests(module);
+			var len = docTests.length;
+			var tests = [];
+			for (var i=0; i<len; i++){
+				var test = docTests[i];
+				// Extract comment on first line and add to test name.
+				var comment = "";
+				if (test.commands.length && test.commands[0].indexOf("//")!=-1) {
+					var parts = test.commands[0].split("//");
+					comment = ", "+parts[parts.length-1]; // Get all after the last //, so we dont get trapped by http:// or alikes :-).
+				}
+				tests.push({
+					runTest:function(test){return function(t){
+						var r = docTest.runTest(test.commands, test.expectedResult);
+						t.assertTrue(r.success);
+					}}(test),
+					name:"Line "+test.line+comment
+				}
+				);
+			}
+			this.register("DocTests: "+module, tests);
+		}
+	}
+})();
 
 //
 // Assertions and In-Test Utilities
