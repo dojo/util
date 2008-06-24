@@ -507,7 +507,16 @@ doh.registerDocTests = function(module){
 };
 (function(){
 	if(typeof dojo != "undefined"){
-		dojo.require("dojox.testing.DocTest");
+		try{
+			dojo.require("dojox.testing.DocTest");
+		}catch(e){
+			// if the DocTest module isn't available (e.g., the build we're
+			// running from doesn't include it), stub it out and log the error
+			console.debug(e);
+
+			doh.registerDocTests = function(){}
+			return;
+		}
 		doh.registerDocTests = function(module){
 			//	summary:
 			//		Get all the doctests from the given module and register each of them
