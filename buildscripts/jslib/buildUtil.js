@@ -1274,7 +1274,11 @@ buildUtil.flattenCss = function(/*String*/fileName, /*String*/fileContents, /*St
 			importContents = importContents.replace(buildUtil.cssUrlRegExp, function(fullMatch, urlMatch){
 				var fixedUrlMatch = buildUtil.cleanCssUrlQuotes(urlMatch);
 				fixedUrlMatch = fixedUrlMatch.replace(buildUtil.backSlashRegExp, "/");
-				if(fixedUrlMatch.charAt(0) != "/"){
+
+				//Only do the work for relative URLs. Skip things that start with / or have
+				//a protocol.
+				var colonIndex = fixedUrlMatch.indexOf(":");
+				if(fixedUrlMatch.charAt(0) != "/" && (colonIndex == -1 || colonIndex > fixedUrlMatch.indexOf("/"))){
 					//It is a relative URL, tack on the path prefix
 					urlMatch = importPath + fixedUrlMatch;
 				}else{
