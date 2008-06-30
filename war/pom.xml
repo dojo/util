@@ -1,0 +1,40 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.dojotoolkit</groupId>
+  <artifactId>dojo</artifactId>
+  <version>1.1-SNAPSHOT</version>
+  <packaging>war</packaging>
+  <name>Dojo War</name>
+  <url>http://dojotoolkit.org</url>
+  <build>
+    <defaultGoal>install</defaultGoal>
+    <plugins>
+       <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <configuration>
+            <webXml>${basedir}/src/main/webapp/WEB-INF/web.xml</webXml>
+          </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>maven-jetty-plugin</artifactId>
+        <version>6.1.11</version>
+        <configuration>
+          <scanIntervalSeconds>0</scanIntervalSeconds>
+          <webAppConfig>
+            <contextPath>/dojo</contextPath>
+          </webAppConfig>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencies>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <version>2.5</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+</project>
