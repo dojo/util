@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServletResponse;
 public class DojoFilter implements Filter
 {
     private ServletContext _context;
+    private boolean _tests;
     
     /* ------------------------------------------------------------ */
     /* 
@@ -24,6 +25,8 @@ public class DojoFilter implements Filter
     public void init(FilterConfig filterConfig) throws ServletException
     {
         _context= filterConfig.getServletContext();
+        _tests=Boolean.parseBoolean(_context.getInitParameter("tests"));
+	
     }
 
     /* ------------------------------------------------------------ */
