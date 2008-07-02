@@ -13,8 +13,17 @@ maven artifacts as dependencies and include them in their
 webapps as resources or templates.
 
 Currently there is no public dojo repository. So artifacts 
-are only installed locally. So maven projects will need build
-this locally.  Eventually the artifacts will be published.
+are only installed to your local maven repository. So maven 
+projects will need build this locally.  Eventually the artifacts 
+will be published.
+
+The artifacts are also available at:
+    ./dojo/target/dojo-1.1-SNAPSHOT.tar.gz
+    ./dojo/target/dojo-1.1-SNAPSHOT.tar.bz2
+    ./dojo/target/dojo-1.1-SNAPSHOT.zip
+    ./java/dojo/target/dojo-1.1-SNAPSHOT.war
+
+
 
 
 To build everything:
