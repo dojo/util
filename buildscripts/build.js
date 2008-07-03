@@ -227,7 +227,6 @@ function release(){
 
 	//Copy over DOH if tests where copied.
 	if(kwArgs.copyTests){
-		copyRegExp = new RegExp(prefixName.replace(/\\/g, "/") + "/(?!tests)");
 		fileUtil.copyDir("../doh", kwArgs.releaseDir + "/util/doh", /./);
 	}
 
@@ -245,7 +244,8 @@ function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kw
 	
 	//Use the copyRegExp to filter out tests if requested.
 	if(!kwArgs.copyTests){
-		copyRegExp = new RegExp(prefixName.replace(/\\/g, "/") + "/(?!tests)");
+		copyRegExp = /\/tests\//;
+		copyRegExp.dojoMatchReverse = true;
 	}
 
 	logger.info("Copying: " + prefixPath + " to: " + releasePath);

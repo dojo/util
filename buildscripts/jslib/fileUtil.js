@@ -31,7 +31,13 @@ fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilt
 						filePath = filePath.replace(/\\/g, "/");
 					}
 				}
-				if(!file.getName().match(/^\./) && filePath.match(regExpFilter)){
+				
+				var regExpMatch = filePath.match(regExpFilter);
+				if(regExpFilter.dojoMatchReverse){
+					regExpMatch = !regExpMatch;
+				}
+				
+				if(!file.getName().match(/^\./) && regExpMatch){
 					files.push(filePath);
 				}
 			}else if(file.isDirectory() && !file.getName().match(/^\./)){
