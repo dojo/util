@@ -77,6 +77,14 @@ buildUtil.DojoBuildOptions = {
 			+ "separated list of CSS files names to ignore. The file names should match whatever strings "
 			+ "are used for the @import calls."
 	},
+	
+	"stripConsole": {
+		defaultValue: "",
+		helpText: "Strips console method calls from JS source. Applied to layers and individual modules "
+			+ "resource files. Valid values are \"normal\" (strips all but console.warn and console.error "
+			+ "calls), \"all\" (strips all console calls), \"normal,warn\" (strips all but console.error "
+			+ "calls), \"normal,error\" (strips all but console.warn errors)."
+	},
 
 	"copyTests": {
 		defaultValue: true,
@@ -1120,10 +1128,17 @@ buildUtil.setupPacker = function(){
 	}
 }
 
-buildUtil.stripComments = function(/*String*/startDir, /*RegeExp*/optimizeIgnoreRegExp, /*String*/copyrightText, /*String*/optimizeType){
+buildUtil.optimizeJsDir = function(/*String*/startDir, /*RegeExp*/optimizeIgnoreRegExp, /*String*/copyrightText, /*String*/optimizeType, /*String*/stripConsole){
 	//summary: strips the JS comments from all the files in "startDir", and all subdirectories.
+	//Also runs shrinksafe or packer minification, and console call removal.
 	var copyright = (copyrightText || fileUtil.readFile("copyright.txt")) + fileUtil.getLineSeparator();
 	var fileList = fileUtil.getFilteredFileList(startDir, /\.js$/, true);
+	
+	var messageType = optimizeType;
+	if(stripConsole){
+		messageType += (optimizeType ? ", " : "") + "stripConsole=" + stripConsole;
+	}
+
 	if(fileList){
 		for(var i = 0; i < fileList.length; i++){
 			//Don't process dojo.js since it has already been processed.
@@ -1133,18 +1148,29 @@ buildUtil.stripComments = function(/*String*/startDir, /*RegeExp*/optimizeIgnore
 				&& !fileList[i].match(/buildscripts/)
 				&& !fileList[i].match(/nls/)
 				&& !fileList[i].match(/tests\//)){
-				logger.trace("Optimizing (" + optimizeType + ") file: " + fileList[i]);
-				
+
+				logger.trace("Optimizing (" + messageType + ") file: " + fileList[i]);
+
 				//Read in the file. Make sure we have a JS string.
 				var fileContents = fileUtil.readFile(fileList[i]);
 
 				//Do comment removal.
-				try{
-					fileContents = buildUtil.optimizeJs(fileList[i], fileContents, copyright, optimizeType);
-				}catch(e){
-					logger.error("Could not strip comments for file: " + fileList[i] + ", error: " + e);
+				if(optimizeType){
+					try{
+						fileContents = buildUtil.optimizeJs(fileList[i], fileContents, copyright, optimizeType);
+					}catch(e){
+						logger.error("Could not strip comments for file: " + fileList[i] + ", error: " + e);
+					}
 				}
 
+				if(stripConsole){
+					try{
+						fileContents = buildUtil.stripConsole(fileContents, stripConsole);
+					}catch(e){
+						logger.error("Could not strip console calls for file: " + fileList[i] + ", error: " + e);
+					}
+				}
+				
 				//Write out the file with appropriate copyright.
 				fileUtil.saveUtf8File(fileList[i], fileContents);
 			}
@@ -1536,3 +1562,87 @@ buildUtil.insertSymbols = function(/*String*/startDir, /*Object*/kwArgs){
 		}
 	}
 }
+
+buildUtil.stripConsole = function(/*String*/fileContents, /*String*/stripConsole){
+	//summary: removes console.* calls from the fileContents.
+	//stripConsole can have values of "normal", "all" or "normal,warn" or "normal,error"
+	if(stripConsole){
+		var methods = "assert|count|debug|dir|dirxml|group|groupEnd|info|profile|profileEnd|time|timeEnd|trace|log";
+		if(stripConsole.indexOf("all") != -1){
+			methods += "|warn|error";
+		}else{
+			if(stripConsole.indexOf("warn") != -1){
+				methods += "|warn";
+			}
+			if(stripConsole.indexOf("error") != -1){
+				methods += "|error";
+			}
+		}
+		var regexp = new RegExp("console\\.(" + methods + ")\\s*\\(", "g");
+		
+		var results = buildUtil.extractMatchedParens(regexp, fileContents, true);
+		fileContents = results ? results[0] : fileContents;
+	}
+
+	return fileContents;
+}
+
+buildUtil.extractMatchedParens = function(/*RegExp*/ regexp, /*String*/fileContents, /*Boolean*/removeTrailingComma){
+	//summary: Pass in a regexp that includes a start parens: (, and this function will
+	//find the matching end parens for that regexp, remove the matches from fileContents,
+	//and return an array where the first member of the array is the modified fileContents
+	//and the rest of the array members are the matches found. If no matches are found,
+	//then returns null.
+
+	//Extracts
+	regexp.lastIndex = 0;
+
+	var parenRe = /[\(\)]/g;
+	parenRe.lastIndex = 0;
+
+	var results = [];
+	var matches;
+	while((matches = regexp.exec(fileContents))){
+		//Find end of the call by finding the matching end paren
+		parenRe.lastIndex = regexp.lastIndex;
+		var matchCount = 1;
+		var parenMatch;
+		while((parenMatch = parenRe.exec(fileContents))){
+			if(parenMatch[0] == ")"){
+				matchCount -= 1;
+			}else{
+				matchCount += 1;
+			}
+			if(matchCount == 0){
+				break;
+			}
+		}
+
+		if(matchCount != 0){
+			throw "unmatched paren around character " + parenRe.lastIndex + " in: " + fileContents;
+		}
+
+		//Put the master matching string in the results.
+		var startIndex = regexp.lastIndex - matches[0].length;
+		results.push(fileContents.substring(startIndex, parenRe.lastIndex));
+
+		//Remove the matching section. Account for ending semicolon if desired.
+		var endPoint = parenRe.lastIndex;
+		if(removeTrailingComma && fileContents.charAt(endPoint) == ";"){
+			endPoint += 1;
+		}
+		var remLength = endPoint - startIndex;
+
+		fileContents = fileContents.substring(0, startIndex) + fileContents.substring(endPoint, fileContents.length);
+
+		//Move the master regexp past the last matching paren point.
+		regexp.lastIndex = endPoint - remLength;
+	}
+
+	if(results.length > 0){
+		results.unshift(fileContents);
+	}
+
+	return (results.length ? results : null);
+}
+

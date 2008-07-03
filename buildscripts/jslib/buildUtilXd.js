@@ -185,53 +185,7 @@ buildUtilXd.makeXdBundleContents = function(prefix, prefixPath, srcFileName, fil
 	return buildUtilXd.makeXdContents(fileContents, prefixes, kwArgs);
 }
 
+buildUtilXd.loadInitRegExp = /dojo\.loadInit\s*\(/g;
 buildUtilXd.extractLoadInits = function(/*String*/fileContents){
-	//Extracts
-	var regexp = /dojo.loadInit\s*\(/g;
-	regexp.lastIndex = 0;
-
-	var parenRe = /[\(\)]/g;
-	parenRe.lastIndex = 0;
-
-	var results = [];
-	var matches;
-	while((matches = regexp.exec(fileContents))){
-		//Find end of the call by finding the matching end paren
-		parenRe.lastIndex = regexp.lastIndex;
-		var matchCount = 1;
-		var parenMatch;
-		while((parenMatch = parenRe.exec(fileContents))){
-			if(parenMatch[0] == ")"){
-				matchCount -= 1;
-			}else{
-				matchCount += 1;
-			}
-			if(matchCount == 0){
-				break;
-			}
-		}
-		
-		if(matchCount != 0){
-			throw "unmatched paren around character " + parenRe.lastIndex + " in: " + fileContents;
-		}
-
-		//Put the master matching string in the results.
-		var startIndex = regexp.lastIndex - matches[0].length;
-		results.push(fileContents.substring(startIndex, parenRe.lastIndex));
-
-		//Remove the matching section.
-		var remLength = parenRe.lastIndex - startIndex;
-		fileContents = fileContents.substring(0, startIndex) + fileContents.substring(parenRe.lastIndex, fileContents.length);
-
-		//Move the master regexp past the last matching paren point.
-		regexp.lastIndex = parenRe.lastIndex - remLength;
-
-		regexp.lastIndex = parenRe.lastIndex;
-	}
-
-	if(results.length > 0){
-		results.unshift(fileContents);
-	}
-
-	return (results.length ? results : null);
+	return buildUtil.extractMatchedParens(buildUtilXd.loadInitRegExp, fileContents);
 }

@@ -41,6 +41,10 @@ function help(){
 		+ "> java -jar ../shrinksafe/custom_rhino.jar build.js [name=value...]\n\n"
 		+ "Here is an example of a typical release build:\n\n"
 		+ "> java -jar ../shrinksafe/custom_rhino.jar build.js profile=base action=release\n\n"
+		+ "If you get a 'java.lang.OutOfMemoryError: Java heap space' error, try increasing the "
+		+ "memory Java can use for the command:\n\n"
+		+ "> java -Xms256m -Xmx256m -jar ../shrinksafe/custom_rhino.jar build.js profile=base action=release\n\n"
+		+ "Change the 256 number to the number of megabytes you want to give Java.\n\n"
 		+ "The possible name=value build options are shown below with the defaults as their values:\n\n"
 		+ buildOptionText;
 	
@@ -169,6 +173,9 @@ function release(){
 
 		//Flatten resources
 		fileContents = i18nUtil.flattenLayerFileBundles(fileName, fileContents, kwArgs);
+
+		//Remove console statements if desired
+		fileContents = buildUtil.stripConsole(fileContents, kwArgs.stripConsole);
 
 		//Save uncompressed file.
 		var uncompressedFileName = fileName + ".uncompressed.js";
@@ -315,9 +322,8 @@ function _optimizeReleaseDirs(
 		buildUtilXd.xdgen(prefixName, prefixPath, prefixes, layerIgnoreRegExp, kwArgs);
 	}
 
-	//FIXME: call stripComments. Maybe rename, inline with optimize? need build options too.
-	if(kwArgs.optimize){
-		buildUtil.stripComments(releasePath, layerIgnoreRegExp, copyrightText, kwArgs.optimize);
+	if(kwArgs.optimize || kwArgs.stripConsole){
+		buildUtil.optimizeJsDir(releasePath, layerIgnoreRegExp, copyrightText, kwArgs.optimize, kwArgs.stripConsole);
 	}
 	
 	if(kwArgs.cssOptimize){
