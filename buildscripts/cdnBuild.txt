@@ -15,8 +15,6 @@ Then run the build command below. This build command was updated for 1.1, when m
 
 The result will be in the release/releaseName where releaseName matches the string above (1.1.0).
 
-After placing the build on the CDN, I normally update a link for the MAJOR.MINOR version number to the latest MAJOR.MINOR.PATCH number. So, if releaseName was 1.1.1, then update http://o.aolcdn.com/dojo/1.1 to point to http://o.aolcdn.com/dojo/1.1.1 (where http://o.aolcdn.com/dojo will be different based on the xdDojoPath build option).
-
 Also, because of this bug:
 http://trac.dojotoolkit.org/ticket/4462
 
@@ -30,3 +28,4 @@ After the build is done, go to release/1.1.0gfx/dojo, then do:
 
 (change the 1.1.0 references above to the appropriate value used in the releasName arguments).
 
+After placing the build on the CDN, I normally update a link for the MAJOR.MINOR version number to the latest MAJOR.MINOR.PATCH number. So, if releaseName was 1.1.1, then update http://o.aolcdn.com/dojo/1.1 to point to http://o.aolcdn.com/dojo/1.1.1 (where http://o.aolcdn.com/dojo will be different based on the xdDojoPath build option).
