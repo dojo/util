@@ -286,9 +286,20 @@ function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kw
 	}
 
 	//Put in code guards for each resource, to protect against redefinition of
-	//code in the layered build cases. Do this here before the layers are built.
+	//code in the layered build cases. Also inject base require calls if there is 
+	//a layer with the customBase attribute. Do this here before the layers are built.
 	if(copiedFiles){
-		buildUtil.addGuards(copiedFiles);
+		var needBaseRequires = false;
+		var layers = kwArgs.profileProperties.dependencies.layers;
+		if(layers){
+			for(var i = 0; i < layers.length; i++){
+				if((needBaseRequires = layers[i].customBase)){
+					break;
+				}
+			}
+		}
+
+		buildUtil.addGuardsAndBaseRequires(copiedFiles, needBaseRequires);
 	}
 }
 //********* End _copyToRelease *********

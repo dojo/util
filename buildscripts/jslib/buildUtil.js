@@ -426,8 +426,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 			if(dependencies["dojoLoaded"]){
 				dependencies["dojoLoaded"]();
 			}
-		
-			
+	
 			//Add the loader files if this is a loader layer.
 			if(layerName == "dojo.js"){
 				buildUtil.includeLoaderFiles("default", hostenvType, buildscriptsPath);
@@ -453,8 +452,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 
 			//Get the final list of dependencies in this layer
 			var depList = buildUtil.determineUriList(layer.dependencies, layerUris, dependencies["filters"]); 
-			
-			
+
 			//If dojo.xd.js, need to put dojo.i18n before the code in dojo._base.browser that does the 
 			//auto dojo.require calls based on dojo.config.require array.
 			//This is a little bit hackish, but it allows dojo.i18n to use any Base methods
@@ -473,15 +471,21 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 				//Only operate if we have an i18n entry. We may allow building without
 				//dojo.i18n as part of the xd file.
 				if(i18nXdEntry){
+					var foundBrowserJs = false;
 					for(i18nIndex = depList.length - 1; i18nIndex >= 0; i18nIndex--){
 						if(depList[i18nIndex].match(/dojo\/_base\/browser\.js$/)){
 							depList.splice(i18nIndex, 0, i18nXdEntry);
+							foundBrowserJs = true;
 							break;
 						}
 					}
+					//If did not find browser entry (maybe a customBase build),
+					//Just add the i18n entry to the end.
+					if(!foundBrowserJs){
+						depList.push(i18nXdEntry);
+					}
 				}
 			}
-			
 			
 			//Add the final closure guard to the list.
 			if(layerName == "dojo.js" || layerName == "dojo.xd.js"){
@@ -1335,11 +1339,14 @@ buildUtil.flattenCss = function(/*String*/fileName, /*String*/fileContents, /*St
 	});
 }
 
-buildUtil.guardProvideRegExp = /dojo\.provide\(([\'\"][^\'\"]*[\'\"])\)/;
+buildUtil.guardProvideRegExpString = "dojo\\.provide\\(([\\'\\\"][^\\'\\\"]*[\\'\\\"])\\)";
+buildUtil.guardProvideRegExp = new RegExp(buildUtil.guardProvideRegExpString);
+buildUtil.guardProvideRegExpGlobal = new RegExp(buildUtil.guardProvideRegExpString, "g");
 
-buildUtil.addGuards = function(/*String || Array*/startDir){
+buildUtil.addGuardsAndBaseRequires = function(/*String || Array*/startDir, /*Boolean*/needBaseRequires){
 	//summary: adds a definition guard around code in a file to protect
-	//against redefinition cases when layered builds are used. Accepts a string
+	//against redefinition cases when layered builds are used. Also injects
+	//dojo._base require calls if needBaseRequires is true. Accepts a string
 	//of the start directory to use, or an array of file name strings to process.
 	var lineSeparator = fileUtil.getLineSeparator();
 
@@ -1358,6 +1365,52 @@ buildUtil.addGuards = function(/*String || Array*/startDir){
 	if(fileList){
 		for(i = 0; i < fileList.length; i++){
 			var fileContents = fileUtil.readFile(fileList[i]);
+			
+			//See if we need to inject dojo._base require calls.
+			//Do not process _base.js since it already has the require calls in there.
+			if(needBaseRequires
+				&& fileList[i].indexOf("/tests/") == -1
+				&& fileList[i].indexOf("/demos/") == -1
+				&& fileList[i].indexOf("/themes/") == -1
+				&& fileList[i].indexOf("dojo/_base.js") == -1){
+				buildUtil.baseMappingRegExp.lastIndex = 0;
+				var matches = null;
+				
+				//Strip out comments to get a better picture.
+				var tempContents = buildUtil.removeComments(fileContents);
+				
+				//Find where we can place the new require calls. This should be after
+				//any dojo.provide calls, so we do not hit a weird problem with a circular dependency
+				//that does not get resolved since the dojo.provide call does not fire indicating
+				//the file has been loaded.
+				buildUtil.guardProvideRegExpGlobal.lastIndex = 0;
+				var lastPosition = -1;
+				while((matches = buildUtil.guardProvideRegExpGlobal.exec(fileContents))){
+					lastPosition = buildUtil.guardProvideRegExpGlobal.lastIndex;
+				}
+				
+				//If no dojo.provide calls found, do not bother with the file.
+				if(lastPosition != -1){
+					var contentChunks = [
+						fileContents.substring(0, lastPosition + 1) + "\n",
+						fileContents.substring(lastPosition + 1, fileContents.length)
+					];
+					
+					var addedResources = {};
+					while((matches = buildUtil.baseMappingRegExp.exec(tempContents))){
+						var baseResource = buildUtil.baseMappings[matches[1]];
+						//Make sure we do not add the dependency to its source resource.
+						if(!addedResources[baseResource] && fileList[i].indexOf("_base/" + baseResource) == -1){
+							logger.trace("Adding dojo._base." + baseResource + " because of match: " + matches[1] + " to file: " + fileList[i]);
+							contentChunks[0] += 'dojo.require("dojo._base.' + baseResource + '");\n';
+							addedResources[baseResource] = true;
+						}
+					}
+					
+					fileContents = contentChunks.join("");
+				}
+			}
+
 			buildUtil.guardProvideRegExp.lastIndex = 0;
 			var match = buildUtil.guardProvideRegExp.exec(fileContents);
 			if(match){
@@ -1379,6 +1432,151 @@ buildUtil.addGuards = function(/*String || Array*/startDir){
 		}
 	}
 }
+
+//TODO: generate this via an algorithm.
+buildUtil.baseMappings = {
+	"trim": "lang",
+	"clone": "lang",
+	"_toArray": "lang",
+	"partial": "lang",
+	"delegate": "lang",
+	"_delegate": "lang",
+	"hitch": "lang",
+	"_hitchArgs": "lang",
+	"extend": "lang",
+	"isAlien": "lang",
+	"isArrayLike": "lang",
+	"isObject": "lang",
+	"isFunction": "lang",
+	"isArray": "lang",
+	"isString": "lang",
+	
+	"declare": "declare",
+	
+	"subscribe": "connect",
+	"unsubscribe": "connect",
+	"publish": "connect",
+	"connectPublisher": "connect",
+	
+	"Deferred": "Deferred",
+	
+	"fromJson": "json",
+	"_escapeString": "json",
+	"toJson": "json",
+	
+	"indexOf": "array",
+	"lastIndexOf": "array",
+	"forEach": "array",
+	"_everyOrSome": "array",
+	"every": "array",
+	"some": "array",
+	"map": "array",
+	"filter": "array",
+	
+	"Color": "Color",
+	"blendColors": "Color",
+	"colorFromRgb": "Color",
+	"colorFromHex": "Color",
+	"colorFromArray": "Color",
+	"colorFromString": "Color",
+	
+	"_gearsObject": "window",
+	"isGears": "window",
+	"doc": "window",
+	"body": "window",
+	"setContext": "window",
+	"_fireCallback": "window",
+	"withGlobal": "window",
+	"withDoc": "window",
+	
+	"connect": "event",
+	"disconnect": "event",
+	"fixEvent": "event",
+	"stopEvent": "event",
+	"_connect": "event",
+	"_disconnect": "event",
+	"_ieDispatcher": "event",
+	"_getIeDispatcher": "event",
+	
+	"byId": "html",
+	"_destroyElement": "html",
+	"isDescendant": "html",
+	"setSelectable": "html",
+	"place": "html", 
+	"getComputedStyle": "html", 
+	"_toPixelValue": "html", 
+	"_getOpacity": "html",
+	"_setOpacity": "html", 
+	"style": "html", 
+	"_getPadExtents": "html", 
+	"_getBorderExtents": "html",
+	"_getPadBorderExtents": "html", 
+	"_getMarginExtents": "html", 
+	"_getMarginBox": "html",
+	"_getContentBox": "html", 
+	"_getBorderBox": "html", 
+	"_setBox": "html", 
+	"_usesBorderBox": "html",
+	"_setContentSize": "html", 
+	"_setMarginBox": "html", 
+	"marginBox": "html", 
+	"contentBox": "html",
+	"_docScroll": "html", 
+	"_isBodyLtr": "html", 
+	"_getIeDocumentElementOffset": "html",
+	"_fixIeBiDiScrollLeft": "html",
+	"_abs": "html", 
+	"coords": "html", 
+	"hasAttr": "html", 
+	"attr": "html",
+	"removeAttr": "html", 
+	"hasClass": "html", 
+	"addClass": "html", 
+	"removeClass": "html",
+	"toggleClass": "html",
+	
+	"NodeList": "NodeList",
+	
+	"_filterQueryResult": "query",
+	"query": "query",
+	
+	"formToObject": "xhr", 
+	"objectToQuery": "xhr",
+	"formToQuery": "xhr",
+	"formToJson": "xhr",
+	"queryToObject": "xhr", 
+	"_ioSetArgs": "xhr",
+	"_ioCancelAll": "xhr",
+	"_ioAddQueryToUrl": "xhr",
+	"xhr": "xhr",
+	"xhrGet": "xhr",
+	"rawXhrPost": "xhr",
+	"rawXhrPut": "xhr",
+	"xhrDelete": "xhr",
+	"wrapForm": "xhr",
+	
+	"_Line": "fx",
+	"_Animation": "fx",
+	"_fade": "fx",
+	"fadeIn": "fx",
+	"fadeOut": "fx",
+	"_defaultEasing": "fx",
+	"animateProperty": "fx",
+	"anim": "fx"
+};
+
+(function(){
+	var names = "(";
+	for(var param in buildUtil.baseMappings){
+		if(names != "("){
+			names += "|";
+		}
+		names += param;
+	}
+	names += ")";
+	
+	buildUtil.baseMappingRegExp = new RegExp("\\." + names + "\\W", "g");
+})();
 
 buildUtil.processConditionalsForDir = function(/*String*/startDir, /*RegExp*/layerIgnoreRegExp, /*Object*/kwArgs){
 	//summary: processes build conditionals for a directory, but ignores files in the layerIgnoreRegExp argument.
