@@ -1479,9 +1479,7 @@ buildUtil.baseMappings = {
 	"colorFromHex": "Color",
 	"colorFromArray": "Color",
 	"colorFromString": "Color",
-	
-	"_gearsObject": "window",
-	"isGears": "window",
+
 	"doc": "window",
 	"body": "window",
 	"setContext": "window",
