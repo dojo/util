@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.dojotoolkit</groupId>
   <artifactId>project</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.2-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Dojo Toolkit</name>
   <url>http://dojotoolkit.org</url>
@@ -55,18 +55,52 @@
     <name>The Dojo Foundation</name>
     <url>http://dojotoolkit.org/foundation</url>
   </organization>
-  <distributionManagement>
-    <!-- none yet 
+
+  <repositories>
     <repository>
-      <id></id>
-      <name></name>
-      <url></url>
+      <releases>
+        <enabled>true</enabled>
+        <updatePolicy>daily</updatePolicy>
+        <checksumPolicy>fail</checksumPolicy>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>dojo</id>
+      <name>Dojo Maven2 Repository</name>
+      <url>http://download.dojotoolkit.org/maven2</url>
+      <layout>default</layout>
+    </repository>
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>always</updatePolicy>
+        <checksumPolicy>warn</checksumPolicy>
+      </snapshots>
+      <id>dojoSnapshots</id>
+      <name>Dojo Maven2 Snapshot Repository</name>
+      <url>http://download.dojotoolkit.org/maven2-snapshot</url>
+      <layout>default</layout>
+    </repository>
+  </repositories>
+	
+  <distributionManagement>
+    <repository>
+      <id>download.dojotoolkit.org</id>
+      <name>Dojo Maven2 Repository</name>
+      <url>scpexe://download.dojotoolkit.org/srv/www/vhosts/download.dojotoolkit.org/maven2</url>
+      <layout>default</layout>
     </repository>
     <snapshotRepository>
-      <id></id>
-      <name></name>
-      <url></url>
+      <id>download.dojotoolkit.org</id>
+      <name>Dojo Maven2 Snapshot Repository</name>
+      <url>scpexe://download.dojotoolkit.org/srv/www/vhosts/download.dojotoolkit.org/maven2-snapshot</url>
+      <layout>default</layout>
     </snapshotRepository>
+    <!-- none yet 
     <site>
       <id></id>
       <name></name>

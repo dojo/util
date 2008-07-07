@@ -3,12 +3,12 @@
   <parent>
       <groupId>org.dojotoolkit.java</groupId>
       <artifactId>project</artifactId>
-      <version>1.1-SNAPSHOT</version>
+      <version>1.2-SNAPSHOT</version>
       <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.dojotoolkit.java</groupId>
   <artifactId>dojo</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.2-SNAPSHOT</version>
   <packaging>war</packaging>
   <name>Dojo Toolkit :: Java :: WAR</name>
   <properties>
@@ -68,6 +68,9 @@
                    <include name="dojo/**" />                   
                    <include name="dijit/**" />                   
                    <include name="dojox/**" />                   
+                   <exclude name="**/docs/**" />                   
+                   <exclude name="**/demos/**" />                   
+                   <exclude name="**/tests/**" />                   
                  </fileset>
                 </copy> 
               </tasks>

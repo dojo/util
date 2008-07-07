@@ -3,12 +3,12 @@
   <parent>
       <groupId>org.dojotoolkit</groupId>
       <artifactId>project</artifactId>
-      <version>1.1-SNAPSHOT</version>
+      <version>1.2-SNAPSHOT</version>
       <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.dojotoolkit</groupId>
   <artifactId>dojo</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.2-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Dojo Toolkit :: Bundles</name>
   <url>http://dojotoolkit.org</url>
