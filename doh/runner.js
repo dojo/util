@@ -621,6 +621,33 @@ doh.is = doh.assertEqual = function(/*Object*/ expected, /*Object*/ actual){
 	throw new doh._AssertFailure("assertEqual() failed:\n\texpected\n\t\t"+expected+"\n\tbut got\n\t\t"+actual+"\n\n");
 }
 
+doh.isNot = doh.assertNotEqual = function(/*Object*/ notExpected, /*Object*/ actual){
+	// summary:
+	//		are the passed notexpected and actual objects/values deeply
+	//		not equivalent?
+
+	// Compare undefined always with three equal signs, because undefined==null
+	// is true, but undefined===null is false. 
+	if((notExpected === undefined)&&(actual === undefined)){ 
+        throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|");
+	}
+	if(arguments.length < 2){ 
+		throw doh._AssertFailure("assertEqual failed because it was not passed 2 arguments"); 
+	} 
+	if((notExpected === actual)||(notExpected == actual)){ 
+        throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|");
+	}
+	if(	(this._isArray(notExpected) && this._isArray(actual))&&
+		(this._arrayEq(notExpected, actual)) ){
+		throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|");
+	}
+	if( ((typeof notExpected == "object")&&((typeof actual == "object")))&&
+		(this._objPropEq(notExpected, actual)) ){
+        throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|");
+	}
+    return true;
+}
+
 doh._arrayEq = function(expected, actual){
 	if(expected.length != actual.length){ return false; }
 	// FIXME: we're not handling circular refs. Do we care?
@@ -634,14 +661,15 @@ doh._objPropEq = function(expected, actual){
 	if(expected instanceof Date){
 		return actual instanceof Date && expected.getTime()==actual.getTime();
 	}
+	var x;
 	// Make sure ALL THE SAME properties are in both objects!
-	for(var x in actual){ // Lets check "actual" here, expected is checked below.
+	for(x in actual){ // Lets check "actual" here, expected is checked below.
 		if(expected[x] === undefined){
 			return false;
 		}
 	};
 
-	for(var x in expected){
+	for(x in expected){
 		if(!doh.assertEqual(expected[x], actual[x])){
 			return false;
 		}
@@ -916,6 +944,7 @@ tests = doh;
 
 (function(){
 	// scope protection
+	var x;
 	try{
 		if(typeof dojo != "undefined"){
 			dojo.platformRequire({
@@ -962,7 +991,7 @@ tests = doh;
 
 				// find runner.js, load _browserRunner relative to it
 				var scripts = document.getElementsByTagName("script");
-				for(var x=0; x<scripts.length; x++){
+				for(x=0; x<scripts.length; x++){
 					var s = scripts[x].src;
 					if(s && (s.substr(-9) == "runner.js")){
 						document.write("<scri"+"pt src='"+s.substr(0, s.length-9)+"_browserRunner.js' type='text/javascript'></scr"+"ipt>");
@@ -982,7 +1011,7 @@ tests = doh;
 			var dojoUrl = "../../dojo/dojo.js";
 			var testUrl = "";
 			var testModule = "dojo.tests.module";
-			for(var x=0; x<arguments.length; x++){
+			for(x=0; x<arguments.length; x++){
 				if(arguments[x].indexOf("=") > 0){
 					var tp = arguments[x].split("=");
 					if(tp[0] == "dojoUrl"){
