@@ -84,8 +84,8 @@
             </xsl:for-each>
         </xsl:when>
         <xsl:otherwise>
-        <xsl:if test="count(./* [(not(@draft) or @draft!='provisional' and @draft!='unconfirmed')]) > 0">
-            <xsl:for-each select="*[not(@draft)] | *[@draft!='provisional' and @draft!='unconfirmed']">
+        <!-- CLDR 1.6+: skip entries in the form of displayName count="" until we implement plurals -->
+            <xsl:for-each select="*[not(@count) and (not(@draft) or (@draft!='provisional' and @draft!='unconfirmed'))]">
 				<xsl:call-template name="insert_comma"/>
                 <xsl:text>
 	</xsl:text>
@@ -96,8 +96,7 @@
                 <xsl:call-template name="normalize_unicode"/>
                 <xsl:text>"</xsl:text>
             </xsl:for-each>
-            </xsl:if>
-         </xsl:otherwise>   
+         </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
 
