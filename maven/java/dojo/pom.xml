@@ -42,14 +42,9 @@
                   <artifactId>dojo</artifactId>
                   <version>${project.version}</version>
                   <type>zip</type>
-                  <overWrite>false</overWrite>
-                  <outputDirectory>${{project.build.directory}</outputDirectory>
-                  <destFileName>dojo.zip</destFileName>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${project.build.directory}/dojo</outputDirectory>
-              <overWriteReleases>false</overWriteReleases>
-              <overWriteSnapshots>true</overWriteSnapshots>
             </configuration>
           </execution>
         </executions>

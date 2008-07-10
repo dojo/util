@@ -11,10 +11,9 @@
     <filter-name>DojoFilter</filter-name>
     <filter-class>org.dojotoolkit.DojoFilter</filter-class>
     <init-param>
-	<param-name>tests</param-name>
-	<param-value>true</param-value>
+	<param-name>cacheControl</param-name>
+	<param-value>public, max-age=2419200</param-value>
     </init-param>
-
   </filter>
 
   <filter-mapping>

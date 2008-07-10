@@ -16,7 +16,7 @@ import javax.servlet.http.HttpServletResponse;
 public class DojoFilter implements Filter
 {
     private ServletContext _context;
-    private boolean _tests;
+    private String _cacheControl="public, max-age=2419200";
     
     /* ------------------------------------------------------------ */
     /* 
@@ -25,7 +25,9 @@ public class DojoFilter implements Filter
     public void init(FilterConfig filterConfig) throws ServletException
     {
         _context= filterConfig.getServletContext();
-        _tests=Boolean.parseBoolean(_context.getInitParameter("tests"));
+        String tmp = _context.getInitParameter("cacheControl");
+        if (tmp!=null)
+            _cacheControl=tmp;
 	
     }
 
@@ -36,7 +38,7 @@ public class DojoFilter implements Filter
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException
     {
-    	((HttpServletResponse)response).setHeader("Cache-Control","public, max-age=2419200");
+    	((HttpServletResponse)response).setHeader("Cache-Control",_cacheControl);
         chain.doFilter(request, response);
     }
 
