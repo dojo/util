@@ -1,16 +1,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-      <groupId>org.dojotoolkit.java</groupId>
-      <artifactId>project</artifactId>
+      <groupId>org.dojotoolkit</groupId>
+      <artifactId>dojo-project</artifactId>
       <version>1.2-SNAPSHOT</version>
       <relativePath>../pom.xml</relativePath>
   </parent>
-  <groupId>org.dojotoolkit.java</groupId>
-  <artifactId>dojo</artifactId>
+  <groupId>org.dojotoolkit</groupId>
+  <artifactId>dojo-war</artifactId>
   <version>1.2-SNAPSHOT</version>
   <packaging>war</packaging>
-  <name>Dojo Toolkit :: Java :: WAR</name>
+  <name>Dojo Toolkit :: WAR</name>
   <properties>
     <jetty.version>6.1.11</jetty.version>
   </properties>
