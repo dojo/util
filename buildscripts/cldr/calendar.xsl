@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet xmlns:saxon="http://saxon.sf.net/" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" extension-element-prefixes="saxon" saxon:byte-order-mark="yes" version="2.0">
+<xsl:stylesheet xmlns:saxon="http://saxon.sf.net/" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" extension-element-prefixes="saxon" version="2.0">
 <xsl:import href="util.xsl"/>
-<xsl:output method="text" indent="yes"/>
+<xsl:output method="text" indent="yes" saxon:byte-order-mark="yes"/>
 <!-- list the data elements whose spaces should be preserved
    it seems listing only the parent node doesn't work -->
 <xsl:preserve-space elements="month day quarter am pm era pattern dateFormatItem appendItem displayName"/>
