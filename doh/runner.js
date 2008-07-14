@@ -678,7 +678,13 @@ doh._objPropEq = function(expected, actual){
 }
 
 doh._isArray = function(it){
-	return (it && it instanceof Array || typeof it == "array" || (dojo["NodeList"] !== undefined && it instanceof dojo.NodeList));
+	return (it && it instanceof Array || typeof it == "array" || 
+		(
+			!!doh.global["dojo"] &&
+			doh.global["dojo"]["NodeList"] !== undefined && 
+			it instanceof doh.global["dojo"]["NodeList"]
+		)
+	);
 }
 
 //
