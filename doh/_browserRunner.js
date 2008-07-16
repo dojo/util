@@ -43,22 +43,32 @@ if(window["dojo"]){
 		//
 		// Over-ride or implement base runner.js-provided methods
 		//
+		var escapeXml = function(str){
+			//summary:
+			//		Adds escape sequences for special characters in XML: &<>"'
+			//		Optionally skips escapes for single quotes
+			return str.replace(/&/gm, "&amp;").replace(/</gm, "&lt;").replace(/>/gm, "&gt;").replace(/"/gm, "&quot;"); // string
+		}
+
 		var _logBacklog = [];
 		var sendToLogPane = function(args, skip){
 			var msg = "";
 			for(var x=0; x<args.length; x++){
 				msg += " "+args[x];
 			}
+
+			msg = escapeXml(msg);
+
 			// workarounds for IE. Wheeee!!!
-			msg = msg.replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
-			msg = msg.replace(" ", "&nbsp;");
-			msg = msg.replace("\n", "<br>&nbsp;");
+			msg = msg.replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;")
+				.replace(" ", "&nbsp;")
+				.replace("\n", "<br>&nbsp;");
 			if(!byId("logBody")){
 				_logBacklog.push(msg);
 				return;
-			}else if((_logBacklog.length)&&(!skip)){
+			}else if(_logBacklog.length && !skip){
 				var tm;
-				while(tm=_logBacklog.shift()){
+				while((tm=_logBacklog.shift())){
 					sendToLogPane(tm, true);
 				}
 			}
@@ -125,15 +135,16 @@ if(window["dojo"]){
 			var rolledUp = true;
 			return _groupTogglers[group] = function(evt, forceOpen){
 				var nodes = groupNodes[group].__items;
+				var x;
 				if(rolledUp||forceOpen){
 					rolledUp = false;
-					for(var x=0; x<nodes.length; x++){
+					for(x=0; x<nodes.length; x++){
 						nodes[x].style.display = "";
 					}
 					toggle.innerHTML = "&#054;";
 				}else{
 					rolledUp = true;
-					for(var x=0; x<nodes.length; x++){
+					for(x=0; x<nodes.length; x++){
 						nodes[x].style.display = "none";
 					}
 					toggle.innerHTML = "&#052;";
@@ -203,9 +214,9 @@ if(window["dojo"]){
 					updateBacklog.push([group, fixture]);
 				}
 				return;
-			}else if((updateBacklog.length)&&(!unwindingBacklog)){
+			}else if(updateBacklog.length && !unwindingBacklog){
 				var tr;
-				while(tr=updateBacklog.shift()){
+				while((tr=updateBacklog.shift())){
 					doh._updateTestList(tr[0], tr[1], true);
 				}
 			}
@@ -331,7 +342,7 @@ if(window["dojo"]){
 				}
 			}
 			this._totalTime += elapsed;
-			this.debug(((success) ? "PASSED" : "FAILED"), "test:", fixture.name,elapsed,'ms');
+			this.debug((success ? "PASSED" : "FAILED"), "test:", fixture.name, elapsed, 'ms');
 		}
 
 		// FIXME: move implementation to _browserRunner?
@@ -393,12 +404,12 @@ if(window["dojo"]){
 		var runAll = true;
 		toggleRunAll = function(){
 			// would be easier w/ query...sigh
-			runAll = (!runAll);
+			runAll = !runAll;
 			if(!byId("testList")){ return; }
 			var tb = byId("testList").tBodies[0];
 			var inputs = tb.getElementsByTagName("input");
 			var x=0; var tn;
-			while(tn=inputs[x++]){
+			while((tn=inputs[x++])){
 				tn.checked = runAll;
 				doh._groups[tn.group].skip = (!runAll);
 			}
@@ -450,7 +461,7 @@ if(window["dojo"]){
 					}
 				}
 				if(!byId("play")){ 
-					// make sure we've got an ammenable DOM structure
+					// make sure we've got an amenable DOM structure
 					return;
 				}
 				var isRunning = false;
@@ -476,7 +487,7 @@ if(window["dojo"]){
 				})(doh.run);
 				var btns = byId("toggleButtons").getElementsByTagName("span");
 				var node; var idx=0;
-				while(node=btns[idx++]){
+				while((node=btns[idx++])){
 					node.onclick = toggleRunning;
 				}
 			}
