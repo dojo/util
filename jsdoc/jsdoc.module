@@ -3893,7 +3893,7 @@ function _jsdoc_variable_get_or_create($name, $project_name, $private) {
 function _jsdoc_resource_get_or_create($name, $project_name) {
   $project = _jsdoc_project_get_or_create($project_name);
 
-  if (!$nid = db_result(db_query("SELECT nr.nid FROM {jsdoc_resources} j JOIN {node_revisions} nr ON (j.vid = nr.vid) WHERE nr.title = '%s' AND BINARY nr.title = '%s' AND j.version IN (%s) ORDER BY nr.vid DESC", $name, $name, implode(',', $project->jsdoc_version_nids)))) {
+  if (!$nid = db_result(db_query("SELECT nr.nid FROM {jsdoc_resources} j JOIN {node_revisions} nr ON (j.vid = nr.vid) WHERE nr.title = '%s' AND BINARY nr.title = '%s' AND j.version IN (%s) ORDER BY nr.vid DESC", $name, $name, implode(',', array_merge(array(-1), $project->jsdoc_version_nids))))) {
     $node = (object)array(
       'jsdoc_version' => jsdoc_get_version($project)->nid,
       'title' => $name,
