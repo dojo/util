@@ -4036,18 +4036,23 @@ function jsdoc_get_all_provide_nids(&$node, $environments) {
   return jsdoc_get_resources($node, $environments)->jsdoc_provide_nids;
 }
 
-function jsdoc_get_prototype_chain($node, $environments, $output = array()) {
+function jsdoc_get_prototype_chain($node, $environments, $output = array(), $visited = array()) {
   $parents = jsdoc_get_parents($node);
   $resources = jsdoc_get_resources($node, $environments);
-  array_unshift($output, $node);
 
-  $prototype = "";
-  if ($parents->chain && !empty($parents->chain['prototype'])) {
-    $prototype = $parents->chain['prototype'][0];
-  }
-  if ($prototype) {
-    if ($parent = jsdoc_object_node_load($prototype, jsdoc_get_project($node), jsdoc_get_version($node), jsdoc_get_resources($node, $environments)->jsdoc_provide_nids)) {
-      return jsdoc_get_prototype_chain($parent, $environments, $output);
+  if (!in_array($node->nid, $visited)) {
+    $visited[] = $node->nid;
+
+    array_unshift($output, $node);
+
+    $prototype = "";
+    if ($parents->chain && !empty($parents->chain['prototype'])) {
+      $prototype = $parents->chain['prototype'][0];
+    }
+    if ($prototype) {
+      if ($parent = jsdoc_object_node_load($prototype, jsdoc_get_project($node), jsdoc_get_version($node), jsdoc_get_resources($node, $environments)->jsdoc_provide_nids)) {
+        return jsdoc_get_prototype_chain($parent, $environments, $output, $visited);
+      }
     }
   }
 
