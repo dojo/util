@@ -157,7 +157,7 @@ function jsdoc_menu($may_cache) {
         $path = "jsdoc/$name";
       }
 
-      if ($node = jsdoc_object_node_load($name, $project, $version, $resource)) {
+      if (($node = jsdoc_object_node_load($name, $project, $version, $resource)) && $node->nid) {
         /*
         // Restore this when jsdoc_object_nodes_load uses namespaces
         if (count($node) == 1) {
@@ -204,6 +204,11 @@ function jsdoc_menu($may_cache) {
           $item['callback arguments'] = array($node);
         }
         $items[] = $item;
+      }
+      else {
+        $_REQUEST['destination'] = $path;
+        drupal_not_found();
+        exit();
       }
     }
   }
@@ -2536,8 +2541,15 @@ function jsdoc_object_nodes_load($name, $project=false, $version=false, $resourc
       }
       $query = db_query("SELECT nr.nid, MAX(nr.vid) AS vid FROM {node_revisions} nr INNER JOIN {jsdoc_objects} j ON (j.vid = nr.vid) WHERE nr.title $title_check AND $binary nr.title $title_check AND j.version = %d AND (j.resource_nid IN (%s) OR j.provide_nid IN (%s)) GROUP BY nr.nid", $name, $name, $version_nid, implode(',', $resources), implode(',', $resources));
     }
-    else {
+    elseif ($version_nid) {
       $query = db_query("SELECT nr.nid, MAX(nr.vid) AS vid FROM {node_revisions} nr INNER JOIN {jsdoc_variables} j ON (j.vid = nr.vid) WHERE nr.title $title_check AND $binary nr.title $title_check AND j.version = %d GROUP BY nr.nid", $name, $name, $version_nid);
+    }
+    else {
+      $version_nids = array(-1);
+      foreach (_jsdoc_node_load($project_nid)->jsdoc_versions as $version_nid) {
+        $version_nids[] = $version_nid;
+      }
+      $query = db_query("SELECT nr.nid, MAX(nr.vid) AS vid FROM {node_revisions} nr INNER JOIN {jsdoc_variables} j ON (j.vid = nr.vid) WHERE nr.title $title_check AND $binary nr.title $title_check AND j.version IN (%s) GROUP BY nr.nid", $name, $name, implode(',', $version_nids));
     }
 
     while ($result = db_fetch_object($query)) {
