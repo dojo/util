@@ -2547,7 +2547,7 @@ function jsdoc_object_nodes_load($name, $project=false, $version=false, $resourc
     }
 
     while ($result = db_fetch_object($query)) {
-      $nodes[] = jsdoc_get_variable_object(_jsdoc_node_load($result->nid));
+      $nodes[] = jsdoc_get_variable_object(_jsdoc_node_load($result->nid, $result->vid));
     }
   }
 
