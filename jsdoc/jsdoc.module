@@ -266,7 +266,7 @@ function jsdoc_block($op='list', $delta=0) {
               $all_namespaces = unserialize($all_namespaces->data);
             }
             if (empty($all_namespaces[$version->nid])) {
-              $query = db_query("SELECT n.title, n.nid, n.vid, jo.type AS jsdoc_type, jo.initialized AS jsdoc_initialized FROM {jsdoc_objects} jo JOIN {node} n ON (n.vid = jo.vid) WHERE jo.private = 0 AND jo.private_parent = 0 AND jo.version = %d AND (n.title = '%s' OR n.title LIKE '%s.%%') AND (jo.type = 'Object' OR (jo.type = 'Function' AND jo.initialized = 1)) GROUP BY BINARY n.title ORDER BY n.title", $version->nid, $project->title, $project->title);
+              $query = db_query("SELECT n.title, n.nid, n.vid, jo.type AS jsdoc_type, jo.initialized AS jsdoc_initialized FROM {jsdoc_objects} jo JOIN {node_revisions} n ON (n.vid = jo.vid) WHERE jo.private = 0 AND jo.private_parent = 0 AND jo.version = %d AND (n.title = '%s' OR n.title LIKE '%s.%%') AND (jo.type = 'Object' OR (jo.type = 'Function' AND jo.initialized = 1)) GROUP BY BINARY n.title ORDER BY n.title", $version->nid, $project->title, $project->title);
               while ($result = db_fetch_object($query)) {
                 if (jsdoc_is_namespace($result)) {
                   $all_namespaces[$version->nid][] = array($result->nid, $result->vid);
