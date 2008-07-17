@@ -108,6 +108,10 @@ function jsdoc_menu($may_cache) {
     }
 
     if (arg(0) == 'jsdoc' && arg(1) != 'jsonp') {
+      if (arg(1) == 'manage') {
+        return $items;
+      }
+
       $project = false;
       $version = false;
       $resource = false;
