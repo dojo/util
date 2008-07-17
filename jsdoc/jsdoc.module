@@ -157,11 +157,16 @@ function jsdoc_menu($may_cache) {
         $path = "jsdoc/$name";
       }
 
-      if ($node = jsdoc_object_nodes_load($name, $project, $version, $resource)) {
+      if ($node = jsdoc_object_node_load($name, $project, $version, $resource)) {
+        /*
+        // Restore this when jsdoc_object_nodes_load uses namespaces
         if (count($node) == 1) {
           $node = $node[0];
+        */
           jsdoc_current_node($node);
+        /*
         }
+        */
         $item = array(
           'path' => $path,
           'title' => t('View'),
@@ -2373,7 +2378,7 @@ function jsdoc_object_node_load($name, $project=false, $version=false, $resource
 /**
  * Custom version of node_load for objects
  */
-function jsdoc_object_nodes_load($name, $project=false, $version=false, $resource=false, $exact=true) {
+function jsdoc_object_nodes_load($name, $project=false, $version=false, $resource=false, $exact=true, $broad=false) {
   $lower_name = strtolower($name);
 
   $override_name = false;
@@ -2472,62 +2477,53 @@ function jsdoc_object_nodes_load($name, $project=false, $version=false, $resourc
   $binary = ($exact) ? 'BINARY' : '';
   $title_check = ($exact) ? "= '%s'" : "LIKE '%%%s%%'";
   $nodes = array();
+  $results = array();
 
   if (!$project_nid) {
     // We can't look up the proper version without knowing the project
-    $query = db_query("SELECT nr.nid, MAX(nr.vid) AS vid FROM {node_revisions} nr JOIN {node} n ON (n.nid = nr.nid) WHERE nr.title $title_check AND $binary nr.title $title_check AND n.type = 'jsdoc_variable' GROUP BY nr.nid", $name, $name);
+    $query = db_query("SELECT nr.nid FROM {node_revisions} nr JOIN {node} n ON (n.nid = nr.nid) WHERE nr.title $title_check AND $binary nr.title $title_check AND n.type = 'jsdoc_variable' GROUP BY nr.nid", $name, $name);
     if ($exact && db_num_rows($query) > 1) {
       while ($result = db_fetch_object($query)) {
-        $project_nid = jsdoc_get_project(_jsdoc_node_load($result->nid, $result->vid))->nid;
+        $results[] = $result;
+
+        $current_project_nid = jsdoc_get_project(_jsdoc_node_load($result->nid))->nid;
+
+        if (!isset($project_nid)) {
+          $project_nid = $current_project_nid;
+        }
+
         // Set the project_nid if we can
         if (!$last_project_nid) {
-          $last_project_nid = $project_nid;
+          $last_project_nid = $current_project_nid;
         }
-        elseif ($last_project_nid != $project_nid) {
-          unset($project_nid);
-          break;
+        elseif ($last_project_nid != $current_project_nid) {
+          $project_nid = null;
         }
       }
     }
   }
 
   if (!$project_nid) {
-    if (!$exact || db_num_rows($query) == 1) {
-      while ($result = db_fetch_object($query)) {
-        $node = _jsdoc_node_load($result->nid, $result->vid);
-        if ($object = jsdoc_get_variable_object($node)) {
-          if (!$version) {
-            $versions = jsdoc_get_versions($object);
-            $version = $versions[0];
-          }
-          $versioned_query = db_query("SELECT vid FROM {" . $object->type . "s} WHERE nid = %d AND version = %d", $object->nid, $version->nid);
-          if ($result = db_fetch_object($versioned_query)) {
-            $node = jsdoc_get_variable_object(_jsdoc_node_load($object->nid, $result->vid));
-            if ($exact) {
-              return array($node);
-            }
-            $nodes[] = $node;
-          }
-          else {
-            if ($exact) {
-              return array($object);
-            }
-            $nodes[] = $object;
-          }
-        }
-        else {
-          if ($exact) {
-            return array($node);
-          }
-          $nodes[] = $node;
-        }
+    foreach ($results as $result) {
+      $node = jsdoc_get_variable_object(_jsdoc_node_load($result->nid));
+      if (!$version) {
+        $versions = jsdoc_get_versions($node);
+        $version = $versions[0];
       }
-    }
-    else {
-      while ($result = db_fetch_object($query)) {
-        $nodes[] = jsdoc_get_variable_object(_jsdoc_node_load($result->nid, $result->vid));
+      $versioned_query = db_query("SELECT vid FROM {" . $node->type . "s} WHERE nid = %d AND version = %d", $node->nid, $version->nid);
+      if ($result = db_fetch_object($versioned_query)) {
+        $node = jsdoc_get_variable_object(_jsdoc_node_load($node->nid, $result->vid));
+        if ($exact) {
+          return array($node);
+        }
+        $nodes[] = $node;
       }
-      return $nodes;
+      else {
+        if ($exact) {
+          return array($node);
+        }
+        $nodes[] = $mpde;
+      }
     }
   }
   else {
@@ -2551,13 +2547,20 @@ function jsdoc_object_nodes_load($name, $project=false, $version=false, $resourc
     }
 
     while ($result = db_fetch_object($query)) {
-      $nodes[] = jsdoc_get_variable_object(_jsdoc_node_load($result->nid, $result->vid));
+      $nodes[] = jsdoc_get_variable_object(_jsdoc_node_load($result->nid));
     }
   }
 
   if (empty($nodes)) {
-    // Try without the project
-    return jsdoc_object_nodes_load($name, false, $version->title, $resource, $exact);
+    if ($broad) {
+      return array((object)array(
+        'title' => $name
+      ));
+    }
+    else {
+      // Try without the project
+      return jsdoc_object_nodes_load($name, false, $version->title, $resource, $exact, true);
+    }
   }
 
   return $nodes;
