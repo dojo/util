@@ -234,10 +234,14 @@ class DojoPackage
         $matches = array();
 
         if ($in_comment === false && $in_regex === false && $in_single_string === false && $in_double_string === false) {
+          // Match the start of a line, the word return or case, or a character in: =([{,|&;:?
+          // Followed by zero or more spaces
+          // Followed by a forward slash
+          // Not followed by another forward slash
           if (preg_match('%(?:^|\breturn\b|[=([{,|&;:?])\s*/(?!/)%', $line, $match, PREG_OFFSET_CAPTURE, $position)) {
             $matches[$match[0][1] + strlen($match[0][0]) - 1] = '/';
           }
-          if (preg_match('%(?:^|\breturn\b|[=([{,|&;:?+])\s*(["\'])%', $line, $match, PREG_OFFSET_CAPTURE, $position)) {
+          if (preg_match('%(?:^|\b(?:case|return)\b|[=([{,|&;:?+])\s*(["\'])%', $line, $match, PREG_OFFSET_CAPTURE, $position)) {
             $matches[$match[0][1] + strlen($match[0][0]) - 1] = $match[1][0];
           }
           if (($pos = strpos($line, '//', $position)) !== false) {
@@ -248,16 +252,34 @@ class DojoPackage
           }
         }
         elseif ($in_regex !== false) {
-          if (preg_match('%(?<![/\\\])/\s*([img.)\]},|&;:]|$)%', $line, $match, PREG_OFFSET_CAPTURE, $position)) {
+          // A / not preceeded by a / or \
+          // Followed by 0 or more spaces
+          // Followed by one of the characters: img.)]},|&;: or end of line
+          if (preg_match('%(?<![/\\\\])/\s*([img.)\]},|&;:]|$)%', $line, $match, PREG_OFFSET_CAPTURE, $position)) {
+            //print_r($match);
             $matches[$match[0][1]] = '/';
           }
         }
         elseif ($in_single_string !== false || $in_double_string !== false) {
-          while (($pos = strpos($line, '\\\\', $position)) !== false || ($pos = strpos($line, '\\"', $position)) !== false || ($pos = strpos($line, "\\'", $position)) !== false) {
-            $position = $pos + 2;
+          for ($j = 0; $j < 999; $j++) {
+            $q_pos = strpos($line, ($in_single_string) ? "'" : '"', $position);
+
+            $bs_pos = strpos($line, '\\\\', $position);
+            $m_pos = strpos($line, '\\' . ($in_single_string) ? "'" : '"', $position);
+
+            if ($bs_pos !== false && $bs_pos < $q_pos) {
+              $position = $bs_pos + 2;
+            }
+            if ($m_pos !== false && $m_pos < $q_pos) {
+              $position = max($position, $m_post + 2);
+            }
+
+            if ($bs_pos === false && $m_pos === false) {
+              break;
+            }
           }
           $test = substr($line, $position);
-          if (preg_match('%([\'"])\s*([+.)\]},|&;:?]|$)%', $line, $match, PREG_OFFSET_CAPTURE, $position)) {
+          if (preg_match('%(' . ($in_single_string ? "'" : '"') . ')\s*([+.)\]},|&;:?]|==|$)%', $line, $match, PREG_OFFSET_CAPTURE, $position)) {
             $matches[$match[0][1]] = $match[1][0];
           }
         }
@@ -292,6 +314,7 @@ class DojoPackage
             }
             elseif ($match == '/*') {
               $in_comment = $position;
+              ++$position;
               break;
             }
           }
@@ -327,6 +350,7 @@ class DojoPackage
       //print "$line_number $line\n";
       $lines[$line_number] = $line;
     }
+
     return $this->code = $lines;
   }
 

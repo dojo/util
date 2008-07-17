@@ -3,6 +3,8 @@
 require_once('lib/parser/Dojo.php');
 require_once('lib/parser/DojoPackage.php');
 
+DojoFunctionBody::$suffix = ':';
+
 function _dojo_get_namespaces(){
   static $namespaces;
   if (!isset($namespaces)) {
@@ -40,9 +42,14 @@ function dojo_get_files() {
         $dojo = new Dojo($namespace, $location);
         $list = $dojo->getFileList();
         foreach ($list as $i => $item) {
+            // Skip internationalization/tests/demos files
+            if (preg_match('%(^|/|\\\\)(nls|tests|demos)(\\\\|/)%', $item)) {
+              unset($list[$i]);
+              continue;
+            }
             $list[$i] = array($namespace, $item);
         }
-        $files = array_merge($files, $list);
+        $files = array_merge($files, array_values($list));
     }
 
     return $files;
@@ -455,6 +462,16 @@ function dojo_get_contents($namespace, $file_name) {
       array_pop($parts);
   }
   unset($parts);
+
+  list($project,) = explode('.', $output['#provides'], 2);
+  if ($output['#requires']) {
+    foreach ($output['#requires'] as &$require) {
+      list($require_project,) = explode('.', $require[1]);
+      if ($require_project != $project) {
+        $require[2] = $require_project;
+      }
+    }
+  }
 
   foreach ($output as $object_name => $object) {
     if ($object_name{0} == '#') {

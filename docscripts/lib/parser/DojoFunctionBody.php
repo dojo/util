@@ -8,6 +8,9 @@ class DojoFunctionBody extends DojoBlock
 
   private $comment_end;
 
+  public static $prefix = '';
+  public static $suffix = '';
+
   private $keys = array();
   private $key_sets = array();
   private $comments = array();
@@ -154,7 +157,15 @@ class DojoFunctionBody extends DojoBlock
 
     $this->build();
 
-    $expression = '%^\b(' . implode('|', array_merge($this->keys, $this->key_sets)) . ')\b\W*%';
+    $prefix = '\b';
+    if (self::$prefix) {
+      $prefix = preg_quote(self::$prefix, '%');
+    }
+    $suffix = '\b';
+    if (self::$suffix) {
+      $suffix = preg_quote(self::$suffix, '%');
+    }
+    $expression = '%^' . $prefix . '(' . implode('|', array_merge($this->keys, $this->key_sets)) . ')' . $suffix . '\W*%';
 
     $lines = Text::chop($this->package->getSource(), $this->start[0], $this->start[1], $this->end[0], $this->end[1], true);
     for ($i = 0; $i < 2; $i++) {

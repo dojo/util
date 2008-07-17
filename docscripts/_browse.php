@@ -114,7 +114,11 @@ if(!empty($_REQUEST['ns'])){
         case "#requires" : 
           $print .= "<li><h3>Requires:</h3><ul>";
           foreach($val as $resource){
-            $print .= "<li>{$resource[1]} in {$resource[0]}</li>"; 
+            $print .= "<li>{$resource[1]} in {$resource[0]}";
+            if ($resource[2]) {
+              $print .= " in project {$resource[2]}";
+            }
+            $print .= "</li>"; 
           }
           $print .= "</ul></li>"; 
           break;
