@@ -1186,8 +1186,8 @@ function jsdoc_object_load($node) {
 
   $additions->jsdoc_version = $additions->jsdoc_version;
 
-  $additions->jsdoc_full_url = 'jsdoc/' . jsdoc_get_project($additions)->title . '/HEAD/' . str_replace('/', '__', jsdoc_get_resource($node)->title) . '/' . $node->title;
-  $additions->jsdoc_url = 'jsdoc/' . jsdoc_get_project($additions)->title . '/HEAD/' . $node->title;
+  $additions->jsdoc_full_url = 'jsdoc/' . jsdoc_get_project($additions)->title . '/' . jsdoc_get_version($additions)->title . '/' . str_replace('/', '__', jsdoc_get_resource($node)->title) . '/' . $node->title;
+  $additions->jsdoc_url = 'jsdoc/' . jsdoc_get_project($additions)->title . '/' . jsdoc_get_version($additions)->title . '/' . $node->title;
 
   return $additions;
 }
@@ -2080,15 +2080,9 @@ function jsdoc_get_children(&$node) {
     'prototype' => array()
   );
 
-  $version_nids = array(-1);
-  $query = db_query("SELECT nid FROM {node} WHERE type = 'jsdoc_version' AND title = '%s'", jsdoc_get_version($node)->title);
-  while ($result = db_fetch_object($query)) {
-    $version_nids[] = $result->nid;
-  }
-
   if ($node->type == "jsdoc_variable") {
     // Find all objects joined normally to this object,
-    $query = db_query("SELECT n.title FROM {jsdoc_variable_hierarchy} j JOIN {jsdoc_objects} jo ON (jo.vid = j.vid) JOIN {node_revisions} n ON (n.vid = j.vid) WHERE j.parent_vid = %d AND j.type = 'normal' AND jo.version IN (%s) AND jo.used != -1 GROUP BY BINARY n.title ORDER BY n.title", $node->vid, implode(',', $version_nids));
+    $query = db_query("SELECT n.title FROM {jsdoc_variable_hierarchy} j JOIN {jsdoc_objects} jo ON (jo.vid = j.vid) JOIN {node_revisions} n ON (n.vid = j.vid) WHERE j.parent_vid = %d AND j.type = 'normal' AND jo.version = %d AND jo.used != -1 GROUP BY BINARY n.title ORDER BY n.title", $node->vid, jsdoc_get_version($node)->nid);
     $node->jsdoc_variables = array();
     while ($object = db_fetch_object($query)) {
       $object = jsdoc_object_node_load($object->title, jsdoc_get_project($node), jsdoc_get_version($node));
@@ -2097,7 +2091,7 @@ function jsdoc_get_children(&$node) {
     uksort($node->jsdoc_variables, 'strnatcasecmp');
   }
   elseif ($node->type == "jsdoc_object") {
-    $query = db_query("SELECT j.type, j.subtype, nr.nid, nr.vid FROM {jsdoc_variable_hierarchy} j JOIN {node_revisions} nr ON (nr.vid = j.vid) JOIN {node_revisions} nr2 ON (nr2.vid = j.parent_vid) JOIN {jsdoc_objects} jo ON (jo.vid = nr.vid) WHERE jo.used != -1 AND nr2.title = '%s' AND BINARY nr2.title = '%s' AND j.version IN (%s) GROUP BY nr.nid, j.type, j.subtype", $node->title, $node->title, implode(',', $version_nids));
+    $query = db_query("SELECT j.type, j.subtype, nr.nid, nr.vid FROM {jsdoc_variable_hierarchy} j JOIN {node_revisions} nr ON (nr.vid = j.vid) JOIN {node_revisions} nr2 ON (nr2.vid = j.parent_vid) JOIN {jsdoc_objects} jo ON (jo.vid = nr.vid) WHERE jo.used != -1 AND nr2.title = '%s' AND BINARY nr2.title = '%s' AND j.version = %d GROUP BY nr.nid, j.type, j.subtype", $node->title, $node->title, jsdoc_get_version($node)->nid);
     while ($join = db_fetch_object($query)) {
       $object = _jsdoc_node_load($join->nid, $join->vid);
       if (!$object->jsdoc_used) {
