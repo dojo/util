@@ -34,7 +34,7 @@ $out = @expando_dojo($out);
 $doc = new DOMDocument('1.0');
 // setup for codeintel:
 $codeintel = $doc->createElement('codeintel');
-$codeintel->setAttribute("description","the Dojo Toolkit 1.1 API");
+$codeintel->setAttribute("description","Dojo Toolkit API - version 1.1.1");
 $codeintel->setAttribute("version","2.0");
 $codeintel->setAttribute("encoding","UTF-8");
 // wrap all the api in one "file" tag:
@@ -66,7 +66,7 @@ foreach ($out as $ns => $data){
 				switch($tt){
 					case "Object" :
 						// inspect this object deeper, but append to namespace:
-						$nsdata->appendChild(dojo_inspect($data[$obj],$obj,$doc));
+						$nsdata->appendChild(dojo_inspect($data[$obj],$obj,$doc, "variable"));
 						break;
 					case "Function" :
 						if($info['classlike']){
@@ -130,12 +130,14 @@ print $doc->saveXML();
 
 function dojo_inspect($data,$ns,$doc,$t="scope"){
 	// summary: inspect some namespace (as top), with some passed data.
-	
-	$elm = $doc->createElement($t);
+	if ($t == "argument") {
+		$elm = $doc->createElement("variable");
+		$elm->setAttribute("ilk", "argument");
+	} else {
+		$elm = $doc->createElement($t);
+	}
 	$elm->setAttribute("name",$ns);
 
-	if($t=="variable"){ $elm->setAttribute("ilk",argument); }
-	
 	foreach ($data as $obj => $info){
 		switch($obj){
 			// these are all the ones we don't _really_ care about in this context:
@@ -157,7 +159,7 @@ function dojo_inspect($data,$ns,$doc,$t="scope"){
 				$sig = $ns."(";
 				foreach($info as $key => $val){
 					$sig .= $key.",";
-					$elm->appendChild(dojo_inspect($val,$key,$doc,"variable"));
+					$elm->appendChild(dojo_inspect($val,$key,$doc,"argument"));
 				}
 				$sig = substr($sig,0,strlen($sig)-1);
 				$sig .= ")";
@@ -169,11 +171,15 @@ function dojo_inspect($data,$ns,$doc,$t="scope"){
 			case "private" : $elm->setAttribute("attributes","private"); break;
 
 			case "type" :
-				if($info){ $elm->setAttribute("citdl",$info); }
-				switch ($info){
-					case "Object" :
-						//$elm->appendChild(dojo_inspect($info,$obj,$doc,"variable"));
-						break;
+				if($info) {
+					switch ($info){
+						case "Function" :
+							$elm->setAttribute("ilk","function");
+							break;
+						default:
+							$elm->setAttribute("citdl",$info);
+							break;
+					}
 				}
 				break;
 
@@ -182,7 +188,14 @@ function dojo_inspect($data,$ns,$doc,$t="scope"){
 				break;
 
 			// just in case we missed something?
-			default : $elm->appendChild(dojo_inspect($data[$obj],$obj,$doc,"scope")); break;
+			default :
+				$scope_type = "scope";
+				if (($data[$obj]["instance"] != NULL) ||
+				    ($data[$obj]["type"] == "Object")) {
+					$scope_type = "variable";
+				}
+				$elm->appendChild(dojo_inspect($data[$obj],$obj,$doc,$scope_type));
+				break;
 		}
 	}
 	// give it back as a domNode:
@@ -236,7 +249,7 @@ function expando_dojo($array){
 					if(!($list[0]==$namespace)){ continue; }
 					switch($n){
 						case 8 :
-							// print "UNCAUGHT! ".$item; // way tooooo deep.
+							fprintf("UNCAUGHT! %s", $item); // way tooooo deep.
 							break;
 						case 7 : 
 							$l1 = $list[1];
@@ -245,7 +258,10 @@ function expando_dojo($array){
 							$l4 = $list[4];
 							$l5 = $list[5];
 							$l6 = $list[6];
-							$ret[$namespace][$l1][$l2][$l3][$l4][$l5][$l6] = $data;
+							if ($ret[$namespace][$l1][$l2][$l3][$l4][$l5][$l6] == NULL)
+								$ret[$namespace][$l1][$l2][$l3][$l4][$l5][$l6] = $data;
+							else
+								$ret[$namespace][$l1][$l2][$l3][$l4][$l5][$l6] = array_merge_recursive($data, $ret[$namespace][$l1][$l2][$l3][$l4][$l5][$l6]);
 							break;
 						case 6 :
 							$l1 = $list[1];
@@ -253,25 +269,38 @@ function expando_dojo($array){
 							$l3 = $list[3];
 							$l4 = $list[4];
 							$l5 = $list[5];
-							$ret[$namespace][$l1][$l2][$l3][$l4][$l5] = $data;
+							if ($ret[$namespace][$l1][$l2][$l3][$l4][$l5] == NULL)
+								$ret[$namespace][$l1][$l2][$l3][$l4][$l5] = $data;
+							else
+								$ret[$namespace][$l1][$l2][$l3][$l4][$l5] = array_merge_recursive($data, $ret[$namespace][$l1][$l2][$l3][$l4][$l5]);
 							break;
 						case 5 : 
 							$l1 = $list[1];
 							$l2 = $list[2];
 							$l3 = $list[3];
 							$l4 = $list[4];
-							$ret[$namespace][$l1][$l2][$l3][$l4] = $data;
+							if ($ret[$namespace][$l1][$l2][$l3][$l4] == NULL)
+								$ret[$namespace][$l1][$l2][$l3][$l4] = $data;
+							else
+								$ret[$namespace][$l1][$l2][$l3][$l4] = array_merge_recursive($data, $ret[$namespace][$l1][$l2][$l3][$l4]);
 							break;
 						case 4 :
 							$l1 = $list[1];
 							$l2 = $list[2];
 							$l3 = $list[3];
-							$ret[$namespace][$l1][$l2][$l3] = $data;
+							if ($ret[$namespace][$l1][$l2][$l3] == NULL)
+								$ret[$namespace][$l1][$l2][$l3] = $data;
+							else
+								$ret[$namespace][$l1][$l2][$l3] = array_merge_recursive($data, $ret[$namespace][$l1][$l2][$l3]);
 							break;
 						case 3 :
 							$l1 = $list[1];
 							$l2 = $list[2];
-							$ret[$namespace][$l1][$l2] = $data;
+							
+							if ($ret[$namespace][$l1][$l2] == NULL)
+								$ret[$namespace][$l1][$l2] = $data;
+							else
+								$ret[$namespace][$l1][$l2] = array_merge_recursive($data, $ret[$namespace][$l1][$l2]);
 							break;
 						case 2 :
 							$l1 = $list[1];
