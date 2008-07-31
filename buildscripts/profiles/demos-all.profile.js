@@ -15,10 +15,17 @@ dependencies = {
 			]
 		},
 		{
-			// the dojo.workers() demo
+			// the mail app demo
 			name: "../demos/mail/src.js",
 			dependencies: [
 				"demos.mail.src"
+			]
+		},
+		{
+			// the i18n / flags demo
+			name: "../demos/i18n/src.js",
+			dependencies: [
+				"demos.i18n.src"
 			]
 		}
 	],
