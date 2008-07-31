@@ -13,6 +13,13 @@ dependencies = {
 			dependencies: [
 				"demos.skew.src"
 			]
+		},
+		{
+			// the dojo.workers() demo
+			name: "../demos/mail/src.js",
+			dependencies: [
+				"demos.mail.src"
+			]
 		}
 	],
 
