@@ -1,0 +1,37 @@
+<html>
+<head>
+<script src="../runner.js"></script>
+<script src="../robot.js"></script>
+</head>
+<body>
+<form>
+<input type="text" value="hi" id="textbox" style="position:absolute; left:0px; top:20px; font-family:system;"></input>
+</form>
+<script>
+doh.register("doh.robot",
+{
+	name:"dojorobot1",
+	timeout:6900,
+	setUp:function(){
+		document.getElementById('textbox').value="hi";
+	},
+	runTest:function(){
+		var sec=new Function('return window');
+		var d=new doh.Deferred();
+		doh.robot.mouseMove(sec,30,30,500);
+		doh.robot.mouseClick(sec, {left:true},500);
+		doh.robot.typeKeys(sec," again",500,500);
+		setTimeout(function(){
+			if(document.getElementById('textbox').value=="hi again"){
+				d.callback(true);
+			}else{
+				d.errback(new Error("Expected value 'hi again', got "+doh.byId('textbox').value));
+			}
+		},5900);
+		return d;
+	}
+});
+doh.run();
+</script>
+</body>
+</html>
