@@ -449,7 +449,10 @@ if(window["dojo"]){
 
 		_addOnEvt("load", 
 			function(){
+				// let robot code run if it gets to this first
+				var __onEnd = doh._onEnd;
 				doh._onEnd = function(){
+					__onEnd.apply(doh, arguments);
 					if(doh._failureCount == 0){
 						doh.debug("WOOHOO!!");
 						_playSound("woohoo");

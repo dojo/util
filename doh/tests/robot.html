@@ -1,7 +1,10 @@
 <html>
 <head>
-<script src="../runner.js"></script>
-<script src="../robot.js"></script>
+	<style>
+		@import "../robot/robot.css";
+	</style>
+	<script src="../runner.js"></script>
+	<script src="../robot.js"></script>
 </head>
 <body>
 <form>
@@ -23,9 +26,11 @@ doh.register("doh.robot",
 		doh.robot.typeKeys(sec," again",500,500);
 		setTimeout(function(){
 			if(document.getElementById('textbox').value=="hi again"){
+				document.getElementById('textbox').value += ": passed";
 				d.callback(true);
 			}else{
-				d.errback(new Error("Expected value 'hi again', got "+doh.byId('textbox').value));
+				document.getElementById('textbox').value += ": failed";
+				d.errback(new Error("Expected value 'hi again', got "+document.getElementById('textbox').value));
 			}
 		},5900);
 		return d;
