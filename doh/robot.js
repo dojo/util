@@ -50,7 +50,7 @@ if(!doh.robot["_robotLoaded"]){
 	// hijack doh.run instead
 	var _run = doh.run;
 	doh.run = function(){
-		if(!doh.robot._robotsemaphore.unlock()){
+		if(!doh.robot._runsemaphore.unlock()){
 			// hijack doh._onEnd to clear the applet
 			// have to do it here because _browserRunner sets it in onload in standalone case
 			var __onEnd = doh._onEnd;
@@ -90,7 +90,12 @@ if(!doh.robot["_robotLoaded"]){
 	},
 
 	// Robot init methods
-	_robotsemaphore: {
+
+	// controls access to doh.run
+	// basically, doh.run takes two calls to start the robot:
+	// one (or more after the robot loads) from the test page
+	// one from either the applet or an error condition
+	_runsemaphore: {
 		lock:["lock"],
 		unlock:function(){
 			try{

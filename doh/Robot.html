@@ -102,5 +102,40 @@
 	}
 </script>
 <applet width="1" height="1" code="DOHRobot.class" archive="robot/DOHRobot.jar" MAYSCRIPT style="position:absolute;left:0px;top:0px;"><param name="mayscript" value="true"><param name="scriptable" value="true"><param name="initial_focus" value="false"></applet>
+<script>
+	// if no Java, the applet is officially dead
+	if(/MSIE/.test(navigator.appVersion)){
+		// navigator.javaEnabled() not known for its reliability in IE6
+		try{
+			// applet loads synchronously in IE6
+			document.applets[0].isActive();
+		}catch(e){
+			doh.robot._appletDead=true;
+			// IE skips the dojo.robot XHR test below in the else
+			// since the no java behavior is the same as no applet behavior in IE
+			doh.run();
+		}
+	}else if(!navigator.javaEnabled()){
+		// FF, Safari, Opera etc.
+		// unreliable in IE6
+		doh.robot._appletDead=true;
+		doh.run();
+	}else{
+		// Opera etc. have Java enabled, but load the applet asychronously so it might still be missing from server at this point
+		// Do an XHR to find out if the applet is there
+		// IE is taken care of in the first if, so no need for special ActiveX XHR for it
+		var dohRobotCheck=new XMLHttpRequest();
+		dohRobotCheck.onreadystatechange=function(){
+			if(dohRobotCheck.readyState == 4 && dohRobotCheck.status == 404){
+				// oops! no applet
+				// move the tests along
+				doh.robot._appletDead=true;
+				doh.run();
+			}
+		};
+		dohRobotCheck.open("HEAD", "robot/DOHRobot.jar");
+		dohRobotCheck.send(null);
+	}
+</script>
 </body>
 </html>
