@@ -612,7 +612,7 @@ public final class DOHRobot extends Applet{
 		});
 	}
 
-	public void moveMouse(double sec, final int x1, final int y1, final int d){
+	public void moveMouse(double sec, final int x1, final int y1, final int d, final int duration){
 		// called by doh.robot.mouseMove
 		// see it for details
 		// a nice name like "mouseMove" is reserved in Java
@@ -630,7 +630,7 @@ public final class DOHRobot extends Applet{
 				int delay = d;
 				log("> mouseMove Robot " + x + ", " + y);
 				MouseMoveThread thread = new MouseMoveThread(x, y, delay,
-						previousThread);
+						duration, previousThread);
 				previousThread = thread;
 				thread.start();
 				log("< mouseMove Robot");
@@ -639,14 +639,14 @@ public final class DOHRobot extends Applet{
 		});
 	}
 
-	public void wheelMouse(double sec, final int amount, final int delay){
+	public void wheelMouse(double sec, final int amount, final int delay, final int duration){
 		// called by doh.robot.mouseWheel
 		// see it for details
 		if(!isSecure(sec))
 			return;
 		AccessController.doPrivileged(new PrivilegedAction(){
 			public Object run(){
-				MouseWheelThread thread = new MouseWheelThread(amount, delay,
+				MouseWheelThread thread = new MouseWheelThread(amount, delay, duration,
 						previousThread);
 				previousThread = thread;
 				thread.start();
@@ -1067,7 +1067,7 @@ public final class DOHRobot extends Applet{
 						robot.keyPress(KeyEvent.VK_SHIFT);
 						shift=true;
 					}
-					if(event.isAltGraphDown()){
+					if(event.isAltGraphDown()){
 						robot.keyPress(KeyEvent.VK_ALT_GRAPH);
 						altgraph=true;
 					}
@@ -1127,7 +1127,7 @@ public final class DOHRobot extends Applet{
 						robot.keyRelease(KeyEvent.VK_SHIFT);
 						shift=false;
 					}
-					if(event.isAltGraphDown()){
+					if(event.isAltGraphDown()){
 						robot.keyRelease(KeyEvent.VK_ALT_GRAPH);
 						altgraph=false;
 					}
@@ -1219,12 +1219,14 @@ public final class DOHRobot extends Applet{
 		private int x;
 		private int y;
 		private int delay;
+		private int duration;
 		private Thread myPreviousThread = null;
 
-		public MouseMoveThread(int x, int y, int delay, Thread myPreviousThread){
+		public MouseMoveThread(int x, int y, int delay, int duration, Thread myPreviousThread){
 			this.x = x;
 			this.y = y;
 			this.delay = delay;
+			this.duration = duration;
 			this.myPreviousThread = myPreviousThread;
 		}
 
@@ -1272,19 +1274,21 @@ public final class DOHRobot extends Applet{
 					}
 
 				}
+				robot.setAutoDelay(Math.max(duration/100,1));
 				robot.mouseMove(x1, y1);
 				int d = 100;
 				for (int t = 0; t <= d; t++){
 					x1 = (int) easeInOutQuad((double) t, (double) lastMouseX,
-							(double) x2 - x1, (double) d);
+							(double) x2 - lastMouseX, (double) d);
 					y1 = (int) easeInOutQuad((double) t, (double) lastMouseY,
-							(double) y2 - y1, (double) d);
+							(double) y2 - lastMouseY, (double) d);
 					robot.mouseMove(x1, y1);
 				}
 				robot.mouseMove(x, y);
 				lastMouseX = x;
 				lastMouseY = y;
 				robot.waitForIdle();
+				robot.setAutoDelay(1);
 			}catch(Exception e){
 				log("Bad parameters passed to mouseMove");
 				e.printStackTrace();
@@ -1298,11 +1302,13 @@ public final class DOHRobot extends Applet{
 	final private class MouseWheelThread extends Thread{
 		private int amount;
 		private int delay;
+		private int duration;
 		private Thread myPreviousThread = null;
 
-		public MouseWheelThread(int amount, int delay, Thread myPreviousThread){
+		public MouseWheelThread(int amount, int delay, int duration, Thread myPreviousThread){
 			this.amount = amount;
 			this.delay = delay;
+			this.duration = duration;
 			this.myPreviousThread = myPreviousThread;
 		}
 
@@ -1320,7 +1326,11 @@ public final class DOHRobot extends Applet{
 					// yay for Apple
 					dir = -1;
 				}
-				robot.mouseWheel(dir * amount);
+				robot.setAutoDelay(Math.max(duration/Math.abs(amount),1));
+				for(int i=0; i<Math.abs(amount); i++){
+					robot.mouseWheel(amount>0?dir:-dir);
+				}
+				robot.setAutoDelay(1);
 			}catch(Exception e){
 				log("Bad parameters passed to mouseWheel");
 				e.printStackTrace();

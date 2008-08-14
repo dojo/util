@@ -19,12 +19,11 @@ doh.register("doh.robot",
 		document.getElementById('textbox').value="hi";
 	},
 	runTest:function(){
-		var sec=new Function('return window');
 		var d=new doh.Deferred();
-		doh.robot.mouseMove(sec,30,30,500);
-		doh.robot.mouseClick(sec, {left:true},500);
-		doh.robot.typeKeys(sec," again",500,500);
-		setTimeout(function(){
+		doh.robot.mouseMove(30, 30, 500);
+		doh.robot.mouseClick({left:true}, 500);
+		doh.robot.typeKeys(" again", 500, 2500);
+		doh.robot.sequence(function(){
 			if(document.getElementById('textbox').value=="hi again"){
 				document.getElementById('textbox').value += ": passed";
 				d.callback(true);
@@ -32,7 +31,7 @@ doh.register("doh.robot",
 				document.getElementById('textbox').value += ": failed";
 				d.errback(new Error("Expected value 'hi again', got "+document.getElementById('textbox').value));
 			}
-		},5900);
+		}, 900);
 		return d;
 	}
 });
