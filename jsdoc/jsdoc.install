@@ -153,7 +153,7 @@ function jsdoc_install() {
       // There should be one of these for each type of join, for each variable pair, for each version
       db_query("CREATE TABLE {jsdoc_variable_hierarchy} (
         vid integer NOT NULL REFERENCES {node_revisions} (vid),
-        nid integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_variable
+        nid integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_object
         parent_vid integer NOT NULL REFERENCES {node_revisions} (vid),
         parent_nid integer NOT NULL REFERENCES {node} (vid), -- node-type: jsdoc_variable
         type enum('normal', 'cascading', 'prototype', 'instance', 'alias', 'chain', 'mixin'), -- The type of join
@@ -171,6 +171,7 @@ function jsdoc_install() {
         nid integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_resource
         parent_vid integer NOT NULL REFERENCES {node_revisions} (vid),
         parent_nid integer NOT NULL REFERENCES {node} (vid), -- node-type: jsdoc_resource
+        project integer REFERENCES {node} (nid), -- node-type: jsdoc_project
         tid integer REFERENCES {term_data} (tid), -- We use this for saying how a resource joins to a resource
         version integer NOT NULL REFERENCES {node} (nid), -- node-type: jsdoc_version
         PRIMARY KEY (vid, parent_vid, tid, version),
