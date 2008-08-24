@@ -13,7 +13,7 @@ if(window["dojo"]){
 		// borrowed from Dojo, etc.
 		var byId = function(id){
 			return document.getElementById(id);
-		}
+		};
 
 		var _addOnEvt = function(	type,		// string
 									refOrName,	// function or string
@@ -48,7 +48,7 @@ if(window["dojo"]){
 			//		Adds escape sequences for special characters in XML: &<>"'
 			//		Optionally skips escapes for single quotes
 			return str.replace(/&/gm, "&amp;").replace(/</gm, "&lt;").replace(/>/gm, "&gt;").replace(/"/gm, "&quot;"); // string
-		}
+		};
 
 		var _logBacklog = [];
 		var sendToLogPane = function(args, skip){
@@ -101,11 +101,16 @@ if(window["dojo"]){
 				opera.postError("DEBUG:"+msg);
 			}
 		}else if(window["console"]){
-			if(console.info){
+			if(console.debug){
 				doh.debug = function(){
 					sendToLogPane.call(window, arguments);
 					console.debug.apply(console, arguments);
-				}
+				};
+			}else if(console.info){
+				doh.debug = function(){
+					sendToLogPane.call(window, arguments);
+					console.info.apply(console, arguments);
+				};
 			}else{
 				doh.debug = function(){
 					var msg = "";
@@ -114,7 +119,7 @@ if(window["dojo"]){
 					}
 					sendToLogPane([msg]);
 					console.log("DEBUG:"+msg);
-				}
+				};
 			}
 		}else{
 			doh.debug = function(){
@@ -133,7 +138,7 @@ if(window["dojo"]){
 		var _getGroupToggler = function(group, toggle){
 			if(_groupTogglers[group]){ return _groupTogglers[group]; }
 			var rolledUp = true;
-			return _groupTogglers[group] = function(evt, forceOpen){
+			return (_groupTogglers[group] = function(evt, forceOpen){
 				var nodes = groupNodes[group].__items;
 				var x;
 				if(rolledUp||forceOpen){
@@ -149,8 +154,8 @@ if(window["dojo"]){
 					}
 					toggle.innerHTML = "&#052;";
 				}
-			};
-		}
+			});
+		};
 
 		var addGroupToList = function(group){
 			if(!byId("testList")){ return; }
@@ -190,7 +195,7 @@ if(window["dojo"]){
 			// FIXME: need to make group display toggleable!!
 			tn.style.display = "none";
 			cgn.__items.push(tn);
-			return cgn.__lastFixture = tn;
+			return (cgn.__lastFixture = tn);
 		}
 
 		var getFixtureNode = function(group, fixture){
