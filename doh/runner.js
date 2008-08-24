@@ -958,7 +958,7 @@ tests = doh;
 				rhino: ["doh._rhinoRunner"],
 				spidermonkey: ["doh._rhinoRunner"]
 			});
-			var _shouldRequire = (dojo.isBrowser) ? (dojo.global == dojo.global["parent"]) : true;
+			var _shouldRequire = dojo.isBrowser ? (dojo.global == dojo.global["parent"]) : true;
 			if(_shouldRequire){
 				if(dojo.isBrowser){
 					dojo.addOnLoad(function(){
@@ -980,11 +980,8 @@ tests = doh;
 				}
 			}
 		}else{
-			if(
-				(typeof load == "function")&&
-				(	(typeof Packages == "function")||
-					(typeof Packages == "object")	)
-			){
+			if(typeof load == "function" &&
+				(typeof Packages == "function" || typeof Packages == "object")){
 				throw new Error();
 			}else if(typeof load == "function"){
 				throw new Error();
@@ -997,12 +994,13 @@ tests = doh;
 
 				// find runner.js, load _browserRunner relative to it
 				var scripts = document.getElementsByTagName("script");
-				for(x=0; x<scripts.length; x++){
-					var s = scripts[x].src;
-					if(s && (s.substr(-9) == "runner.js")){
-						document.write("<scri"+"pt src='"+s.substr(0, s.length-9)+"_browserRunner.js' type='text/javascript'></scr"+"ipt>");
+				dojo.forEach(scripts, function(script){
+					var s = script.src;
+					if(s && (s.substr(s.length - 9) == "runner.js")){
+						document.write("<scri"+"pt src='" + s.substr(0, s.length - 9) +
+							"_browserRunner.js' type='text/javascript'></scr"+"ipt>");
 					}
-				}
+				});
 			}
 		}
 	}catch(e){
