@@ -138,7 +138,7 @@ doh.extend(doh.Deferred, {
 				return;
 			}
 			_this.callback(true);
-		}
+		};
 	},
 
 	getFunctionFromArgs: function(){
@@ -176,7 +176,7 @@ doh.extend(doh.Deferred, {
 			if(this.fired == -1){
 				this.errback(new Error("Deferred(unfired)"));
 			}
-		}else if(	(this.fired == 0)&&
+		}else if(this.fired == 0 &&
 					(this.results[0] instanceof doh.Deferred)){
 			this.results[0].cancel();
 		}
@@ -253,7 +253,7 @@ doh.extend(doh.Deferred, {
 	},
 
 	addCallbacks: function(cb, eb){
-		this.chain.push([cb, eb])
+		this.chain.push([cb, eb]);
 		if(this.fired >= 0){
 			this._fire();
 		}
@@ -266,7 +266,7 @@ doh.extend(doh.Deferred, {
 		var res = this.results[fired];
 		var self = this;
 		var cb = null;
-		while (chain.length > 0 && this.paused == 0){
+		while(chain.length > 0 && this.paused == 0){
 			// Array
 			var pair = chain.shift();
 			var f = pair[fired];
@@ -279,7 +279,7 @@ doh.extend(doh.Deferred, {
 				if(res instanceof doh.Deferred){
 					cb = function(res){
 						self._continue(res);
-					}
+					};
 					this._pause();
 				}
 			}catch(err){
@@ -396,7 +396,7 @@ doh._getTestObj = function(group, test){
 			return this.registerUrl(group, test);
 		}else{
 			tObj = {
-				name: test.replace("/\s/g", "_")
+				name: test.replace("/\s/g", "_") // FIXME: bad escapement
 			};
 			tObj.runTest = new Function("t", test);
 		}
