@@ -364,7 +364,7 @@ if(!doh.robot["_robotLoaded"]){
 		},delay);
 	},
 
-	mouseMove: function(/*Number*/ x, /*Number*/ y, /*Integer, optional*/ delay, /*Boolean*/ absolute, /*Integer, optional*/ duration){
+	mouseMove: function(/*Number*/ x, /*Number*/ y, /*Integer, optional*/ delay, /*Integer, optional*/ duration, /*Boolean*/ absolute){
 		// summary:
 		// 		Moves the mouse to the specified x,y offset relative to the viewport.
 		//
@@ -381,14 +381,14 @@ if(!doh.robot["_robotLoaded"]){
 		//			doh.robot.mouseClick({left:true}, 100) // first call; wait 100ms
 		//			doh.robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		//
+		// duration:
+		//		Approximate time Robot will spend moving the mouse
+		//		The default is 100ms.
+		//
 		// absolute:
 		//		Boolean indicating whether the x and y values are absolute coordinates.
 		//		If false, then mouseMove expects that the x,y will be relative to the window. (clientX/Y)
 		//		If true, then mouseMove expects that the x,y will be absolute. (pageX/Y)
-		//
-		// duration:
-		//		Approximate time Robot will spend moving the mouse
-		//		The default is 100ms.
 		//
 
 		this._assertRobot();
@@ -479,6 +479,6 @@ if(!doh.robot["_robotLoaded"]){
 		iframesrc = dojo.moduleUrl("util", "doh/")+"Robot.html";
 	}
 	document.writeln('<div id="dohrobotview" style="border:0px none; margin:0px; padding:0px; position:absolute; bottom:0px; right:0px; width:1px; height:1px; overflow:hidden; visibility:hidden; background-color:red;"></div>'+
-		'<iframe style="border:0px none; padding:0px; margin:0px; position:absolute; left:0px; top:0px; height:42px; width:200px; overflow:hidden; background-color:transparent;" tabIndex="-1" src="'+iframesrc+'" ALLOWTRANSPARENCY="true"></iframe>');
+		'<iframe style="border:0px none; z-index:32767; padding:0px; margin:0px; position:absolute; left:0px; top:0px; height:42px; width:200px; overflow:hidden; background-color:transparent;" tabIndex="-1" src="'+iframesrc+'" ALLOWTRANSPARENCY="true"></iframe>');
 })();
 }
