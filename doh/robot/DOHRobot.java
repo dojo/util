@@ -99,6 +99,49 @@ public final class DOHRobot extends Applet{
 
 	final private class onvisible extends ComponentAdapter{
 		public void componentShown(ComponentEvent evt){
+			// sets the security manager to fix a bug in liveconnect in Safari on Mac
+			if(key != -1){ return; }
+			window = (JSObject) JSObject.getWindow(applet());   
+
+			AccessController.doPrivileged(new PrivilegedAction(){
+				public Object run(){
+					log("> init Robot");
+					try{
+						SecurityManager oldsecurity = System.getSecurityManager();
+						boolean isOpera = false;
+						try{
+							isOpera = (System.getProperty("browser").equals("Opera.plugin"));
+						}catch(Exception e){}
+						try{
+							securitymanager = oldsecurity;
+							securitymanager.checkTopLevelWindow(null);
+							// xdomain
+							if(charMap == null){
+								if(!confirm("DOH has detected that the current Web page is attempting to access DOH, but belongs to a different domain than the one you agreed to let DOH automate. If you did not intend to start a new DOH test by visiting this Web page, press Cancel now and leave the Web page. Otherwise, press OK to trust this domain to automate DOH tests.")){
+									stop();
+									return null;
+								}
+							}
+							log("Found old security manager");
+						}catch(Exception e){
+							e.printStackTrace();
+							log("Making new security manager");
+							securitymanager = new RobotSecurityManager(isOpera,
+									oldsecurity);
+							securitymanager.checkTopLevelWindow(null);
+							System.setSecurityManager(securitymanager);
+						}
+						// instantiate the Robot
+						robot = new Robot();
+					}catch(Exception e){
+						log("Error calling _init_: "+e.getMessage());
+						key = -2;
+						e.printStackTrace();
+					}
+					log("< init Robot");
+					return null;
+				}
+			});
 			if(key == -2){
 				// applet not trusted
 				// start the test without it
@@ -111,54 +154,10 @@ public final class DOHRobot extends Applet{
 			}
 		}
 	}
-		
+
 	public void init(){
-		// sets the security manager to fix a bug in liveconnect in Safari on
-		// Mac
-		if(key != -1){ return; }
-		window = (JSObject) JSObject.getWindow(applet());   
 		// ensure isShowing = true
 		addComponentListener(new onvisible());
-		AccessController.doPrivileged(new PrivilegedAction(){
-			public Object run(){
-				log("> init Robot");
-				try{
-					SecurityManager oldsecurity = System.getSecurityManager();
-					boolean isOpera = false;
-					try{
-						isOpera = (System.getProperty("browser").equals("Opera.plugin"));
-					}catch(Exception e){}
-					try{
-						securitymanager = oldsecurity;
-						securitymanager.checkTopLevelWindow(null);
-						// xdomain
-						if(charMap == null){
-							if(!confirm("DOH has detected that the current Web page is attempting to access DOH, but belongs to a different domain than the one you agreed to let DOH automate. If you did not intend to start a new DOH test by visiting this Web page, press Cancel now and leave the Web page. Otherwise, press OK to trust this domain to automate DOH tests.")){
-								stop();
-								return null;
-							}
-						}
-						log("Found old security manager");
-					}catch(Exception e){
-						e.printStackTrace();
-						log("Making new security manager");
-						securitymanager = new RobotSecurityManager(isOpera,
-								oldsecurity);
-						securitymanager.checkTopLevelWindow(null);
-						System.setSecurityManager(securitymanager);
-					}
-					// instantiate the Robot
-					robot = new Robot();
-				}catch(Exception e){
-					log("Error calling _init_");
-					key = -2;
-					e.printStackTrace();
-				}
-				log("< init Robot");
-				return null;
-			}
-		});   
-
 	}
 
 	// loading functions
@@ -186,6 +185,7 @@ public final class DOHRobot extends Applet{
 				AccessController.doPrivileged(new PrivilegedAction(){
 					public Object run(){
 						Point p = getLocationOnScreen();
+						log("Document root: ~"+p.toString());
 						int x = p.x + 16;
 						int y = p.y + 8;
 						// click the mouse over the text box
@@ -267,7 +267,7 @@ public final class DOHRobot extends Applet{
 	// keyboard discovery code
 	private void _mapKey(char charCode, int keyindex, boolean shift,
 			boolean altgraph){
-		System.out.println("_mapKey: " + charCode);
+		log("_mapKey: " + charCode);
 		// if character is not in map, add it
 		if(!charMap.containsKey(new Integer(charCode))){
 			log("Notified: " + (char) charCode);
