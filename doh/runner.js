@@ -994,13 +994,13 @@ tests = doh;
 
 				// find runner.js, load _browserRunner relative to it
 				var scripts = document.getElementsByTagName("script");
-				dojo.forEach(scripts, function(script){
-					var s = script.src;
+				for(x=0; x<scripts.length; x++){
+					var s = scripts[x].src;
 					if(s && (s.substr(s.length - 9) == "runner.js")){
-						document.write("<scri"+"pt src='" + s.substr(0, s.length - 9) +
-							"_browserRunner.js' type='text/javascript'></scr"+"ipt>");
+						document.write("<scri"+"pt src='" + s.substr(0, s.length - 9)
+							+ "_browserRunner.js' type='text/javascript'></scr"+"ipt>");
 					}
-				});
+				}
 			}
 		}
 	}catch(e){
