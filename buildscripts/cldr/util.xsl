@@ -58,6 +58,7 @@
                         <xsl:with-param name="name" select="$name"></xsl:with-param>
                         <xsl:with-param name="width" select="$width"></xsl:with-param>
                         <xsl:with-param name="ctx" select="$ctx"></xsl:with-param>
+                        <xsl:with-param name="fromLocaleAlias" select="true()"></xsl:with-param>
                     </xsl:call-template>
                 </xsl:for-each>
             </xsl:when>
@@ -79,6 +80,7 @@
                                 <xsl:with-param name="name" select="$name"></xsl:with-param>
                                 <xsl:with-param name="width" select="$width"></xsl:with-param>
                                 <xsl:with-param name="ctx" select="$ctx"></xsl:with-param>
+                                <xsl:with-param name="fromLocaleAlias" select="false()"></xsl:with-param>
                             </xsl:call-template>
                         </xsl:for-each>
                     </xsl:for-each>

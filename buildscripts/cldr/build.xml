@@ -11,12 +11,12 @@
 	<property name="root" location="../../.."/>
 	<property name="dojoLoader" value="default"/>
 	<property name="ldml" location="ldml"/>
+	<property name="logDir" location="."/>
 	<property name="json" location="${root}/dojo/cldr/nls"/>
 
 	<!-- Arbitrary defaults. locales and currencies properties can be altered or eliminated to build the entire set -->
-<!--
-	<property name="locales" value="en-au,en-ca,en-gb,en-us,de-de,es-es,fr-fr,it-it,pt-br,ko-kr,zh-hant,zh-tw,zh-hans,zh-cn,ja-jp"/>	-->
-	<property name="currencies" value="GBP,USD,CAD,AUD,EUR,CHF,HKD,JPY,CNY"/>
+	<!--property name="locales" value="ar,hi,he,hu,ru,en-au,en-ca,en-gb,en-us,de-de,es-es,fr-fr,it-it,pt-br,ko-kr,zh-hant,zh-tw,zh-hans,zh-cn,ja-jp"/-->
+	<!--property name="currencies" value="GBP,USD,CAD,AUD,EUR,CHF,HKD,JPY,CNY"/-->
 
 	<target name="-check-config"
 		description="checks to make sure than we're sane before doing anything else">
@@ -238,12 +238,20 @@
 		<java jar="lib/js.jar" failonerror="true" fork="true" logError="true" >
 			<arg value="arrayInherit.js" />
 			<arg value="${json}" />
+			<arg value="${logDir}"/>
 			<sysproperty key="DOJO_LOADER" value="${dojoLoader}" />
 		</java>
 		<java jar="lib/js.jar" failonerror="true" fork="true" logError="true" >
 			<arg value="specialLocale.js" />
 			<arg value="${json}" />
 			<arg value="${locales}" />
+			<arg value="${logDir}"/>
+			<sysproperty key="DOJO_LOADER" value="${dojoLoader}" />
+		</java>
+		<java jar="lib/js.jar" failonerror="true" fork="true" logError="true" >
+			<arg value="alias.js" />
+			<arg value="${json}" />
+			<arg value="${logDir}"/>
 			<sysproperty key="DOJO_LOADER" value="${dojoLoader}" />
 		</java>
 	</target>
