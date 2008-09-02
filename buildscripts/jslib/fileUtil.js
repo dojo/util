@@ -8,8 +8,10 @@ fileUtil.getLineSeparator = function(){
 	return java.lang.System.getProperty("line.separator"); //Java String
 }
 
-fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilter, /*boolean?*/makeUnixPaths, /*boolean?*/startDirIsJavaObject){
-	//summary: Recurses startDir and finds matches to the files that match regExpFilter.
+fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilters, /*boolean?*/makeUnixPaths, /*boolean?*/startDirIsJavaObject){
+	//summary: Recurses startDir and finds matches to the files that match regExpFilters.include
+	//and do not match regExpFilters.exclude. Or just one regexp can be passed in for regExpFilters,
+	//and it will be treated as the "include" case.
 	//Ignores files/directories that start with a period (.).
 	var files = [];
 
@@ -17,6 +19,9 @@ fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilt
 	if(!startDirIsJavaObject){
 		topDir = new java.io.File(startDir);
 	}
+
+	var regExpInclude = regExpFilters.include || regExpFilters;
+	var regExpExclude = regExpFilters.exclude || null;
 
 	if(topDir.exists()){
 		var dirFileArray = topDir.listFiles();
@@ -32,16 +37,19 @@ fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilt
 					}
 				}
 				
-				var regExpMatch = filePath.match(regExpFilter);
-				if(regExpFilter.dojoMatchReverse){
-					regExpMatch = !regExpMatch;
+				var ok = true;
+				if(regExpInclude){
+					ok = filePath.match(regExpInclude);
 				}
-				
-				if(!file.getName().match(/^\./) && regExpMatch){
+				if(ok && regExpExclude){
+					ok = !filePath.match(regExpExclude);
+				}
+
+				if(ok && !file.getName().match(/^\./)){
 					files.push(filePath);
 				}
 			}else if(file.isDirectory() && !file.getName().match(/^\./)){
-				var dirFiles = this.getFilteredFileList(file, regExpFilter, makeUnixPaths, true);
+				var dirFiles = this.getFilteredFileList(file, regExpFilters, makeUnixPaths, true);
 				files.push.apply(files, dirFiles);
 			}
 		}

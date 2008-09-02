@@ -233,8 +233,15 @@ function release(){
 	}
 
 	//Copy over DOH if tests where copied.
-	if(kwArgs.copyTests){
+	if(kwArgs.copyTests && !kwArgs.mini){
 		fileUtil.copyDir("../doh", kwArgs.releaseDir + "/util/doh", /./);
+	}
+	
+	//Remove any files no longer needed.
+	if(kwArgs.mini && kwArgs.internStrings){
+		fileUtil.deleteFile(kwArgs.releaseDir + "/dijit/templates");
+		fileUtil.deleteFile(kwArgs.releaseDir + "/dijit/form/templates");
+		fileUtil.deleteFile(kwArgs.releaseDir + "/dijit/layout/templates");
 	}
 
 	logger.info("Build is in directory: " + kwArgs.releaseDir);
@@ -247,16 +254,21 @@ function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kw
 	//directory. Also adds code guards to module resources.
 	var prefixSlashName = prefixName.replace(/\./g, "/");
 	var releasePath = kwArgs.releaseDir + "/"  + prefixSlashName;
-	var copyRegExp = /./;
+	var copyRegExps = {
+		include: /./
+	};
 	
-	//Use the copyRegExp to filter out tests if requested.
+	//Use the copyRegExps to filter out tests if requested.
 	if(!kwArgs.copyTests){
-		copyRegExp = /\/tests\//;
-		copyRegExp.dojoMatchReverse = true;
+		copyRegExps.exclude = /\/tests\//;
+	}
+	
+	if(kwArgs.mini){
+		copyRegExps.exclude = /\/tests\/|\/demos\/|tests\.js|dijit\/bench|dijit\/themes\/noir|dijit\/themes\/themeTest|dijit\/themes\/templateThemeTest/;
 	}
 
 	logger.info("Copying: " + prefixPath + " to: " + releasePath);
-	var copiedFiles = fileUtil.copyDir(prefixPath, releasePath, copyRegExp, true);
+	var copiedFiles = fileUtil.copyDir(prefixPath, releasePath, copyRegExps, true);
 
 	//Make sure to copy over any "source" files for the layers be targeted by
 	//buildLayers. Otherwise dependencies will not be calculated correctly.

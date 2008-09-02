@@ -42,7 +42,7 @@ buildUtil.DojoBuildOptions = {
 	},
 	"internStrings": {
 		defaultValue: true,
-		helpText: "Turn on or off widget template/dojo.uri.cache() file interning."
+		helpText: "Turn on or off widget template file interning."
 	},
 	"optimize": {
 		defaultValue: "",
@@ -89,6 +89,11 @@ buildUtil.DojoBuildOptions = {
 	"copyTests": {
 		defaultValue: true,
 		helpText: "Turn on or off copying of test files."
+	},
+	"mini": {
+		defaultValue: false,
+		helpText: "Removes files like tests, demos dijit/bench, unfinished themes, and interned "
+			+ "Dijit templates from the build. Overrides the value set for copyTests."
 	},
 	"log": {
 		defaultValue: logger.TRACE,
