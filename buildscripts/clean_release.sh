@@ -75,7 +75,7 @@ if [ -d $releaseDir ]; then
 	# rm -rf dojo/dojox/
 	# OR get creative and only populate dojox/ folder with the projects you need, and leave alone.
 	# .. assume you didn't, and clean up all the README's (leaving LICENSE, mind you)
-	find ./$buildName/dojox/ -name README -exec rm '{}' ';'
+	# find ./$buildName/dojox/ -name README -exec rm '{}' ';'
 	
 	# WARNING: if you care about _base existing (and not _always_ just dojo.js providing it) then comment this line:
 	# rm_dojo_files "dojo/_base" "dojo/_base.js"
@@ -84,7 +84,7 @@ if [ -d $releaseDir ]; then
 	# when only using dojo.js (place.js and sniff.js in particular), and mini would break stuff ...
 
 	# last but not least
-	rm_dojo_files "dojo/build.txt"
+	# rm_dojo_files "dojo/build.txt"
 	
 	cd ../util/buildscripts/
 

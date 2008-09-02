@@ -44,13 +44,6 @@ rm -rf ./$buildName/dijit/themes/noir
 rm -rf ./$buildName/dojox/off/demos
 rm -rf ./$buildName/dijit/bench
 
-#Make a src bundle
-srcName=$buildName-src
-mv $buildName $srcName
-zip -rq $srcName.zip $srcName/
-tar -zcf $srcName.tar.gz $srcName/
-mv $srcName $buildName
-
 #Make a shrinksafe bundle
 shrinksafeName=$buildName-shrinksafe
 cp -r $buildName/util/shrinksafe $buildName/util/$shrinksafeName
@@ -71,7 +64,15 @@ tar -zcf $demoName.tar.gz $demoName/
 mv $demoName.zip ../../
 mv $demoName.tar.gz ../../
 cd ../..
-rm -rf $buildName/demos/$demoName
+# prevent demos/ from appearing in the -src build
+rm -rf $buildName/demos
+
+#Make a src bundle
+srcName=$buildName-src
+mv $buildName $srcName
+zip -rq $srcName.zip $srcName/
+tar -zcf $srcName.tar.gz $srcName/
+mv $srcName $buildName
 
 #Run the build.
 cd $buildName/util/buildscripts/
