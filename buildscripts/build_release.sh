@@ -16,17 +16,17 @@ tagName=release-$version
 buildName=dojo-$tagName
 
 #Make the SVN tag.
-svn mkdir -m "Using r$svnRevision to create a tag for the $version release." svn+ssh://$svnUserName@svn.dojotoolkit.org/srv/svn/dojo/tags/$tagName
-svn copy -r $svnRevision svn+ssh://$svnUserName@svn.dojotoolkit.org/srv/svn/dojo/dojo/trunk svn+ssh://$svnUserName@svn.dojotoolkit.org/srv/svn/dojo/tags/$tagName/dojo -m "Using r$svnRevision to create a tag for the $version release."
-svn copy -r $svnRevision svn+ssh://$svnUserName@svn.dojotoolkit.org/srv/svn/dojo/dijit/trunk svn+ssh://$svnUserName@svn.dojotoolkit.org/srv/svn/dojo/tags/$tagName/dijit -m "Using r$svnRevision to create a tag for the $version release."
-svn copy -r $svnRevision svn+ssh://$svnUserName@svn.dojotoolkit.org/srv/svn/dojo/dojox/trunk svn+ssh://$svnUserName@svn.dojotoolkit.org/srv/svn/dojo/tags/$tagName/dojox -m "Using r$svnRevision to create a tag for the $version release."
-svn copy -r $svnRevision svn+ssh://$svnUserName@svn.dojotoolkit.org/srv/svn/dojo/util/trunk svn+ssh://$svnUserName@svn.dojotoolkit.org/srv/svn/dojo/tags/$tagName/util -m "Using r$svnRevision to create a tag for the $version release."
-svn copy -r $svnRevision svn+ssh://$svnUserName@svn.dojotoolkit.org/srv/svn/dojo/demos/trunk svn+ssh://$svnUserName@svn.dojotoolkit.org/srv/svn/dojo/tags/$tagName/demos -m "Using r$svnRevision to create a tag for the $version release."
+svn mkdir -m "Using r$svnRevision to create a tag for the $version release." https://svn.dojotoolkit.org/src/tags/$tagName
+svn copy -r $svnRevision https://svn.dojotoolkit.org/src/dojo/trunk  https://svn.dojotoolkit.org/src/tags/$tagName/dojo -m "Using r$svnRevision to create a tag for the $version release."
+svn copy -r $svnRevision https://svn.dojotoolkit.org/src/dijit/trunk https://svn.dojotoolkit.org/src/tags/$tagName/dijit -m "Using r$svnRevision to create a tag for the $version release."
+svn copy -r $svnRevision https://svn.dojotoolkit.org/src/dojox/trunk https://svn.dojotoolkit.org/src/tags/$tagName/dojox -m "Using r$svnRevision to create a tag for the $version release."
+svn copy -r $svnRevision https://svn.dojotoolkit.org/src/util/trunk  https://svn.dojotoolkit.org/src/tags/$tagName/util -m "Using r$svnRevision to create a tag for the $version release."
+svn copy -r $svnRevision https://svn.dojotoolkit.org/src/demos/trunk https://svn.dojotoolkit.org/src/tags/$tagName/demos -m "Using r$svnRevision to create a tag for the $version release."
 
 #Check out the tag
 mkdir ../../build
 cd ../../build
-svn co svn+ssh://$svnUserName@svn.dojotoolkit.org/srv/svn/tags/$tagName $buildName
+svn co https://svn.dojotoolkit.org/src/tags/$tagName $buildName
 cd $buildName/util/buildscripts
 
 #Update the dojo version in the tag
@@ -65,7 +65,7 @@ rm -rf $buildName/util/$shrinksafeName
 #Make a -demos bundle (note, this is before build. Build profile=demos-all if you want to release them)
 demoName=$buildName-demos
 cp -r $buildName/demos $buildName/demos/$demoName
-cd $demoName/demos
+cd $buildName/demos
 zip -rq $demoName.zip $demoName/
 tar -zcf $demoName.tar.gz $demoName/
 mv $demoName.zip ../../
@@ -78,8 +78,8 @@ cd $buildName/util/buildscripts/
 chmod +x ./build.sh
 ./build.sh profile=standard version=$1 releaseName=$buildName cssOptimize=comments.keepLines optimize=shrinksafe.keepLines cssImportIgnore=../dijit.css action=release 
 # run build_mini, removing tests and demos:
-chmod +x ./clean_build.sh
-./clean_build.sh ../../release $buidName
+chmod +x ./clean_release.sh
+./clean_release.sh ../../release $buildName
 cd ../../release/
 
 #Pause to allow manual process of packing Dojo.
