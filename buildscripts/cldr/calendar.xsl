@@ -6,6 +6,7 @@
    it seems listing only the parent node doesn't work -->
 <xsl:preserve-space elements="month day quarter am pm era pattern dateFormatItem appendItem displayName"/>
 <xsl:strip-space elements="*"/> 
+<xsl:variable name="index" select="number(1)" saxon:assignable="yes"/>
 
 <xsl:template match="/">
      <xsl:apply-templates/>
@@ -59,6 +60,14 @@
 <xsl:template name="calendar" match="calendar">
     <!-- will be overridden with 'true' if from 'locale' alias, see 'invoke_template_by_name' -->   
     <xsl:param name="fromLocaleAlias" select="false()"/>
+    <!-- insert 'locale' alias information  start -->
+    <xsl:if test="$fromLocaleAlias">
+        <xsl:call-template name="insert_alias_info">
+			<xsl:with-param name="sourceName">*</xsl:with-param>
+            <xsl:with-param name="bundle" select="@type"/>
+        </xsl:call-template>
+    </xsl:if>
+    <!-- insert 'locale' alias information  start -->
     <xsl:choose>
         <xsl:when test="count(./alias)>0">
             <!-- Handle Alias -->
@@ -71,16 +80,6 @@
             </xsl:for-each>
         </xsl:when>
         <xsl:otherwise>
-            
-            <!-- insert 'locale' alias information  start -->
-            <xsl:if test="$fromLocaleAlias">
-                <xsl:call-template name="insert_alias_info">
-					<xsl:with-param name="sourceName">*</xsl:with-param>
-                    <xsl:with-param name="bundle" select="@type"/>
-                </xsl:call-template>
-            </xsl:if>
-            <!-- insert 'locale' alias information  start -->
-            
             <xsl:apply-templates/>
         </xsl:otherwise>
     </xsl:choose>
@@ -93,6 +92,46 @@
     <xsl:param name="ctx" select="../@type"/>
      <!-- will be overridden with 'true' if from 'locale' alias, see 'invoke_template_by_name' -->   
      <xsl:param name="fromLocaleAlias" select="false()"/>
+
+	<xsl:variable name="item" select="substring-before(name(), 'Width')"/>
+	<!-- insert 'locale' alias information start -->
+    <xsl:if test="$fromLocaleAlias">
+        <xsl:if test="name()='months' or name()='days' or name()='quarters'">
+                <xsl:call-template name="insert_alias_info"/>
+         </xsl:if>
+        <xsl:if test="name()='monthWidth' or name()='dayWidth' or name()='quarterWidth'">
+            <!-- e.g.  for <monthContext type="format">
+        		<monthWidth type="abbreviated">
+        			<alias source="locale" path="../monthWidth[@type='wide']"/>
+        		</monthWidth> 
+                          ......                   
+	            alias info will be recorded as 'months-format-abbr@localeAlias' : {'target' : "months-format-wide"}                        
+	            TBD: Seems the following section cann't be extracted out as a reusable template       
+	            insert 'locale' alias information end -->
+	            <xsl:call-template name="insert_comma"/>
+	'<xsl:value-of select="$item"/><xsl:text>s-</xsl:text>
+	            <xsl:call-template name="camel_case">
+	                <xsl:with-param name="name"><xsl:value-of select="$ctx"></xsl:value-of></xsl:with-param>
+	            </xsl:call-template>
+	            <xsl:choose>
+	                <xsl:when test="$width='abbreviated'"><xsl:text>-abbr</xsl:text></xsl:when>
+	                <xsl:otherwise><xsl:value-of select="concat('-',$width)"></xsl:value-of></xsl:otherwise>
+	            </xsl:choose>
+	            <xsl:text>@localeAlias</xsl:text>
+				<xsl:value-of select="$index"/><saxon:assign name="index" select="sum($index + 1)"/>
+				<xsl:text>':{'target':"</xsl:text><xsl:value-of select="$item"/><xsl:text>s-</xsl:text>
+	            <xsl:call-template name="camel_case">
+	                <xsl:with-param name="name"><xsl:value-of select="../@type"/></xsl:with-param>
+	            </xsl:call-template>
+	            <xsl:choose>
+	                <xsl:when test="@type='abbreviated'"><xsl:text>-abbr</xsl:text></xsl:when>
+	                <xsl:otherwise><xsl:value-of select="concat('-',@type)"/></xsl:otherwise>
+	            </xsl:choose> 
+	            <xsl:text>",'bundle':"</xsl:text><xsl:value-of select="../../../@type"/><xsl:text>"}</xsl:text>
+		</xsl:if>  
+    </xsl:if>
+	<!-- insert 'locale' alias information end -->       
+	 
     <xsl:choose>       
         <xsl:when test="count(./alias)>0">
             <!-- Handle Alias -->
@@ -111,19 +150,12 @@
             <xsl:if test="name()='months' or name()='monthContext'
                        or name()='days' or name()='dayContext'
                        or name()='quarters' or name()='quarterContext'">
-                
-                <!-- insert 'locale' alias information start -->
-                <xsl:if test="$fromLocaleAlias and (name()='months' or name()='days' or name()='quarters')">
-                        <xsl:call-template name="insert_alias_info"/>
-                 </xsl:if>
-                <!-- insert 'locale' alias information end -->
-                
                 <xsl:for-each select="*">
                     <xsl:call-template name="months_days_quarters"></xsl:call-template>
                 </xsl:for-each>
             </xsl:if>
             <xsl:if test="name()='monthWidth' or name()='dayWidth' or name()='quarterWidth'">
-                <xsl:variable name="item" select="substring-before(name(), 'Width')"/>
+                <!--xsl:variable name="item" select="substring-before(name(), 'Width')"/-->
                 <xsl:if test="count(*[not(@draft)])>0 or count(*[@draft!='provisional' and @draft!='unconfirmed'])>0">
                     <xsl:call-template name="insert_comma"/>
 	'<xsl:value-of select="$item"/>
@@ -140,48 +172,9 @@
                 <xsl:text>':</xsl:text>
                 <!--xsl:call-template name="subSelect"><xsl:with-param name="name" select="./*[name()=$item]"></xsl:with-param></xsl:call-template-->
                 <xsl:call-template name="subSelect_in_place"><xsl:with-param name="name" select="$item"></xsl:with-param></xsl:call-template>
-             
-                    <!-- insert 'locale' alias information start 
-                    e.g.  for <monthContext type="format">
-                		<monthWidth type="abbreviated">
-                			<alias source="locale" path="../monthWidth[@type='wide']"/>
-                		</monthWidth> 
-                                                  ......                   
-                    alias info will be recorded as 'months-format-abbr@localeAlias' : {'target' : "months-format-wide"}                        
-                    TBD: Seems the following section cann't be extracted out as a reusable template       
-                    insert 'locale' alias information end -->
-                <xsl:if test="$fromLocaleAlias">
-                    <xsl:call-template name="insert_comma"/>
-	'<xsl:value-of select="$item"/><xsl:text>s-</xsl:text>
-                    <xsl:call-template name="camel_case">
-                        <xsl:with-param name="name"><xsl:value-of select="$ctx"></xsl:value-of></xsl:with-param>
-                    </xsl:call-template>
-                    <xsl:choose>
-                        <xsl:when test="$width='abbreviated'"><xsl:text>-abbr</xsl:text></xsl:when>
-                        <xsl:otherwise><xsl:value-of select="concat('-',$width)"></xsl:value-of></xsl:otherwise>
-                    </xsl:choose>
-                    <xsl:text>@localeAlias':{'target':"</xsl:text><xsl:value-of select="$item"/><xsl:text>s-</xsl:text>
-                    <xsl:call-template name="camel_case">
-                        <xsl:with-param name="name"><xsl:value-of select="../@type"/></xsl:with-param>
-                    </xsl:call-template>
-                    <xsl:choose>
-                        <xsl:when test="@type='abbreviated'"><xsl:text>-abbr</xsl:text></xsl:when>
-                        <xsl:otherwise><xsl:value-of select="concat('-',@type)"/></xsl:otherwise>
-                    </xsl:choose> 
-                    <xsl:text>",'bundle':"</xsl:text><xsl:value-of select="../../../@type"/><xsl:text>"}</xsl:text>
-                </xsl:if>
-                <!-- insert 'locale' alias information end -->
-                    
                 </xsl:if>               
                 </xsl:if>
-            <!--xsl:if test="name()='quarterWidth'">
-             <xsl:if test="count(*[not(@draft)])>0 or count(*[@draft!='provisional' and @draft!='unconfirmed'])>0">
-                 <xsl:call-template name="insert_comma"/>
-	'quarters-<xsl:value-of select="concat($ctx,'-',$width)"></xsl:value-of> <xsl:text>':</xsl:text>
-                <xsl:call-template name="subSelect_in_place"><xsl:with-param name="name" select="'quarter'"></xsl:with-param></xsl:call-template>            
-             </xsl:if>
-             </xsl:if-->
-        </xsl:otherwise>
+         </xsl:otherwise>
     </xsl:choose>
 </xsl:template>
   
@@ -193,16 +186,17 @@
                                       ......
          alias info will be recorded as 'months@localeAlias' : {'target':"months", 'bundle' : 'gregorian'}    -->
     <xsl:template name="insert_alias_info">
-            <!-- alias source node name-->
-            <xsl:param name="sourceName" select="name()"></xsl:param>
-            <!-- alias target node name, same as source node by default-->
-            <xsl:param name="targetName" select="$sourceName"></xsl:param>
-           <!-- alias target bundle-->
-           <xsl:param name="bundle" select="../@type"></xsl:param>
-            <xsl:call-template name="insert_comma"/>
-	'<xsl:value-of select="$sourceName"/><xsl:text>@localeAlias':{'target':"</xsl:text><xsl:value-of select="$targetName"/><xsl:text>", 'bundle':"</xsl:text>
-            <xsl:value-of select="$bundle"/><xsl:text>"}</xsl:text>
-            <!--xsl:value-of select="../@type"/><xsl:text>"}</xsl:text-->
+        <!-- alias source node name-->
+        <xsl:param name="sourceName" select="name()"></xsl:param>
+        <!-- alias target node name, same as source node by default-->
+        <xsl:param name="targetName" select="$sourceName"></xsl:param>
+        <!-- alias target bundle-->
+        <xsl:param name="bundle" select="../@type"></xsl:param>
+        <xsl:call-template name="insert_comma"/>
+	'<xsl:value-of select="$sourceName"/><xsl:text>@localeAlias</xsl:text>
+		<xsl:value-of select="$index"/><saxon:assign name="index" select="sum($index + 1)"/>
+		<xsl:text>':{'target':"</xsl:text><xsl:value-of select="$targetName"/><xsl:text>", 'bundle':"</xsl:text>
+        <xsl:value-of select="$bundle"/><xsl:text>"}</xsl:text>
     </xsl:template>
     
     
@@ -210,6 +204,13 @@
 <xsl:template name="apm" match="am|pm">
     <!-- will be overridden with 'true' if from 'locale' alias, see 'invoke_template_by_name' -->   
     <xsl:param name="fromLocaleAlias" select="false()"/>
+	
+    <!-- insert 'locale' alias information start -->
+    <xsl:if test="$fromLocaleAlias">
+        <xsl:call-template name="insert_alias_info"/>
+    </xsl:if>
+    <!-- insert 'locale' alias information end -->
+	
     <xsl:choose>
         <xsl:when test="alias">
             <!-- Handle Alias --> 
@@ -224,22 +225,9 @@
         <xsl:otherwise>            
         <xsl:if test="not(@draft) or @draft!='provisional' and @draft!='unconfirmed'">
             <xsl:call-template name="insert_comma"/>
-	'<xsl:value-of select="name()"/>        
-         <!--   
-        <xsl:if test="name()='am'">
-	'am</xsl:if>
-            <xsl:if test="name()='pm'">
-	'pm</xsl:if>
-            -->
+	'<xsl:value-of select="name()"/>
             <xsl:text>':"</xsl:text>
             <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/><xsl:text>"</xsl:text>
-
-            <!-- insert 'locale' alias information start -->
-            <xsl:if test="$fromLocaleAlias">
-                <xsl:call-template name="insert_alias_info"/>
-            </xsl:if>
-            <!-- insert 'locale' alias information end -->
-            
         </xsl:if>
         </xsl:otherwise>
     </xsl:choose>
@@ -248,8 +236,28 @@
 <!-- process eras -->
 <xsl:template match="eras" name="eras">
 	<xsl:param name="name" select="name()"></xsl:param>
-            <!-- will be overridden with 'true' if from alias, see 'invoke_template_by_name' -->   
-            <xsl:param name="fromLocaleAlias" select="false()"/>
+    <!-- will be overridden with 'true' if from alias, see 'invoke_template_by_name' -->   
+    <xsl:param name="fromLocaleAlias" select="false()"/>
+			
+   <!-- insert 'locale' alias information start -->
+   <xsl:if test="$fromLocaleAlias">
+		<xsl:choose>
+			<xsl:when test="name()='eras'">
+		        <xsl:call-template name="insert_alias_info">
+		                <xsl:with-param name="sourceName">era</xsl:with-param>
+		        </xsl:call-template>				
+			</xsl:when>
+			<xsl:otherwise>
+		        <xsl:call-template name="insert_alias_info">
+		            <xsl:with-param name="sourceName" select="$name"></xsl:with-param>
+		            <xsl:with-param name="targetName" select="name()"></xsl:with-param>
+		            <xsl:with-param name="bundle" select="../../@type"></xsl:with-param>
+		        </xsl:call-template>
+			</xsl:otherwise>
+		</xsl:choose>	
+    </xsl:if>
+    <!-- insert 'locale' alias information end -->
+
 	<xsl:choose>
 		<xsl:when test="count(./alias)>0">
 			<!-- Handle Alias -->  
@@ -265,31 +273,11 @@
 		<xsl:otherwise>
 			<xsl:choose>
 				<xsl:when test="name()='eras'">
-				    
-	               <!-- insert 'locale' alias information start -->
-	               <xsl:if test="$fromLocaleAlias">
-	                    <xsl:call-template name="insert_alias_info">
-	                            <xsl:with-param name="sourceName">era</xsl:with-param>
-	                    </xsl:call-template>
-	                </xsl:if>
-	                <!-- insert 'locale' alias information end -->
-				    
 					<xsl:for-each select="*">
 						<xsl:call-template name="eras"></xsl:call-template>
 					</xsl:for-each>
 				</xsl:when>
 				<xsl:otherwise>
-				
-				    <!-- insert 'locale' alias information start -->
-				    <xsl:if test="$fromLocaleAlias">
-				        <xsl:call-template name="insert_alias_info">
-				            <xsl:with-param name="sourceName" select="$name"></xsl:with-param>
-				            <xsl:with-param name="targetName" select="name()"></xsl:with-param>
-				            <xsl:with-param name="bundle" select="../../@type"></xsl:with-param>
-				        </xsl:call-template>
-				    </xsl:if>   
-				    <!-- insert 'locale' alias information end -->
-				    			    
 					<xsl:for-each select=".">
 					    <xsl:if test="count(*[not(@draft)])>0 
 					        or count(*[@draft!='provisional' and @draft!='unconfirmed'])>0">
@@ -317,12 +305,31 @@
 		</xsl:otherwise>
 	</xsl:choose>
 </xsl:template>
- 
+
+
 <!-- process dateFormat & timeFormat -->   
  <xsl:template match="dateFormats | timeFormats" name="date_time_Formats">
      <xsl:param name="width" select="@type"></xsl:param>
      <!-- will be overridden with 'true' if from alias, see 'invoke_template_by_name' -->   
      <xsl:param name="fromLocaleAlias" select="false()"/>
+	 
+   <!-- insert 'locale' alias information start -->
+   <xsl:if test="$fromLocaleAlias">
+		<xsl:if test="name()='dateFormats' or name()='timeFormats'">
+             <xsl:call-template name="insert_alias_info">
+                 <xsl:with-param name="sourceName" select="substring-before(name(), 's')"/>
+             </xsl:call-template>
+		</xsl:if>
+        <xsl:if test="name()!='default' and (name()='dateFormatLength' or name()='timeFormatLength')">
+             <xsl:call-template name="insert_alias_info">
+                 <xsl:with-param name="sourceName" select="concat(substring-before(name(), 'Length'), '-',  $width)"/>
+                 <xsl:with-param name="targetName" select="concat(substring-before(name(), 'Length'), '-',  @type)"/>
+                 <xsl:with-param name="bundle" select="../../@type"/>
+             </xsl:call-template>
+         </xsl:if>
+    </xsl:if>
+    <!-- insert 'locale' alias information end -->
+	 
      <xsl:choose>
          <xsl:when test="count(./alias)>0">
              <!-- Handle Alias -->  
@@ -338,32 +345,12 @@
          <xsl:otherwise>
              <xsl:choose>
                  <xsl:when test="name()='dateFormats' or name()='timeFormats'">
-                     
-                     <!-- insert 'locale' alias information start -->
-                     <xsl:if test="$fromLocaleAlias">
-                         <xsl:call-template name="insert_alias_info">
-                             <xsl:with-param name="sourceName" select="substring-before(name(), 's')"/>
-                         </xsl:call-template>
-                     </xsl:if>
-                     <!-- insert 'locale' alias information end -->
-                                          
                      <xsl:for-each select="*">
                          <xsl:call-template name="date_time_Formats"></xsl:call-template>
                      </xsl:for-each>
                  </xsl:when>
                  <xsl:otherwise>
                      <xsl:if test="name()!='default'"> 
-
-                         <!-- insert 'locale' alias information start -->
-                         <xsl:if test="$fromLocaleAlias and (name()='dateFormatLength' or name()='timeFormatLength') ">
-                             <xsl:call-template name="insert_alias_info">
-                                 <xsl:with-param name="sourceName" select="concat(substring-before(name(), 'Length'), '-',  $width)"/>
-                                 <xsl:with-param name="targetName" select="concat(substring-before(name(), 'Length'), '-',  @type)"/>
-                                 <xsl:with-param name="bundle" select="../../@type"/>
-                             </xsl:call-template>
-                         </xsl:if>
-                         <!-- insert 'locale' alias information end -->
-                         
                          <xsl:for-each select=".//pattern[not(@draft)] | 
                           .//pattern[@draft!='provisional' and @draft!='unconfirmed']">
                              <xsl:call-template name="insert_comma"/>
@@ -384,6 +371,35 @@
     <xsl:param name="width" select="@type"></xsl:param>
     <!-- will be overridden with 'true' if from alias, see 'invoke_template_by_name' -->   
     <xsl:param name="fromLocaleAlias" select="false()"/>
+
+   <!-- insert 'locale' alias information start -->
+   <xsl:if test="$fromLocaleAlias">
+			<xsl:if test="name()='dateTimeFormats'">
+                <xsl:call-template name="insert_alias_info">
+                    <xsl:with-param name="sourceName">dateTime</xsl:with-param>
+                </xsl:call-template>
+			</xsl:if>
+            <xsl:if test="name()='dateTimeFormatLength'">
+                <xsl:call-template name="insert_alias_info">
+                    <xsl:with-param name="sourceName">dateTimeFormat</xsl:with-param>
+                    <xsl:with-param name="bundle" select="../../@type"/>
+                </xsl:call-template>
+            </xsl:if>
+            <xsl:if test="name()='availableFormats'">
+                 <xsl:call-template name="insert_alias_info">
+                     <xsl:with-param name="sourceName">dateTimeAvailableFormats</xsl:with-param>
+                     <xsl:with-param name="bundle" select="../../@type"/>
+                 </xsl:call-template>
+            </xsl:if>
+            <xsl:if test="name()='appendItems'">
+                <xsl:call-template name="insert_alias_info">
+                    <xsl:with-param name="sourceName">dateTimeFormats-appendItem-</xsl:with-param>
+                    <xsl:with-param name="bundle" select="../../@type"/>
+                </xsl:call-template>
+            </xsl:if>
+    </xsl:if>
+	<!-- insert 'locale' alias information start -->
+	
     <xsl:choose>
     <xsl:when test="./alias">
         <!-- Handle Alias -->
@@ -399,15 +415,6 @@
     <xsl:otherwise>
        <xsl:choose>
             <xsl:when test="name()='dateTimeFormats'">
-
-                <!-- insert 'locale' alias information start -->
-                <xsl:if test="$fromLocaleAlias">
-                    <xsl:call-template name="insert_alias_info">
-                        <xsl:with-param name="sourceName">dateTime</xsl:with-param>
-                    </xsl:call-template>
-                </xsl:if>
-                <!-- insert 'locale' alias information end -->
-                
                 <xsl:for-each select="*">
                     <xsl:call-template name="dateTimeFormats"></xsl:call-template>
                 </xsl:for-each>
@@ -416,16 +423,6 @@
         <xsl:if test="name()!='default'">
         <!-- patterns -->
         <xsl:if test="name()='dateTimeFormatLength'">
-            
-            <!-- insert 'locale' alias information start -->
-            <xsl:if test="$fromLocaleAlias">
-                <xsl:call-template name="insert_alias_info">
-                    <xsl:with-param name="sourceName">dateTimeFormat</xsl:with-param>
-                    <xsl:with-param name="bundle" select="../../@type"/>
-                </xsl:call-template>
-            </xsl:if>
-            <!-- insert 'locale' alias information end -->                     
-                        
             <xsl:for-each select=".//pattern[not(@draft)] | 
                 .//pattern[@draft!='provisional' and @draft!='unconfirmed']">
                 <xsl:call-template name="insert_comma"/>
@@ -444,30 +441,10 @@
                 count(*[@draft!='provisional' and @draft!='unconfirmed'])>0">
              <xsl:call-template name="insert_comma"/>
 	'dateTimeAvailableFormats':<xsl:call-template name="subSelect"><xsl:with-param name="name" select="dateFormatItem"></xsl:with-param></xsl:call-template>
-
-             <!-- insert 'locale' alias information start -->
-             <xsl:if test="$fromLocaleAlias">
-                 <xsl:call-template name="insert_alias_info">
-                     <xsl:with-param name="sourceName">dateTimeAvailableFormats</xsl:with-param>
-                     <xsl:with-param name="bundle" select="../../@type"/>
-                 </xsl:call-template>
-             </xsl:if>
-             <!-- insert 'locale' alias information end -->             
-             
         </xsl:if>
         </xsl:if>
         <!-- appendItems -->
             <xsl:if test="name()='appendItems'">
-                
-                <!-- insert 'locale' alias information start -->
-                <xsl:if test="$fromLocaleAlias">
-                    <xsl:call-template name="insert_alias_info">
-                        <xsl:with-param name="sourceName">dateTimeFormats-appendItem-</xsl:with-param>
-                        <xsl:with-param name="bundle" select="../../@type"/>
-                    </xsl:call-template>
-                </xsl:if>
-                <!-- insert 'locale' alias information end -->        
-                
                 <xsl:for-each select=".//appendItem[not(@draft)] | 
                     .//appendItem[@draft!='provisional' and @draft!='unconfirmed']">
                     <xsl:call-template name="insert_comma"/>
@@ -489,6 +466,24 @@
     <xsl:param name="width" select="@type"></xsl:param>
     <!-- will be overridden with 'true' if from alias, see 'invoke_template_by_name' -->   
     <xsl:param name="fromLocaleAlias" select="false()"/>
+
+   <!-- insert 'locale' alias information start -->
+   <xsl:if test="$fromLocaleAlias">
+		<xsl:if test="name()='fields'">
+            <xsl:call-template name="insert_alias_info">
+                <xsl:with-param name="sourceName">field</xsl:with-param>
+            </xsl:call-template>				
+		</xsl:if>
+        <xsl:if test="name() = 'field'">
+            <xsl:call-template name="insert_alias_info">
+                <xsl:with-param name="sourceName" select="concat(name(), '-', $width)"/>
+                <xsl:with-param name="targetName" select="concat(name(), '-', @type)"/>
+                <xsl:with-param name="bundle" select="../../@type"/>
+            </xsl:call-template>
+        </xsl:if>
+    </xsl:if>
+    <!-- insert 'locale' alias information end -->	
+	
     <xsl:choose>
         <xsl:when test="count(./alias)>0">
             <!-- Handle Alias -->
@@ -504,31 +499,11 @@
         <xsl:otherwise>
             <xsl:choose>
                 <xsl:when test="name()='fields'">
-                    
-                    <!-- insert 'locale' alias information start -->
-                    <xsl:if test="$fromLocaleAlias">
-                        <xsl:call-template name="insert_alias_info">
-                            <xsl:with-param name="sourceName">field</xsl:with-param>
-                        </xsl:call-template>
-                    </xsl:if>
-                    <!-- insert 'locale' alias information end -->
-                    
                     <xsl:for-each select="*">
                         <xsl:call-template name="fields"></xsl:call-template>
                     </xsl:for-each>
                 </xsl:when>
                 <xsl:otherwise>
-                    
-                    <!-- insert 'locale' alias information start -->
-                    <xsl:if test="$fromLocaleAlias and name() = 'field'">
-                        <xsl:call-template name="insert_alias_info">
-                            <xsl:with-param name="sourceName" select="concat(name(), '-', $width)"/>
-                            <xsl:with-param name="targetName" select="concat(name(), '-', @type)"/>
-                            <xsl:with-param name="bundle" select="../../@type"/>
-                        </xsl:call-template>
-                    </xsl:if>
-                    <!-- insert 'locale' alias information end -->
-                    
             <xsl:for-each select=".//displayName[not(@draft)] | 
                 .//displayName[@draft!='provisional' and @draft!='unconfirmed']">
                 <xsl:call-template name="insert_comma"/>

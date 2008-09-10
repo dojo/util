@@ -88,12 +88,12 @@ for(var i= 0; i < fileList.length; i++){
 			data = variantData;
 		}else{
 			isComplete = true;
-			logStr += locale + "===============================================\n";
+			//logStr += locale + "===============================================\n";
 			for(prop in data){
 				if(dojo.isArray(data[prop])){
 					//ignore if the property is an alias source, for alias.js and specialLocale.js 
 					if(isLocaleAliasSrc(prop, bundle)){
-						logStr += prop + " is alias, ignored\n";
+						//logStr += prop + " is alias, ignored\n";
 						continue;
 					}			
 
@@ -101,7 +101,7 @@ for(var i= 0; i < fileList.length; i++){
 					dojo.forEach(data[prop], function(element, index, list){
 						if(element === undefined && dojo.isArray(variantArray)){
 							list[index] = variantArray[index];
-							logStr += prop + "[" + index + "] undefined, is replaced with " + list[index] + "\n";
+							//logStr += prop + "[" + index + "] undefined, is replaced with " + list[index] + "\n";
 							hasChanged = true;
 							if(!("index" in list)){
 								isComplete = false;
@@ -114,7 +114,7 @@ for(var i= 0; i < fileList.length; i++){
 					}
 				}
 			}
-			logStr += "\n";
+			//logStr += "\n";
 		}
 		return isComplete;
 	});
@@ -123,4 +123,4 @@ for(var i= 0; i < fileList.length; i++){
 	}
 }
 
-fileUtil.saveUtf8File(logDir + '/arrayInherit.log',logStr+'\n');
+//fileUtil.saveUtf8File(logDir + '/arrayInherit.log',logStr+'\n');

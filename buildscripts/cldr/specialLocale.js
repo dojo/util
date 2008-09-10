@@ -141,13 +141,13 @@ for(var i= 0; i < srcLocaleList.length; i++){
 			break;			
 		}else if(!aliasBundle && srcBundle){
 			//should be an error case
-			logStr += 'specialLocale.js error: source locale has more bundles than alias locale\n';
+			//logStr += 'specialLocale.js error: source locale has more bundles than alias locale\n';
 			break;
 		}else if(aliasBundle && !srcBundle){
 			//add the new bundle to source locale
 			validateDir(srcLocalePath);
 			fileUtil.saveUtf8File(srcLocalePath + '/' + BUNDLE_MAP[len] + '.js', NLS_JSON_HEAD[len] + '(' + dojo.toJson(aliasBundle, true) + ')');
-			logStr += "specialLocale.js : copied " + BUNDLE_MAP[len] + '.js to ' + srcLocalePath + '\n';
+			//logStr += "specialLocale.js : copied " + BUNDLE_MAP[len] + '.js to ' + srcLocalePath + '\n';
 		}else if(aliasBundle && srcBundle){
 			var isUpdated = false;
 			//get native bundle whose content is not flattened
@@ -171,13 +171,13 @@ for(var i= 0; i < srcLocaleList.length; i++){
 			if(isUpdated){
 				validateDir(srcLocalePath);
 				fileUtil.saveUtf8File(srcLocalePath + '/' + BUNDLE_MAP[len] + '.js', NLS_JSON_HEAD[len] + '(' + dojo.toJson(nativeSrcBundle, true) + ')');
-				logStr += 'specialLocale.js : updated ' + BUNDLE_MAP[len] + '.js in ' + srcLocalePath + '\n';				
+				//logStr += 'specialLocale.js : updated ' + BUNDLE_MAP[len] + '.js in ' + srcLocalePath + '\n';				
 			}
 		}
 	}
 }
 
-fileUtil.saveUtf8File(logDir + '/specialLocale.log',logStr+'\n');
+//fileUtil.saveUtf8File(logDir + '/specialLocale.log',logStr+'\n');
 
 function validateDir(/*String*/dirPath){
 	//summary:make sure the dir exists
