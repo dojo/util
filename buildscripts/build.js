@@ -345,10 +345,8 @@ function _optimizeReleaseDirs(
 		buildUtilXd.xdgen(prefixName, prefixPath, prefixes, layerIgnoreRegExp, kwArgs);
 	}
 
-	if(kwArgs.optimize || kwArgs.stripConsole){
-		buildUtil.optimizeJsDir(releasePath, layerIgnoreRegExp, copyrightText, kwArgs.optimize, kwArgs.stripConsole);
-	}
-	
+	buildUtil.optimizeJsDir(releasePath, layerIgnoreRegExp, copyrightText, kwArgs.optimize, kwArgs.stripConsole);
+
 	if(kwArgs.cssOptimize){
 		buildUtil.optimizeCss(releasePath, kwArgs.cssOptimize, kwArgs.cssImportIgnore);
 	}

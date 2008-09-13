@@ -1137,7 +1137,7 @@ buildUtil.setupPacker = function(){
 	}
 }
 
-buildUtil.optimizeJsDir = function(/*String*/startDir, /*RegeExp*/optimizeIgnoreRegExp, /*String*/copyrightText, /*String*/optimizeType, /*String*/stripConsole){
+buildUtil.optimizeJsDir = function(/*String*/startDir, /*RegeExp*/optimizeIgnoreRegExp, /*String?*/copyrightText, /*String?*/optimizeType, /*String?*/stripConsole){
 	//summary: strips the JS comments from all the files in "startDir", and all subdirectories.
 	//Also runs shrinksafe or packer minification, and console call removal.
 	var copyright = (copyrightText || fileUtil.readFile("copyright.txt")) + fileUtil.getLineSeparator();
@@ -1158,7 +1158,9 @@ buildUtil.optimizeJsDir = function(/*String*/startDir, /*RegeExp*/optimizeIgnore
 				&& !fileList[i].match(/nls/)
 				&& !fileList[i].match(/tests\//)){
 
-				logger.trace("Optimizing (" + messageType + ") file: " + fileList[i]);
+				if(messageType){
+					logger.trace("Optimizing (" + messageType + ") file: " + fileList[i]);
+				}
 
 				//Read in the file. Make sure we have a JS string.
 				var fileContents = fileUtil.readFile(fileList[i]);
@@ -1170,6 +1172,9 @@ buildUtil.optimizeJsDir = function(/*String*/startDir, /*RegeExp*/optimizeIgnore
 					}catch(e){
 						logger.error("Could not strip comments for file: " + fileList[i] + ", error: " + e);
 					}
+				}else{
+					//Just apply copyright.
+					fileContents = copyright + fileContents;
 				}
 
 				if(stripConsole){
