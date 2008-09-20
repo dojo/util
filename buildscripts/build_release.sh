@@ -56,14 +56,11 @@ cd ../..
 rm -rf $buildName/util/$shrinksafeName
 
 #Make a -demos bundle (note, this is before build. Build profile=demos-all if you want to release them)
+# the -demos archives are meant to be extracted from the same folder -src or release archives, and have
+# a matching prefixed folder in the archive
 demoName=$buildName-demos
-cp -r $buildName/demos $buildName/demos/$demoName
-cd $buildName/demos
-zip -rq $demoName.zip $demoName/
-tar -zcf $demoName.tar.gz $demoName/
-mv $demoName.zip ../../
-mv $demoName.tar.gz ../../
-cd ../..
+zip -rq $demoName.zip $buildName/demos/
+tar -zcf $demoName.tar.gz $buildName/demos/
 # prevent demos/ from appearing in the -src build
 rm -rf $buildName/demos
 
