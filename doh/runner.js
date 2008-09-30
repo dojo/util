@@ -1,6 +1,3 @@
-// FIXME: need to add async tests
-// FIXME: need to handle URL wrapping and test registration/running from URLs
-
 // package system gunk. 
 try{
 	dojo.provide("doh.runner");
@@ -103,12 +100,15 @@ doh.debug = function(){
 	// YOUR TEST RUNNER NEEDS TO IMPLEMENT THIS
 }
 
-doh._AssertFailure = function(msg){
+doh._AssertFailure = function(msg, hint){
 	// idea for this as way of dis-ambiguating error types is from JUM. 
 	// The JUM is dead! Long live the JUM!
 
 	if(!(this instanceof doh._AssertFailure)){
 		return new doh._AssertFailure(msg);
+	}
+	if(hint){
+		msg = (new String(msg||""))+" with hint: \n\t\t"+(new String(hint)+"\n");
 	}
 	this.message = new String(msg||"");
 	return this;
@@ -438,7 +438,7 @@ doh.registerTest = function(/*String*/ group, /*Function||Object*/ test){
 		this._groups[group].inFlight = 0;
 	}
 	var tObj = this._getTestObj(group, test);
-	if(!tObj){ return; }
+	if(!tObj){ return null; }
 	this._groups[group].push(tObj);
 	this._testCount++;
 	this._testRegistered(group, tObj);
@@ -536,10 +536,12 @@ doh.registerDocTests = function(module){
 					comment = ", "+parts[parts.length-1]; // Get all after the last //, so we dont get trapped by http:// or alikes :-).
 				}
 				tests.push({
-					runTest:function(test){return function(t){
-						var r = docTest.runTest(test.commands, test.expectedResult);
-						t.assertTrue(r.success);
-					}}(test),
+					runTest: (function(test){ 
+						return function(t){
+							var r = docTest.runTest(test.commands, test.expectedResult);
+							t.assertTrue(r.success);
+						}
+					})(test),
 					name:"Line "+test.line+comment
 				}
 				);
@@ -553,29 +555,29 @@ doh.registerDocTests = function(module){
 // Assertions and In-Test Utilities
 //
 
-doh.t = doh.assertTrue = function(/*Object*/ condition){
+doh.t = doh.assertTrue = function(/*Object*/ condition, /*String?*/ hint){
 	// summary:
 	//		is the passed item "truthy"?
-	if(arguments.length != 1){ 
-		throw doh._AssertFailure("assertTrue failed because it was not passed exactly 1 argument"); 
+	if(arguments.length < 1){ 
+		throw new doh._AssertFailure("assertTrue failed because it was not passed at least 1 argument"); 
 	} 
 	if(!eval(condition)){
-		throw doh._AssertFailure("assertTrue('" + condition + "') failed");
+		throw new doh._AssertFailure("assertTrue('" + condition + "') failed", hint);
 	}
 }
 
-doh.f = doh.assertFalse = function(/*Object*/ condition){
+doh.f = doh.assertFalse = function(/*Object*/ condition, /*String?*/ hint){
 	// summary:
 	//		is the passed item "falsey"?
-	if(arguments.length != 1){ 
-		throw doh._AssertFailure("assertFalse failed because it was not passed exactly 1 argument"); 
+	if(arguments.length < 1){ 
+		throw new doh._AssertFailure("assertFalse failed because it was not passed at least 1 argument"); 
 	} 
 	if(eval(condition)){
-		throw doh._AssertFailure("assertFalse('" + condition + "') failed");
+		throw new doh._AssertFailure("assertFalse('" + condition + "') failed", hint);
 	}
 }
 
-doh.e = doh.assertError = function(/*Error object*/expectedError, /*Object*/scope, /*String*/functionName, /*Array*/args){
+doh.e = doh.assertError = function(/*Error object*/expectedError, /*Object*/scope, /*String*/functionName, /*Array*/args, /*String?*/ hint){
 	//	summary:
 	//		Test for a certain error to be thrown by the given function.
 	//	example:
@@ -587,14 +589,14 @@ doh.e = doh.assertError = function(/*Error object*/expectedError, /*Object*/scop
 		if(e instanceof expectedError){
 			return true;
 		}else{
-			throw new doh._AssertFailure("assertError() failed:\n\texpected error\n\t\t"+expectedError+"\n\tbut got\n\t\t"+e+"\n\n");
+			throw new doh._AssertFailure("assertError() failed:\n\texpected error\n\t\t"+expectedError+"\n\tbut got\n\t\t"+e+"\n\n", hint);
 		}
 	}
-	throw new doh._AssertFailure("assertError() failed:\n\texpected error\n\t\t"+expectedError+"\n\tbut no error caught\n\n");
+	throw new doh._AssertFailure("assertError() failed:\n\texpected error\n\t\t"+expectedError+"\n\tbut no error caught\n\n", hint);
 }
 
 
-doh.is = doh.assertEqual = function(/*Object*/ expected, /*Object*/ actual){
+doh.is = doh.assertEqual = function(/*Object*/ expected, /*Object*/ actual, /*String?*/ hint){
 	// summary:
 	//		are the passed expected and actual objects/values deeply
 	//		equivalent?
@@ -618,10 +620,10 @@ doh.is = doh.assertEqual = function(/*Object*/ expected, /*Object*/ actual){
 		(this._objPropEq(expected, actual)) ){
 		return true;
 	}
-	throw new doh._AssertFailure("assertEqual() failed:\n\texpected\n\t\t"+expected+"\n\tbut got\n\t\t"+actual+"\n\n");
+	throw new doh._AssertFailure("assertEqual() failed:\n\texpected\n\t\t"+expected+"\n\tbut got\n\t\t"+actual+"\n\n", hint);
 }
 
-doh.isNot = doh.assertNotEqual = function(/*Object*/ notExpected, /*Object*/ actual){
+doh.isNot = doh.assertNotEqual = function(/*Object*/ notExpected, /*Object*/ actual, /*String?*/ hint){
 	// summary:
 	//		are the passed notexpected and actual objects/values deeply
 	//		not equivalent?
@@ -629,21 +631,21 @@ doh.isNot = doh.assertNotEqual = function(/*Object*/ notExpected, /*Object*/ act
 	// Compare undefined always with three equal signs, because undefined==null
 	// is true, but undefined===null is false. 
 	if((notExpected === undefined)&&(actual === undefined)){ 
-        throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|");
+        throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|", hint);
 	}
 	if(arguments.length < 2){ 
 		throw doh._AssertFailure("assertEqual failed because it was not passed 2 arguments"); 
 	} 
 	if((notExpected === actual)||(notExpected == actual)){ 
-        throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|");
+        throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|", hint);
 	}
 	if(	(this._isArray(notExpected) && this._isArray(actual))&&
 		(this._arrayEq(notExpected, actual)) ){
-		throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|");
+		throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|", hint);
 	}
 	if( ((typeof notExpected == "object")&&((typeof actual == "object")))&&
 		(this._objPropEq(notExpected, actual)) ){
-        throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|");
+        throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|", hint);
 	}
     return true;
 }
