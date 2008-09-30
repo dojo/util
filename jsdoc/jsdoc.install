@@ -13,6 +13,13 @@ function jsdoc_update_1() {
   return $items;
 }
 
+function jsdoc_update_2() {
+  $items = array();
+  $items[] = update_sql('ALTER TABLE {jsdoc_objects} ADD INDEX(nid)');
+  $items[] = update_sql('ALTER TABLE {jsdoc_variables} ADD INDEX(nid)');
+  return $items;
+}
+
 function jsdoc_install() {
   foreach (taxonomy_get_vocabularies('jsdoc') as $vocabulary) {
     if ($vocabulary->name == 'Environments') {

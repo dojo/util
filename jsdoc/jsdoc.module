@@ -40,7 +40,7 @@ function jsdoc_perm() {
  */
 function jsdoc_menu($may_cache) {
   $items = array();
-  $version = $_SESSION['jsdoc_version'];
+  $version = isset($_SESSION['jsdoc_version']) ? $_SESSION['jsdoc_version'] : null;
 
   if ($may_cache) {
     $items[] = array(
@@ -869,6 +869,7 @@ function jsdoc_manage($edit = array()) {
   $query = db_query("SELECT 1 FROM {jsdoc_objects} WHERE new != 1");
   if (!db_num_rows($query)) {
     db_query("UPDATE {jsdoc_objects} SET new = 0");
+    drupal_goto('');
   }
 
   $header = array('Variable', 'Project', 'Resource', 'New', 'Deleted or Renamed');
@@ -1168,13 +1169,13 @@ function jsdoc_object_load($node) {
   // TODO: Deal with alias
   _jsdoc_init();
 
-  $additions = db_fetch_object(db_query("SELECT jo.type AS jsdoc_raw_type, jo.returns AS jsdoc_returns, jo.return_summary AS jsdoc_return_summary, jo.updating AS jsdoc_updating, jo.classlike AS jsdoc_classlike, jo.private AS jsdoc_private, jo.private_parent AS jsdoc_private_parent, jo.resource_nid AS jsdoc_resource, jo.resource_nid AS jsdoc_resource_nid, jo.resource_vid AS jsdoc_resource_vid, jo.provide_nid AS jsdoc_provide, jo.provide_nid AS jsdoc_provide_nid, jo.provide_vid AS jsdoc_provide_vid, jo.initialized AS jsdoc_initialized, jo.used AS jsdoc_used, jo.version AS jsdoc_version, source AS jsdoc_source, jo.resource_vid != nr2.vid AS has_revisions FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (jo.resource_vid = nr.vid) JOIN {node_revisions} nr2 ON (nr.nid = nr2.nid) WHERE jo.vid = %d", $node->vid));
+  $additions = db_fetch_object(db_query("SELECT jo.type AS jsdoc_raw_type, jo.returns AS jsdoc_returns, jo.return_summary AS jsdoc_return_summary, jo.updating AS jsdoc_updating, jo.classlike AS jsdoc_classlike, jo.private AS jsdoc_private, jo.private_parent AS jsdoc_private_parent, jo.resource_nid AS jsdoc_resource, jo.resource_nid AS jsdoc_resource_nid, jo.resource_vid AS jsdoc_resource_vid, jo.provide_nid AS jsdoc_provide, jo.provide_nid AS jsdoc_provide_nid, jo.provide_vid AS jsdoc_provide_vid, jo.initialized AS jsdoc_initialized, jo.used AS jsdoc_used, jo.version AS jsdoc_version, source AS jsdoc_source, jo.resource_vid != nr2.vid AS has_revisions FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (jo.resource_vid = nr.vid) LEFT JOIN {node_revisions} nr2 ON (jo.nid = nr2.nid AND jo.vid != nr2.vid) WHERE jo.vid = %d GROUP BY jo.vid", $node->vid));
 
   $additions->jsdoc_used = round($additions->jsdoc_used);
 
   $additions->jsdoc_formatted = _jsdoc_format_type($additions->jsdoc_raw_type, $additions->jsdoc_classlike);
 
-  $additions->jsdoc_version = $additions->jsdoc_version;
+  $node->jsdoc_version = $additions->jsdoc_version;
 
   $additions->jsdoc_full_url = 'jsdoc/' . jsdoc_get_project($additions)->title . '/' . jsdoc_get_version($additions)->title . '/' . str_replace('/', '__', jsdoc_get_resource($node)->title) . '/' . $node->title;
   $additions->jsdoc_url = 'jsdoc/' . jsdoc_get_project($additions)->title . '/' . jsdoc_get_version($additions)->title . '/' . $node->title;
@@ -1374,8 +1375,12 @@ function jsdoc_variable_delete(&$node, $vid=null) {
     }
   }
 
-  $query = db_query("SELECT nr.nid FROM {node_revisions} nr JOIN {jsdoc_objects} j ON (j.vid = nr.vid) WHERE nr.title = '%s' AND BINARY nr.title = '%s' GROUP BY nr.nid", $node->title, $node->title);
+  $query = db_query("SELECT nr.nid FROM {node_revisions} nr JOIN {jsdoc_objects} j ON (j.vid = nr.vid) WHERE nr.title = '%s' AND BINARY nr.title = '%s'", $node->title, $node->title);
+  $results = array();
   while ($object = db_fetch_object($query)) {
+    $results[$object->nid] = $object;
+  }
+  foreach ($results as $object) {
     if (!$vid) {
       node_delete($object->nid);
       break;
@@ -1411,7 +1416,7 @@ function jsdoc_version_form(&$node) {
   $form = array();
 
   $options = array();
-  $query = db_query("SELECT nid, title FROM {node} WHERE type = 'jsdoc_project'");
+  $query = db_query("SELECT nid, title FROM {node} WHERE type = 'jsdoc_project' AND status = 1");
   while ($project = db_fetch_object($query)) {
     $options[$project->nid] = $project->title;
   }
@@ -1686,6 +1691,13 @@ function jsdoc_get_return_types(&$node) {
   return ($node->jsdoc_return_types = $object->jsdoc_return_types = $types);
 }
 
+function _jsdoc_sort_vid_weight($a, $b){
+  if ($a->vid == $b->vid) {
+    return ($a->weight < $b->weight) ? -1 : 1;
+  }
+  return ($a->vid < $b->vid) ? -1 : 1;
+}
+
 function jsdoc_get_parameters(&$node) {
   if (isset($node->jsdoc_parameters)) {
     return $node->jsdoc_parameters;
@@ -1699,8 +1711,13 @@ function jsdoc_get_parameters(&$node) {
   $object->jsdoc_parameters = array();
   $parameters = array();
   if ($object->type == 'jsdoc_variable') {
-    $query = db_query("SELECT nr.vid, jp.name, jp.type, jp.summary, jp.optional, jp.repeating FROM {jsdoc_parameters} jp JOIN {jsdoc_objects} jo ON (jo.vid = jp.vid) JOIN {node_revisions} nr ON (nr.vid = jo.vid) WHERE nr.title = '%s' AND BINARY nr.title = '%s' AND jo.used != -1 AND jo.version = %d ORDER BY jp.vid, jp.weight", $object->title, $object->title, jsdoc_get_version($object)->nid);
+    $query = db_query("SELECT nr.vid, jp.weight, jp.name, jp.type, jp.summary, jp.optional, jp.repeating FROM {jsdoc_parameters} jp JOIN {jsdoc_objects} jo ON (jo.vid = jp.vid) JOIN {node_revisions} nr ON (nr.vid = jo.vid) WHERE nr.title = '%s' AND BINARY nr.title = '%s' AND jo.used != -1 AND jo.version = %d", $object->title, $object->title, jsdoc_get_version($object)->nid);
+    $results = array();
     while ($parameter = db_fetch_array($query)) {
+      $results[] = $parameter;
+    }
+    usort($results, '_jsdoc_sort_vid_weight');
+    foreach ($results as $parameter) {
       $parameters[$parameter['vid']][$parameter['name']] = $parameter;
     }
 
@@ -1798,8 +1815,12 @@ function jsdoc_get_parents(&$node) {
       $object = $node;
     }
     $object->jsdoc_parents = array();
-    $query = db_query("SELECT nr.title, j.type FROM {jsdoc_variable_hierarchy} j JOIN {node_revisions} nr ON (nr.vid = j.parent_vid) WHERE j.type IN ('normal', 'prototype', 'instance') AND j.vid = %d GROUP BY BINARY nr.title", $object->vid);
+    $query = db_query("SELECT nr.title, j.type FROM {jsdoc_variable_hierarchy} j JOIN {node_revisions} nr ON (nr.vid = j.parent_vid) WHERE j.type IN ('normal', 'prototype', 'instance') AND j.vid = %d", $object->vid);
+    $results = array();
     while ($parent = db_fetch_object($query)) {
+      $results[$parent->title] = $parent;
+    }
+    foreach ($results as $parent) {
       $object->jsdoc_parents['all'][] = $parent->title;
       $object->jsdoc_parents[$parent->type][] = $parent->title;
       natsort($object->jsdoc_parents[$parent->type]);
@@ -1831,10 +1852,22 @@ function jsdoc_get_parents(&$node) {
     }
     else {
       // Select all objects with this as a name
-      $query = db_query("SELECT MAX(nr.vid) AS vid FROM {jsdoc_objects} j JOIN {node_revisions} nr ON (nr.vid = j.vid) WHERE j.version = %d AND nr.title = '%s' AND BINARY nr.title = '%s' GROUP BY nr.nid", jsdoc_get_version($node)->nid, $node->title, $node->title);
+      $query = db_query("SELECT nr.nid, nr.vid FROM {jsdoc_objects} j JOIN {node_revisions} nr ON (nr.vid = j.vid) WHERE j.version = %d AND nr.title = '%s' AND BINARY nr.title = '%s'", jsdoc_get_version($node)->nid, $node->title, $node->title);
+    }
+    $results = array();
+    while ($child = db_fetch_object($query)) {
+      if (!$child->nid) {
+        $child->nid = $child->vid;
+      }
+      if ($old = $results[$child->nid]){
+        $old->vid = max($old->vid, $child->vid);
+      }
+      else {
+        $results[$child->nid] = $child;
+      }
     }
     $vids = array(-1);
-    while ($child = db_fetch_object($query)) {
+    foreach ($results as $child) {
       $vids[] = $child->vid;
     }
     $query = db_query("SELECT nr.title FROM {jsdoc_variable_hierarchy} j JOIN {node_revisions} nr ON (nr.vid = j.parent_vid) WHERE j.vid IN (%s) GROUP BY nr.nid ORDER BY nr.vid DESC, nr.title", implode(", ", array_unique($vids)));
@@ -1887,7 +1920,7 @@ function jsdoc_get_teaser(&$node) {
     $node->teaser = _jsdoc_resolve_variable($node)->teaser;
   }
 
-  return ($node->formatted_teaser = htmlentities($node->teaser));
+  return ($node->formatted_teaser = $node->teaser);
 }
 
 function jsdoc_get_body(&$node) {
@@ -2044,15 +2077,30 @@ function jsdoc_is_namespace(&$node) {
   if (isset($node->jsdoc_namespace)) {
     return $node->jsdoc_namespace;
   }
-  $namespace = false;
 
-  if (jsdoc_get_type($node) == 'Object' || jsdoc_is_initialized($node)) {
-    $query = db_query("SELECT 1 FROM {node_revisions} nr JOIN {jsdoc_objects} jo ON (jo.vid = nr.vid) WHERE jo.type = 'Function' AND nr.title LIKE '%s.%%' AND nr.title NOT LIKE '%.toString' LIMIT 1", $node->title);
-    if (db_num_rows($query)) {
-      $namespace = true;
+  static $namespaces;
+  if (!$namespaces) {
+    $namespaces = cache_get('jsdoc_is_namespace', 'cache')->data;
+    if (!$namespaces) {
+      $namespaces = array();
+    }
+    else {
+      $namespaces = unserialize($namespaces);
     }
   }
-  return ($node->jsdoc_namespace = $namespace);
+
+  if (!isset($namespaces[$node->title])) {
+    $namespaces[$node->title] = false;
+    if (jsdoc_get_type($node) == 'Object' || jsdoc_is_initialized($node)) {
+      $query = db_query("SELECT 1 FROM {node_revisions} nr INNER JOIN {jsdoc_objects} jo ON (jo.vid = nr.vid) WHERE jo.type = 'Function' AND nr.title LIKE '%s.%%' AND nr.title NOT LIKE '%%.toString' LIMIT 1", $node->title);
+      if (db_result($query)) {
+        $namespaces[$node->title] = true;
+      }
+    }
+    cache_set('jsdoc_is_namespace', 'cache', serialize($namespaces));
+  }
+
+  return ($node->jsdoc_namespace = $namespaces[$node->title]);
 }
 
 function jsdoc_get_children(&$node) {
@@ -2080,17 +2128,27 @@ function jsdoc_get_children(&$node) {
 
   if ($node->type == "jsdoc_variable") {
     // Find all objects joined normally to this object,
-    $query = db_query("SELECT nr.title FROM {jsdoc_variable_hierarchy} j JOIN {jsdoc_objects} jo ON (jo.vid = j.vid) JOIN {node_revisions} nr ON (nr.vid = j.vid) WHERE j.parent_vid = %d AND j.type = 'normal' AND jo.version = %d AND jo.used != -1 GROUP BY BINARY nr.title ORDER BY nr.title", $node->vid, jsdoc_get_version($node)->nid);
-    $node->jsdoc_variables = array();
+    // Group and order
+    $query = db_query("SELECT nr.title FROM {jsdoc_variable_hierarchy} j JOIN {jsdoc_objects} jo ON (jo.vid = j.vid) JOIN {node_revisions} nr ON (nr.vid = j.vid) WHERE j.parent_vid = %d AND j.type = 'normal' AND jo.version = %d AND jo.used != -1", $node->vid, jsdoc_get_version($node)->nid);
+    $results = array();
     while ($object = db_fetch_object($query)) {
+      $results[$object->title] = $object;
+    }
+    ksort($results);
+    $node->jsdoc_variables = array();
+    foreach ($results as $object){
       $object = jsdoc_object_node_load($object->title, jsdoc_get_project($node), jsdoc_get_version($node));
       $node->jsdoc_variables[$object->title] = $object;
     }
     uksort($node->jsdoc_variables, 'strnatcasecmp');
   }
   elseif ($node->type == "jsdoc_object") {
-    $query = db_query("SELECT j.type, j.subtype, nr.nid, nr.vid FROM {jsdoc_variable_hierarchy} j JOIN {node_revisions} nr ON (nr.vid = j.vid) JOIN {node_revisions} nr2 ON (nr2.vid = j.parent_vid) JOIN {jsdoc_objects} jo ON (jo.vid = nr.vid) WHERE jo.used != -1 AND nr2.title = '%s' AND BINARY nr2.title = '%s' AND j.version = %d GROUP BY nr.nid, j.type, j.subtype", $node->title, $node->title, jsdoc_get_version($node)->nid);
+    $query = db_query("SELECT j.type, j.subtype, nr.nid, nr.vid FROM {jsdoc_variable_hierarchy} j JOIN {node_revisions} nr ON (nr.vid = j.vid) JOIN {node_revisions} nr2 ON (nr2.vid = j.parent_vid) JOIN {jsdoc_objects} jo ON (jo.vid = nr.vid) WHERE jo.used != -1 AND nr2.title = '%s' AND BINARY nr2.title = '%s' AND j.version = %d", $node->title, $node->title, jsdoc_get_version($node)->nid);
+    $results = array();
     while ($join = db_fetch_object($query)) {
+      $results["{$join->nid}|{$join->type}|{$join->subtype}"] = $join;
+    }
+    foreach ($results as $join) {
       $object = _jsdoc_node_load($join->nid, $join->vid);
       if (!$object->jsdoc_used) {
         continue;
@@ -2128,8 +2186,11 @@ function jsdoc_get_children(&$node) {
   return jsdoc_get_children($node);
 }
 
-function jsdoc_get_query_variables($project){
-  return db_query("SELECT nr.title, nr.nid, nr.vid, n.type, jo.type AS jsdoc_raw_type, jo.classlike AS jsdoc_classlike, jo.initialized AS jsdoc_initialized FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (nr.vid = jo.vid) JOIN {node} n ON (n.nid = nr.nid) WHERE jo.version = %d AND (nr.title = '%s' OR nr.title LIKE '%s.%%') AND (jo.type = 'Function' OR jo.type = 'Object' OR (jo.type = 'Function' AND jo.initialized = 1)) GROUP BY BINARY nr.title ORDER BY nr.title", jsdoc_get_version($project)->nid, $project->title, $project->title);
+function jsdoc_get_query_variables($project, $version=null){
+  if (!$version) {
+    $version = jsdoc_get_version($project);
+  }
+  return db_query("SELECT nr.title, nr.nid, nr.vid, n.type, jo.type AS jsdoc_raw_type, jo.classlike AS jsdoc_classlike, jo.initialized AS jsdoc_initialized FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (nr.vid = jo.vid) JOIN {node} n ON (n.nid = nr.nid) WHERE jo.version = %d AND (nr.title = '%s' OR nr.title LIKE '%s.%%') AND (jo.type = 'Function' OR jo.type = 'Object' OR (jo.type = 'Function' AND jo.initialized = 1)) GROUP BY BINARY nr.title ORDER BY nr.title", $version->nid, $project->title, $project->title);
 }
 
 /**
@@ -2274,7 +2335,7 @@ function jsdoc_admin() {
  */
 function jsdoc_projects() {
   $projects = array();
-  $query = db_query("SELECT nid FROM {node} WHERE type = 'jsdoc_project'");
+  $query = db_query("SELECT nid FROM {node} WHERE type = 'jsdoc_project' AND status = 1");
   while ($result = db_fetch_object($query)) {
     $projects[] = _jsdoc_node_load($result->nid);
   }
@@ -2284,28 +2345,30 @@ function jsdoc_projects() {
 // Node Load Functions
 // ===================
 
+
+function jsdoc_project_node_load() {
+  $args = func_get_args();
+  return _jsdoc_memoize('_jsdoc_project_node_load', $args);
+}
+
 /**
  * Custom version of node_load for projects
  */
-function jsdoc_project_node_load($project_name) {
-  static $projects;
-  if (!$projects) {
-    $projects = array();
-  }
-  if ($projects[$project_name]) {
-    return $projects[$project_name];
-  }
-
+function _jsdoc_project_node_load($project_name) {
   if($nid = db_result(db_query("SELECT n.nid FROM {node} n JOIN {jsdoc_versions} j ON (j.project = n.nid) WHERE BINARY n.title = '%s'", $project_name))) {
-    $projects[$project_name] = _jsdoc_node_load($nid);
-    return $projects[$project_name];
+    return _jsdoc_node_load($nid);
   }
+}
+
+function jsdoc_version_node_load() {
+  $args = func_get_args();
+  return _jsdoc_memoize('_jsdoc_version_node_load', $args);
 }
 
 /**
  * Custom version of node_load for versions
  */
-function jsdoc_version_node_load($version_name, $project) {
+function _jsdoc_version_node_load($version_name, $project) {
   if (is_numeric($project)) {
     $project_nid = $project;
   }
@@ -2320,10 +2383,15 @@ function jsdoc_version_node_load($version_name, $project) {
   }
 }
 
+function jsdoc_resource_node_load() {
+  $args = func_get_args();
+  return _jsdoc_memoize('_jsdoc_resource_node_load', $args);
+}
+
 /**
  * Custom version of node_load for resources
  */
-function jsdoc_resource_node_load($project, $version, $name) {
+function _jsdoc_resource_node_load($project, $version, $name) {
   if (is_object($project) && $project->nid) {
     $project_nid = $project->nid;
   }
@@ -2349,22 +2417,62 @@ function jsdoc_resource_node_load($project, $version, $name) {
   }
 }
 
-function jsdoc_object_node_load($name, $project=false, $version=false, $resource=false, $exact=true) {
+function _jsdoc_memoize_flatten(&$item, $key) {
+  if (is_object($item)) {
+    $item = ($item->vid) ? $item->vid : $item->title;
+  }
+  elseif (is_array($item)) {
+    $values = array_values($item);
+    $item = array();
+    foreach ($values as $value) {
+      if (is_object($value)) {
+        $value = ($value->vid) ? $value->vid : $value->title;
+      }
+      $item[] = $value;
+    }
+    $item = implode(',', $item);
+  }
+}
+
+function _jsdoc_memoize($func, $args) {
+  static $cache;
+  if (!$cache) {
+    $cache = array();
+  }
+  if (!$cache[$func]) {
+    $cache[$func] = array();
+  }
+  $cache_key = array_values($args);
+  array_walk($cache_key, '_jsdoc_memoize_flatten');
+  $cache_key = implode('%', $cache_key);
+
+  if (array_key_exists($cache_key, $cache[$func])) {
+    return $cache[$func][$cache_key];
+  }
+
+  return ($output = $cache[$func][$cache_key] = call_user_func_array($func, $args));
+}
+
+function jsdoc_object_node_load(){
+  $args = func_get_args();
+  return _jsdoc_memoize('_jsdoc_object_node_load', $args);
+}
+
+function _jsdoc_object_node_load($name, $project=false, $version=false, $resource=false, $exact=true) {
   $nodes = jsdoc_object_nodes_load($name, $project, $version, $resource, $exact);
   if (count($nodes) == 1) {
     return $nodes[0];
   }
   elseif (!empty($nodes)) {
-    $most_similar = 0;
     foreach($nodes as $match) {
-      similar_text($match->title, jsdoc_get_project($match)->title, $similarity);
-      if ($similarity > $most_similar) {
-        $node = $match;
-        $most_similar = $similarity;
+      $project = jsdoc_get_project($match)->title;
+      if ($project == $match->title || strpos($match->title, $project . '.') === 0) {
+        return $match;
       }
     }
-    return $node;
+    return $match;
   }
+  return (object)array();
 }
 
 /**
@@ -2473,8 +2581,12 @@ function jsdoc_object_nodes_load($name, $project=false, $version=false, $resourc
 
   if (!$project_nid) {
     // We can't look up the proper version without knowing the project
-    $query = db_query("SELECT nr.nid FROM {node_revisions} nr JOIN {node} n ON (n.nid = nr.nid) WHERE nr.title $title_check AND $binary nr.title $title_check AND n.type = 'jsdoc_variable' GROUP BY nr.nid", $name, $name);
+    $query = db_query("SELECT nr.nid FROM {node_revisions} nr JOIN {node} n ON (n.nid = nr.nid) WHERE nr.title $title_check AND $binary nr.title $title_check AND n.type = 'jsdoc_variable'", $name, $name);
+    $results2 = array();
     while ($result = db_fetch_object($query)) {
+      $results2[$result->nid] = $result;
+    }
+    foreach ($results2 as $result) {
       $results[] = $result;
 
       $current_project_nid = jsdoc_get_project(_jsdoc_node_load($result->nid))->nid;
@@ -2496,23 +2608,14 @@ function jsdoc_object_nodes_load($name, $project=false, $version=false, $resourc
   if (!$project_nid) {
     foreach ($results as $result) {
       $node = jsdoc_get_variable_object(_jsdoc_node_load($result->nid));
-      if (!$version) {
-        $versions = jsdoc_get_versions($node);
-        $version = $versions[0];
-      }
+      $version = jsdoc_get_version(jsdoc_get_project($node));
       $versioned_query = db_query("SELECT vid FROM {" . $node->type . "s} WHERE nid = %d AND version = %d", $node->nid, $version->nid);
       if ($result = db_fetch_object($versioned_query)) {
         $node = jsdoc_get_variable_object(_jsdoc_node_load($node->nid, $result->vid));
-        if ($exact) {
-          return array($node);
-        }
         $nodes[] = $node;
       }
       else {
-        if ($exact) {
-          return array($node);
-        }
-        $nodes[] = $mpde;
+        $nodes[] = $node;
       }
     }
   }
@@ -2537,8 +2640,8 @@ function jsdoc_object_nodes_load($name, $project=false, $version=false, $resourc
     }
     else {
       $version_nids = array(-1);
-      foreach (_jsdoc_node_load($project_nid)->jsdoc_versions as $version_nid) {
-        $version_nids[] = $version_nid;
+      foreach (jsdoc_get_versions(_jsdoc_node_load($project_nid)) as $version) {
+        $version_nids[] = $version->nid;
       }
       $query = db_query("SELECT nr.nid, nr.vid AS vid, j.version FROM {node_revisions} nr INNER JOIN {jsdoc_variables} j ON (j.vid = nr.vid) WHERE nr.title $title_check AND $binary nr.title $title_check AND j.version IN (%s) ORDER BY j.version DESC", $name, $name, implode(',', $version_nids));
     }
@@ -2550,7 +2653,8 @@ function jsdoc_object_nodes_load($name, $project=false, $version=false, $resourc
       }
     }
     foreach ($maxes as $result) {
-      $nodes[] = jsdoc_get_variable_object(_jsdoc_node_load($result->nid, $result->vid));
+      $result = _jsdoc_node_load($result->nid, $result->vid);
+      $nodes[] = jsdoc_get_variable_object($result);
     }
   }
 
@@ -2626,6 +2730,7 @@ function jsdoc_ide($ide, $download=false) {
       mkdir($base . '/jsdoc/ides/docs/api');
       mkdir($base . '/jsdoc/ides/docs/api/js');
       mkdir($base . '/jsdoc/ides/docs/api/css');
+      mkdir($base . '/jsdoc/ides/docs/api/img');
       mkdir($base . '/jsdoc/ides/docs/api/nodes');
     }
     file_save_data(implode("\n", $header), 'jsdoc/ides/scriptdoc.xml.tmp', FILE_EXISTS_REPLACE);
@@ -2652,6 +2757,11 @@ function jsdoc_ide($ide, $download=false) {
       }
 
       $namespaces = unserialize(cache_get('jsdoc_namespaces_' . $project->title, 'cache')->data);
+      if (empty($namespaces) || empty($namespaces[$version->nid])) {
+        $_GET['jsdoc_project'] = $project->title;
+        jsdoc_block('view', 1);
+        $namespaces = unserialize(cache_get('jsdoc_namespaces_' . $project->title, 'cache')->data);
+      }
       foreach ($namespaces[$version->nid] as $node) {
         $node = _jsdoc_node_load($node[0], $node[1]);
         _jsdoc_ide_build_toc($toc_document, $root, $project->title, $node->title, 'api');
@@ -2659,32 +2769,37 @@ function jsdoc_ide($ide, $download=false) {
 
       $query = db_query("SELECT nr.nid, MAX(nr.vid) AS vid FROM {node_revisions} nr INNER JOIN {jsdoc_variables} j ON (j.vid = nr.vid) WHERE j.version = %d GROUP BY nr.nid", $version->nid);
       while ($result = db_fetch_object($query)) {
+        set_time_limit(150);
         $node = _jsdoc_node_load($result->nid, $result->vid);
+        $filename = $base . '/jsdoc/ides/docs/api/nodes/' . $project->title . '/' . $node->title . '.html';
+        if (file_exists($filename) && (time() - filectime($filename) < 86400)) {
+          continue;
+        }
         $node = jsdoc_get_variable_object($node);
-        set_time_limit(300);
         if ($node->type == 'jsdoc_variable') {
           $content = jsdoc_variable_node_view($node);
         }
         else {
           $content = jsdoc_object_node_view($node);
         }
-        file_put_contents($base . '/jsdoc/ides/docs/api/nodes/' . $project->title . '/' . $node->title . '.html', theme('jsdoc_ide', $content));
+        file_put_contents($filename, theme('jsdoc_ide', $content));
       }
     }
 
     file_put_contents($base . '/jsdoc/ides/docs/index.xml', $toc_document->saveXML());
 
     foreach (jsdoc_projects() as $project) {
-      $query = jsdoc_get_query_variables($project);
+      $version = jsdoc_version_node_load('HEAD', $project);
+      $query = jsdoc_get_query_variables($project, $version);
       while ($result = db_fetch_object($query)) {
-        set_time_limit(300);
+        set_time_limit(150);
         if (jsdoc_is_namespace($result) || jsdoc_get_type($result) == 'Constructor') {
           $node = _jsdoc_node_load($result->nid, $result->vid);
           $class = $document->createElement('class');
           $class->setAttribute('type', $node->title);
 
           if (jsdoc_get_teaser($node)) {
-            $class->appendChild($document->createElement('description'))->appendChild($document->createTextNode(jsdoc_get_teaser($node)));
+            $class->appendChild($document->createElement('description'))->appendChild($document->createTextNode(html_entity_decode(jsdoc_get_teaser($node))));
           }
 
           $superclasses = array();
@@ -2699,7 +2814,7 @@ function jsdoc_ide($ide, $download=false) {
               $constructor_element = $class->appendChild($document->createElement('constructors'))->appendChild($document->createElement('constructor'));
               $constructor_element->setAttribute('scope', 'instance');
               if (jsdoc_get_teaser($constructor)) {
-                $constructor_element->appendChild($document->createElement('description'))->appendChild($document->createTextNode(jsdoc_get_teaser($constructor)));
+                $constructor_element->appendChild($document->createElement('description'))->appendChild($document->createTextNode(html_entity_decode(jsdoc_get_teaser($constructor))));
               }
               _jsdoc_ide_build_parameters(jsdoc_get_parameters($constructor), $document, $constructor_element);
             }
@@ -2783,7 +2898,7 @@ function jsdoc_ide($ide, $download=false) {
                     $element->setAttribute('visibility', 'internal');
                   }
                   if (jsdoc_get_teaser($child)) {
-                    $element->appendChild($document->createElement('description'))->appendChild($document->createTextNode(jsdoc_get_teaser($child)));
+                    $element->appendChild($document->createElement('description'))->appendChild($document->createTextNode(html_entity_decode(jsdoc_get_teaser($child))));
                   }
                 }
               }
@@ -2866,7 +2981,7 @@ function _jsdoc_ide_build_parameters($parameters, $document, &$element) {
     $parameter_element->setAttribute('type', implode('|', _jsdoc_ide_build_types($parameter['type'], 'Object')));
     $parameter_element->setAttribute('usage', ($parameter['optional']) ? 'optional' : (($parameter['repeating']) ? 'one-or-more' : 'required'));
     if ($parameter['summary']) {
-      $parameter_element->appendChild($document->createElement('description'))->appendChild($document->createTextNode($parameter['summary']));
+      $parameter_element->appendChild($document->createElement('description'))->appendChild($document->createTextNode(html_entity_decode($parameter['summary'])));
     }
   }
 }
@@ -3907,7 +4022,7 @@ function _jsdoc_project_get_or_create($name) {
     return $projects[$name];
   }
 
-  if (!$nid = db_result(db_query("SELECT nid FROM {node} n WHERE type = 'jsdoc_project' AND title = '%s' AND BINARY title = '%s'", $name, $name))) {
+  if (!$nid = db_result(db_query("SELECT nid FROM {node} n WHERE type = 'jsdoc_project' AND status = 1 AND title = '%s' AND BINARY title = '%s'", $name, $name))) {
     $node = (object)array(
       'title' => $name,
       'type' => 'jsdoc_project',
@@ -4109,10 +4224,11 @@ function jsdoc_get_resources(&$node, $environments) {
 
   $provide = jsdoc_get_provide($node);
   $node_resource = jsdoc_get_resource($node);
+  $version = jsdoc_get_version($node);
 
   if ($object && $provide) {
     $object_provide = jsdoc_get_provide($object);
-    $resource_tree = _jsdoc_get_tree($environments, $provide->nid);
+    $resource_tree = _jsdoc_get_tree($version, $environments, $provide->nid);
     $provide_nids = array();
     $resources = array();
     foreach ($resource_tree as $resource) {
@@ -4140,7 +4256,7 @@ function jsdoc_get_resources(&$node, $environments) {
   return jsdoc_get_resources($node, $environments);
 }
 
-function _jsdoc_get_tree($environments, $parent = 0, $depth = -1, $visited=array()) {
+function _jsdoc_get_tree($version, $environments, $parent = 0, $depth = -1, $visited=array()) {
   static $children, $parents, $terms;
 
   $depth++;
@@ -4148,8 +4264,12 @@ function _jsdoc_get_tree($environments, $parent = 0, $depth = -1, $visited=array
   if (!isset($parents)) {
     $parents = array();
 
-    $result = db_query("SELECT j.vid, j.nid, j.parent_vid, j.parent_nid, j.project, nr.title AS name FROM {jsdoc_resource_hierarchy} j JOIN {node_revisions} nr ON (j.vid = nr.vid) WHERE j.tid IN (%s) GROUP BY j.vid, j.parent_vid, BINARY nr.title", implode(',', $environments));
+    $result = db_query("SELECT j.vid, j.nid, j.parent_vid, j.parent_nid, j.project, nr.title AS name FROM {jsdoc_resource_hierarchy} j JOIN {node_revisions} nr ON (j.vid = nr.vid) WHERE j.version = %d AND j.tid IN (%s)", $version->nid, implode(',', $environments));
+    $results = array();
     while ($term = db_fetch_object($result)) {
+      $results["{$term->vid}|{$term->parent_vid}|{$term->title}"] = $term;
+    }
+    foreach ($results as $term) {
       if ($term->project) {
         $child = _jsdoc_node_load($term->nid, $term->vid);
         $parent_node = _jsdoc_node_load($term->parent_nid, $term->parent_vid);
@@ -4194,7 +4314,7 @@ function _jsdoc_get_tree($environments, $parent = 0, $depth = -1, $visited=array
           return $tree;
         }
         $visited[] = $parent[0];
-        $tree = array_merge($tree, _jsdoc_get_tree($environments, $parent[0], $depth, $visited));
+        $tree = array_merge($tree, _jsdoc_get_tree($version, $environments, $parent[0], $depth, $visited));
       }
     }
   }
@@ -4622,7 +4742,7 @@ function _jsdoc_resolve_variable(&$node) {
   $classlike = false;
   $full_url = $node->jsdoc_url;
 
-  $query = db_query("SELECT nr.teaser, nr.body, nr.format, j.nid, MAX(j.vid) AS vid, j.resource_nid, MAX(j.resource_vid) AS resource_vid, j.classlike, j.type, j.private FROM {jsdoc_objects} j JOIN {node_revisions} nr ON (j.vid = nr.vid) WHERE nr.title = '%s' AND BINARY nr.title = '%s' AND j.used != -1 AND j.version = %d GROUP BY nr.nid", $node->title, $node->title, $version->nid);
+  $query = db_query("SELECT nr.teaser, nr.body, nr.format, nr.nid, nr.vid, j.resource_nid, j.resource_vid AS resource_vid, j.classlike, j.type, j.private FROM {jsdoc_objects} j JOIN {node_revisions} nr ON (j.vid = nr.vid) WHERE nr.title = '%s' AND BINARY nr.title = '%s' AND j.used != -1 AND j.version = %d", $node->title, $node->title, $version->nid);
   if (db_num_rows($query) == 0) {
     $project_versions = array();
     $projects = jsdoc_projects();
@@ -4634,9 +4754,19 @@ function _jsdoc_resolve_variable(&$node) {
         }
       }
     }
-    $query = db_query("SELECT nr.teaser, nr.body, nr.format, j.nid, MAX(j.vid) AS vid, j.resource_nid, MAX(j.resource_vid) AS resource_vid, j.classlike, j.type, j.private FROM {jsdoc_objects} j JOIN {node_revisions} nr ON (j.vid = nr.vid) WHERE nr.title = '%s' AND BINARY nr.title = '%s' AND j.used != -1 AND j.version IN (%s) GROUP BY nr.nid", $node->title, $node->title, implode(',', $project_versions));
+    $query = db_query("SELECT nr.teaser, nr.body, nr.format, nr.nid, nr.vid, j.resource_nid, j.resource_vid AS resource_vid, j.classlike, j.type, j.private FROM {jsdoc_objects} j JOIN {node_revisions} nr ON (j.vid = nr.vid) WHERE nr.title = '%s' AND BINARY nr.title = '%s' AND j.used != -1 AND j.version IN (%s)", $node->title, $node->title, implode(',', $project_versions));
   }
+  $results = array();
   while ($result = db_fetch_object($query)) {
+    if($old = $results[$result->nid]){
+      $old->vid = max($old->vid, $result->vid);
+      $old->resource_vid = max($old->resource_vid, $result->resource_vid);
+    }
+    else {
+      $results[$result->nid] = $result;
+    }
+  }
+  foreach ($results as $result){
     // If there's only one object for a given variable, or if a resource is chosen, use this as the object
     $resources[] = _jsdoc_node_load($result->resource_nid, $result->resource_vid);
     if (db_num_rows($query) == 1 || ($resource && $resource->vid == $result->resource_vid)) {
@@ -4995,4 +5125,8 @@ function theme_jsdoc_resource_source_link($project, $resource) {
 }
 
 function theme_jsdoc_resolve_constructor($objects) {
+}
+
+function theme_jsdoc_ide($content){
+  return theme('page', $content);
 }

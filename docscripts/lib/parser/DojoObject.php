@@ -106,9 +106,9 @@ class DojoObject extends DojoBlock
       }else{
         $parameter = new DojoParameter($this->package, $end[0], $end[1], '}');
         $end = $parameter->build();
-        $this->values[$key] = $parameter;
+        $this->values[$key][] = $parameter;
       }
-    } 
+    }
     while ($lines[$end[0]]{$end[1]} != '}');
     
     $this->setEnd($end[0], $end[1]);
@@ -132,29 +132,30 @@ class DojoObject extends DojoBlock
   public function rollOut(&$output, $item_type = 'Object'){
     $package_name = $this->package->getPackageName();
     $name = $this->getName();
-    $values = $this->getValues();
     $variables = array();
     $check_keys = array('summary','description');
 
-    foreach($values as $key => $value){
-      if($value->isA(DojoFunctionDeclare)){
-        $function = $value->getFunction();
-        $this->declarations[] = $function;
-        if(!$function->isConstructor()){
-          $function->setFunctionName("{$name}.{$key}");
-          $function->rollOut($output);
+    foreach($this->getValues() as $key => $values){
+      foreach ($values as $value) {
+        if($value->isA(DojoFunctionDeclare)){
+          $function = $value->getFunction();
+          $this->declarations[] = $function;
+          if(!$function->isConstructor()){
+            $function->setFunctionName("{$name}.{$key}");
+            $function->rollOut($output);
+          }
+        }elseif ($value->isA(DojoObject)){
+          $object = $value->getObject();
+          $object->setName("{$name}.{$key}");
+          $object->rollOut($output);
+        }else{
+          $this->addBlockCommentKey($key);
+          $full_variable_name = "{$name}.{$key}";
+          if (empty($output[$full_variable_name])) {
+            $output[$full_variable_name] = array();
+          }
+        $variables[] = $key;
         }
-      }elseif ($value->isA(DojoObject)){
-        $object = $value->getObject();
-        $object->setName("{$name}.{$key}");
-        $object->rollOut($output);
-      }else{
-        $this->addBlockCommentKey($key);
-        $full_variable_name = "{$name}.{$key}";
-        if (empty($output[$full_variable_name])) {
-          $output[$full_variable_name] = array();
-        }
-      $variables[] = $key;
       }
     }
 

@@ -82,16 +82,18 @@ function dojo_get_contents($namespace, $file_name) {
   foreach ($compound_calls as $call) {
     if ($call->getParameter(0)->isA(DojoObject)) {
       $object = $call->getParameter(0)->getObject();
-      foreach ($object->getValues() as $key => $value) {
-        if ($value->isA(DojoArray)) {
-          foreach ($value->getArray()->getItems() as $item) {
-            if ($item->isA(DojoString)) {
-              $output['#requires'][] = array($key, $item->getString());
-            }
-            elseif ($item->isA(DojoArray)) {
-              $item = $item->getArray();
-              if ($item->getItem(0)->isA(DojoString)) {
-                $output['#requires'][] = array($key, $item->getItem(0)->getString());
+      foreach ($object->getValues() as $key => $values) {
+        foreach ($values as $value) {
+          if ($value->isA(DojoArray)) {
+            foreach ($value->getArray()->getItems() as $item) {
+              if ($item->isA(DojoString)) {
+                $output['#requires'][] = array($key, $item->getString());
+              }
+              elseif ($item->isA(DojoArray)) {
+                $item = $item->getArray();
+                if ($item->getItem(0)->isA(DojoString)) {
+                  $output['#requires'][] = array($key, $item->getItem(0)->getString());
+                }
               }
             }
           }
@@ -232,20 +234,21 @@ function dojo_get_contents($namespace, $file_name) {
       $object->setName($name);
       $object->setAnonymous(true);
       $object->addBlockCommentKeySet('example');
-      $values = $object->getValues();
-      foreach ($values as $key => $value) {
-        $object->addBlockCommentKey($key);
-        $full_name = "$name.$key";
-        if ($value->isA(DojoFunctionDeclare)) {
-          if (($key == 'initializer' || $key == 'constructor')) {
-            $init = $value->getFunction();
-            $init->setConstructor(true);
-            continue;
+      foreach ($object->getValues() as $key => $values) {
+        foreach ($values as $value) {
+          $object->addBlockCommentKey($key);
+          $full_name = "$name.$key";
+          if ($value->isA(DojoFunctionDeclare)) {
+            if (($key == 'initializer' || $key == 'constructor')) {
+              $init = $value->getFunction();
+              $init->setConstructor(true);
+              continue;
+            }
+            $function = $value->getFunction($value);
+            $function->setPrototype($name);
           }
-          $function = $value->getFunction($value);
-          $function->setPrototype($name);
+          $output[$full_name]['prototype'] = $name;
         }
-        $output[$full_name]['prototype'] = $name;
       }
       $object->rollOut($output, 'Function');
 
@@ -379,30 +382,32 @@ function dojo_get_contents($namespace, $file_name) {
         if ($parameter->isA(DojoObject)) {
           $properties = $parameter->getObject();
           $keys = $properties->getValues();
-          foreach ($keys as $key => $function) {
-            $full_variable_name = "$object.$key";
+          foreach ($keys as $key => $functions) {
+            foreach ($functions as $function) {
+              $full_variable_name = "$object.$key";
 
-            if ($is_prototype) {
-                $output[$full_variable_name]['prototype'] = $object;
-            }
-            if ($function->isA(DojoFunctionDeclare)) {
-              $function = $function->getFunction();
               if ($is_prototype) {
-                $function->setPrototype($object);
+                  $output[$full_variable_name]['prototype'] = $object;
               }
-              $function->setFunctionName($full_variable_name);
-              $function->rollOut($output);
-            }
-            elseif ($function->isA(DojoObject)) {
-              $output[$full_variable_name]['type'] = 'Object';
-              $obj = $function->getObject();
-              $obj->setName($full_variable_name);
-              $obj->rollOut($output);
-            }
-            else {
-              if ($call_name == 'dojo.lang.mixin' || $call_name == 'dojo.mixin') {
-                if (!isset($output[$full_variable_name])) {
-                  $output[$full_variable_name] = array();
+              if ($function->isA(DojoFunctionDeclare)) {
+                $function = $function->getFunction();
+                if ($is_prototype) {
+                  $function->setPrototype($object);
+                }
+                $function->setFunctionName($full_variable_name);
+                $function->rollOut($output);
+              }
+              elseif ($function->isA(DojoObject)) {
+                $output[$full_variable_name]['type'] = 'Object';
+                $obj = $function->getObject();
+                $obj->setName($full_variable_name);
+                $obj->rollOut($output);
+              }
+              else {
+                if ($call_name == 'dojo.lang.mixin' || $call_name == 'dojo.mixin') {
+                  if (!isset($output[$full_variable_name])) {
+                    $output[$full_variable_name] = array();
+                  }
                 }
               }
             }
