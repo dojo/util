@@ -260,7 +260,7 @@ function jsdoc_block($op='list', $delta=0) {
           }
           else {
             if ($_GET['jsdoc_project']) {
-              $version = jsdoc_version_node_load('HEAD', $_GET['jsdoc_project']);
+              $version = jsdoc_get_version('HEAD', $_GET['jsdoc_project']);
               $project = jsdoc_get_project($version);
             }
             else {
@@ -298,8 +298,10 @@ function jsdoc_block($op='list', $delta=0) {
                 }
               }
 
+              $jsdoc_url = $namespace->jsdoc_url;
               $namespace = _jsdoc_get_object_themed($namespace);
               $namespace->children = $children;
+              $namespace->jsdoc_url = $jsdoc_url;
               $namespace->url = url($namespace->title, $_GET['q'], 'jsdoc_project=' . $_GET['jsdoc_project'] . '&jsdoc_object=' . $namespace->title);
               $namespace->a = l($namespace->title, $_GET['q'], array(), 'jsdoc_project=' . $_GET['jsdoc_project'] . '&jsdoc_object=' . $namespace->title);
 
@@ -319,7 +321,7 @@ function jsdoc_block($op='list', $delta=0) {
       }
       //$namespaces = unserialize(cache_get('jsdoc_namespaces', 'cache')->data);
       $block['subject'] = 'Objects';
-      $block['content'] = theme('jsdoc_namespaces', $namespaces);
+      $block['content'] = theme('jsdoc_namespaces', $namespaces, $version->title);
       return $block;
     }
   }
@@ -1658,7 +1660,7 @@ function jsdoc_get_return_summary(&$node) {
 
   $object = jsdoc_get_variable_object($node);
   if ($object->type == 'jsdoc_variable') {
-    $summary = db_result(db_query("SELECT jo.return_summary FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (nr.vid = jo.vid) WHERE nr.title = '%s' AND BINARY nr.title = '%s' AND jo.summary != '' LIMIT 1", $object->title, $object->title));
+    $summary = db_result(db_query("SELECT jo.return_summary FROM {jsdoc_objects} jo JOIN {node_revisions} nr ON (nr.vid = jo.vid) WHERE nr.title = '%s' AND BINARY nr.title = '%s' AND jo.return_summary != '' LIMIT 1", $object->title, $object->title));
     $node->jsdoc_return_summary = $object->jsdoc_return_summary = $summary;
     return ($node->jsdoc_return_summary = $object->jsdoc_return_summary = $summary);
   }
@@ -3486,6 +3488,14 @@ function _jsdoc_get_title_themed($node) {
     }
   }
 
+  $themed->return = (object)array(
+    'types' => array(),
+    'summary' => jsdoc_get_return_summary($node)
+  );
+  foreach (jsdoc_get_return_types($node) as $type) {
+    $themed->return->types[] = _jsdoc_get_type_themed($type, $node, false);
+  }
+
   $parts = explode('.', $node->title);
   $title_text = "";
   $end = array_pop($parts);
@@ -5103,7 +5113,7 @@ function theme_jsdoc_search($name) {
   return '<div class="form-item"><input class="form-text" name="' . $name . '" /> <input class="form-submit" type="submit" name="op" value="Go" /></div>';
 }
 
-function theme_jsdoc_namespaces($namespaces) {
+function theme_jsdoc_namespaces($namespaces, $version) {
   $output = '<ul>';
   foreach ($namespaces as $namespace) {
     $output .= "<li>{$namespace->a}";
