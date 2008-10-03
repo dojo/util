@@ -3214,7 +3214,7 @@ function jsdoc_variable_node_view($node) {
   );
 
   $form['parameters'] = array(
-    '#value' => theme('jsdoc_function_parameters', $parameters),
+    '#value' => theme('jsdoc_function_parameters', $parameters, _jsdoc_get_object_themed($node, $node->title)),
     '#weight' => 20
   );
 
@@ -3410,7 +3410,7 @@ function jsdoc_object_node_view($node, $initialized = null, $allow_private = fal
 
     if (count($parameters)) {
       $form['parameters'] = array(
-        '#value' => theme('jsdoc_function_parameters', $parameters),
+        '#value' => theme('jsdoc_function_parameters', $parameters, _jsdoc_get_object_themed($node, $node->title)),
         '#weight' => 20
       );
     }
@@ -3572,10 +3572,20 @@ function _jsdoc_get_object_themed($node, $title=null, $depth=0) {
       if (!empty($parameters)) {
         $object->parameters = $parameters;
       }
+
+      $object->return = (object)array(
+        'types' => array(),
+        'summary' => jsdoc_get_return_summary($node)
+      );
+      foreach (jsdoc_get_return_types($node) as $type) {
+        $object->return->types[] = _jsdoc_get_type_themed($type, $node, false);
+      }
+
       $signature = _jsdoc_build_function_signature($node, $parameters);
       if (!empty($signature)) {
         $object->signature = $signature;
       }
+
       $source = jsdoc_get_source($node, true, $depth);
       if (!empty($source)) {
         $object->source = $source;
@@ -5017,7 +5027,7 @@ function theme_jsdoc_function_information($function, $fields, $obj) {
   return $output;
 }
 
-function theme_jsdoc_function_parameters($parameters) {
+function theme_jsdoc_function_parameters($parameters, $node) {
   $output = '<div class="jsdoc_function_parameters">';
   $output .= '<fieldset>';
   $output .= '<legend>' . 'Parameters' . '</legend>';
