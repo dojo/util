@@ -343,7 +343,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 			}
 		
 			dojo._name = hostenvType;
-			if(hostenvType == "browser"){
+			if(hostenvType == "browser" || isBrowser){
 				//Make sure we setup the env so that dojo
 				//thinks we are running in a browser.
 				dojo.isBrowser = true;
