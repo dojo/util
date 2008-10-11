@@ -706,6 +706,24 @@ buildUtil.createLayerContents = function(
 			+ "\r\n";
 	}
 
+	//Find out if the layer has any dojo.require calls we should not strip out,
+	//via the layer.keepRequires array. If there is one, convert to an object
+	//for each key lookup.
+	var keepRequires = null;
+	var layers = kwArgs.profileProperties.dependencies.layers;
+	for(i = 0; i < layers.length; i++){
+		if(layerName == layers[i].name){
+			var keepArray = layers[i].keepRequires;
+			if(keepArray){
+				keepRequires = {};
+				for(var j = 0; j < keepArray.length; j++){
+					keepRequires[keepArray[j]] = true;
+				}
+			}
+			break;
+		}
+	}
+
 	//Construct a string of all the dojo.provide statements.
 	//This string will be used to construct the regexp that will be
 	//used to remove matching dojo.require statements.
@@ -714,12 +732,16 @@ buildUtil.createLayerContents = function(
 	provideList = provideList.sort(); 
 	var depRegExpString = "";
 	for(i = 0; i < provideList.length; i++){
-		if(i != 0){
+		//Skip keepRequire matches.
+		if(keepRequires && keepRequires[provideList[i]]){
+			continue;
+		}
+		if(depRegExpString){
 			depRegExpString += "|";
 		}
 		depRegExpString += '([\'"]' + provideList[i] + '[\'"])';
 	}
-		
+
 	//If we have a string for a regexp, do the dojo.require() and requireIf() removal now.
 	if(depRegExpString){
 		//Make to escape regexp-sensitive characters
