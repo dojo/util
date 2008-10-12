@@ -350,7 +350,7 @@
                      </xsl:for-each>
                  </xsl:when>
                  <xsl:otherwise>
-                     <xsl:if test="name()!='default'"> 
+                     <xsl:if test="name()!='default'">
                          <xsl:for-each select=".//pattern[not(@draft)] | 
                           .//pattern[@draft!='provisional' and @draft!='unconfirmed']">
                              <xsl:call-template name="insert_comma"/>
@@ -436,13 +436,16 @@
             </xsl:for-each>
          </xsl:if>
         <!-- availableFormats -->
-        <xsl:if test="name()='availableFormats'">
-         <xsl:if test="count(*[not(@draft)])>0 or 
-                count(*[@draft!='provisional' and @draft!='unconfirmed'])>0">
-             <xsl:call-template name="insert_comma"/>
-	'dateTimeAvailableFormats':<xsl:call-template name="subSelect"><xsl:with-param name="name" select="dateFormatItem"></xsl:with-param></xsl:call-template>
-        </xsl:if>
-        </xsl:if>
+            <xsl:if test="name()='availableFormats'">
+                <xsl:for-each select=".//dateFormatItem[not(@draft)] | 
+                    .//dateFormatItem[@draft!='provisional' and @draft!='unconfirmed']">
+                    <xsl:call-template name="insert_comma"/>
+	'dateFormatItem-<xsl:value-of select="@id"></xsl:value-of>
+                <xsl:text>':"</xsl:text>
+                <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"></xsl:value-of>
+                <xsl:text>"</xsl:text>
+                </xsl:for-each>
+            </xsl:if>
         <!-- appendItems -->
             <xsl:if test="name()='appendItems'">
                 <xsl:for-each select=".//appendItem[not(@draft)] | 
