@@ -4,14 +4,14 @@
 <xsl:output method="text" indent="yes" saxon:byte-order-mark="yes"/>
 <!-- list the data elements whose spaces should be preserved
    it seems listing only the parent node doesn't work -->
-<xsl:preserve-space elements="month day quarter am pm era pattern dateFormatItem appendItem displayName"/>
+<xsl:preserve-space elements="month day quarter am pm era pattern dateFormatItem appendItem displayName localizedPatternChars"/>
 <xsl:strip-space elements="*"/> 
 <xsl:variable name="index" select="number(1)" saxon:assignable="yes"/>
 
 <xsl:template match="/">
      <xsl:apply-templates/>
 </xsl:template>
-  
+
 <!-- process ldml,dates,calendars-->
 <xsl:template name="top" match="/ldml">
     <xsl:choose>
@@ -22,7 +22,7 @@
                     <xsl:with-param name="templateToCall">top</xsl:with-param>
                     <xsl:with-param name="source" select="@source"></xsl:with-param>
                     <xsl:with-param name="xpath" select="@path"></xsl:with-param>
-                </xsl:call-template>     
+                </xsl:call-template>  
                 </xsl:for-each>
         </xsl:when>
         <xsl:otherwise>
@@ -60,6 +60,11 @@
 <xsl:template name="calendar" match="calendar">
     <!-- will be overridden with 'true' if from 'locale' alias, see 'invoke_template_by_name' -->   
     <xsl:param name="fromLocaleAlias" select="false()"/>
+
+    <xsl:if test="count(/ldml/dates/localizedPatternChars)>0">
+    	"patternChars":"<xsl:value-of select="/ldml/dates/localizedPatternChars"/>",
+	</xsl:if>
+
     <!-- insert 'locale' alias information  start -->
     <xsl:if test="$fromLocaleAlias">
         <xsl:call-template name="insert_alias_info">
@@ -84,9 +89,9 @@
         </xsl:otherwise>
     </xsl:choose>
 </xsl:template>
-    
+
 <!-- process months -->
-    <xsl:template name="months_days_quarters" match="months | days | quarters">
+<xsl:template name="months_days_quarters" match="months | days | quarters">
     <xsl:param name="name" select="name()"/>
     <xsl:param name="width" select="@type"/>
     <xsl:param name="ctx" select="../@type"/>
@@ -199,7 +204,6 @@
         <xsl:value-of select="$bundle"/><xsl:text>"}</xsl:text>
     </xsl:template>
     
-    
 <!--process am & pm -->
 <xsl:template name="apm" match="am|pm">
     <!-- will be overridden with 'true' if from 'locale' alias, see 'invoke_template_by_name' -->   
@@ -222,7 +226,7 @@
                 </xsl:call-template>
             </xsl:for-each>            
         </xsl:when>
-        <xsl:otherwise>            
+        <xsl:otherwise>
         <xsl:if test="not(@alt) and not(@draft) or @draft!='provisional' and @draft!='unconfirmed'">
             <xsl:call-template name="insert_comma"/>
 	'<xsl:value-of select="name()"/>
@@ -231,8 +235,8 @@
         </xsl:if>
         </xsl:otherwise>
     </xsl:choose>
-</xsl:template>    
-    
+</xsl:template>
+
 <!-- process eras -->
 <xsl:template match="eras" name="eras">
 	<xsl:param name="name" select="name()"></xsl:param>
@@ -635,7 +639,7 @@
 </xsl:template>
     
   <!-- too bad that can only use standard xsl:call-template(name can not be variable) 
-         error occurs if use <saxson:call-templates($templateToCall)  /> -->
+         error occurs if use <saxon:call-templates($templateToCall)  /> -->
  <xsl:template name="invoke_template_by_name">
      <xsl:param name="templateName"></xsl:param>
      <xsl:param name="name"></xsl:param> 
@@ -688,4 +692,5 @@
          </xsl:call-template>
      </xsl:if>     
  </xsl:template>
+    
 </xsl:stylesheet>
