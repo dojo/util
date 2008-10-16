@@ -69,7 +69,14 @@ dependencies = {
 			dependencies: [
 				"demos.castle.src"
 			]
-		}
+		},
+                {
+                        // The offline demos
+                        name: "../demos/offline/src.js",
+                        dependencies: [
+                                "demos.offline.src"
+                        ]
+                }
 	],
 
 	prefixes: [
