@@ -193,6 +193,15 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 		}
 	}
 
+	//Make sure releaseDir ends in a file separator.
+	if(!kwArgs.releaseDir.match(/[\/\\]$/)){
+		if(kwArgs.releaseDir.indexOf("\\") != -1){
+			kwArgs.releaseDir += "\\";
+		}else{
+			kwArgs.releaseDir += "/";
+		}
+	}
+
 	//Set up some compound values
 	kwArgs.releaseDir += kwArgs["releaseName"];
 	kwArgs.action = kwArgs.action.split(",");
