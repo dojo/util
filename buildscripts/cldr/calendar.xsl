@@ -223,7 +223,7 @@
             </xsl:for-each>            
         </xsl:when>
         <xsl:otherwise>            
-        <xsl:if test="not(@draft) or @draft!='provisional' and @draft!='unconfirmed'">
+        <xsl:if test="not(@alt) and not(@draft) or @draft!='provisional' and @draft!='unconfirmed'">
             <xsl:call-template name="insert_comma"/>
 	'<xsl:value-of select="name()"/>
             <xsl:text>':"</xsl:text>
