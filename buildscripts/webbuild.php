@@ -15,8 +15,8 @@
 	}else{
 		header("Content-Type: application/x-javascript");
 		header("Content-disposition: attachment; filename=dojo.js");
-		
-		$dojoContents = `/usr/bin/java -jar $buildScriptsDir/../shrinksafe/custom_rhino.jar $buildScriptsDir/makeDojoJsWeb.js $buildCacheDir/dojobuilds $depList $provideList $version $xdDojoUrl`;
+
+		$dojoContents = `/usr/bin/-classpath ../shrinksafe/js.jar:../shrinksafe/shrinksafe.jar org.mozilla.javascript.tools.shell.Main $buildScriptsDir/makeDojoJsWeb.js $buildCacheDir/dojobuilds $depList $provideList $version $xdDojoUrl`;
 
 		print($dojoContents);
 	}

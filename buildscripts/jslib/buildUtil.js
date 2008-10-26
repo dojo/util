@@ -48,8 +48,8 @@ buildUtil.DojoBuildOptions = {
 		defaultValue: "",
 		helpText: "Specifies how to optimize module files. If \"comments\" is specified, "
 			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
-			+ "the Dojo compressor will be used on the files, and line returns will be removed. "
-			+ "If \"shrinksafe.keepLines\" is specified, then the Dojo compressor will be used "
+			+ "Dojo Shrinksafe will be used on the files, and line returns will be removed. "
+			+ "If \"shrinksafe.keepLines\" is specified, then Dojo Shrinksafe will be used "
 			+ "on the files, and line returns will be preserved. If \"packer\" is specified, "
 			+ "Then Dean Edwards' Packer will be used."
 	},
@@ -57,8 +57,8 @@ buildUtil.DojoBuildOptions = {
 		defaultValue: "shrinksafe",
 		helpText: "Specifies how to optimize the layer files. If \"comments\" is specified, "
 			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
-			+ "the Dojo compressor will be used on the files, and line returns will be removed. "
-			+ "If \"shrinksafe.keepLines\" is specified, then the Dojo compressor will be used "
+			+ "Dojo Shrinksafe will be used on the files, and line returns will be removed. "
+			+ "If \"shrinksafe.keepLines\" is specified, then Dojo Shrinksafe will be used "
 			+ "on the layer files, and line returns will be preserved. If \"packer\" is specified, "
 			+ "Then Dean Edwards' Packer will be used."
 	},
@@ -1117,15 +1117,15 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 		// Use the interpreter for interactive input (copied this from Main rhino class).
 		context.setOptimizationLevel(-1);
 
-		var script = context.compileString(fileContents, fileName, 1, null);
 		if(optimizeType.indexOf("shrinksafe") == 0){
 			//Apply compression using custom compression call in Dojo-modified rhino.
-			fileContents = new String(context.compressScript(script, 0, fileContents, 1));
+			fileContents = new String(Packages.org.dojotoolkit.shrinksafe.Compressor.compressScript(fileContents, 0, 1));
 			if(optimizeType.indexOf(".keepLines") == -1){
 				fileContents = fileContents.replace(/[\r\n]/g, "");
 			}
 		}else if(optimizeType == "comments" || optimizeType == "packer"){
 			//Strip comments
+			var script = context.compileString(fileContents, fileName, 1, null);
 			fileContents = new String(context.decompileScript(script, 0));
 			
 			if(optimizeType == "packer"){

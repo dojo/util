@@ -1,3 +1,3 @@
 #!/bin/sh
 
-java -jar ../shrinksafe/custom_rhino.jar build.js "$@"
+java -classpath ../shrinksafe/js.jar:../shrinksafe/shrinksafe.jar org.mozilla.javascript.tools.shell.Main build.js "$@"

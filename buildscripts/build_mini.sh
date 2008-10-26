@@ -37,7 +37,7 @@ mv build_notice.txt _build_notice.txt
 touch build_notice.txt
 
 # run the build, passing all params (our assumed params first)
-java -jar ../shrinksafe/custom_rhino.jar build.js optimize=shrinksafe cssImportIgnore=../dijit.css cssOptimize=comments.keepLines "$@"
+java -classpath ../shrinksafe/js.jar:../shrinksafe/shrinksafe.jar org.mozilla.javascript.tools.shell.Main build.js optimize=shrinksafe cssImportIgnore=../dijit.css cssOptimize=comments.keepLines "$@"
 
 # did the release work?
 if [ -d ../../release ]; then
