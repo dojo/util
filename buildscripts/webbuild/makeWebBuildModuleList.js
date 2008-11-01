@@ -6,11 +6,12 @@
 function buildTreeData(/*Object*/obj, /*String*/nodeName){
 	//summary: makes a TreeV3-friendly data structure.
 	
+	var result = null;
 	var childNames = [];
 	if(obj["dojoModuleName"]){
-		var result = { title: nodeName, dojoModuleName: obj["dojoModuleName"]};
+		result = { title: nodeName, dojoModuleName: obj["dojoModuleName"]};
 	}else{
-		var result = {};
+		result = {};
 	}
 	
 	//Working with a branch.
@@ -22,7 +23,7 @@ function buildTreeData(/*Object*/obj, /*String*/nodeName){
 	childNames = childNames.sort();
 	if(childNames.length > 0){
 		result.children = [];
-		var result = { title: nodeName, children: []};
+		result = { title: nodeName, children: []};
 		for(var i = 0; i < childNames.length; i++){
 			result.children.push(buildTreeData(obj[childNames[i]], childNames[i]));
 		}
@@ -38,13 +39,12 @@ var outputFileName = arguments[1];
 
 //Load Dojo so we can reuse code.
 djConfig={
-	baseRelativePath: "../../"
+	baseUrl: "../../../dojo/"
 };
-load('../../dojo.js');
-dojo.require("dojo.json");
+load('../../../dojo/dojo.js');
 
-load("../fileUtil.js");
-load("../buildUtil.js");
+load("../jslib/logger.js");
+load("../jslib/fileUtil.js");
 
 //Get a list of files that might be modules.
 var fileList = fileUtil.getFilteredFileList(srcRoot, /\.js$/, true);
@@ -60,15 +60,23 @@ for(var i = 0; i < fileList.length; i++){
 	var fileContents = new fileUtil.readFile(fileName);
 
 	var matches = fileContents.match(provideRegExp);
+	
 	if(matches){
 		for(var j = 0; j < matches.length; j++){
-			//strip off the .js file extension, and convert __package__ names to *
-			var modFileName = fileName.substring(0, fileName.length - 3).replace(/__package__/g, "*");
+			//strip off the .js file extension
+			var modFileName = fileName.substring(0, fileName.length - 3);
 			var provideName = matches[j].substring(matches[j].indexOf('"') + 1, matches[j].lastIndexOf('"'));
-			//Strip off leading dojo. This means this only works for Dojo code.
-			var modProvideName = provideName.replace(/^dojo\./, "");
 
-			if (modFileName.lastIndexOf(modProvideName.replace(/\./g, "/")) == modFileName.length - modProvideName.length){
+			//Skip certain kinds of modules not needed in end use.
+			if(provideName.indexOf("tests.") != -1
+				|| provideName.indexOf("._") != -1
+				|| provideName.indexOf(".robot") != -1){
+				continue;
+			}
+
+			//Only allow the provides that match the file name.
+			//So, the different dijit permutations of dijit.form.Button will not show up.
+			if (modFileName.lastIndexOf(provideName.replace(/\./g, "/")) == modFileName.length - provideName.length){
 				provideList.push(provideName);
 				break;
 			}
@@ -79,11 +87,13 @@ for(var i = 0; i < fileList.length; i++){
 
 provideList = provideList.sort();
 
+logger.trace(provideList);
+
 //Create the object that represents the module structures.
-var moduleHolder = {};
+/*var moduleHolder = {};
 
 for(var i = 0; i < provideList.length; i++){
-	var moduleObject = dojo.parseObjPath(provideList[i], moduleHolder, true);
+	var moduleObject = dojo.getObject(provideList[i], moduleHolder, true);
 	moduleObject.obj[moduleObject.prop] = {dojoModuleName: provideList[i] };
 }
 
@@ -91,5 +101,7 @@ for(var i = 0; i < provideList.length; i++){
 var treeData = buildTreeData(moduleHolder, "Dojo Modules");
 
 //Output the results.
-fileUtil.saveFile(outputFileName, "var treeData = " + dojo.json.serialize(treeData) + ";");
+fileUtil.saveFile(outputFileName, "var treeData = " + dojo.toJson(treeData) + ";");
+*/
+fileUtil.saveFile(outputFileName, "var provideList = [" + provideList + "];");
 
