@@ -1,9 +1,5 @@
 package org.dtk;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextAction;
 import org.mozilla.javascript.Function;
@@ -12,23 +8,24 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 public class BuilderContextAction implements ContextAction {
-    private ServletContext servletContext;
-    private HttpServletRequest request;
-    private HttpServletResponse response;
+    private String builderPath;
+    private String version;
+    private String cdn;
+    private String dependencies;
+    private String optimize;
+
     private Exception exception;
     private Scriptable topScope;
     private Context context;
-    private String builderPath;
     private String result;
 
-    public BuilderContextAction(ServletContext servletContext,
-            HttpServletRequest request,
-            HttpServletResponse response,
-            String builderPath) {
-        this.servletContext = servletContext;
-        this.request = request;
-        this.response = response;
+    public BuilderContextAction(String builderPath, String version, String cdn, String dependencies, String optimize) {
         this.builderPath = builderPath;
+        this.version = version;
+        this.cdn = cdn;
+        this.dependencies = dependencies;
+        this.optimize = optimize;
+
         this.exception = null;
         this.context = null;
         this.topScope = null;
@@ -58,10 +55,10 @@ public class BuilderContextAction implements ContextAction {
             Scriptable build = Context.toObject(topScope.get("build", topScope), topScope);
             Object args[] = {
                     builderPath,
-                    request.getParameter("version"),
-                    request.getParameter("cdnType"),
-                    request.getParameter("dependencies"),
-                    request.getParameter("optimizeType")
+                    version,
+                    cdn,
+                    dependencies,
+                    optimize
             };
             Function make = (Function) build.get("make", topScope);
             Object resultObj = make.call(context, topScope, build, args);

@@ -1,10 +1,15 @@
 package org.dtk;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.util.zip.GZIPOutputStream;
 
 public class FileUtil {
 
@@ -46,5 +51,36 @@ public class FileUtil {
         } finally {
             input.close();
         }
+    }
+
+    public static void writeToFile(String path, String contents, String encoding, boolean useGzip) throws IOException {
+        // summary: writes a file
+        if (encoding == null) {
+            encoding = "utf-8";
+        }
+        File file = new File(path);
+        
+        //Make sure destination dir exists.
+        File parentDir = file.getParentFile();
+        if(!parentDir.exists()){
+            if(!parentDir.mkdirs()){
+                throw new IOException("Could not create directory: " + parentDir.getAbsolutePath());
+            }
+        }
+
+        OutputStream outStream = new FileOutputStream(file);
+        if (useGzip) {
+            outStream = new GZIPOutputStream(outStream);
+        } else {
+            
+        }
+ 
+        BufferedWriter output = new java.io.BufferedWriter(new OutputStreamWriter(outStream, encoding));
+        try {
+            output.append(contents);
+        } finally {
+            output.close();
+        }            
+
     }
 }
