@@ -44,6 +44,12 @@ public class BuilderServlet extends HttpServlet {
     }
 
     // *****************************************************
+    public void doPost(HttpServletRequest req, HttpServletResponse res)
+            throws ServletException, IOException {
+        doGet(req, res);
+    }
+
+    // *****************************************************
     public void doGet(HttpServletRequest req, HttpServletResponse res)
             throws ServletException, IOException {
 
