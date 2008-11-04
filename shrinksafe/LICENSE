@@ -3,5 +3,4 @@ initially developed by Netscape Communications Corporation and is
 provided by the Dojo Foundation "as is" under the MPL 1.1 license,
 available at http://www.mozilla.org/MPL
 
-All other files are provided under the Dojo license (see LICENSE in
-the util/ directory)
+shrinksafe.jar is based on work in Rhino and is also provided under the MPL 1.1 license.
