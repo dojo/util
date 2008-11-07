@@ -31,8 +31,6 @@ rm_dojo_files ()
 echo "release: mini started"
 
 # FIXME: refs #6616 - could be able to set a global copyright file and null out build_release.txt
-mv copyright.txt _copyright.txt
-cp copyright_mini.txt copyright.txt
 mv build_notice.txt _build_notice.txt
 touch build_notice.txt
 
@@ -99,7 +97,6 @@ if [ -d ../../release ]; then
 fi
 
 # cleanup from above, refs #6616
-mv _copyright.txt copyright.txt
 mv _build_notice.txt build_notice.txt
 
 echo "release: mini done!"
