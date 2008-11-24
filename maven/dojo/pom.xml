@@ -27,7 +27,7 @@
           <workingDirectory>../../buildscripts</workingDirectory>
 	  <arguments>
 	    <argument>-jar</argument>
-	    <argument>../shrinksafe/custom_rhino.jar</argument>
+	    <argument>../shrinksafe/js.jar</argument>
             <argument>build.js</argument>
             <argument>profile=${dojo.build.profile}</argument>
             <argument>action=${dojo.build.action}</argument>
