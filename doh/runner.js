@@ -41,7 +41,7 @@ doh._mixin = function(/*Object*/ obj, /*Object*/ props){
 		// inherited from Object.prototype.  For example, if obj has a custom
 		// toString() method, don't overwrite it with the toString() method
 		// that props inherited from Object.protoype
-		if((typeof tobj[x] == "undefined") || (tobj[x] != props[x])){
+		if(tobj[x] === undefined || tobj[x] != props[x]){
 			obj[x] = props[x];
 		}
 	}
@@ -660,6 +660,14 @@ doh._arrayEq = function(expected, actual){
 }
 
 doh._objPropEq = function(expected, actual){
+	// Degenerate case: if they are both null, then their "properties" are equal.
+	if(expected === null && actual === null){
+		return true;
+	}
+	// If only one is null, they aren't equal.
+	if(expected === null || actual == null){
+		return false;
+	}
 	if(expected instanceof Date){
 		return actual instanceof Date && expected.getTime()==actual.getTime();
 	}
