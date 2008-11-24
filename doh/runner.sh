@@ -1,3 +1,3 @@
 #!/bin/sh
 
-java -jar ../shrinksafe/custom_rhino.jar runner.js "$@"
+java -jar ../shrinksafe/js.jar runner.js "$@"
