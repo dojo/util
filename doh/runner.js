@@ -777,7 +777,7 @@ doh._runFixture = function(groupName, fixture){
 					if(fixture["tearDown"]){ fixture.tearDown(doh); }
 					tg.inFlight--;
 					if((!tg.inFlight)&&(tg.iterated)){
-						doh._groupFinished(groupName, (!tg.failures));
+						doh._groupFinished(groupName, !tg.failures);
 					}
 					doh._testFinished(groupName, fixture, ret.results[0]);
 					if(doh._paused){
