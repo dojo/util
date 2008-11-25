@@ -665,7 +665,7 @@ doh._objPropEq = function(expected, actual){
 		return true;
 	}
 	// If only one is null, they aren't equal.
-	if(expected === null || actual == null){
+	if(expected === null || actual === null){
 		return false;
 	}
 	if(expected instanceof Date){
