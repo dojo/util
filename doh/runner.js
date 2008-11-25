@@ -817,7 +817,7 @@ doh._runFixture = function(groupName, fixture){
 		this._testFinished(groupName, fixture, (!threw));
 
 		if((!tg.inFlight)&&(tg.iterated)){
-			doh._groupFinished(groupName, (!tg.failures));
+			doh._groupFinished(groupName, !tg.failures);
 		}else if(tg.inFlight > 0){
 			setTimeout(this.hitch(this, function(){
 				doh.runGroup(groupName); // , idx);
