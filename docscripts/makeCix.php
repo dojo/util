@@ -12,6 +12,9 @@
 //  /usr/local/php5/bin/php -q makeCix.php > ../resources/dojo.cix
 //
 
+// $Rev: $ 
+$current_version = "1.3.0";
+
 header("Content-type: text/xml");
 
 ini_set("memory_limit","512M");
@@ -34,7 +37,7 @@ $out = @expando_dojo($out);
 $doc = new DOMDocument('1.0');
 // setup for codeintel:
 $codeintel = $doc->createElement('codeintel');
-$codeintel->setAttribute("description","Dojo Toolkit API - version 1.1.1");
+$codeintel->setAttribute("description","Dojo Toolkit API - version " . $current_version);
 $codeintel->setAttribute("version","2.0");
 $codeintel->setAttribute("encoding","UTF-8");
 // wrap all the api in one "file" tag:
