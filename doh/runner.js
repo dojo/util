@@ -814,7 +814,7 @@ doh._runFixture = function(groupName, fixture){
 		if(threw){
 			this._handleFailure(groupName, fixture, err);
 		}
-		this._testFinished(groupName, fixture, (!threw));
+		this._testFinished(groupName, fixture, !threw);
 
 		if((!tg.inFlight)&&(tg.iterated)){
 			doh._groupFinished(groupName, !tg.failures);
