@@ -852,7 +852,7 @@ doh.runGroup = function(/*String*/ groupName, /*Integer*/ idx){
 		if(idx<=tg.length){
 			if((!tg.inFlight)&&(tg.iterated == true)){
 				if(tg["tearDown"]){ tg.tearDown(this); }
-				doh._groupFinished(groupName, (!tg.failures));
+				doh._groupFinished(groupName, !tg.failures);
 				return;
 			}
 		}
