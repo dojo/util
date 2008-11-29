@@ -1016,7 +1016,7 @@ tests = doh;
 	}catch(e){
 		print("\n"+doh._line);
 		print("The Dojo Unit Test Harness, $Rev$");
-		print("Copyright (c) 2007, The Dojo Foundation, All Rights Reserved");
+		print("Copyright (c) 2008, The Dojo Foundation, All Rights Reserved");
 		print(doh._line, "\n");
 
 		load("_rhinoRunner.js");
