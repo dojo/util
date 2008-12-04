@@ -16,6 +16,7 @@ class DojoFunctionBody extends DojoBlock
   private $comments = array();
   private $return_comments = array();
   private $instance_variables = array();
+  private $resolved_parameters = array();
   private $externalized = array();
   private $externalized_objects = array();
   private $externalized_avariables = array();
@@ -243,6 +244,10 @@ class DojoFunctionBody extends DojoBlock
     return array_keys($this->comments);
   }
 
+  public function addResolvedParameter($parameter, $value) {
+    $this->resolved_parameters[$parameter] = $value;
+  }
+
   public function getLocalVariableNames() {
     $internals = array();
 
@@ -270,6 +275,10 @@ class DojoFunctionBody extends DojoBlock
       if (preg_match('%(this\.[a-zA-Z_.$][\w.$]*)\s*=\s*([a-zA-Z_.$][\w.$]*)%', $line, $match)) {
         $internals[$match[2]] = $match[1];
       }
+    }
+
+    foreach ($this->resolved_parameters as $parameter => $value) {
+      $internals[$parameter] = $value;
     }
 
     return $internals;

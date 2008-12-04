@@ -22,6 +22,24 @@ class DojoExecutedFunction extends DojoFunctionDeclare
     $this->start = array($this->start[0], strpos($line, 'function'));
 
     $this->end = parent::build(); // Basically, the end array here will hold the position of the final } in the function declaration.
+
+    $parameters = $this->getParameters();
+    if (count($parameters) && ($pos = strpos($lines[$this->end[0]], '(')) !== false) {
+      $arguments = new DojoParameters($this->package);
+      $arguments->start = array($this->end[0], $pos);
+      $arguments->build();
+      $arguments = $arguments->getParameters();
+      foreach ($parameters as $pos => $parameter) {
+        if ($arguments[$pos]) {
+          $argument = $arguments[$pos];
+          if ($argument->isA(DojoVariable) && $parameter->isA(DojoVariable)) {
+            if (preg_match('%(^|\|\|)([a-zA-Z0-9_.$]+)(\|\||$)%', $argument->getVariable(), $match)) {
+              $this->body->addResolvedParameter($parameter->getVariable(), $match[2]);
+            }
+          }
+        }
+      }
+    }
     $lines = Text::chop($this->package->getCode(), $this->end[0], $this->end[1], false, false, true);
     $closed = false;
     foreach($lines as $line_number => $line){

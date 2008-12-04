@@ -10,7 +10,7 @@ class DojoFunctionDeclare extends DojoBlock
   private $parameters;
   protected $parameter_values;
   private $function_name;
-  private $body;
+  protected $body;
 
   private $in_executed_function = null;
   private $anonymous = false;

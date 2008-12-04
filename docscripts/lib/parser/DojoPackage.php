@@ -69,7 +69,7 @@ class DojoPackage
         continue;
       }
 
-      if (preg_match('%(?:([a-zA-Z_.$][\w.$]*)\s*=\s*)?(?:new\s*)?\(\s*function\s*\(\s*\)\s*{%', $line, $match)) {
+      if (preg_match('%(?:([a-zA-Z_.$][\w.$]*)\s*=\s*)?(?:new\s*)?\(\s*function\s*\([^)]*\)\s*{%', $line, $match)) {
         $execution = new DojoExecutedFunction($this);
         $execution->setAnonymous(true);
         if ($match[1]) {
@@ -79,6 +79,7 @@ class DojoPackage
         $end = $execution->build();
         if ($end) {
           $last_line = $end[0];
+          $callee = $lines[$end[0]];
           $this->executions[] = $execution;
         }
       }
