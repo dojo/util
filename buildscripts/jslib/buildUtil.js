@@ -173,9 +173,10 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 			kwArgs.profileProperties = profileProperties;
 			dependencies = kwArgs.profileProperties.dependencies;
 			
-			//Allow setting build options from on the profile's dependencies object
+			//Allow setting build options from on the profile's dependencies object.
+			//Do not override existing values from the command line though.
 			for(param in dependencies){
-				if(param != "layers" && param != "prefixes"){
+				if(!(param in kwArgs) && param != "layers" && param != "prefixes"){
 					kwArgs[param] = dependencies[param];
 				}
 			}
