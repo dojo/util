@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.dojotoolkit</groupId>
   <artifactId>dojo-project</artifactId>
-  <version>1.2-SNAPSHOT</version>
+  <version>1.2.3</version>
   <packaging>pom</packaging>
   <name>Dojo Toolkit</name>
   <url>http://dojotoolkit.org</url>
@@ -31,14 +31,6 @@
     </mailingList>
   </mailingLists>
   <developers>
-    <developer>
-      <id>gregw</id>
-      <name>Greg Wilkins</name>
-      <email>gregw@apache.org</email>
-      <url>http://www.mortbay.com/mortbay/people/gregw</url>
-      <organization>Mort Bay Consulting</organization>
-      <organizationUrl>http://www.mortbay.com</organizationUrl>
-    </developer>
     <!-- obviously lots more to come here -->
   </developers>
   <licenses>
