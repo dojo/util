@@ -12,7 +12,7 @@
  *  
  *   E.g.(Just for example, the contents are not applicable)
  *   parent locale - "en":
- *    // generated from ldml/main/*.xml, xpath: ldml/calendars/calendar-ethiopic
+ *    // generated from ldml/main/ *.xml, xpath: ldml/calendars/calendar-ethiopic
  *    ({
  *    	'months-format-abbr':["1","2","3","4","5","6","7","8","9","10","11","12"],
  *    	'dateFormat-long': "yyyy MMMM d",
@@ -20,7 +20,7 @@
  *    })
  *
  *   child locale - "en-us":
- *    // generated from ldml/main/*.xml, xpath: ldml/calendars/calendar-ethiopic
+ *    // generated from ldml/main/ *.xml, xpath: ldml/calendars/calendar-ethiopic
  *    ({
  *    	'months-format-abbr':[undefined,undefined,"March",undefined,undefined,"June"],
  *    	'dateFormat-long': "yyyy-MMMM-d"
@@ -28,7 +28,7 @@
  *
  *   After process, the result will be:
  *    child locale - "en-us":
- *    // generated from ldml/main/*.xml, xpath: ldml/calendars/calendar-ethiopic
+ *    // generated from ldml/main/ *.xml, xpath: ldml/calendars/calendar-ethiopic
  *    ({
  *    	'months-format-abbr':["1","2","March","4","5","June","7","8","9","10","11","12"],
  *    	'dateFormat-long': "yyyy-MMMM-d"
@@ -78,9 +78,11 @@ for(var i= 0; i < fileList.length; i++){
 		}else{
 			path[localeIndex] = variant;
 		}
+		var contents;
 		try{
-			var contents = new String(readText(path.join("/"), "utf-8"));
+			contents = new String(readFile(path.join("/"), "utf-8"));
 		}catch(e){
+			print(e); //TODO: should we be catching this?
 			return false;
 		}
 		var variantData = dojo.fromJson(contents);

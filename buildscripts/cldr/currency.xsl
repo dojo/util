@@ -93,7 +93,7 @@
                 <xsl:text>_</xsl:text>
                 <xsl:value-of select="name()"></xsl:value-of>
                 <xsl:text>:"</xsl:text>
-                <xsl:call-template name="normalize_unicode"/>
+                <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"></xsl:value-of>
                 <xsl:text>"</xsl:text>
             </xsl:for-each>
          </xsl:otherwise>
@@ -114,15 +114,5 @@
         <xsl:if test="$templateName='currency'">
             <xsl:call-template name="currency"></xsl:call-template>
         </xsl:if>
-    </xsl:template>
-
-	<!-- This template is used to normalize special characters in unicode format
-	     e.g. character 'U+200F' should be formatted to '\u200F' 
-		 more items may be added later, so use a separate template here -->
-	<xsl:variable name="str" select="Undefined" saxon:assignable="yes"/>
-    <xsl:template name="normalize_unicode">
-		<saxon:assign name="str" select="replace(.,'&quot;', '\\&quot;')"/>
-		<saxon:assign name="str" select="replace($str, '&#x200F;', '\\u200F')"/>
-		<xsl:value-of select="$str"></xsl:value-of>
     </xsl:template>
 </xsl:stylesheet>
