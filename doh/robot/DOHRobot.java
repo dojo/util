@@ -7,6 +7,7 @@ import netscape.javascript.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.net.URL;
+import java.awt.datatransfer.*;
 
 public final class DOHRobot extends Applet{
 	// order of execution:
@@ -80,6 +81,7 @@ public final class DOHRobot extends Applet{
 	// java.awt.Applet methods
 	public void stop(){
 		window = null;
+		dohrobot = null;
 		// only secure code run once
 		if(key != -2){
 			// prevent further execution of secure functions
@@ -1392,5 +1394,76 @@ public final class DOHRobot extends Applet{
 			checkPermission(perm);
 		}
 	}
-
+	
+	public void setClipboardText(double sec, final String data) {
+		if(!isSecure(sec))
+			return;
+		// called by doh.robot.setClipboard
+		// see it for details
+		AccessController.doPrivileged(new PrivilegedAction(){
+			public Object run(){
+				StringSelection ss = new StringSelection(data);
+				getSystemClipboard().setContents(ss, ss);
+				return null;
+			}
+		});
+	}
+	
+	public void setClipboardHtml(double sec, final String data) {
+		if(!isSecure(sec))
+			return;
+		// called by doh.robot.setClipboard when format=='text/html'
+		// see it for details
+		AccessController.doPrivileged(new PrivilegedAction(){
+			public Object run(){
+			    String mimeType = "text/html;class=java.lang.String";//type + "; charset=" + charset;// + "; class=" + transferType;
+			    TextTransferable transferable = new TextTransferable(mimeType, data);
+			    getSystemClipboard().setContents(transferable, transferable);
+				return null;
+			}
+		});
+	}
+	private static java.awt.datatransfer.Clipboard getSystemClipboard() {
+		return Toolkit.getDefaultToolkit().getSystemClipboard();
+	}
+	
+	private static class TextTransferable implements Transferable, ClipboardOwner {
+		private String data;
+		private static ArrayList htmlFlavors = new ArrayList();
+		
+		static{
+			try{
+				htmlFlavors.add(new DataFlavor("text/plain;charset=UTF-8;class=java.lang.String"));
+				htmlFlavors.add(new DataFlavor("text/html;charset=UTF-8;class=java.lang.String"));
+			}catch(ClassNotFoundException ex){
+				ex.printStackTrace();
+			}
+		}
+		
+		
+		public TextTransferable(String mimeType, String data){
+			this.data = data;
+		}
+		
+		public DataFlavor[] getTransferDataFlavors(){
+			return (DataFlavor[]) htmlFlavors.toArray(new DataFlavor[htmlFlavors.size()]);
+		}
+		
+		public boolean isDataFlavorSupported(DataFlavor flavor){
+			return htmlFlavors.contains(flavor);
+		}
+		
+		public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException{
+			if (String.class.equals(flavor.getRepresentationClass())){
+		        return data;
+		    }
+		
+		    throw new UnsupportedFlavorException(flavor);
+		
+		}
+		
+		public void lostOwnership(java.awt.datatransfer.Clipboard clipboard, Transferable contents){
+			data = null;
+		}
+	}
 }

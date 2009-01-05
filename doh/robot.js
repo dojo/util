@@ -32,16 +32,18 @@ if(!doh.robot["_robotLoaded"]){
 				doh._onEnd = __onEnd;
 				doh._onEnd();
 			};
-			// if the iframe requested the applet and got a 404, then _robot is obviously unavailable
-			// at least run the non-robot tests!
-			if(doh.robot._appletDead){
-				doh.robot._onKeyboard();
-			}else{
-				_robot._callLoaded(isSecure());
-			}
+			doh.robot.startRobot();
 		}
 	};
 
+	var cleanup=function(){
+		doh.robot.killRobot();
+	}
+	if(typeof dojo !== 'undefined'){
+		dojo.addOnUnload(cleanup)
+	}else{
+		window.onunload=cleanup;
+	}
 	var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ alt, /*Boolean*/ ctrl, /*Boolean*/ shift, /*Integer, optional*/ delay, /*Boolean*/ async){
 		// internal function to type one non-modifier key
 
@@ -53,13 +55,15 @@ if(!doh.robot["_robotLoaded"]){
 
 	doh.robot = {
 	_robotLoaded: true,
-
+	_robotInitialized: false,
 	_killApplet: function(){}, // overridden by Robot.html
 
 	killRobot: function(){
-		doh.robot._robotLoaded = false;
-		document.documentElement.className = document.documentElement.className.replace(/ ?dohRobot/);
-		doh.robot._killApplet();
+		if(doh.robot._robotLoaded){
+			doh.robot._robotLoaded = false;
+			document.documentElement.className = document.documentElement.className.replace(/ ?dohRobot/);
+			doh.robot._killApplet();
+		}
 	},
 
 	// Robot init methods
@@ -79,6 +83,21 @@ if(!doh.robot["_robotLoaded"]){
 		}	
 	},
 	
+	startRobot: function(){
+		//startRobot should be called to initialize the robot (after the java applet is loaded).
+		//one good place to do this is in a dojo.addOnLoad handler. This function will be called
+		//automatically if it is not already called when doh.run() is invoked.
+		if(!this._robotInitialized){
+			this._robotInitialized = true;
+			// if the iframe requested the applet and got a 404, then _robot is obviously unavailable
+			// at least run the non-robot tests!
+			if(doh.robot._appletDead){
+				doh.robot._onKeyboard();
+			}else{
+				_robot._callLoaded(isSecure());
+			}
+		}
+	},
 	_initRobot: function(r){
 		// called from Robot
 		// Robot calls _initRobot in its startup sequence
@@ -460,6 +479,28 @@ if(!doh.robot["_robotLoaded"]){
 		this.sequence(function(){
 			_robot.wheelMouse(isSecure(), Number(wheelAmt), Number(0), Number(duration||0));
 		},delay,duration);
+	},
+	
+	setClipboard: function(/*String*/data,/*String, optional*/format){
+		// summary:
+		//		Set clipboard content.
+		//
+		// description:
+		// 		Set data as clipboard content, overriding anything already there. The
+		//		data will be put to the clipboard using the given format.
+		//
+		// data:
+		//		New clipboard content to set
+		//
+		// format:
+		//		Set this to "text/html" to put richtext to the clipboard.
+		//		Otherwise, data is treated as plaintext. By default, plaintext
+		//		is used.
+		if(format==='text/html'){
+			_robot.setClipboardHtml(isSecure(),data);
+		}else{
+			_robot.setClipboardText(isSecure(),data);
+		}
 	}
 	};
 
