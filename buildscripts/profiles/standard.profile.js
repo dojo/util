@@ -71,7 +71,7 @@ dependencies = {
 				"dojox.dtl.tag.misc",
 				"dojox.dtl.ext-dojo.NodeList",
 			]
-		},
+		}
 	],
 
 	prefixes: [
