@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.dojotoolkit</groupId>
   <artifactId>dojo-project</artifactId>
-  <version>1.2-SNAPSHOT</version>
+  <version>1.3-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Dojo Toolkit</name>
   <url>http://dojotoolkit.org</url>
