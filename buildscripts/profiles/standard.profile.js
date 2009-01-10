@@ -51,12 +51,12 @@ dependencies = {
 			name: "../dojox/charting/widget/Chart2D.js",
 			layerDependencies: [
 				"../dijit/dijit.js",
-				// "../dojox/gfx.js",
+				// "../dojox/gfx.js"
 			],
 			dependencies: [
 				"dojox.charting.widget.Chart2D",
 				"dojox.charting.widget.Sparkline",
-				"dojox.charting.widget.Legend",
+				"dojox.charting.widget.Legend"
 			]
 		},
 		{
@@ -69,7 +69,7 @@ dependencies = {
 				"dojox.dtl.tag.date",
 				"dojox.dtl.tag.loader",
 				"dojox.dtl.tag.misc",
-				"dojox.dtl.ext-dojo.NodeList",
+				"dojox.dtl.ext-dojo.NodeList"
 			]
 		}
 	],
