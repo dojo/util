@@ -80,7 +80,7 @@ dependencies = {
 			// the Image Preview demo:
 			name: "../demos/cropper/src.js",
 			dependencies:[
-				"demos.croppers.src"
+				"demos.cropper.src"
 			]
 		},
 		{
