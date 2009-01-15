@@ -761,6 +761,48 @@ buildUtil.createLayerContents = function(
 		dojoContents = dojoContents.replace(depRegExp, "");
 	}
 
+	// replace dojo.provide("foo.bar.Baz") statements with the shortest valid
+	// programmatic equivalent:
+	//		foo = foo||{};
+	//		foo.bar = foo.bar||{};
+	//		foo.bar.Baz = foo.bar.Baz||{};
+	//		dojo._loadedModules["foo.bar.Baz"] = foo.bar.Baz = foo.bar.Baz||{};
+
+	var seenProvides = {};
+	var provideRegExp = /dojo.provide\(([\w\W]*?)\)/mg;
+	dojoContents = dojoContents.replace(provideRegExp, function(s, p1){
+		if(p1){
+			var ret = "";
+			p1 = p1.slice(1, -1); // trim the " or ' chars
+			var splits = p1.split(".");
+			splits.forEach(function(i, idx, a){
+				var simpleShortName = a.slice(0, idx+1).join(".");
+				var shortName = a[0];
+				for(var x=1; x<(idx+1); x++){
+					if(a[x].indexOf("-") >= 0){
+						shortName += '["'+a[x]+'"]';
+					}else{
+						shortName += "."+a[x];
+					}
+				}
+				// make sure that if, in a given module, we've already seen a
+				// parent that we don't re-generate its stub detection
+				if(!seenProvides[simpleShortName]){
+					seenProvides[simpleShortName] = true;
+					ret += shortName+'='+shortName+'||{};';
+				}
+				// at the last one?
+				if(idx == (a.length-1)){
+					// register in _loadedModules:
+					ret += 'dojo._loadedModules["'+simpleShortName+'"] = '+shortName+';';
+				}
+			});
+			return ret;
+		}else{
+			return s;
+		}
+	});
+
 	//Set version number.
 	dojoContents = buildUtil.changeVersion(version, dojoContents);
 
