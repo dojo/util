@@ -145,6 +145,13 @@ buildUtil.DojoBuildOptions = {
 			+ "will be used instead of 'dojo' for the 'dojo._xdResourceLoaded()' calls that are done in the .xd.js files. "
 			+ "This allows for dojo to be under a different scope name but still allow xdomain loading with that scope name."
 	},
+	"expandProvide": {
+		defaultValue: false,
+		helpText: "Expands dojo.provide calls with faster calls at the expense of a larger file size. Only use the option "
+			+ "if your profiling reveals that dojo.provide calls are taking a noticeable amount of time. It replaces "
+			+ "dojo.provide(\"foo.bar\") statements with the shortest valid programmatic equivalent:\n"
+			+ "if(typeof foo==\"undefined\"){foo={};};foo.bar=foo.bar||{};"
+	},
 	"buildLayers": {
 		defaultValue: "",
 		helpText: "A comma-separated list of layer names to build. Using this option means that only those layers will be built. "
@@ -761,47 +768,53 @@ buildUtil.createLayerContents = function(
 		dojoContents = dojoContents.replace(depRegExp, "");
 	}
 
-	// replace dojo.provide("foo.bar.Baz") statements with the shortest valid
-	// programmatic equivalent:
-	//		foo = foo||{};
-	//		foo.bar = foo.bar||{};
-	//		foo.bar.Baz = foo.bar.Baz||{};
-	//		dojo._loadedModules["foo.bar.Baz"] = foo.bar.Baz = foo.bar.Baz||{};
-
-	var seenProvides = {};
-	var provideRegExp = /dojo.provide\(([\w\W]*?)\)/mg;
-	dojoContents = dojoContents.replace(provideRegExp, function(s, p1){
-		if(p1){
-			var ret = "";
-			p1 = p1.slice(1, -1); // trim the " or ' chars
-			var splits = p1.split(".");
-			splits.forEach(function(i, idx, a){
-				var simpleShortName = a.slice(0, idx+1).join(".");
-				var shortName = a[0];
-				for(var x=1; x<(idx+1); x++){
-					if(a[x].indexOf("-") >= 0){
-						shortName += '["'+a[x]+'"]';
-					}else{
-						shortName += "."+a[x];
+	if(kwArgs.expandProvide){
+		// replace dojo.provide("foo.bar.Baz") statements with the shortest valid
+		// programmatic equivalent:
+		//		foo = foo||{};
+		//		foo.bar = foo.bar||{};
+		//		foo.bar.Baz = foo.bar.Baz||{};
+		//		dojo._loadedModules["foo.bar.Baz"] = foo.bar.Baz = foo.bar.Baz||{};
+	
+		var seenProvides = {};
+		var provideRegExp = /dojo.provide\(([\w\W]*?)\)/mg;
+		dojoContents = dojoContents.replace(provideRegExp, function(s, p1){
+			if(p1){
+				var ret = "";
+				p1 = p1.slice(1, -1); // trim the " or ' chars
+				var splits = p1.split(".");
+				splits.forEach(function(i, idx, a){
+					var simpleShortName = a.slice(0, idx+1).join(".");
+					var shortName = a[0];
+					for(var x=1; x<(idx+1); x++){
+						if(a[x].indexOf("-") >= 0){
+							shortName += '["'+a[x]+'"]';
+						}else{
+							shortName += "."+a[x];
+						}
 					}
-				}
-				// make sure that if, in a given module, we've already seen a
-				// parent that we don't re-generate its stub detection
-				if(!seenProvides[simpleShortName]){
-					seenProvides[simpleShortName] = true;
-					ret += shortName+'='+shortName+'||{};';
-				}
-				// at the last one?
-				if(idx == (a.length-1)){
-					// register in _loadedModules:
-					ret += 'dojo._loadedModules["'+simpleShortName+'"] = '+shortName+';';
-				}
-			});
-			return ret;
-		}else{
-			return s;
-		}
-	});
+					// make sure that if, in a given module, we've already seen a
+					// parent that we don't re-generate its stub detection
+					if(!seenProvides[simpleShortName]){
+						seenProvides[simpleShortName] = true;
+						if(idx == 0){
+							ret += 'if(typeof ' + shortName + '=="undefined"){' + shortName + '={};};';
+						}else{
+							ret += shortName+'='+shortName+'||{};';
+						}
+					}
+					// at the last one?
+					if(idx == (a.length-1)){
+						// register in _loadedModules:
+						ret += 'dojo._loadedModules["'+simpleShortName+'"] = '+shortName+';';
+					}
+				});
+				return ret;
+			}else{
+				return s;
+			}
+		});
+	}
 
 	//Set version number.
 	dojoContents = buildUtil.changeVersion(version, dojoContents);
