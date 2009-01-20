@@ -65,6 +65,8 @@
                    <exclude name="**/docs/**" />                   
                    <exclude name="**/demos/**" />                   
                    <exclude name="**/tests/**" />                   
+                   <exclude name="**/*.orig" />                   
+                   <exclude name="**/*.rej" />                   
                  </fileset>
                 </copy> 
               </tasks>

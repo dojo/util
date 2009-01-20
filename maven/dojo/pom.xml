@@ -26,7 +26,6 @@
           <executable>${java.home}/bin/java</executable>
           <workingDirectory>../../buildscripts</workingDirectory>
 	  <arguments>
-java -classpath ../shrinksafe/js.jar:../shrinksafe/shrinksafe.jar org.mozilla.javascript.tools.shell.Main build.js "$@"
 	    <argument>-classpath</argument>
 	    <argument>../shrinksafe/js.jar:../shrinksafe/shrinksafe.jar</argument>
             <argument>org.mozilla.javascript.tools.shell.Main</argument>

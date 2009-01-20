@@ -13,6 +13,10 @@
         <include>dijit/**</include>
         <include>dojox/**</include>
       </includes>
+      <excludes>
+        <exclude>**/*.orig</exclude>
+        <exclude>**/*.rej</exclude>
+      </excludes>
     </fileSet>
   </fileSets>
 </assembly>
