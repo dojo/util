@@ -89,15 +89,15 @@
 	
   <distributionManagement>
     <repository>
-      <id>download.dojotoolkit.org</id>
-      <name>Dojo Maven2 Repository</name>
-      <url>scpexe://download.dojotoolkit.org/srv/www/vhosts/download.dojotoolkit.org/maven2</url>
+      <id>oss.sonatype.org</id>
+      <name>OSS Repository at sonatype</name>
+      <url>http://oss.sonatype.org/service/local/staging/deploy/maven2</url>
       <layout>default</layout>
     </repository>
     <snapshotRepository>
-      <id>download.dojotoolkit.org</id>
-      <name>Dojo Maven2 Snapshot Repository</name>
-      <url>scpexe://download.dojotoolkit.org/srv/www/vhosts/download.dojotoolkit.org/maven2-snapshot</url>
+      <id>snapshot.oss.sonatype.org</id>
+      <name>OSS Snapshot Repository at sonatype</name>
+      <url>http://oss.sonatype.org/content/repositories/dojo-snapshots/</url>
       <layout>default</layout>
     </snapshotRepository>
     <!-- none yet 
