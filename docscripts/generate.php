@@ -228,8 +228,6 @@ $roots = array();
 $nodes = new Freezer('cache', 'nodes');
 $ids = $nodes->ids();
 foreach ($ids as $id) {
-  print "first: " . $id;
-  flush();
   $parts = explode('.', $id);
   if (count($parts) > 1) {
     $name = array_pop($parts);
@@ -251,8 +249,6 @@ foreach ($ids as $id) {
 
 // Figure out whether a root item has children or not
 foreach ($roots as $id => $root) {
-  print "second: " . $id;
-  flush();
   if ($root['function'] && !$root['classlike']) {
     $has_children = false;
     $parts = explode('.', $id);
@@ -279,9 +275,6 @@ foreach ($roots as $id => $root) {
     // Minor bug
     continue;
   }
-
-  print "save: " . $id;
-  flush();
 
   $node = $nodes->open($id, null);
 
