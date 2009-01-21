@@ -14,6 +14,11 @@ class DojoParameters extends DojoBlock
     parent::__construct($package, $line_number, $position);
   }
 
+  public function destroy() {
+    array_walk($this->parameters, 'destroy_all');
+    unset($this->parameters);
+  }
+
   public function build(){
     if (!$this->start) {
       die("DojoParameters->build() used before setting a start position");

@@ -1,7 +1,7 @@
 <?php
 
 function dijit_code_location() {
-	return '../../dijit/';
+	return '../../dojotoolkit/1.2.3/dijit/';
 }
 
 function dijit_project_name() {

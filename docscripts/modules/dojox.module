@@ -1,7 +1,7 @@
 <?php
 
 function dojox_code_location() {
-	return '../../dojox/';
+	return '../../dojotoolkit/1.2.3/dojox/';
 }
 
 function dojox_project_name() {

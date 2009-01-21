@@ -15,6 +15,11 @@ class DojoFunctionCall extends DojoBlock
     $this->parameters = new DojoParameters($package);
   }
 
+  public function __destruct() {
+    parent::__destruct();
+    unset($this->parameters);
+  }
+
   public function build() {
     if (!$this->start) {
       return null; // FIXME: does this ever die?

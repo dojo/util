@@ -26,6 +26,18 @@ class DojoFunctionBody extends DojoBlock
   private $this_inheritance_calls = array();
   private $extra_initial_comment_block = array();
 
+  public function destroy() {
+    if (!$this->destroyed) {
+      $this->destroyed = true;
+      array_walk($this->externalized, 'destroy_all');
+      unset($this->externalized);
+      array_walk($this->externalized_objects, 'destroy_all');
+      unset($this->externalized_objects);
+      array_walk($this->externalized_mixins, 'destroy_all');
+      unset($this->externalized_mixins);
+    }
+  }
+
   public function build() {
     if (!$this->start) {
       die("DojoFunctionBody->build() used before setting a start position");

@@ -5,15 +5,36 @@ require_once('lib/parser/DojoPackage.php');
 
 DojoFunctionBody::$suffix = ':';
 
-function _dojo_get_namespaces(){
+$_dojo_properties_modules = array();
+
+function _dojo_get_namespaces($limit=null){
   static $namespaces;
   if (!isset($namespaces)) {
     $namespaces = array();
     $files = scandir('modules');
     foreach ($files as $file) {
       if (substr($file, -7) == '.module') {
-        include_once('modules/' . $file);
-        $namespaces[] = substr($file, 0, -7);
+        $namespace = substr($file, 0, -7);
+        if (!$limit || in_array($namespace, $limit)) {
+          include_once('modules/' . $file);
+          $namespaces[] = substr($file, 0, -7);
+        }
+      }
+      elseif (substr($file, -18) == '.module.properties') {
+        $namespace = substr($file, 0, -18);
+        if (!$limit || in_array($namespace, $limit)) {
+          global $_dojo_properties_modules;
+          foreach (preg_split('%[\n\r]+%', file_get_contents('modules/' . $file)) as $line) {
+            list($line, ) = preg_split('%[!#]%', $line, 2);
+            if ($line = trim($line)) {
+              list($key, $line) = explode('=', $line, 2);
+              $key = str_replace('\\ ', ' ', trim($key));
+              $line = preg_replace('%^\s+%', '', $line);
+              $_dojo_properties_modules[$namespace][$key] = $line;
+            }
+          }
+          $namespaces[] = substr($file, 0, -18);
+        }
       }
     }
   }
@@ -30,14 +51,26 @@ function dojo_get_include($node, $provide) {
 }
 
 function dojo_get_file_time($namespace, $file) {
-  return filectime(call_user_func($namespace . '_code_location') . $file);
+  if (function_exists($namespace . '_code_location')) {
+    return filectime(call_user_func($namespace . '_code_location') . $file);
+  }
+  else {
+    global $_dojo_properties_modules;
+    return $_dojo_properties_modules[$namespace]['location'];
+  }
 }
 
-function dojo_get_files() {
-    $namespaces = _dojo_get_namespaces();
+function dojo_get_files($limit=null) {
+    $namespaces = _dojo_get_namespaces($limit);
     $files = array();
     foreach ($namespaces as $namespace) {
-        $location = call_user_func($namespace . '_code_location');
+        if (function_exists($namespace . '_code_location')) {
+          $location = call_user_func($namespace . '_code_location');
+        }
+        else {
+          global $_dojo_properties_modules;
+          $location = $_dojo_properties_modules[$namespace]['location'];
+        }
         if (!$location) die($namespace . '_code_location does not return useful result');
         $dojo = new Dojo($namespace, $location);
         $list = $dojo->getFileList();
@@ -70,7 +103,16 @@ function dojo_get_environments() {
 function dojo_get_contents($namespace, $file_name) {
   $output = array();
 
-  $package = new DojoPackage(new Dojo($namespace, call_user_func($namespace . '_code_location')), $file_name);
+  if (function_exists($namespace . '_code_location')) {
+    $location = call_user_func($namespace . '_code_location');
+  }
+  else {
+    global $_dojo_properties_modules;
+    $location = $_dojo_properties_modules[$namespace]['location'];
+  }
+
+  $dojo = new Dojo($namespace, $location);
+  $package = new DojoPackage($dojo, $file_name);
 
   $output['#provides'] = $package->getPackageName();
   $output['#resource'] = $package->getResourceName();
@@ -490,11 +532,21 @@ function dojo_get_contents($namespace, $file_name) {
     if (strpos($object_name, '._') !== false) {
         $output[$object_name]['private_parent'] = true;
     }
-    if (preg_match('%^_*[A-Z]%', $last) && $object['type'] == 'Function') {
+    if ($object['type'] == 'Function') {
+      if (preg_match('%^_*[A-Z]%', $last)) {
         $output[$object_name]['classlike'] = true;
+      }
+      elseif ($object['prototype'] && $output[$object['prototype']]) {
+        $output[$object['prototype']]['classlike'] = true;
+      }
+      elseif ($object['instance'] && $output[$object['instance']]) {
+        $output[$object['instance']]['classlike'] = true;
+      }
     }
     $output[$object_name]['summary'] = htmlentities($object['summary']);
   }
+
+  $package->destroy();
 
   return $output;
 }

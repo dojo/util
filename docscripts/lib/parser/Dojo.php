@@ -1,5 +1,17 @@
 <?php
 
+function destroy_all($item) {
+  if (is_array($item)) {
+    array_walk($item, 'destroy_all');
+  }
+  else {
+    if (is_string($item)) {
+      die($item);
+    }
+    $item->destroy();
+  }
+}
+
 class Dojo
 {
   private $dir;
@@ -8,6 +20,11 @@ class Dojo
   public function __construct($namespace, $dir){
     $this->setDir($dir);
     $this->namespace = $namespace;
+  }
+  
+  public function __destruct() {
+    unset($this->dir);
+    unset($this->namespace);
   }
 
   public function getPackage($file){
@@ -30,6 +47,9 @@ class Dojo
 
     if (!$recurse) {
       $old_dir = getcwd();
+      if (!is_dir($dir)) {
+        return array();
+      }
       chdir($dir);
       $dir = '.';
     }

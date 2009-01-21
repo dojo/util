@@ -20,6 +20,15 @@ class DojoObject extends DojoBlock
     $this->body = new DojoFunctionBody($package, $line_number, $position);
   }
 
+  public function __destruct() {
+    parent::__destruct();
+    unset($this->values);
+    unset($this->declarations);
+    unset($this->body);
+    unset($this->extra_block_values);
+    unset($this->anonymous);
+  }
+
   public function setName($name){
     $this->name = $name;
   }

@@ -2,13 +2,13 @@
 
 require_once('DojoFunctionBody.php');
 require_once('DojoBlock.php');
+require_once('DojoParameters.php');
 
 class DojoFunctionDeclare extends DojoBlock
 {
   private $object = 'DojoFunctionDeclare';
 
   private $parameters;
-  protected $parameter_values;
   private $function_name;
   protected $body;
 
@@ -22,6 +22,20 @@ class DojoFunctionDeclare extends DojoBlock
     parent::__construct($package, $line_number, $position);
     $this->parameters = new DojoParameters($package);
     $this->body = new DojoFunctionBody($package);
+  }
+
+  public function destroy() {
+    if (!$this->destroyed) {
+      $this->destroyed = true;
+      $this->parameters->destroy();
+      unset($this->parameters);
+      $this->body->destroy();
+      unset($this->body);
+      if ($this->in_executed_function) {
+        $this->in_executed_function->destroy();
+      }
+      unset($this->in_executed_function);
+    }
   }
 
   public function getFunctionName(){

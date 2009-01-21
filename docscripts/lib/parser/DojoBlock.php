@@ -3,6 +3,7 @@
 abstract class DojoBlock
 {
   protected $package;
+  protected $destroyed = false;
   public $start;
   public $end;
 
@@ -11,6 +12,15 @@ abstract class DojoBlock
     if($line_number !== false && $position !== false){
       $this->setStart($line_number, $position);
     }
+  }
+  
+  public function destroy() {
+  }
+  
+  public function __destruct() {
+    unset($this->package);
+    unset($this->start);
+    unset($this->end);
   }
   
   public function setStart($line_number, $position){

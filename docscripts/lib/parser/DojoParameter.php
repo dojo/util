@@ -22,6 +22,12 @@ class DojoParameter extends DojoBlock
     $this->terminator = $terminator;
   }
 
+  public function __destruct() {
+    parent::__destruct();
+    unset($this->parameter_value);
+    unset($this->parameter_type);
+  }
+
   public function exists(){
     return !empty($this->parameter_value);
   }
