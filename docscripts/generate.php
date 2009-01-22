@@ -11,6 +11,7 @@ if ($_SERVER['HTTP_HOST']) {
   die('Run from command line');
 }
 
+error_reporting(E_ALL ^ E_NOTICE);
 $debug = true;
 
 require_once('includes/dojo.inc');
@@ -26,9 +27,14 @@ $namespaces = array();
 // 2. Internalize class members
 // 3. Serialize objects
 
-$files = dojo_get_files(array_slice($argv, 1));
+$args = array_slice($argv, 1);
+
+$files = dojo_get_files($args);
 $nodes = new Freezer('cache', 'nodes');
 $resources = new Freezer('cache', 'resources');
+
+print "=== PARSING FILES ===\n";
+flush();
 
 foreach ($files as $set){
   list($namespace, $file) = $set;
@@ -76,6 +82,10 @@ foreach ($files as $set){
     // Handle file-level information
     if (!is_array($node['#provides']) || !in_array($provides, $node['#provides'])) {
       $node['#provides'][] = $provides;
+    }
+
+    if (!is_array($node['#namespaces']) || !in_array($namespace, $node['#namespaces'])) {
+      $node['#namespaces'][] = $namespace;
     }
 
     $node['#resource'][] = $resource;
@@ -224,20 +234,24 @@ foreach ($files as $set){
 
 unset($resources);
 
+print "=== BUILDING OBJECT STRUCTURE ===\n";
+flush();
+
 $roots = array();
-$nodes = new Freezer('cache', 'nodes');
 $ids = $nodes->ids();
 foreach ($ids as $id) {
   $parts = explode('.', $id);
   if (count($parts) > 1) {
     $name = array_pop($parts);
     $parent = implode('.', $parts);
+
+    $node = $nodes->open($id, array());
+    if (!is_array($node['#namespaces']) || !count($args)|| !count(array_intersect($args, $node['#namespaces']))) {
+      continue;
+    }
     if (!array_key_exists($parent, $roots)) {
       $roots[$parent] = array();
     }
-
-    $default = array();
-    $node = $nodes->open($id, $default);
     if ($node['type'] == 'Function') {
       $roots[$id]['function'] = true;
     }
@@ -267,6 +281,8 @@ foreach ($roots as $id => $root) {
   }
 }
 
+print "=== SERIALIZING OBJECTS ===\n";
+
 // Aggregate and save
 $json = new JsonSerializer('cache', 'json');
 $xml = new XmlSerializer('cache', 'xml');
@@ -285,6 +301,9 @@ foreach ($roots as $id => $root) {
       $node['#children'][array_pop($child_parts)] = $nodes->open($child_id, null);
     }
   }
+
+  print "$id\t\t" . memory_get_usage() . "\n";
+  flush();
 
   // JSON needs to be updated to match format
   // $json->setObject($id, $node);
