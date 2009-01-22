@@ -4,6 +4,8 @@
 # -- Runs everything in the modules directory
 # php generate.php custom
 # -- Runs only the module starting with "custom"
+# php generate.php --outfile=custom-api cusom
+# -- Runs the custom module, serializes to custom-api.xml
 # php generate.php dijit dojo
 # -- Runs both dijit and dojo modules
 
@@ -27,7 +29,16 @@ $namespaces = array();
 // 2. Internalize class members
 // 3. Serialize objects
 
-$args = array_slice($argv, 1);
+$args = array();
+$outfile = null;
+foreach (array_slice($argv, 1) as $arg) {
+  if (preg_match('%^--outfile=(.+)$%', $arg, $match)) {
+    $outfile = $match[1];
+  }
+  else {
+    $args[] = $arg;
+  }
+}
 
 $files = dojo_get_files($args);
 $nodes = new Freezer('cache', 'nodes');
@@ -284,8 +295,14 @@ foreach ($roots as $id => $root) {
 print "=== SERIALIZING OBJECTS ===\n";
 
 // Aggregate and save
-$json = new JsonSerializer('cache', 'json');
-$xml = new XmlSerializer('cache', 'xml');
+if ($outfile) {
+  $json = new JsonSerializer('cache', 'json', $outfile);
+  $xml = new XmlSerializer('cache', 'xml', $outfile);
+}
+else {
+  $json = new JsonSerializer('cache', 'json');
+  $xml = new XmlSerializer('cache', 'xml');
+}
 foreach ($roots as $id => $root) {
   if(!$id){
     // Minor bug

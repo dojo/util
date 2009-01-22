@@ -21,8 +21,8 @@ abstract class Serializer
   abstract public function toRaw($object, $id=null); // Convert an object to a raw value
 
   // Public stuff
-  public function __construct($directory, $suffix) {
-    $this->file_location = $directory . '/api.' . $suffix;
+  public function __construct($directory, $suffix, $filename='api') {
+    $this->file_location = $directory . '/' . $filename . '.' . $suffix;
     touch($this->file_location);
     $this->file = fopen($this->file_location, 'r');
   }
