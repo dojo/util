@@ -4,7 +4,7 @@
 # -- Runs everything in the modules directory
 # php generate.php custom
 # -- Runs only the module starting with "custom"
-# php generate.php --outfile=custom-api cusom
+# php generate.php --outfile=custom-api custom
 # -- Runs the custom module, serializes to custom-api.xml
 # php generate.php dijit dojo
 # -- Runs both dijit and dojo modules
@@ -32,8 +32,13 @@ $namespaces = array();
 $args = array();
 $outfile = null;
 foreach (array_slice($argv, 1) as $arg) {
-  if (preg_match('%^--outfile=(.+)$%', $arg, $match)) {
-    $outfile = $match[1];
+  if ($arg{0} == '-') {
+    if (preg_match('%^--outfile=(.+)$%', $arg, $match)) {
+      $outfile = $match[1];
+    }
+    else {
+      die("ERROR: Unrecognized argument: $arg\n");
+    }
   }
   else {
     $args[] = $arg;

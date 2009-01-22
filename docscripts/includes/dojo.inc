@@ -30,6 +30,9 @@ function _dojo_get_namespaces($limit=null){
               list($key, $line) = explode('=', $line, 2);
               $key = str_replace('\\ ', ' ', trim($key));
               $line = preg_replace('%^\s+%', '', $line);
+              if ($key == 'location') {
+                $line = _dojo_ensure_directory($line);
+              }
               $_dojo_properties_modules[$namespace][$key] = $line;
             }
           }
@@ -50,13 +53,25 @@ function dojo_get_include($node, $provide) {
   }
 }
 
+function _dojo_ensure_directory($directory) {
+  if (!is_dir($directory)) {
+    die("$directory is not a directory\n");
+  }
+  else {
+    if(substr($directory, -1) != '/'){
+      $directory .= '/';
+    }
+  }
+  return $directory;
+}
+
 function dojo_get_file_time($namespace, $file) {
   if (function_exists($namespace . '_code_location')) {
-    return filectime(call_user_func($namespace . '_code_location') . $file);
+    return filectime(_dojo_ensure_directory(call_user_func($namespace . '_code_location')) . $file);
   }
   else {
     global $_dojo_properties_modules;
-    return $_dojo_properties_modules[$namespace]['location'];
+    return filectime($_dojo_properties_modules[$namespace]['location'] . $file);
   }
 }
 
@@ -65,7 +80,7 @@ function dojo_get_files($limit=null) {
     $files = array();
     foreach ($namespaces as $namespace) {
         if (function_exists($namespace . '_code_location')) {
-          $location = call_user_func($namespace . '_code_location');
+          $location = _dojo_ensure_directory(call_user_func($namespace . '_code_location'));
         }
         else {
           global $_dojo_properties_modules;
@@ -104,7 +119,7 @@ function dojo_get_contents($namespace, $file_name) {
   $output = array();
 
   if (function_exists($namespace . '_code_location')) {
-    $location = call_user_func($namespace . '_code_location');
+    $location = _dojo_ensure_directory(call_user_func($namespace . '_code_location'));
   }
   else {
     global $_dojo_properties_modules;
