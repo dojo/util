@@ -24,14 +24,16 @@
  *   Richard Backhouse
  */
  
- package org.dojotoolkit.shrinksafe;
+package org.dojotoolkit.shrinksafe;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -81,7 +83,11 @@ public class Main {
 
 		public Object run(Context cx) {
 			if (type == PROCESS_FILES) {
-				processFiles(cx, args);
+				try {
+					processFiles(cx, args);
+				} catch (IOException ioe) {
+					Context.reportError(ioe.toString());
+				}
 			} else {
 				throw Kit.codeBug();
 			}
@@ -175,23 +181,39 @@ public class Main {
 		return files;
 	}
 	
-	static void processFiles(Context cx, String[] files) {
+	static void processFiles(Context cx, String[] files) throws IOException {
 		StringBuffer cout = new StringBuffer();
-		for (int i=0; i < files.length; i++) {
-			String source = (String)readFileOrUrl(files[i], true);
+		if (files.length > 0) {
+			for (int i=0; i < files.length; i++) {
+				String source = (String)readFileOrUrl(files[i], true);
+				if (source != null) {
+					cout.append(Compressor.compressScript(source, 0, 1, escapeUnicode));
+				}
+			}
+		} else {
+			BufferedReader inputReader = null;
+			StringBuffer input = new StringBuffer();
+			try {
+				inputReader = new BufferedReader(new InputStreamReader(global.getIn(), "UTF-8"));
+				String line = "";
+				while((line = inputReader.readLine()) != null){
+					input.append(line);
+					input.append(System.getProperty("line.separator"));
+				}
+			} finally {
+				inputReader.close();
+			}
+			
+			String source = input.toString();
 			if (source != null) {
 				cout.append(Compressor.compressScript(source, 0, 1, escapeUnicode));
 			}
 		}
+
 		if (isOutputFileSet) {
-			try {
-				BufferedWriter out = new BufferedWriter(new FileWriter(outputFileName));
-				out.write(cout.toString());
-				out.close();
-			} catch (IOException ex) {
-				Context.reportError(ex.toString());
-			}
-			System.out.println("Compressed file stored in '" + outputFileName + "'");
+			BufferedWriter out = new BufferedWriter(new FileWriter(outputFileName));
+			out.write(cout.toString());
+			out.close();
 		} else {
 			global.getOut().println(cout);
 		}
