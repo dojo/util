@@ -26,6 +26,7 @@
  
 package org.dojotoolkit.shrinksafe;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -56,9 +57,6 @@ public class Main {
 	protected static final ShellContextFactory shellContextFactory = new ShellContextFactory();
 	protected static ToolErrorReporter errorReporter;
 	protected static int exitCode = 0;
-	
-	protected static String outputFileName = "dojo.js.compressed.js";
-	protected static boolean isOutputFileSet = false; 
 	protected static boolean escapeUnicode = false; 
 
 	static {
@@ -114,13 +112,14 @@ public class Main {
 	public static String[] processOptions(String args[]) {
 		List fileList = new ArrayList();
 		String usageError = null;
+		boolean showUsage = false;
 		
 		for (int i = 0; i < args.length; i++) {
 			String arg = args[i];
 			if (!arg.startsWith("-")) {
 				fileList.add(arg);
 			}
-			else if (arg.equals("-version")) {
+			else if (arg.equals("-js-version")) {
 				if (++i == args.length) {
 					usageError = arg;
 				}
@@ -136,7 +135,7 @@ public class Main {
 				if (usageError != null)
 				shellContextFactory.setLanguageVersion(version);
 			}
-			//TODO: can we remove OPT for shrinksafe?
+/*
 			else if (arg.equals("-opt") || arg.equals("-O")) {
 				if (++i == args.length) {
 					usageError = arg;
@@ -160,22 +159,24 @@ public class Main {
 			else if (arg.equals("-debug")) {
 				shellContextFactory.setGeneratingDebug(true);
 			}
-			else if (arg.equals("-?") ||
-				arg.equals("-help")) {
-				// print usage message
-				global.getOut().println(getMessage("msg.shell.usage", Main.class.getName()));
-				System.exit(1);
+*/
+			else if (arg.equals("-?") || arg.equals("-help")) {
+				showUsage = true;
 			}
 			else if (arg.equals("-escape-unicode")) {
 				escapeUnicode = true;
 			}
 		}
+
 		// print error and usage message
 		if (usageError != null) {
 			global.getOut().println(getMessage("msg.shell.invalid", usageError));
-			global.getOut().println(getMessage("msg.shell.usage", Main.class.getName()));
+		}
+		if (usageError != null || showUsage) {
+			global.getOut().println(getMessage("msg.shell.usage"));
 			System.exit(1);
 		}
+
 		String[] files = new String[fileList.size()];
 		files = (String[])fileList.toArray(files);
 		return files;
@@ -185,43 +186,28 @@ public class Main {
 		StringBuffer cout = new StringBuffer();
 		if (files.length > 0) {
 			for (int i=0; i < files.length; i++) {
-				String source = (String)readFileOrUrl(files[i], true);
-				if (source != null) {
+				try {
+					String source = (String)readFileOrUrl(files[i], true);
 					cout.append(Compressor.compressScript(source, 0, 1, escapeUnicode));
+				} catch(IOException ex) {
+					// continue processing files
 				}
 			}
 		} else {
-			BufferedReader inputReader = null;
-			StringBuffer input = new StringBuffer();
-			try {
-				inputReader = new BufferedReader(new InputStreamReader(global.getIn(), "UTF-8"));
-				String line = "";
-				while((line = inputReader.readLine()) != null){
-					input.append(line);
-					input.append(System.getProperty("line.separator"));
-				}
-			} finally {
-				inputReader.close();
-			}
-			
-			String source = input.toString();
+			byte[] data = Kit.readStream(global.getIn(), 4096);
+			// Convert to String using the default encoding
+			String source = new String(data);
 			if (source != null) {
 				cout.append(Compressor.compressScript(source, 0, 1, escapeUnicode));
 			}
 		}
 
-		if (isOutputFileSet) {
-			BufferedWriter out = new BufferedWriter(new FileWriter(outputFileName));
-			out.write(cout.toString());
-			out.close();
-		} else {
-			global.getOut().println(cout);
-		}
+		global.getOut().println(cout);
 	}
-	
-	private static Object readFileOrUrl(String path, boolean convertToString) {
+
+	private static Object readFileOrUrl(String path, boolean convertToString) throws IOException {
 		URL url = null;
-		// Assume path is URL if it contains dot and there are at least
+		// Assume path is URL if it contains a colon and there are at least
 		// 2 characters in the protocol part. The later allows under Windows
 		// to interpret paths with driver letter as file, not URL.
 		if (path.indexOf(':') >= 2) {
@@ -240,7 +226,7 @@ public class Main {
 				is = new FileInputStream(file);
 			} catch (IOException ex) {
 				Context.reportError(getMessage("msg.couldnt.open", path));
-				return null;
+				throw ex;
 			}
 		} else {
 			try {
@@ -253,7 +239,7 @@ public class Main {
 				}
 			} catch (IOException ex) {
 				Context.reportError(getMessage("msg.couldnt.open.url", url.toString(), ex.toString()));
-				return null;
+				throw ex;
 			}
 		}
 		if (capacityHint <= 0) {
@@ -263,22 +249,23 @@ public class Main {
 		byte[] data;
 		try {
 			try {
+				is = new BufferedInputStream(is);
 				data = Kit.readStream(is, capacityHint);
 			} finally {
 				is.close();
 			}
 		} catch (IOException ex) {
 			Context.reportError(ex.toString());
-			return null;
+			throw ex;
 		}
 
 		Object result;
-		if (!convertToString) {
-			result = data;
-		} else {
+		if (convertToString) {
 			// Convert to String using the default encoding
-			// XXX: Use 'charset=' argument of Content-Type if URL?
+			// TODO: Use 'charset=' argument of Content-Type if URL?
 			result = new String(data);
+		} else {
+			result = data;
 		}
 		return result;
 	}
