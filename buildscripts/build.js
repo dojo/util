@@ -273,6 +273,12 @@ function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kw
 	logger.info("Copying: " + prefixPath + " to: " + releasePath);
 	var copiedFiles = fileUtil.copyDir(prefixPath, releasePath, copyRegExps, true);
 
+	//If want a different selector engine, adjust that now.
+	//Copy the new selector js over the dojo._base.query file
+	if(prefixName == "dojo" && kwArgs.query == "sizzle"){
+		fileUtil.copyFile(releasePath + "/_base/query-sizzle.js", releasePath + "/_base/query.js");
+	}
+
 	//Make sure to copy over any "source" files for the layers be targeted by
 	//buildLayers. Otherwise dependencies will not be calculated correctly.
 	if(buildLayers){

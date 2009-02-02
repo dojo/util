@@ -157,6 +157,11 @@ buildUtil.DojoBuildOptions = {
 		helpText: "A comma-separated list of layer names to build. Using this option means that only those layers will be built. "
 			+ "This helps if you are doing quick development and test cycles with layers. If you have problems using this option, "
 			+ "try removing it and doing a full build with action=clean,release. This build option assumes you have done at least one full build first."
+	},
+	"query": {
+		defaultValue: "default",
+		helpText: "Select a DOM query engine. Default value is the normal dojo.query engine. Using query=sizzle will use the Sizzle engine."
+			+ "Normal Dojo tests are not run routinely with the Sizzle engine. See dojo/_base/sizzle.js for the version of Sizzle."
 	}
 };
 
