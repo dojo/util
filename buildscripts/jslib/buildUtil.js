@@ -1895,9 +1895,14 @@ buildUtil.extractMatchedParens = function(/*RegExp*/ regexp, /*String*/fileConte
 	var parenRe = /[\(\)]/g;
 	parenRe.lastIndex = 0;
 
-	var results = [];
-	var matches;
+	var results = [],
+		matches,
+		cleanedContent = [],
+		previousLastIndex = 0
+	;
+	
 	while((matches = regexp.exec(fileContents))){
+		
 		//Find end of the call by finding the matching end paren
 		parenRe.lastIndex = regexp.lastIndex;
 		var matchCount = 1;
@@ -1917,25 +1922,27 @@ buildUtil.extractMatchedParens = function(/*RegExp*/ regexp, /*String*/fileConte
 			throw "unmatched paren around character " + parenRe.lastIndex + " in: " + fileContents;
 		}
 
-		//Put the master matching string in the results.
+		// Put the master matching string in the results.
 		var startIndex = regexp.lastIndex - matches[0].length;
 		results.push(fileContents.substring(startIndex, parenRe.lastIndex));
-
-		//Remove the matching section. Account for ending semicolon if desired.
+		// add file's fragment from previous console.* match to current match 
+		cleanedContent.push(fileContents.substring(previousLastIndex, startIndex));
+		
+		// Account for ending semicolon if desired.
 		var endPoint = parenRe.lastIndex;
 		if(removeTrailingComma && fileContents.charAt(endPoint) == ";"){
 			endPoint += 1;
 		}
-		var remLength = endPoint - startIndex;
 
-		fileContents = fileContents.substring(0, startIndex) + fileContents.substring(endPoint, fileContents.length);
+		previousLastIndex = regexp.lastIndex = endPoint;
 
-		//Move the master regexp past the last matching paren point.
-		regexp.lastIndex = endPoint - remLength;
 	}
 
+	// add the last matched fragment to the cleaned output
+	cleanedContent.push(fileContents.substring(previousLastIndex, fileContents.length));
+
 	if(results.length > 0){
-		results.unshift(fileContents);
+		results.unshift(cleanedContent.join(''));
 	}
 
 	return (results.length ? results : null);
