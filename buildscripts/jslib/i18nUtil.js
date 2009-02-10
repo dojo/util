@@ -131,7 +131,7 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/fileCo
 		fileContents = fileContents.replace(/dojo\.requireLocalization\(.*\)\;/g, "");
 
 
-		var preloadCall = '\ndojo.i18n._preloadLocalizations("' + modulePrefix + '", ' + dojo.toJson(localeList) + ');\n';
+		var preloadCall = '\ndojo.i18n._preloadLocalizations("' + modulePrefix + '", ' + dojo.toJson(localeList.sort()) + ');\n';
 		//Inject the dojo._preloadLocalizations call into the file.
 		//Do this at the end of the file, since we need to make sure dojo.i18n has been loaded.
 		//The assumption is that if dojo.i18n is not in this layer file, dojo.i18n is
@@ -263,7 +263,7 @@ i18nUtil.getLocalesForBundle = function(moduleName, bundleName, prefixes){
 		}
 	}
 
-	return locales;
+	return locales.sort();
 }
 
 i18nUtil.getRequireLocalizationArgsFromString = function(argString){
