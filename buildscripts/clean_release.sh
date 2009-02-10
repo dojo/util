@@ -54,13 +54,13 @@ if [ -d $releaseDir ]; then
 		
 		# so the themes are there, lets assume that, piggyback on noir: FIXME later
 		find ./$buildName/dijit/themes/ -name *.html -exec rm '{}' ';'
-		rm -rf $buildName/dijit/themes/themeTesterImages/	
+		# rm -rf $buildName/dijit/themes/themeTesterImages/	
 
 	fi
 	# TODO: merge down to a single theme.css for any theme?
 
-	# remove uncompressed .js files
-	find . -name *.uncompressed.js -exec rm '{}' ';'
+	# remove uncompressed .js files (leave for official release)
+	# find . -name *.uncompressed.js -exec rm '{}' ';'
 
 	# WARNING: templates have been inlined into the .js -- if you are using dynamic templates,
 	# or other build trickery, these lines might not work!

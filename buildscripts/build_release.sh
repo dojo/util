@@ -75,7 +75,7 @@ mv $srcName $buildName
 cd $buildName/util/buildscripts/
 chmod +x ./build.sh
 ./build.sh profile=standard version=$1 releaseName=$buildName cssOptimize=comments.keepLines optimize=shrinksafe.keepLines cssImportIgnore=../dijit.css action=release 
-# run build_mini, removing tests and demos:
+# remove tests and demos, but only for the actual release:
 chmod +x ./clean_release.sh
 ./clean_release.sh ../../release $buildName
 cd ../../release/
@@ -91,10 +91,14 @@ tar -zcf $buildName.tar.gz $buildName/
 mv $buildName.zip ../../
 mv $buildName.tar.gz ../../
 
+#copy compressed and uncompressed Dojo to the root
+cp $buildName/dojo/dojo.js* ../../
+
 # md5sum the release files
 cd ../../
 for i in *.zip; do md5sum $i > $i.md5; done
 for i in *.gz; do md5sum $i > $i.md5; done
+for i in *.js; do md5sum $i > $i.md5; done
 
 #Finished.
 outDirName=`pwd`
