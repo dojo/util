@@ -83,7 +83,10 @@ buildUtil.DojoBuildOptions = {
 		helpText: "Strips console method calls from JS source. Applied to layers and individual modules "
 			+ "resource files. Valid values are \"normal\" (strips all but console.warn and console.error "
 			+ "calls), \"all\" (strips all console calls), \"normal,warn\" (strips all but console.error "
-			+ "calls), \"normal,error\" (strips all but console.warn errors)."
+			+ "calls), \"normal,error\" (strips all but console.warn errors). WARNING: stripConsole is "
+			+ "regexp-based and could cause code side effects. Make sure to only "
+			+ "call console methods on their own line, not as part of an expression and always be sure "
+			+ "to use braces around code blocks that have console calls (like if/else)."
 	},
 
 	"copyTests": {
