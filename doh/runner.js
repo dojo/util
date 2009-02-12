@@ -128,6 +128,18 @@ doh.Deferred = function(canceller){
 };
 
 doh.extend(doh.Deferred, {
+	getTestErrback: function(cb, scope){
+		// summary: Replaces outer getTextCallback's in nested situations to avoid multiple callback(true)'s
+		var _this = this;
+		return function(){
+			try{
+				cb.apply(scope||doh.global||_this, arguments);
+			}catch(e){
+				_this.errback(e);
+			}
+		};
+	},
+
 	getTestCallback: function(cb, scope){
 		var _this = this;
 		return function(){
