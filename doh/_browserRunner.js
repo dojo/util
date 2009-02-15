@@ -91,6 +91,15 @@ if(window["dojo"]){
 			}
 		})(doh._init);
 
+		doh._setupGroupForRun = (function(os){
+			return function(groupName){
+				var tg = doh._groups[groupName];
+				doh._curTestCount = tg.length;
+				doh._curGroupCount = 1;
+				os.apply(doh,arguments);
+			}
+		})(doh._setupGroupForRun);
+		
 		if(this["opera"] && opera.postError){
 			doh.debug = function(){
 				var msg = "";
