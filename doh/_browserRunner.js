@@ -245,12 +245,12 @@ if(window["dojo"]){
 				this._currentGlobalProgressBarWidth = 0;
 				this._suiteCount = this._testCount;
 			}
-			this._runedSuite++;
 			// console.debug("_groupStarted", group);
 			if(doh._inGroup != group){
 				doh._totalTime = 0;
 				doh._runed = 0;
 				doh._inGroup = group;
+				this._runedSuite++;
 			}
 			var gn = getGroupNode(group);
 			if(gn){
@@ -262,14 +262,14 @@ if(window["dojo"]){
 			// console.debug("_groupFinished", group);
 			var gn = getGroupNode(group);
 			if(gn && doh._inGroup == group){
-				gn.className = (success) ? "success" : "failure";
 				gn.getElementsByTagName("td")[3].innerHTML = doh._totalTime+"ms";
 				gn.getElementsByTagName("td")[2].lastChild.className = "";
 				doh._inGroup = null;
 				//doh._runedSuite++;
-				doh._updateGlobalProgressBar(this._runedSuite/this._suiteCount,success);
+				var failure = doh._updateGlobalProgressBar(this._runedSuite/this._groupCount,success,group);
+				gn.className = failure ? "failure" : "success";
 				//doh._runedSuite--;
-				doh._currentGlobalProgressBarWidth = parseInt(this._runedSuite/this._suiteCount*10000)/100;
+				doh._currentGlobalProgressBarWidth = parseInt(this._runedSuite/this._groupCount*10000)/100;
 				//byId("progressOuter").style.width = parseInt(this._runedSuite/this._suiteCount*100)+"%";
 			}
 			if(doh._inGroup == group){
@@ -300,7 +300,7 @@ if(window["dojo"]){
 			}
 		}
 
-		doh._updateGlobalProgressBar = function(p,success){
+		doh._updateGlobalProgressBar = function(p,success,group){
 			var outerContainer=byId("progressOuter");
 					
 			var gdiv=outerContainer.childNodes[doh._runedSuite-1];
@@ -309,9 +309,12 @@ if(window["dojo"]){
 				outerContainer.appendChild(gdiv);
 				gdiv.className='success';
 			}
-			if(!success){
+			if(!success && !gdiv._failure){
 				gdiv._failure=true;
 				gdiv.className='failure';
+				if(group){
+					gdiv.setAttribute('title','failed group '+group);
+				}
 			}
 			var tp=parseInt(p*10000)/100;
 			gdiv.style.width = (tp-doh._currentGlobalProgressBarWidth)+"%";
@@ -338,7 +341,7 @@ if(window["dojo"]){
 				doh._runed++;
 				if(gn && doh._curTestCount){
 					var p = doh._runed/doh._curTestCount;
-					var groupfail = this._updateGlobalProgressBar((doh._runedSuite+p-1)/doh._suiteCount,success);
+					var groupfail = this._updateGlobalProgressBar((doh._runedSuite+p-1)/doh._groupCount,success,group);
 					
 					var pbar = gn.getElementsByTagName("td")[2].lastChild;
 					pbar.className = groupfail?"failure":"success";
@@ -515,7 +518,7 @@ if(window["dojo"]){
 				_doh._failureCount += doh._failureCount;
 				_doh._testCount += doh._testCount;
 				// should we be really adding raw group counts?
-				_doh._groupCount += doh._groupCount;
+				//_doh._groupCount += doh._groupCount;
 				_doh.currentTestDeferred.callback(true);
 			}
 			var otr = doh._getTestObj;
