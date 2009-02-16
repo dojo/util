@@ -53,9 +53,7 @@ class DojoFunctionBody extends DojoBlock
   }
 
   public function addBlockCommentLine($line) {
-    if (trim($line) != '') {
-      $this->extra_initial_comment_block[] = $line;
-    }
+    $this->extra_initial_comment_block[] = $line;
   }
 
   public function addBlockCommentBreak() {
@@ -183,6 +181,8 @@ class DojoFunctionBody extends DojoBlock
     $lines = Text::chop($this->package->getSource(), $this->start[0], $this->start[1], $this->end[0], $this->end[1], true);
     for ($i = 0; $i < 2; $i++) {
       $started = false;
+      $between_blocks = true;
+      $wait_for_break = false;
       $buffer = array();
       $key = '';
       if ($i == 1) {
@@ -190,28 +190,30 @@ class DojoFunctionBody extends DojoBlock
       }
       foreach ($lines as $line_number =>  $line) {
         if ($line === -1) {
-          if ($buffer && $key) {
-            if (in_array($key, $this->key_sets)) {
-              $this->comments[$key][] = implode("\n", $buffer);
-            }
-            else {
-              $this->comments[$key] = implode("\n", $buffer);
-            }
-            $buffer = array();
-          }
-          $buffer = array();
-          $key = '';
+          // Comes from manually added lines (block breaks, e.g. between object keys)
+          $between_blocks = true;
           continue;
         }
 
         list($comment, , , $data, $multiline) = Text::findComments($line, $multiline);
 
-        if ($started && $comment === false) {
-          $this->comment_end = array($line_number, 0);
-          break;
+        if ($between_blocks) {
+          if ($comment) {
+            if (preg_match($expression, $comment)) {
+              $between_blocks = false;
+            }
+            elseif (!$i) {
+              continue 2;
+            }
+            else {
+              $wait_for_break = true;
+              continue;
+            }
+          }
         }
-        else {
-          $started = true;
+        elseif ($comment === false) {
+          $between_blocks = true;
+          continue;
         }
 
         if (preg_match($expression, $comment, $match)) {
@@ -253,6 +255,7 @@ class DojoFunctionBody extends DojoBlock
         $this->comment_end = $this->start;
       }
     }
+
     return array_keys($this->comments);
   }
 

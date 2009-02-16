@@ -8,13 +8,13 @@ class JsonSerializer extends Serializer
   protected $footer = array('}');
 
   protected function lineStarts($line) {
-    if (preg_match('%^\t"([\w_.$]+)":\s+{$%', $line, $match)) {
+    if (preg_match('%^\t"([^"]+)": {%', $line, $match)) {
       return $match[1];
     }
   }
 
   protected function lineEnds($line) {
-    if (preg_match('%^\t},$%', $line, $match)) {
+    if (preg_match('%^\t}%', $line, $match)) {
       return true;
     }
   }
@@ -91,11 +91,52 @@ class JsonSerializer extends Serializer
       }
     }
 
-    return $new_json . ',';
+    return $new_json . ",\n";
   }
 
-  public function toRaw($object, $id=null) {
-    return $object;
+  protected function descend($node, $object) {
+    if (!is_array($object) && !is_object($object)) {
+      return $object;
+    }
+
+    foreach ($object as $key => $value) {
+      switch ($key{0}) {
+      case '@':
+        $node[substr($key, 1)] = $value;
+        break;
+      case '#':
+        if ($key == '#mixins') {
+          foreach ($value as $mixins) {
+            $scope = $mixins['@scope'];
+            foreach ($mixins['#mixin'] as $mixin) {
+              $node['mixins'][$scope][] = $this->descend(array(), $mixin);
+            }
+          }
+        }
+        elseif (count($value) == 1 && !in_array($key, array('#property', '#method', '#resource', '#parameter', '#provide', '#return-type'))) {
+          $node[substr($key, 1)] = $this->descend(array(), $value[0]);
+        }
+        else {
+          foreach ($value as $child) {
+            $node[] = $this->descend(array(), $child);
+          }
+        }
+        break;
+      default:
+        if ($key === 'content') {
+          if (count($object) == 1) {
+            return $value;
+          }
+          $node['content'] = $value;
+        }
+      }
+    }
+
+    return $node;
+  }
+
+  public function convertToRaw($object) {
+    return $this->descend(array(), $object);
   }
 }
 

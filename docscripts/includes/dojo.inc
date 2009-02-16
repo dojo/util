@@ -320,13 +320,6 @@ function dojo_get_contents($namespace, $file_name) {
         elseif ($key == 'description') {
           $output[$name]['description'] = $object->getBlockComment('description');
         }
-        else {
-          list($type, $comment) = preg_split('%\s+%', $object->getBlockComment($key), 2);
-          $output["$name.$key"]['type'] = $type;
-          $output["$name.$key"]['summary'] = $comment;
-          unset($type);
-          unset($comment);
-        }
       }
       unset($keys);
     }
@@ -544,11 +537,14 @@ function dojo_get_contents($namespace, $file_name) {
     if ($last{0} == '_') {
       $output[$object_name]['private'] = true;
     }
-    if (strpos($object_name, '._') !== false) {
+    if (preg_match('%\._+[^A-Z]%', implode('.', $parts), $match)) {
         $output[$object_name]['private_parent'] = true;
     }
     if ($object['type'] == 'Function') {
-      if (preg_match('%^_*[A-Z]%', $last)) {
+      if (preg_match('%^(_*)[A-Z]%', $last, $match)) {
+        if (strlen($match[1]) < 2) {
+          unset($output[$object_name]['private']);
+        }
         $output[$object_name]['classlike'] = true;
       }
       elseif ($object['prototype'] && $output[$object['prototype']]) {

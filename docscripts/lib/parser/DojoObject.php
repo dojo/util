@@ -1,6 +1,7 @@
 <?php
 
 require_once('DojoBlock.php');
+require_once('DojoFunctionDeclare.php');
 require_once('DojoFunctionBody.php');
 require_once('Text.php');
 
@@ -81,25 +82,9 @@ class DojoObject extends DojoBlock
               continue;
             }
             $between_lines = Text::chop($this->package->getSource(), $end[0]+1, 0, $line_number, strlen($match[1]), true);
-            $between_started = false;
-            $between_buffer = array();
             foreach ($between_lines as $between_line) {
-              if ($between_started && empty($between_line)) {
-                break;
-              }
-              if(trim($between_line)){
-                $between_started = true;
-              }
-              if ($between_started) {
-                $between_buffer[] = $between_line;
-              }
+              $this->body->addBlockCommentLine($between_line);
             }
-            if ($between_started){
-              foreach ($between_buffer as $between_line) {
-                $this->body->addBlockCommentLine($between_line);
-              }
-            }
-            $this->body->addBlockCommentBreak();
           }
           $end = array($line_number, strlen($match[0]));
           if ($match[2]{0} == '"' || $match[2]{0} == "'") {
@@ -188,15 +173,17 @@ class DojoObject extends DojoBlock
     foreach($variables as $key){
       $full_variable_name = "{$name}.{$key}";
       if($comment = $this->getBlockComment($key)){
-        list($type, $comment) = preg_split('%\s%', $comment, 2);
-        $type = preg_replace('%(^[^a-zA-Z0-9._$]|[^a-zA-Z0-9._$?]$)%', '', $type);
-        if($type){
-          $output[$full_variable_name]['type'] = $type;
+        list($tags, $parameter_type, $options, $summary) = DojoFunctionDeclare::parseVariable($comment);
+        if (!empty($tags)) {
+          $output[$full_variable_name]['tags'] = $tags;
         }
-        $output[$full_variable_name]['summary'] = $comment;
+        if (!empty($parameter_type)) {
+          $output[$full_variable_name]['type'] = $parameter_type;
+        }
+        $output[$full_variable_name]['summary'] = $summary;
       }
     }
-  
+
     foreach($check_keys as $ck){
       if(!$this->isAnonymous() && $comment = $this->getBlockComment($ck)){
         $output[$name][$ck] = $comment; 

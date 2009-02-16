@@ -23,8 +23,10 @@ final class Freezer
     fclose($this->nodes);
   }
 
-  public function ids() {
-    $this->flush();
+  public function ids($flush = TRUE) {
+    if ($flush) {
+      $this->flush();
+    }
 
     $ids = array();
 
@@ -45,7 +47,6 @@ final class Freezer
       list($queue_key, $content) = $queue;
       if ($queue_key == $key) {
         return $content;
-        break;
       }
     }
 
@@ -69,9 +70,18 @@ final class Freezer
   }
 
   private function flush() {
+    $deferred = array();
+    $keys = $this->ids(FALSE);
+
     foreach ($this->queue as $queue) {
       list($key, $content) = $queue;
-      $key .= $this->key_delimeter;
+      $serialized = $key . $this->key_delimeter . str_replace("\n", "\\n", serialize($content));
+      if (!in_array($key, $keys)) {
+        $deferred[$key] = $serialized;
+        continue;
+      }
+
+      $key = $key . $this->key_delimeter;
       $found = false;
       $tmp = fopen($this->nodes_location . '_tmp', 'w');
       rewind($this->nodes);
@@ -79,10 +89,10 @@ final class Freezer
         if ($line = stream_get_line($this->nodes, $this->length, "\n")) {
           if (strlen($line) > strlen($key) && substr($line, 0, strlen($key)) == $key) {
             $found = true;
-            $line = $key . str_replace("\n", "\\n", serialize($content));
+            $line = $serialized;
           }
           if (strlen($line) > $this->length-2) {
-            die('Line too long');
+            die('Line too long: ' . $line . "\n");
           }
           fwrite($tmp, $line . "\n");
         }
@@ -92,6 +102,21 @@ final class Freezer
       }
       fclose($tmp);
       fclose($this->nodes);
+
+      unlink($this->nodes_location);
+      rename($this->nodes_location . '_tmp', $this->nodes_location);
+      $this->nodes = fopen($this->nodes_location, 'r');
+    }
+
+    if (!empty($deferred)) {
+      fclose($this->nodes);
+      copy($this->nodes_location, $this->nodes_location . '_tmp');
+      $tmp = fopen($this->nodes_location . '_tmp', 'a');
+
+      foreach ($deferred as $line) {
+        fwrite($tmp, $line . "\n");
+      }
+      fclose($tmp);
 
       unlink($this->nodes_location);
       rename($this->nodes_location . '_tmp', $this->nodes_location);

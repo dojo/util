@@ -31,10 +31,14 @@ $namespaces = array();
 
 $args = array();
 $outfile = null;
+$clean = false;
 foreach (array_slice($argv, 1) as $arg) {
   if ($arg{0} == '-') {
     if (preg_match('%^--outfile=(.+)$%', $arg, $match)) {
       $outfile = $match[1];
+    }
+    elseif ($arg == '--clean') {
+      $clean = true;
     }
     else {
       die("ERROR: Unrecognized argument: $arg\n");
@@ -43,6 +47,17 @@ foreach (array_slice($argv, 1) as $arg) {
   else {
     $args[] = $arg;
   }
+}
+
+function _unlink($loc){
+  file_exists($loc) && unlink($loc);
+}
+
+if ($clean) {
+  _unlink('cache/nodes');
+  _unlink('cache/resources');
+  _unlink('cache/' . ($outfile ? $outfile : 'api') . '.json');
+  _unlink('cache/' . ($outfile ? $outfile : 'api') . '.xml');
 }
 
 $files = dojo_get_files($args);
@@ -104,10 +119,22 @@ foreach ($files as $set){
       $node['#namespaces'][] = $namespace;
     }
 
-    $node['#resource'][] = $resource;
+    $node['#resource'][] = "$namespace/$resource";
 
     if (trim($content['type'])) {
       $node['type'] = $content['type'];
+    }
+
+    if (!empty($content['tags'])) {
+      $node['tags'] = $content['tags'];
+    }
+
+    if (!empty($content['private'])) {
+      $node['private'] = $content['private'];
+    }
+
+    if (!empty($content['private_parent'])) {
+      $node['private_parent'] = $content['private_parent'];
     }
 
     if (trim($content['summary'])) {
@@ -154,10 +181,6 @@ foreach ($files as $set){
       $node['prototype'] = $content['prototype'];
     }
 
-    if (!empty($content['examples'])) {
-      $node['example'] = $content['examples'][0];
-    }
-
     if (!is_array($node['returns'])) {
       $node['returns'] = array();
     }
@@ -169,7 +192,7 @@ foreach ($files as $set){
       $node['return_summary'] = $content['return_summary'];
     }
 
-    foreach (array('prototype', 'normal') as $scope) {
+    foreach (array('prototype', 'instance', 'normal') as $scope) {
       if (!empty($content['mixins'][$scope])) {
         if (empty($node['mixins'][$scope])) {
           $node['mixins'][$scope] = array();
@@ -188,10 +211,10 @@ foreach ($files as $set){
           $content['chains']['prototype'] = array();
         }
         $node['chains']['prototype'] = array_unique(array_merge($node['chains']['prototype'], $content['chains']['prototype']));
-        if (!$content['chains']['prototype']) {
-          $content['chains']['prototype'] = array();
+        if (!$content['chains']['call']) {
+          $content['chains']['call'] = array();
         }
-        $node['chains']['call'] = array_unique(array_merge($node['chains']['call'], $content['chains']['prototype']));
+        $node['chains']['call'] = array_unique(array_merge($node['chains']['call'], $content['chains']['call']));
       }
       else {
         $node['chains']['prototype'] = ($content['chains']['prototype']) ? $content['chains']['prototype'] : array();
@@ -255,14 +278,23 @@ flush();
 
 $roots = array();
 $ids = $nodes->ids();
-foreach ($ids as $id) {
+
+$percent = 0;
+
+foreach ($ids as $pos => $id) {
+  $new_percent = floor($pos / count($ids) * 50);
+  if ($new_percent % 5 == 0 && $percent % 5 != 0) {
+    print floor($new_percent) . "%\n";
+  }
+  $percent = $new_percent;
+
   $parts = explode('.', $id);
   if (count($parts) > 1) {
     $name = array_pop($parts);
     $parent = implode('.', $parts);
 
     $node = $nodes->open($id, array());
-    if (!is_array($node['#namespaces']) || !count($args)|| !count(array_intersect($args, $node['#namespaces']))) {
+    if (!is_array($node['#namespaces']) || (count($args) && !count(array_intersect($args, $node['#namespaces'])))) {
       continue;
     }
     if (!array_key_exists($parent, $roots)) {
@@ -278,7 +310,15 @@ foreach ($ids as $id) {
 }
 
 // Figure out whether a root item has children or not
+$pos = 0;
+$root_count = count($roots);
 foreach ($roots as $id => $root) {
+  $new_percent = floor(50 + ($pos++ / $root_count * 50));
+  if ($new_percent % 5 == 0 && $percent % 5 != 0) {
+    print floor($new_percent) . "%\n";
+  }
+  $percent = $new_percent;
+
   if ($root['function'] && !$root['classlike']) {
     $has_children = false;
     $parts = explode('.', $id);
@@ -327,8 +367,7 @@ foreach ($roots as $id => $root) {
   print "$id\t\t" . memory_get_usage() . "\n";
   flush();
 
-  // JSON needs to be updated to match format
-  // $json->setObject($id, $node);
+  $json->setObject($id, $node);
   $xml->setObject($id, $node);
 }
 

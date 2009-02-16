@@ -167,6 +167,10 @@ if(!empty($_REQUEST['ns'])){
                     ";  
                   break;
 
+                case "tags":
+                  $print .= "<li><em>$key2</em>: " . implode(' ', $val2) . '</li>';
+                  break;
+
                 case "chains" :
                 case "mixins" :
                   if (!empty($val2)) {

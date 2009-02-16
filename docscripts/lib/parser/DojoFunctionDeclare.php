@@ -24,6 +24,32 @@ class DojoFunctionDeclare extends DojoBlock
     $this->body = new DojoFunctionBody($package);
   }
 
+  public static function parseVariable(&$comment) {
+    $summary = $comment;
+    $tags = array();
+    if (preg_match('%^\s*([a-z\s]+)\]\s*%', $summary, $match)) {
+      $tags = preg_split('%\s+%', $match[1]);
+      $summary = $comment = substr($summary, strlen($match[0]));
+    }
+
+    list($type, $summary) = preg_split('%\s%', $summary, 2);
+    $type = preg_replace('%(^[^a-zA-Z0-9._$]|[^a-zA-Z0-9._$?]$)%', '', $type);
+
+    $options = array();
+    if(!empty($type)){
+      if(strpos($type, '?')){
+        $type = substr($type, 0, strlen($type) - 1);
+        $options['optional'] = true;
+      }
+      if(strpos($type, '...')){
+        $type = substr($type, 0, strlen($type) - 3);
+        $options['repeating'] = true;
+      }
+    }
+
+    return array($tags, $type, $options, $summary);
+  }
+
   public function destroy() {
     if (!$this->destroyed) {
       $this->destroyed = true;
@@ -286,7 +312,7 @@ class DojoFunctionDeclare extends DojoBlock
     if (substr($masquerading_as_function, 0, 7) == 'window.'){
       $masquerading_as_function = $function_name = substr($masquerading_as_function, 7);
     }
-    $check_keys = array('summary','description','returns','exceptions');
+    $check_keys = array('summary','description','returns','tags','exceptions');
 
     if (!empty($output[$function_name]['aliases'])) {
       unset($output[$function_name]['aliases']); // This is implemented, it aliases nothing.
@@ -395,30 +421,18 @@ class DojoFunctionDeclare extends DojoBlock
         $output[$function_name . '.' . $key]['summary'] = $comment;
       }
       if (!empty($output[$function_name]['parameters']) && array_key_exists($key, $output[$function_name]['parameters']) && $comment = $this->getBlockComment($key)) {
-        list($full_parameter_type, $comment) = preg_split('%\s%', $comment, 2);
-        $parameter_type = preg_replace('%(^[^a-zA-Z0-9._$]|[^a-zA-Z0-9._$?]$)%', '', $full_parameter_type);
-        $options = array();
-        if($parameter_type){
-          if(strpos($parameter_type, '?')){
-            $parameter_type = substr($parameter_type, 0, strlen($parameter_type) - 1);
-            $options['optional'] = true;
-          }
-          if(strpos($parameter_type, '...')){
-            $parameter_type = substr($parameter_type, 0, strlen($parameter_type) - 3);
-            $options['repeating'] = true;
-          }
-        }
+        list($tags, $parameter_type, $options, $summary) = DojoFunctionDeclare::parseVariable($comment);
 
+        // If type is specified in the parameters, and it doesn't
+        // match the first word in this comment block, assume that
+        // this first word doesn't represent its type
         if (!empty($output[$function_name]['parameters'][$key]['type']) && $parameter_type != $output[$function_name]['parameters'][$key]['type']) {
-          $comment = $parameter_type . ' ' . $comment;
-          $full_parameter_type = $parameter_type = $output[$function_name]['parameters'][$key]['type'];
-        }
-        if ($full_parameter_type) {
-            $comment =  preg_replace('%^' . preg_quote($full_parameter_type) . '\s*%', '', $comment);
+          $summary = $comment;
+          $parameter_type = $output[$function_name]['parameters'][$key]['type'];
         }
         $output[$function_name]['parameters'][$key] = array_merge($output[$function_name]['parameters'][$key], $options); 
         $output[$function_name]['parameters'][$key]['type'] = $parameter_type;
-        $output[$function_name]['parameters'][$key]['summary'] = htmlentities($comment);
+        $output[$function_name]['parameters'][$key]['summary'] = htmlentities($summary);
       }
     }
 
