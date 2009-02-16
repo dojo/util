@@ -4,7 +4,6 @@
 		get a "full screen" UI w/ straightforward CSS.
 	-->
 	<!--
-		// TODO: implement global progress bar
 		// TODO: provide a UI for prompted tests
 	-->
 	<head>
@@ -156,7 +155,7 @@
 			}
 
 			#play, #pause {
-				font-family: Webdings;
+				font-family: Arial;
 				font-size: 1.4em;
 				border: 1px solid #DEDEDE;
 				cursor: pointer;
@@ -191,7 +190,7 @@
 				width: 100%;
 			}
 
-			#testList > tbody > tr > td {
+			#testList td {
 				border-bottom: 1px solid #DEDEDE;
 				border-right : 1px solid #DEDEDE;
 				padding: 3px;
@@ -203,6 +202,10 @@
 				padding: 3px;
 				font-weight: bolder;
 				font-style: italic;
+			}
+			
+			#testList tfoot {
+				font-weight: bold;
 			}
 
 			#toggleButtons {
@@ -240,13 +243,13 @@
 				</td>
 			</tr>
 			<tr valign="top" height="10">
-				<td colspan="2"><div id="progressOuter"></div></td>
+				<td colspan="2"><div id="progressOuter" onclick="doh._jumpToSuite(arguments[0]);"></div></td>
 			</tr>
 			<tr valign="top" height="30">
 				<td width="30%" class="header">
 					<span id="toggleButtons" onclick="doh.togglePaused();">
-						<button id="play">&#052;</button>
-						<button id="pause" style="display: none;">&#059;</button>
+						<button id="play">&#9658;</button>
+						<button id="pause" style="display: none;">&#9553;</button>
 					</span>
 					<span id="runningStatus">
 						<span id="pausedMsg">Stopped</span>
@@ -254,21 +257,21 @@
 					</span>
 				</td>
 				<td width="*" class="header" valign="bottom">
-					<button class="tab" onclick="showTestPage();">Test Page</button>
-					<button class="tab" onclick="showLogPage();">Log</button>
+					<button class="tab" onclick="doh.showTestPage();">Test Page</button>
+					<button class="tab" onclick="doh.showLogPage();">Log</button>
 				</td>
 			</tr>
 			<tr valign="top" style="border: 0; padding: 0; margin: 0;">
 				<td height="100%" style="border: 0; padding: 0; margin: 0;">
 					<div id="testListContainer">
 						<table cellpadding="0" cellspacing="0" border="0"
-							width="100%" id="testList" style="margin: 0;">
+							width="100%" id="testList" style="margin: 0;" onclick="doh._jumpToLog(arguments[0]);">
 							<thead>
 								<tr id="testListHeader" style="border: 0; padding: 0; margin: 0;" >
 									<th>&nbsp;</th>
 									<th width="20">
 										<input type="checkbox" checked 
-											onclick="toggleRunAll();">
+											onclick="doh.toggleRunAll();">
 									</th>
 									<th width="*" style="text-align: left;">test</th>
 									<th width="50">time</th>
@@ -276,7 +279,7 @@
 							</thead>
 							<tbody valign="top">
 								<tr id="groupTemplate" style="display: none;">
-									<td style="font-family: Webdings; width: 15px;">&#052;</td>
+									<td style="font-family: Arial; width: 15px;">&#9658;</td>
 									<td>
 										<input type="checkbox" checked>
 									</td>
