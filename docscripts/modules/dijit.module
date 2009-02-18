@@ -1,7 +1,9 @@
 <?php
 
 function dijit_code_location() {
-	return '../../dijit/';
+  $versions = array('1.1.0', '1.1.1', '1.2.3', 'nightly');
+  $version = 3;
+	return '../../dojotoolkit/' . $versions[$version] . '/dijit/';
 }
 
 function dijit_project_name() {

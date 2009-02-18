@@ -11,8 +11,8 @@ class Scope {
    * @param Symbol $symbol A name object occurring in the current scope
    */
   public function define(&$symbol) {
-    if ($token = $this->definitions[$symbol->value]) {
-      throw new Exception(($token->reserved ? 'Already reserved' : 'Already defined') . ":{$symbol->value}");
+    if ($token = $this->definitions[$symbol->value] && $token->reserved) {
+      throw new Exception("Already defined: {$symbol->value}");
     }
 
     $this->definitions[$symbol->value] = $symbol;
@@ -34,7 +34,7 @@ class Scope {
    * @param Symbol $expression The expression being assigned
    */
   public function assignment($to_expression, $expression) {
-    if ($to_expression->arity == 'name') {
+    if ($to_expression->arity == 'name' || $to_expression->arity == 'literal') {
       $this->assignments[$to_expression->value] = $expression;
     }
   }
@@ -73,17 +73,21 @@ class Scope {
    * (name) symbol instead
    */
   public function find ($name, $symbol_table) {
+    if ($symbol_table[$name]) {
+      return clone $symbol_table[$name];
+    }
+
     $scope = $this;
     while (1) {
       if ($symbol = $scope->definition($name)) {
-        return $symbol;
+        return clone $symbol;
       }
       if (!$scope->parent()) {
         if (array_key_exists($name, $symbol_table)) {
           return $symbol_table[$name];
         }
-        $scope = $symbol_table['(name)'];
-        $s = clone $scope;
+        $symbol = $symbol_table['(name)'];
+        $s = clone $symbol;
         $s->global_scope = true;
         $s->reserved = false;
         $s->nud = 'nud_itself';

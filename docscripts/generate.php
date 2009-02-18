@@ -157,11 +157,9 @@ foreach ($files as $set){
       $node['private_parent'] = $content['private_parent'];
     }
 
-    if (is_array($content['aliases'])) {
-      foreach ($content['aliases'] as $alias) {
-        if (!is_array($node['aliases']) || !in_array($alias, $node['aliases'])) {
-          $node['aliases'][] = $alias;
-        }
+    if (is_array($content['alias'])) {
+      foreach ($content['alias'] as $alias) {
+        $node['alias'] = $alias;
       }
     }
 

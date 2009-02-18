@@ -1,7 +1,5 @@
 <?php
 
-require_once('JavaScriptStatements.php');
-
 class JavaScriptObject {
   protected $values;
 
@@ -22,7 +20,10 @@ class JavaScriptObject {
 
     $keys = array();
     foreach ($this->values as $value) {
-      $keys[$value->key][] = JavaScriptStatements::convert_symbol($value);
+      if (is_array($value)) {
+        $value = $value[0];
+      }
+      $keys[$value->key][] = $value->convert();
     }
 
     return ($this->keys = $keys);

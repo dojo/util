@@ -37,7 +37,7 @@ abstract class Parser {
    */
   public function advance($id = NULL) {
     if ($id && !$this->peek($id)) {
-      throw new Exception("Expected '$id' but got '{$this->token->id}'");
+      throw new Exception("Line {$this->token->line_number}, character {$this->token->char_pos}: Expected '$id' but got {$this->token->id}:'{$this->token->value}'");
     }
 
     $this->token = $this->next();
@@ -52,14 +52,33 @@ abstract class Parser {
    * Look at the next non-whitespace token for a value
    */
   public function peek($id) {
-    if ($id == "\n") {
-      return $this->token->id == $id;
+    if (!is_array($id)) {
+      $id = array($id);
+    }
+    if (in_array("\n", $id) && $this->token->id == $id) {
+      return true;
     }
     while ($this->token->value == "\n") {
       // We can ignore line-breaks that are mid-expression
       $this->token = $this->next();
     }
-    return $this->token->id == $id;
+    return in_array($this->token->id, $id);
+  }
+
+  public function peek2($id) {
+    if (!is_array($id)) {
+      $id = array($id);
+    }
+
+    for ($i = $this->token_pos; $i < $this->token_length; $i++) {
+      $token = $this->tokens[$i];
+      if (in_array("\n", $id) && $token['value'] == "\n") {
+        return true;
+      }
+      if ($token['value'] != "\n") {
+        return in_array($token['value'], $id);
+      }
+    }
   }
 
   /**
@@ -75,10 +94,10 @@ abstract class Parser {
     $statements = array();
     while (1) {
       // Statements occur within {} blocks as well
-      if (in_array($this->token->id, $terminators)) {
+      if ($this->peek($terminators)) {
         break;
       }
-      if ($statement = $this->statement()) {
+      if ($statement = $this->statement($terminators)) {
         $statements[] = $statement;
       }
     }
@@ -88,7 +107,12 @@ abstract class Parser {
   /**
    * Grab a single statement
    */
-  public function statement() {
+  public function statement($exclude = array()) {
+    $skip = array_diff(array(';', "\n", ','), $exclude);
+    while (in_array($this->token->id, $skip)) {
+      $this->advance($this->token->id);
+    }
+
     $token = $this->token;
     if ($token->std) {
       $this->advance();
@@ -96,10 +120,61 @@ abstract class Parser {
       return $token->std($this);
     }
     $expression = $this->expression();
-    while ($this->token->id == ';' || $this->token->id == "\n") {
+
+    while (in_array($this->token->id, $skip)) {
       $this->advance($this->token->id);
     }
+
     return $expression;
+  }
+
+  private function comments_from_pos($i) {
+    $last = NULL;
+    $comments = array();
+    for (; $i < $this->token_length; $i++) {
+      $token = $this->tokens[$i];
+      if ($token['type'] == 'comment') {
+        $comments[] = $token['value'];
+      }
+      elseif ($token['value'] != "\n") {
+        break;
+      }
+      elseif ($last == "\n") {
+        $comments[] = '';
+      }
+      $last = $token['value'];
+    }
+    return $comments;
+  }
+
+  public function comments_before($symbol) {
+    if (!isset($symbol->token_pos)) {
+      throw new Exception('Need valid token to look up comments');
+    }
+
+    $comments = FALSE;
+    for ($i = $symbol->token_pos - 1; $i > 0; $i--) {
+      $token = $this->tokens[$i];
+      if ($token['type'] == 'comment') {
+        $comments = TRUE;
+      }
+      elseif ($token['value'] != "\n") {
+        if ($comments) {
+          return $this->comments_from_pos($i + 1);
+        }
+        break;
+      }
+    }
+
+    return array();
+  }
+
+  public function comments_after($symbol) {
+    if (!isset($symbol->token_pos)) {
+      throw new Exception('Need valid token to look up comments');
+    }
+
+    return $this->comments_from_pos($symbol->token_pos + 1);
   }
 
   /**
@@ -112,23 +187,25 @@ abstract class Parser {
       $value = $token['value'];
       $type = $arity = $token['type'];
 
-      if ($arity == 'name') {
-        $s = $this->scope->find($value, $this->symbol_table);
-      }
-      elseif ($arity == 'string' || $arity == 'number' || $arity == 'regex') {
+      if ($arity == 'string' || $arity == 'number' || $arity == 'regex') {
         $arity = 'literal';
         $s = $this->new_symbol('(literal)');
+      }
+      elseif ($s = $this->new_symbol($value)) {
+        // short circuit
+      }
+      elseif ($arity == 'name') {
+        $s = $this->scope->find($value, $this->symbol_table);
       }
       elseif ($arity == 'comment') {
         return $this->next();
       }
       else {
-        $s = $this->new_symbol($value);
-        if (!$s) {
-          throw new Exception("Unknown operator ($arity:'$value')");
-        }
+        throw new Exception("Line {$token['line_number']}, char {$token['char_pos']}: Unknown operator ($arity:'$value')");
       }
 
+      $s->token_pos = $this->token_pos - 1;
+      $s->line = $token['line'];
       $s->line_number = $token['line_number'];
       $s->char_pos = $token['char_pos'];
       $s->value = $value;
@@ -172,18 +249,24 @@ abstract class Parser {
       $this->advance();
     }
     $left = $token->nud($this);
-    while ($bp < $this->token->lbp($parser, $left)) {
+    while ($bp < $this->token->lbp($this, $left)) {
       $token = $this->token;
       $this->advance();
       $left = $token->led($this, $left);
     }
+
     return $left;
   }
 
-  public function new_symbol($id) {
+  public function new_symbol($id, $raw = FALSE) {
     $symbol = $this->symbol_table[$id];
     if ($symbol) {
-      return clone $symbol;
+      if ($raw) {
+        return $symbol;
+      }
+      $symbol = clone $symbol;
+      $symbol->scope = $this->scope;
+      return $symbol;
     }
   }
 
@@ -304,6 +387,7 @@ abstract class Parser {
   protected function stmt($id, $std) {
     $symbol = $this->symbol($id);
     $symbol->std = $std;
+    $symbol->nud = $std; // This makes statement nesting (with no block) possible
     return $symbol;
   }
 }

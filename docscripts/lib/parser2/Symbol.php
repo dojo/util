@@ -47,7 +47,7 @@ class Symbol {
 
   public function nud_constant($parser) {
     $parser->scope->reserve($this);
-    $this->value = $parser->new_symbol($this->id)->value;
+    $this->value = $parser->new_symbol($this->id, TRUE)->value;
     $this->arity = 'literal';
     return $this;
   }

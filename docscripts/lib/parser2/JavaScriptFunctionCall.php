@@ -17,7 +17,7 @@ class JavaScriptFunctionCall {
   }
 
   private function resolve() {
-    list ($this->global_scope, $this->name) = JavaScriptStatements::resolve_variable($this->call);
+    list ($this->global_scope, $this->name) = $this->call->resolve();
   }
 
   public function name() {
@@ -32,6 +32,11 @@ class JavaScriptFunctionCall {
       $this->resolve();
     }
     return !!$this->global_scope;
+  }
+
+  public function type() {
+    // TODO: Try to resolve return type
+    return 'Object';
   }
 
   public function arguments() {

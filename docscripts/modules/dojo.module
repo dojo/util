@@ -1,7 +1,9 @@
 <?php
 
 function dojo_code_location() {
-  return '../../dojo/';
+  $versions = array('1.1.0', '1.1.1', '1.2.3', 'nightly');
+  $version = 3;
+	return '../../dojotoolkit/' . $versions[$version] . '/dojo/';
 }
 
 function dojo_project_name() {

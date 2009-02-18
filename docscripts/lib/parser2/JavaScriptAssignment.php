@@ -1,53 +1,40 @@
 <?php
 
-require_once('JavaScriptStatements.php');
+require_once('JavaScriptVariable.php');
 
-class JavaScriptAssignment {
-  protected $variable;
+class JavaScriptAssignment extends JavaScriptVariable {
   protected $value;
 
-  protected $resolved_variable;
   protected $resolve_value;
-  protected $global_scope;
 
   public function __construct($variable, $value) {
-    $this->variable = $variable;
+    parent::__construct($variable);
     $this->value = $value;
   }
 
-  private function resolve() {
-    list ($this->global_scope, $this->resolved_variable) = JavaScriptStatements::resolve_variable($this->variable);
-  }
-
   public function name() {
-    if (!isset($this->resolved_variable)) {
-      $this->resolve();
-    }
-    return $this->resolved_variable;
-  }
-
-  public function type() {
-    return $this->value()->type();
+    return parent::value();
   }
 
   public function value() {
     if (!isset($this->resolved_value)) {
-      $this->resolved_value = JavaScriptStatements::convert_symbol($this->value);
+      $this->resolved_value = $this->value->convert();
     }
     return $this->resolved_value;
   }
 
-  public function is_global () {
-    if (!isset($this->global_scope)) {
-      $this->resolve();
+  public function types() {
+    $value = $this->value();
+    if (is_array($value)) {
+      return array_map(create_function('$item', 'return $item->type();'), $value);
     }
-    return !!$this->global_scope;
+    return array($value->type());
   }
 
-  public function arguments() {
-    if (isset($this->resolved_value)) {
-      return $this->resolved_value;
+  public function type() {
+    $types = array_diff($this->types(), array('variable'));
+    if (count($types) == 1) {
+      return array_pop($types);
     }
-    return ($this->resolved_value = JavaScriptStatement::convert_symbol($this->value));
   }
 }

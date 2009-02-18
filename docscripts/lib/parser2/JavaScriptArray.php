@@ -1,6 +1,7 @@
 <?php
 
 require_once('JavaScriptStatements.php');
+require_once('JavaScriptVariable.php');
 require_once('JavaScriptLiteral.php');
 require_once('JavaScriptString.php');
 require_once('JavaScriptNumber.php');
@@ -11,8 +12,10 @@ require_once('JavaScriptObject.php');
 class JavaScriptArray {
   protected $args;
   protected $resolved_args;
+  public $length;
 
   public function __construct($args) {
+    $this->length = count($args);
     $this->args = $args;
   }
 
@@ -33,19 +36,30 @@ class JavaScriptArray {
   }
 
   public function getVariable($position) {
-    return $this->getType($position, JavaScriptLiteral)->value();
+    if ($variable = $this->getType($position, JavaScriptVariable)) {
+      return $variable->value();
+    }
+    if ($variable = $this->getType($position, JavaScriptLiteral)) {
+      return $variable->value();
+    }
   }
 
   public function getString($position) {
-    return $this->getType($position, JavaScriptString)->value();
+    if ($string = $this->getType($position, JavaScriptString)) {
+      return $string->value();
+    }
   }
 
   public function getNumber($position) {
-    return $this->getType($position, JavaScriptNumber)->value();
+    if ($number = $this->getType($position, JavaScriptNumber)) {
+      return $number->value();
+    }
   }
 
   public function getRegExp($position) {
-    return $this->getType($position, JavaScriptRegExp)->value();
+    if ($regexp = $this->getType($position, JavaScriptRegExp)) {
+      return $regexp->value();
+    }
   }
 
   public function getFunction($position) {
@@ -67,7 +81,7 @@ class JavaScriptArray {
 
     $args = array();
     foreach ($this->args as $arg) {
-      $args[] = JavaScriptStatements::convert_symbol($arg);
+      $args[] = $arg->convert();
     }
 
     return ($this->resolved_args = $args);

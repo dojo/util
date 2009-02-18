@@ -1,16 +1,19 @@
 <?php
 
 class JavaScriptLanguage {
-  public static function new_token($type, $value, $line_number, $char_pos) {
-    return array('type' => $type, 'value' => $value, 'line_number' => $line_number, 'char_pos' => $char_pos);
+  public static function new_token($type, $value, $extras) {
+    return array('type' => $type, 'value' => $value, 'line_number' => $extras['line_number'], 'char_pos' => $extras['char_pos'], 'line' => $extras['exploded_lines'][$extras['line_number'] - 1]);
   }
 
   public static function tokenize($lines) {
     $lines = str_replace("\r", '', $lines);
     $tokens = array();
 
+    $exploded_lines = explode("\n", $lines);
     $line_number = 1;
     $char_pos = 0;
+    $extras = array('exploded_lines', 'line_number', 'char_pos');
+
     $positions = array();
     for ($i = 0; $i < strlen($lines); $i++) {
       $char = $lines{$i};
@@ -51,9 +54,53 @@ class JavaScriptLanguage {
       }
 
       switch($char){
+      case '-':
+      case '+':
+      case '<':
+      case '>':
+      case '=':
+      case '.':
+      case '|':
+      case '&':
+      case ':':
+        if ($char == '-' && !$pop['terminated'] && $pop['type'] == 'operator' && $pop['value'] == '-') {
+          $pop['value'] = '--';
+          break;
+        }
+        elseif ($char == '+' && !$pop['terminated'] && $pop['type'] == 'operator' && $pop['value'] == '+') {
+          $pop['value'] = '++';
+          break;
+        }
+        elseif ($char == '<' && !$pop['terminated'] && $pop['type'] == 'operator' && $pop['value'] == '<') {
+          $pop['value'] = '<<';
+          break;
+        }
+        elseif ($char == '>' && !$pop['terminated'] && $pop['type'] == 'operator' && ($pop['value'] == '>' || $pop['value'] == '>>')) {
+          $pop['value'] .= '>';
+          break;
+        }
+        elseif ($char == '=' && !$pop['terminated'] && $pop['type'] == 'operator' && in_array($pop['value'], array('+', '-', '*', '/', '%', '<<', '>>', '>>>', '&', '^', '|', '!', '!=', '=', '==', '>', '<'))) {
+          $pop['value'] .= $char;
+          break;
+        }
+        elseif ($char == '.' && !$pop['terminated'] && $pop['type'] == 'number') {
+          $pop['value'] .= $char;
+          break;
+        }
+        elseif ($char == '|' && !$pop['terminated'] && $pop['type'] == 'operator' && $pop['value'] == '|') {
+          $pop['value'] = '||';
+          break;
+        }
+        elseif ($char == '&' && !$pop['terminated'] && $pop['type'] == 'operator' && $pop['value'] == '&') {
+          $pop['value'] = '&&';
+          break;
+        }
+        elseif ($case == ':' && !$pop['terminated'] && $pop['type'] == 'operator' && $pop['value'] == '?') {
+          $pop['value'] = '?:';
+          break;
+        }
       case "\n":
       case ';':
-      case ':':
       case ',':
       case '(':
       case ')':
@@ -63,51 +110,10 @@ class JavaScriptLanguage {
       case '}':
       case '!':
       case '?':
-      case '-':
       case '*':
       case '%':
-      case '<':
-      case '>':
-        $tokens[] = self::new_token('operator', $char, $line_number, $char_pos);
-        break;
-      case '.':
-        if ($pop['type'] == 'number') {
-          $pop['value'] .= $char;
-        }
-        else {
-          $tokens[] = self::new_token('operator', $char, $line_number, $char_pos);
-        }
-        break;
-      case '+':
-        if ($pop['value'] == '+') {
-          $pop['value'] = '++';
-        }
-        elseif ($pop['value'] == '-') {
-          $pop['value'] = '--';
-        }
-        else {
-          $tokens[] = self::new_token('operator', $char, $line_number, $char_pos);
-        }
-        break;
-      case '=':
-        if (substr($pop['value'], -1) == '=') {
-          $pop['value'] .= $char;
-        }
-        elseif (in_array($pop['value'], array('<', '>', '!', '+', '-', '/', '*', '%'))) {
-          $pop['value'] .= $char;
-        }
-        else {
-          $tokens[] = self::new_token('operator', $char, $line_number, $char_pos);
-        }
-        break;
-      case '&':
-      case '|':
-        if ($pop['value'] == $char) {
-          $pop['value'] .= $char;
-        }
-        else {
-          $tokens[] = self::new_token('operator', $char, $line_number, $char_pos);
-        }
+      case '~':
+        $tokens[] = self::new_token('operator', $char, compact($extras));
         break;
       case "'":
       case '"':
@@ -129,9 +135,9 @@ class JavaScriptLanguage {
           else {
             break;
           }
-          $last = $char;
+          $last = $letter;
         }
-        $tokens[] = self::new_token('string', str_replace("\\$char", $char, $string), $line_number, $char_pos);
+        $tokens[] = self::new_token('string', str_replace("\\$char", $char, $string), compact($extras));
         break;
       case '/':
         // Single-line comment, multi-line comment, regular expression, or just a division sign
@@ -139,6 +145,7 @@ class JavaScriptLanguage {
         $instruction = NULL;
         $single = FALSE;
         $multi = FALSE;
+        $escaped = FALSE;
         $last = '';
         for ($j = $i + 1; $j < strlen($lines); $j++) {
           $letter = $lines{$j};
@@ -157,23 +164,22 @@ class JavaScriptLanguage {
               break;
             }
           }
-          elseif (!$last && $letter == '/') {
+          elseif ($last === '' && $letter == '/') {
             $single = TRUE;
           }
-          elseif (!$last && $letter == '*') {
+          elseif ($last === '' && $letter == '*') {
             $multi = TRUE;
           }
-          elseif (!$last) {
+          elseif ($escaped) {
+            $escaped = FALSE;
+          }
+          elseif ($letter == '\\') {
+            $escaped = TRUE;
+          }
+          elseif ($last === '') {
             // If it's not a comment, it might be a regex
             // which can only occur after certain operators
-            if ($last_expression['type'] != 'operator') {
-              $content = '/';
-              $instruction = 'operator';
-              break;
-            }
-            // A regex is only valid after a few characters
-            else if (!in_array($last_expression['value']{strlen($last_expression['value']) - 1},
-                array('=', '(', ',', ':', ';', '[', '!', '?', "\n"))) {
+            if (in_array($last_expression['value'], array(')')) || ($last_expression['type'] != 'operator' && $last_expression['value'] != 'return')) {
               $content = '/';
               $instruction = 'operator';
               break;
@@ -181,25 +187,24 @@ class JavaScriptLanguage {
           }
           elseif ($letter == '/') {
             // When the regex ends, we need to look for modifiers
-            if ($last != '\\') {
-              $content .= $letter;
-              $instruction = 'regex';
-              $i = $j;
-              for ($k = $j + 1; $k < strlen($lines); $k++) {
-                $modifier = $lines{$k};
-                if ($modifier == ' ' || $modifier == "\t") {
-                  continue;
-                }
-                elseif(in_array($modifier, array('i', 'm', 'g'))) {
-                  $i = $k;
-                  $content .= $modifier;
-                }
-                else {
-                  break;
-                }
+            $content .= $letter;
+            $instruction = 'regex';
+            $i = $j;
+            for ($k = $j + 1; $k < strlen($lines); $k++) {
+              $modifier = $lines{$k};
+              if ($modifier == ' ' || $modifier == "\t") {
+                $last = $modifier;
+                continue;
               }
-              break;
+              elseif(in_array($modifier, array('i', 'm', 'g'))) {
+                $i = $k;
+                $content .= $modifier;
+              }
+              else {
+                break;
+              }
             }
+            break;
           }
           elseif ($letter == "\n") {
             // End of the expression with no regex terminator
@@ -213,19 +218,16 @@ class JavaScriptLanguage {
           $last = $letter;
         }
 
-        $tokens[] = self::new_token($instruction, $content, $line_number, $char_pos);
+        $tokens[] = self::new_token($instruction, $content, compact($extras));
         break;
       default:
-        if (is_numeric($char)) {
-          if ($pop['value'] == '.') {
+        if ($pop['type'] != 'name' && is_numeric($char)) {
+          if ($pop['value'] == '.' || $pop['type'] == 'number') {
             $pop['type'] = 'number';
             $pop['value'] .= $char;
           }
-          elseif ($pop['type'] == 'number') {
-            $pop['value'] .= $char;
-          }
           else {
-            $tokens[] = self::new_token('number', $char, $line_number, $char_pos);
+            $tokens[] = self::new_token('number', $char, compact($extras));
           }
         }
         else {
@@ -245,11 +247,14 @@ class JavaScriptLanguage {
             $pop['value'] .= $char;
           }
           else {
-            $tokens[] = self::new_token('name', $char, $line_number, $char_pos);
+            $tokens[] = self::new_token('name', $char, compact($extras));
           }
         }
       }
     }
+
+    // print_r($tokens);
+    // die();
 
     return $tokens;
   }
