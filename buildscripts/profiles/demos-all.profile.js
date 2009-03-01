@@ -96,6 +96,12 @@ dependencies = {
 			dependencies:[
 				"demos.babelChat.src"
 			]
+		},
+		{
+			name: "../demos/faces/src.js",
+			dependencies:[
+				"demos.faces.src"
+			]
 		}
 	],
 	
