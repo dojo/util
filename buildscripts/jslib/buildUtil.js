@@ -209,17 +209,24 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 		}
 	}
 
-	//Make sure releaseDir uses /, and ends in a file separator.
+	//Make sure releaseDir uses / since rest of build assumes / paths.
 	kwArgs.releaseDir = kwArgs.releaseDir.replace(/\\/g, "/");
-	if(!kwArgs.releaseDir.match(/\/$/)){
-		kwArgs.releaseDir += "/";
-	}
 
 	//Set up some compound values
-	kwArgs.releaseDir += kwArgs["releaseName"];
+	if(kwArgs["releaseName"]){
+		///Make sure releaseDir ends in a / so releaseName concat works.
+		if(!kwArgs.releaseDir.match(/\/$/)){
+			kwArgs.releaseDir += "/";
+		}
+		kwArgs.releaseDir += kwArgs["releaseName"];
+	}else{
+		//No releaseName, so strip off trailing slash
+		kwArgs.releaseDir = kwArgs.releaseDir.replace(/\/$/, "");
+	}
+
 	kwArgs.action = kwArgs.action.split(",");
 	kwArgs.localeList = kwArgs.localeList.split(",");
-	
+
 	//Attach the final loader type to the dependencies
 	dependencies.loader = kwArgs.loader;
 
