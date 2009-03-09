@@ -582,7 +582,7 @@ function jsdoc_doc_insert($node) {
     $doc = fopen($file->filepath, 'r');
     $buffer = array();
     while (!feof($doc)) {
-      set_time_limit(10);
+      set_time_limit(30);
 
       $line = stream_get_line($doc, 9999, "\n");
       if (preg_match('%^\t"([^"]+)": \{%', $line, $match)) {
@@ -613,6 +613,12 @@ function jsdoc_doc_insert($node) {
       elseif($in) {
         $buffer[] = $line;
       }
+    }
+
+    $query = db_query("SELECT n.nid FROM {node} AS n INNER JOIN {jsdoc_objects} AS j ON (j.nid = n.nid) WHERE type = 'jsdoc_object' AND j.did = %d AND changed < %d", $node->nid, time() - 3600);
+    while ($nid = db_fetch_object($query)) {
+      set_time_limit(30);
+      node_delete($nid->nid);
     }
   }
 }
@@ -1593,6 +1599,13 @@ function jsdoc_get_oo_info(&$node) {
           list($title) = array_slice(explode('.', $item->title), -1);
         }
 
+        if (jsdoc_get_type($item) == 'Constructor' && ($resolved = jsdoc_resolve_constructor($item))) {
+          $item->jsdoc_parameters = $resolved->jsdoc_parameters;
+          $item->jsdoc_return_summary = $resolved->jsdoc_return_summary;
+          $item->jsdoc_return_types = $resolved->jsdoc_return_types;
+          $item->teaser = $resolved->teaser;
+        }
+
         if ($children[$title]) {
           $found = false;
           if ($children[$title]->inheritance) {
@@ -1909,7 +1922,7 @@ function jsdoc_resolve_constructor(&$node) {
 }
 
 function _jsdoc_get_type_themed($type, $node, $cleaned){
-  $obj = jsdoc_object_node_load($type, jsdoc_get_version($node));
+  $obj = jsdoc_object_node_load($type, jsdoc_get_version($node), TRUE, TRUE);
   if ($obj) {
     $type = (object)array(
       'title' => $obj->title,
