@@ -772,7 +772,7 @@ function jsdoc_object_load($node, $method = FALSE) {
   // TODO: Deal with alias
   _jsdoc_init();
 
-  $additions = db_fetch_object(db_query("SELECT json, did FROM jsdoc_objects WHERE nid = %d", $node->nid));
+  $additions = db_fetch_object(db_query("SELECT json, did FROM {jsdoc_objects} WHERE nid = %d", $node->nid));
   $additions->title = $node->title;
   $additions->json = unserialize($additions->json);
   $node->jsdoc_version = $additions->jsdoc_version = node_load($additions->did);
