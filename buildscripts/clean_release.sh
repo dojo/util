@@ -36,7 +36,7 @@ if [ -d $releaseDir ]; then
 
 	cd $releaseDir
 
-	# remove dojox tests and demos - they all follow this convetion
+	# remove dojox tests and demos - they all follow this convention
 	for i in $buildName/dojox/* 
 	do
 	  if [ -d $i ]; then
@@ -48,16 +48,23 @@ if [ -d $releaseDir ]; then
 	# removed dijit tests
 	rm_dojo_files "dijit/tests" "dijit/demos" "dijit/bench" "dojo/tests" "dojo/tests.js" "util"
 
-	# noir isn't worth including yet
-	if [ -d $buildName/dijit/themes/noir ]; then
-		rm -rf $buildName/dijit/themes/noir/
+	# cleanup dijit/themes/ selectively
+	if [ -d $buildName/dijit/themes ]; then
+
+		# noir isn't worth including yet		
+		if [ -d $buildName/dijit/themes/noir ]; then
+			rm -rf $buildName/dijit/themes/noir/
+		fi
 		
 		# so the themes are there, lets assume that, piggyback on noir: FIXME later
 		find ./$buildName/dijit/themes/ -name *.html -exec rm '{}' ';'
-		# rm -rf $buildName/dijit/themes/themeTesterImages/	
+
+		# remove themeTester from minified build. 
+		rm -f $buildName/dijit/themes/templateThemeTest.html
+		rm -f $buildName/dijit/themes/themeTester*.html
+		rm -rf $buildName/dijit/themes/themeTesterImages/	
 
 	fi
-	# TODO: merge down to a single theme.css for any theme?
 
 	# remove uncompressed .js files (leave for official release)
 	# find . -name *.uncompressed.js -exec rm '{}' ';'
