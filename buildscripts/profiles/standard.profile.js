@@ -31,9 +31,6 @@ dependencies = {
 		},
 		{
 			name: "../dojox/grid/DataGrid.js",
-			layerDependencies: [
-				"../dijit/dijit.js"
-			],
 			dependencies: [
 				"dojox.grid.DataGrid"
 			]
@@ -49,10 +46,6 @@ dependencies = {
 		//		add some of the most common themes
 		{
 			name: "../dojox/charting/widget/Chart2D.js",
-			layerDependencies: [
-				"../dijit/dijit.js",
-				// "../dojox/gfx.js"
-			],
 			dependencies: [
 				"dojox.charting.widget.Chart2D",
 				"dojox.charting.widget.Sparkline",
