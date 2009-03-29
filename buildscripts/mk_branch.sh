@@ -2,10 +2,8 @@
 
 #version should be something like 0.9.0beta or 0.9.0
 name=$1
-#svnUserName is the name you use to connect to Dojo's subversion.
-svnUserName=$2
 #The svn revision number to use for tag. Should be a number, like 11203
-svnRevision=$3
+svnRevision=$2
 
 #If no svnRevision number, get the latest one from he repo.
 if [ "$svnRevision" = "" ]; then
