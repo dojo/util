@@ -153,7 +153,7 @@ buildUtil.DojoBuildOptions = {
 		helpText: "Expands dojo.provide calls with faster calls at the expense of a larger file size. Only use the option "
 			+ "if your profiling reveals that dojo.provide calls are taking a noticeable amount of time. It replaces "
 			+ "dojo.provide(\"foo.bar\") statements with the shortest valid programmatic equivalent:\n"
-			+ "if(typeof foo==\"undefined\"){foo={};};foo.bar=foo.bar||{};"
+			+ "if(typeof foo==\"undefined\"){foo={};};foo.bar=foo.bar||{};\nIgnored for xdomain builds."
 	},
 	"buildLayers": {
 		defaultValue: "",
@@ -230,6 +230,11 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 	//Attach the final loader type to the dependencies
 	dependencies.loader = kwArgs.loader;
 
+	//Fix args for bugs
+	if(kwArgs.expandProvide && kwArgs.loader == "xdomain"){
+		logger.info("NOTE: expandProvide not compatible with xdomain builds. Ignoring expandProvide option.");
+		kwArgs.expandProvide = false;
+	}
 	return kwArgs;
 }
 
