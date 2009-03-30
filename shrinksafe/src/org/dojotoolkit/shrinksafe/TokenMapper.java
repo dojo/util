@@ -90,18 +90,13 @@ public class TokenMapper {
 
 		if (!oldToken.equalsIgnoreCase(blank)) {
 			return oldToken;
-		} else if ((hasNewMapping || isInScopeChain(token))) {
-			lastTokenCount++;
-			newToken = new String("_" + Integer.toHexString(lastTokenCount));
-			if (newToken.length() >= token.length()) {
+		} else if (hasNewMapping || isInScopeChain(token)) {
+			newToken = new String("_" + Integer.toHexString(++lastTokenCount));
+			if (newToken.length() >= token.length() && token.charAt(0) != '_') {
 				newToken = token;
+				lastTokenCount--;
 			}
-			if (hasNewMapping) {
-				tokens = (HashMap) replacedTokens.get(localScope);
-			} else {
-				tokens = (HashMap) replacedTokens.get(parentScope);
-			}
-
+			tokens = (HashMap) replacedTokens.get(hasNewMapping ? localScope : parentScope);
 			tokens.put(token, newToken);
 			return newToken;
 		}

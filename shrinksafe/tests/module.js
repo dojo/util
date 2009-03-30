@@ -24,6 +24,16 @@ try{
 			// globals must not be renamed
 			t.assertEqual("function", typeof CallMe);
 			delete result;
+		},
+		function varConflict(t){
+			var original = shrinksafe.tests.module.getContents("8974.js");
+			var compressed = shrinksafe.tests.module.compress(original);
+			t.assertTrue(original.length > compressed.length);
+			t.assertTrue(compressed.indexOf("variabletwo") == -1)
+
+			eval(compressed);
+			t.assertEqual(-1, result);
+			delete result;
 		}
 	]);
 }catch(e){
