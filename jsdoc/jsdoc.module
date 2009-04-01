@@ -619,7 +619,7 @@ function jsdoc_doc_insert($node) {
 
     // cache_set("jsdoc_namespaces_{$version->title}
 
-    $query = db_query("DELETE FROM {cache} WHERE cid LIKE 'jsdoc_namespaces_%s%%'", $node->title);
+    $query = db_query("DELETE FROM {cache} WHERE cid LIKE 'jsdoc_namespaces_%s:%%'", $node->title);
 
     $query = db_query("SELECT n.nid FROM {node} AS n INNER JOIN {jsdoc_objects} AS j ON (j.nid = n.nid) WHERE type = 'jsdoc_object' AND j.did = %d AND changed < %d", $node->nid, $start);
     while ($nid = db_fetch_object($query)) {
@@ -838,16 +838,32 @@ function jsdoc_get_version(&$node = FALSE) {
 }
 
 function jsdoc_get_versions($node = FALSE) {
+  static $cache = array();
   $versions = array();
+
   if ($node) {
+    if ($node->title) {
+      $cache_key = $node->title;
+      if ($cache[$cache_key]) {
+        return $cache[$cache_key];
+      }
+    }
     $query = db_query("SELECT j.did AS nid FROM {jsdoc_objects} j INNER JOIN {node} n ON (n.nid = j.nid) WHERE n.title = '%s' GROUP BY j.did", $node->title);
   }
   else {
+    $cache_key = '%ALL%';
+    if ($cache[$cache_key]) {
+      return $cache[$cache_key];
+    }
     $query = db_query("SELECT nid FROM {node} WHERE type = 'jsdoc_doc' ORDER BY nid DESC");
   }
 
   while ($version = db_fetch_object($query)) {
     $versions[] = node_load($version->nid);
+  }
+
+  if ($cache_key) {
+    $cache[$cache_key] = $versions;
   }
 
   return $versions;
@@ -858,7 +874,7 @@ function jsdoc_get_return_summary(&$node) {
     return $node->jsdoc_return_summary_formatted;
   }
 
-  return ($node->jsdoc_return_summary_formatted = trim(preg_replace('%(^<p>|</p>$)%', '', check_markup(str_replace("\n", ' ', $object->jsdoc_return_summary), variable_get('jsdoc_input_format', 1), FALSE))));
+  return ($node->jsdoc_return_summary_formatted = trim(preg_replace('%(^<p>|</p>$)%', '', str_replace("\n", ' ', $object->jsdoc_return_summary))));
 }
 
 function jsdoc_get_return_types(&$node) {
@@ -1116,6 +1132,8 @@ function jsdoc_object_node_load($name, $version=false, $exact=true, $broad=false
  * Custom version of node_load for objects
  */
 function jsdoc_object_nodes_load($name, $version=false, $exact=true, $broad=false) {
+  static $cache = array();
+
   $lower_name = strtolower($name);
 
   $override_name = false;
@@ -1187,41 +1205,55 @@ function jsdoc_object_nodes_load($name, $version=false, $exact=true, $broad=fals
     $version = node_load($version_nid);
   }
 
-  // We have a few situations:
-  //    name
-  //    project, name
-  //    project, version, name
-  //    project, version, resource, name
-
-  // If we're missing the version, assume the latest release
-  // If we're missing the project, look up stuff by name
-
-  $binary = ($exact) ? 'BINARY' : '';
-  $title_check = ($exact) ? "= '%s'" : "LIKE '%%%s%%'";
-  $nodes = array();
-  $results = array();
-
-  if ($version_nid) {
-    $query = db_query("SELECT n.nid FROM {node} n INNER JOIN {jsdoc_objects} j ON (j.nid = n.nid) WHERE n.title $title_check AND $binary n.title $title_check AND j.did = %d", $name, $name, $version_nid);
-  }
-  else {
-    $version_nids = array(-1);
-    foreach (jsdoc_get_versions() as $version) {
-      $version_nids[] = $version->nid;
-    }
-    $query = db_query("SELECT n.nid, j.did, version.title AS version FROM {node} n INNER JOIN {jsdoc_objects} j ON (j.nid = n.nid) INNER JOIN {node} version ON (version.nid = j.did) WHERE n.title $title_check AND $binary n.title $title_check AND j.did IN (%s) ORDER BY version.created DESC", $name, $name, implode(',', $version_nids));
-  }
-
-  while ($result = db_fetch_object($query)) {
-    if ($result->version) {
-      if ($result->version != 'HEAD') {
-        $nodes[] = node_load($result->nid);
-        break;
+  if ($name) {
+    set_time_limit(3);
+    $cache_key = sprintf('%s,%s,%s,%s', $name, $version_nid, $exact, $broad);
+    if (isset($cache[$cache_key])) {
+      $nodes = array();
+      foreach ($cache[$cache_key] as $nid) {
+        $nodes[] = node_load($nid);
       }
+      return $nodes;
+    }
+
+    // We have a few situations:
+    //    name
+    //    project, name
+    //    project, version, name
+    //    project, version, resource, name
+
+    // If we're missing the version, assume the latest release
+    // If we're missing the project, look up stuff by name
+
+    $binary = ($exact) ? 'BINARY' : '';
+    $title_check = ($exact) ? "= '%s'" : "LIKE '%%%s%%'";
+    $nodes = array();
+    $results = array();
+
+    if ($version_nid) {
+      $query = db_query("SELECT n.nid FROM {node} n INNER JOIN {jsdoc_objects} j ON (j.nid = n.nid) WHERE n.title $title_check AND $binary n.title $title_check AND j.did = %d", $name, $name, $version_nid);
     }
     else {
-      $nodes[] = node_load($result->nid);
+      $version_nids = array(-1);
+      foreach (jsdoc_get_versions() as $version) {
+        $version_nids[] = $version->nid;
+      }
+      $query = db_query("SELECT n.nid, j.did, version.title AS version FROM {node} n INNER JOIN {jsdoc_objects} j ON (j.nid = n.nid) INNER JOIN {node} version ON (version.nid = j.did) WHERE n.title $title_check AND $binary n.title $title_check AND j.did IN (%s) ORDER BY version.created DESC", $name, $name, implode(',', $version_nids));
     }
+
+    while ($result = db_fetch_object($query)) {
+      if ($result->version) {
+        if ($result->version != 'HEAD') {
+          $nodes[] = node_load($result->nid);
+          break;
+        }
+      }
+      else {
+        $nodes[] = node_load($result->nid);
+      }
+    }
+
+    $cache[$cache_key] = array_map('_jsdoc_extract_nids', $nodes);
   }
 
   if (empty($nodes)) {
@@ -1236,6 +1268,10 @@ function jsdoc_object_nodes_load($name, $version=false, $exact=true, $broad=fals
   }
 
   return $nodes;
+}
+
+function _jsdoc_extract_nids($node) {
+  return $node->nid;
 }
 
 function jsdoc_parameter_weight_sort($a, $b){
@@ -1378,14 +1414,16 @@ function jsdoc_get_closest($name, $version) {
     $parts = explode('.', $name);
     while (!$node->nid) {
       array_pop($parts);
-      $node = jsdoc_object_node_load(implode('.', $parts), $version);
+      if (!empty($parts)) {
+        $node = jsdoc_object_node_load(implode('.', $parts), $version);
+      }
     }
   }
   return $node;
 }
 
 function _jsdoc_resolve_child($node, $name) {
-  list($prototype_chain, $mixin_chain, $children) = jsdoc_get_oo_info($node);
+  list($prototype_chain, $mixin_chain, $children) = jsdoc_get_oo_info($node, $name);
 
   $actual = (object)array(
     'title' => $name,
@@ -1520,7 +1558,11 @@ function _jsdoc_resolve_mixins($node, $from) {
   return $resolved_mixins;
 }
 
-function jsdoc_get_oo_info(&$node) {
+function jsdoc_get_children(&$node) {
+  
+}
+
+function jsdoc_get_oo_info(&$node, $child=NULL) {
   if (isset($node->jsdoc_oo_info)) {
     return $node->jsdoc_oo_info;
   }
@@ -1598,6 +1640,10 @@ function jsdoc_get_oo_info(&$node) {
   foreach ($mixin_chain as $mixin) {
     foreach (array('methods', 'properties') as $child_type) {
       foreach ($mixin->$child_type as $item) {
+        if ($child && $item->title != $child) {
+          continue;
+        }
+
         if ($mixin->scope == 'normal') {
           $title = $item->title;
         }
@@ -1927,6 +1973,65 @@ function jsdoc_resolve_constructor(&$node) {
   return ($node->jsdoc_resolved_constructor = $node->jsdoc_constructor);
 }
 
+function _jsdoc_get_fields($type, $node) {
+  // I basically want to find the children of this as
+  // if it appeared in the normal API.
+  $fields = array();
+  $obj = jsdoc_object_node_load($type, jsdoc_get_version($node), TRUE, TRUE);
+  // It will have an nid if it's local. For example type: Function isn't local
+  if ($obj && $obj->nid) {
+    list($prototype_chain, $mixin_chain, $children) = jsdoc_get_oo_info($obj);
+
+    foreach ($children as $child) {
+      if (jsdoc_get_type($child) != 'Function') {
+        $title = $child->title;
+
+        $field = (object)array(
+          'title' => $title,
+          'summary' => $child->summary,
+          'types' => false
+        );
+        if (!$cleaned) {
+          $field->url = 'jsdoc/' . jsdoc_get_version($node)->title . '/' . $obj->title . '.' . $child->title;
+          $field->a = l($title, $field->url);
+        }
+
+        $field_types = preg_split('%\|+%', jsdoc_get_type($node));
+        foreach ($field_types as $field_type) {
+          $found = 0;
+          $field_type = str_replace('?', '', $field_type, $found);
+          $optional = ($found > 0);
+          $found = 0;
+          $field_type = str_replace('...', '', $field_type, $found);
+          $repeating = ($found > 0);
+
+          $field_obj = jsdoc_object_node_load($field_type, jsdoc_get_version($node));
+          $field_type = (object)array(
+            'title' => $field_obj->title,
+            'repeating' => $repeating,
+            'optional' => $optional,
+            'summary' => jsdoc_get_teaser($field_obj)
+          );
+          if (!$cleaned) {
+            $field_type->url = $field_obj->jsdoc_url;
+            $field_type->a = l($field_obj->title, $field_obj->jsdoc_url);
+          }
+          $field->types[] = $field_type;
+        }
+
+        $fields[$field->title] = $field;
+      }
+    }
+
+    if (empty($fields)) {
+      return;
+    }else{
+      uksort($fields, 'strnatcasecmp');
+      return $fields;
+    }
+  }
+}
+
 function _jsdoc_get_type_themed($type, $node, $cleaned){
   $obj = jsdoc_object_node_load($type, jsdoc_get_version($node), TRUE, TRUE);
   if ($obj) {
@@ -1940,63 +2045,6 @@ function _jsdoc_get_type_themed($type, $node, $cleaned){
       $type->a = l($obj->title, $obj->jsdoc_url);
     }
 
-    // I basically want to find the children of this as
-    // if it appeared in the normal API.
-
-    // It will have an nid if it's local. For example type: Function isn't local
-    if ($obj->nid) {
-      // TODO: This is used for inline types
-      $type->fields = array();
-
-      list($prototype_chain, $mixin_chain, $children) = jsdoc_get_oo_info($obj);
-
-      foreach ($children as $child) {
-        if (jsdoc_get_type($child) != 'Function') {
-          $title = $child->title;
-
-          $field = (object)array(
-            'title' => $title,
-            'summary' => $child->summary,
-            'types' => false
-          );
-          if (!$cleaned) {
-            $field->url = 'jsdoc/' . jsdoc_get_version($node)->title . '/' . $obj->title . '.' . $child->title;
-            $field->a = l($title, $field->url);
-          }
-
-          $field_types = preg_split('%\|+%', jsdoc_get_type($node));
-          foreach ($field_types as $field_type) {
-            $found = 0;
-            $field_type = str_replace('?', '', $field_type, $found);
-            $optional = ($found > 0);
-            $found = 0;
-            $field_type = str_replace('...', '', $field_type, $found);
-            $repeating = ($found > 0);
-
-            $field_obj = jsdoc_object_node_load($field_type, jsdoc_get_version($node));
-            $field_type = (object)array(
-              'title' => $field_obj->title,
-              'repeating' => $repeating,
-              'optional' => $optional,
-              'summary' => jsdoc_get_teaser($field_obj)
-            );
-            if (!$cleaned) {
-              $field_type->url = $field_obj->jsdoc_url;
-              $field_type->a = l($field_obj->title, $field_obj->jsdoc_url);
-            }
-            $field->types[] = $field_type;
-          }
-
-          $type->fields[$field->title] = $field;
-        }
-      }
-
-      if (empty($type->fields)) {
-        unset($type->fields);
-      }else{
-        uksort($type->fields, 'strnatcasecmp');
-      }
-    }
     return $type;
   }
 }
@@ -2033,6 +2081,7 @@ function _jsdoc_get_parameters_themed(&$node, $cleaned=false) {
 
     foreach ($types as $type) {
       if ($type = _jsdoc_get_type_themed($type, $node, $cleaned)) {
+        $type->fields = _jsdoc_get_fields($type->title, $node);
         $parameter->types[] = $type;
       }
     }
@@ -2205,106 +2254,6 @@ function _jsdoc_base() {
   return $base;
 }
 
-function _jsdoc_vocabularies($name) {
-  static $vocabularies;
-
-  if (!isset($vocabularies)) {
-    $vocabularies = array();
-  }
-
-  if ($vocabularies[$name]) {
-    return $vocabularies[$name];
-  }
-
-  foreach (taxonomy_get_vocabularies('jsdoc_object') as $vocabulary) {
-    $vocabularies[$vocabulary->name] = $vocabulary;
-  }
-
-  return $vocabularies[$name];
-}
-
-function _jsdoc_environments() {
-  return _jsdoc_vocabularies('Environments');
-}
-
-function _jsdoc_conditions() {
-  return _jsdoc_vocabularies('Conditions');
-}
-
-function _jsdoc_flags() {
-  return _jsdoc_vocabularies('Flags');
-}
-
-/**
- * Validate some of the expected global settings
- */
-function _jsdoc_cron_validate() {
-  ini_set('memory_limit', '256M');
-
-  if (!_jsdoc_file_location() || !_jsdoc_dir_location()) {
-    print t('Check Drupal logs for errors');
-    watchdog('jsdoc', t('jsdoc settings should be configured'), WATCHDOG_ERROR);
-    return false;
-  }
-  if (!file_exists(_jsdoc_file_location())) {
-    print t('Check Drupal logs for errors');
-    watchdog('jsdoc', t('File does not exist ') . _jsdoc_file_location(), WATCHDOG_ERROR);
-    return false;
-  }
-
-  return true;
-}
-
-function _jsdoc_cron_validate_include() {
-  $files_function = _jsdoc_base() . '_get_files';
-  if (!function_exists($files_function)) {
-    print t('Check Drupal logs for errors');
-    watchdog('jsdoc', $files_function . t(' does not exist in ') . _jsdoc_file_location() . t('. Check this file to make sure your functions really start with ') . _jsdoc_base(), WATCHDOG_ERROR);
-    return false;
-  }
-
-  $test_file = _jsdoc_get_base_path() . '/' . drupal_get_path('module', 'jsdoc') . '/cache/test';
-  if (!@touch($test_file)) {
-    print t('Check Drupal logs for errors');
-    watchdog('jsdoc', t('Need permission to access the jsdoc cache directory'), WATCHDOG_ERROR);
-    return false;
-  }
-  else {
-    unlink($test_file);
-  }
-
-  if (function_exists(_jsdoc_base() . '_get_conditions')) {
-    $conditions = call_user_func(_jsdoc_base() . '_get_conditions');
-
-    $found = false;
-    foreach ($conditions as $condition) {
-      foreach (taxonomy_get_term_by_name($condition) as $term) {
-        if ($term->vid == _jsdoc_conditions()->vid) {
-          $found = true;
-          break;
-        }
-      }
-      if (!$found) {
-        $term = array('name' => $condition, 'description' => '', 'vid' => _jsdoc_conditions()->vid, 'weight' => 0);
-        taxonomy_save_term($term);
-      }
-    }
-  }
-
-  if (function_exists(_jsdoc_base() . '_get_environments')) {
-    $environments = call_user_func(_jsdoc_base() . '_get_environments');
-    _jsdoc_build_taxonomy($environments, _jsdoc_environments()->vid);
-  }
-
-  if (!function_exists(_jsdoc_base() . '_get_contents')) {
-    print t('Check Drupal logs for errors');
-    watchdog('jsdoc', _jsdoc_base() . '_get_contents' . t(' does not exist in ') . _jsdoc_file_location(), WATCHDOG_ERROR);
-    return false;
-  }
-
-  return true;
-}
-
 function _jsdoc_build_terms($title) {
   $output = array($title, array());
   $parts = explode('.', $title);
@@ -2318,28 +2267,6 @@ function _jsdoc_build_terms($title) {
   $output[1] = implode(' ', $output[1]);
   $output[2] = implode(' ', $parts);
   return $output;
-}
-
-function _jsdoc_build_taxonomy($names, $vid, $parent = false)
-{
-  foreach ($names as $name => $content) {
-    foreach (taxonomy_get_term_by_name($name) as $term) {
-      if ($term->vid == $vid) {
-        $found = true;
-        break;
-      }
-    }
-    if (!$found) {
-      $term = array('name' => $name, 'description' => '', 'vid' => $vid, 'weight' => 0);
-      if ($parent) {
-        $term['parent'] = $parent;
-      }
-      taxonomy_save_term($term);
-    }
-    if (is_array($content)) {
-      _jsdoc_build_taxonomy($content, $vid, $term->tid);
-    }
-  }
 }
 
 function _jsdoc_get_base_path() {
