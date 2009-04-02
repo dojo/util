@@ -335,9 +335,12 @@ function jsdoc_update_index() {
       search_index($sid, $type, $text);
     }
 
-    $jsdoc_last_change = $node->last_change;
+    $jsdoc_last_change = $node->changed;
     $jsdoc_last_nid = $node->nid;
   }
+
+  variable_set('jsdoc_cron_last', $jsdoc_last_change);
+  variable_set('jsdoc_cron_last_nid', $jsdoc_last_nid);
 }
 
 /**
