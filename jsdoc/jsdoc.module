@@ -1194,11 +1194,11 @@ function jsdoc_object_nodes_load($name, $version=false, $exact=true, $broad=fals
   if (is_object($version) && $version->nid) {
     $version_nid = $version->nid;
   }
-  elseif (is_numeric($version)) {
-    $version_nid = $version;
-  }
   elseif (is_string($version)) {
     $version_nid = jsdoc_version_node_load($version)->nid;
+  }
+  elseif (is_numeric($version)) {
+    $version_nid = $version;
   }
 
   if ($version_nid && (!is_object($version) || !$version->nid)) {
