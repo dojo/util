@@ -867,7 +867,14 @@ function jsdoc_get_versions($node = FALSE, $title = NULL) {
         $title = implode('.', $parts);
         $found = FALSE;
         $json = unserialize($version->json);
-        foreach (array_merge($json->methods, $json->properties) as $property) {
+        $properties = array();
+        if ($json->methods) {
+          $properties = array_merge($properties, $json->methods);
+        }
+        if ($json->properties) {
+          $properties = array_merge($properties, $json->properties);
+        }
+        foreach ($properties as $property) {
           if ($property->name == $title) {
             $found = TRUE;
             break;
