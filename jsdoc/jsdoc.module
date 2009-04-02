@@ -81,6 +81,13 @@ function jsdoc_menu($may_cache) {
         $args[] = $arg;
       }
 
+      if (count($args) == 4) {
+        // Old URL
+        $version = $args[2];
+        $name = $args[3];
+        drupal_goto("jsdoc/$version/$name");
+        return;
+      }
       if ($args[2]) {
         // If we have 2 arguments, assume that we don't have a resource or project
         // So basically, we assume that version is more important than project
@@ -96,7 +103,10 @@ function jsdoc_menu($may_cache) {
 
       $node = jsdoc_get_closest($name, $version);
 
-      if ($node && $node->nid) {
+      if (!$node || !$node->nid) {
+        return;
+      }
+      else {
         jsdoc_current_node($node);
 
         $item = array(
@@ -1232,7 +1242,6 @@ function jsdoc_object_nodes_load($name, $version=false, $exact=true, $broad=fals
   }
 
   if ($name) {
-    set_time_limit(3);
     $cache_key = sprintf('%s,%s,%s,%s', $name, $version_nid, $exact, $broad);
     if (isset($cache[$cache_key])) {
       $nodes = array();
@@ -1440,9 +1449,10 @@ function jsdoc_get_closest($name, $version) {
     $parts = explode('.', $name);
     while (!$node->nid) {
       array_pop($parts);
-      if (!empty($parts)) {
-        $node = jsdoc_object_node_load(implode('.', $parts), $version);
+      if (empty($parts)) {
+        break;
       }
+      $node = jsdoc_object_node_load(implode('.', $parts), $version);
     }
   }
   return $node;
