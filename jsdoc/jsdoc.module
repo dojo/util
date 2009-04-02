@@ -115,7 +115,7 @@ function jsdoc_menu($may_cache) {
           return;
         }
 
-        $versions = jsdoc_get_versions($node);
+        $versions = jsdoc_get_versions($node, $name);
         if (count($versions) > 1) {
           $path = explode('/', $node->jsdoc_url);
           foreach (array_reverse($versions) as $release) {
@@ -837,7 +837,7 @@ function jsdoc_get_version(&$node = FALSE) {
   return $node->jsdoc_version;
 }
 
-function jsdoc_get_versions($node = FALSE) {
+function jsdoc_get_versions($node = FALSE, $title = NULL) {
   static $cache = array();
   $versions = array();
 
@@ -848,17 +848,36 @@ function jsdoc_get_versions($node = FALSE) {
         return $cache[$cache_key];
       }
     }
-    $query = db_query("SELECT j.did AS nid FROM {jsdoc_objects} j INNER JOIN {node} n ON (n.nid = j.nid) WHERE n.title = '%s' GROUP BY j.did", $node->title);
+    $with_json = ($title) ? ', j.json' : '';
+    $query = db_query("SELECT j.did AS nid $with_json FROM {jsdoc_objects} j INNER JOIN {node} n ON (n.nid = j.nid) WHERE n.title = '%s' GROUP BY j.did", $node->title);
   }
   else {
     $cache_key = '%ALL%';
-    if ($cache[$cache_key]) {
+    if (isset($cache[$cache_key])) {
       return $cache[$cache_key];
     }
     $query = db_query("SELECT nid FROM {node} WHERE type = 'jsdoc_doc' ORDER BY nid DESC");
   }
 
   while ($version = db_fetch_object($query)) {
+    if ($version->json && $node->title != $title) {
+      $parts = explode('.', $title);
+      if (count($parts) > 1) {
+        array_pop($parts);
+        $title = implode('.', $parts);
+        $found = FALSE;
+        $json = unserialize($version->json);
+        foreach (array_merge($json->methods, $json->properties) as $property) {
+          if ($property->name == $title) {
+            $found = TRUE;
+            break;
+          }
+        }
+        if (!$found) {
+          continue;
+        }
+      }
+    }
     $versions[] = node_load($version->nid);
   }
 
