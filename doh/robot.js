@@ -101,6 +101,11 @@ if(!doh.robot["_robotLoaded"]){
 	_initRobot: function(r){
 		// called from Robot
 		// Robot calls _initRobot in its startup sequence
+
+		// Prevent rerunning the whole test (see #8958 for details)
+		if(doh._initRobotCalled){ return; }
+		doh._initRobotCalled = true;
+
 		// add dohRobot class to HTML element so tests can use that in CSS rules if desired
 		document.documentElement.className = document.documentElement.className.replace(/\S$/, "& ") + "dohRobot";
 		window.scrollTo(0, 0);

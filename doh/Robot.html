@@ -18,6 +18,14 @@
 	// the box that the applet writes into to test the user's keyboard capabilities
 	var _robotField = null;
 
+
+	/*
+		Robot uses the event handlers below to measure system-level
+		properties that the java.awt.Robot class just expects us to know
+		magically. For instance, we don't know how big the user set their mouse
+		wheel to be in the Control Panel, so we measure it using onmousewheel.
+	*/
+
 	function _onfocus(robotField){
 		_robotField = robotField;
 		doh.robot._initWheel();
@@ -25,7 +33,7 @@
 
 	function _onblur(e){
 		setTimeout(function(){
-        	        document.body.removeChild(_robotField);
+			document.body.removeChild(_robotField);
 		},0);
 	}
 
@@ -81,13 +89,13 @@
 
 	doh.robot._onKeyboard = function(){
 	 	// called from Robot
-        	// Robot calls _onKeyboard after it finishes discovering the keyboard
-        	// need to untie from Java thread with setTimeout
-        	setTimeout(function(){
-        	        var rf = document.getElementsByTagName('input')[0];
-        	        rf.style.visibility = "hidden";
+		// Robot calls _onKeyboard after it finishes discovering the keyboard
+		// need to untie from Java thread with setTimeout
+		setTimeout(function(){
+			var rf = document.getElementsByTagName('input')[0];
+			rf.style.visibility = "hidden";
 			doh.robot._run(window.frameElement);
-        	}, 0);
+ 		}, 0);
 	};
 </script>
 <input type="text" tabIndex="-1" style="border:0px none;margin:0px;padding:0px;position:absolute;left:0px;top:0px;width:200px;height:42px;background-color:white;z-index:9999;opacity:0;filter:alpha(opacity=0);cursor:default;"
