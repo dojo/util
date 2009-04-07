@@ -15,6 +15,9 @@ fi
 tagName=release-$version
 buildName=dojo-$tagName
 
+echo "This is a RELEASE build for Dojo, you probably meant to run build.sh"
+read -p "If you mean to create a tag for Dojo $version from r$svnRevision ... press a key to continue."
+
 #Make the SVN tag.
 svn mkdir -m "Using r$svnRevision to create a tag for the $version release." https://svn.dojotoolkit.org/src/tags/$tagName
 svn copy -r $svnRevision https://svn.dojotoolkit.org/src/dojo/trunk  https://svn.dojotoolkit.org/src/tags/$tagName/dojo -m "Using r$svnRevision to create a tag for the $version release."
