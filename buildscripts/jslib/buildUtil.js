@@ -1669,6 +1669,7 @@ buildUtil.baseMappings = {
 	
 	"_Line": "fx",
 	"_Animation": "fx",
+	"Animation":"fx",
 	"_fade": "fx",
 	"fadeIn": "fx",
 	"fadeOut": "fx",
