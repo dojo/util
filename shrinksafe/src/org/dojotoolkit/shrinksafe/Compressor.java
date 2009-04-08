@@ -26,6 +26,11 @@
 
  package org.dojotoolkit.shrinksafe;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Stack;
+
 import org.mozilla.javascript.CompilerEnvirons;
 import org.mozilla.javascript.Decompiler;
 import org.mozilla.javascript.FunctionNode;
@@ -37,15 +42,12 @@ import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.UintMap;
 
+/**
+ * @author rbackhouse
+ *
+ */
 public class Compressor {
     private static final int FUNCTION_END = Token.LAST_TOKEN + 1;
- // whether to do a debug print of the source information, when decompiling.
-    private static final boolean printSource = false;
-    
-    //Used to be private, but making it public so we
-    //can reset the token state between compression runs.
-    //Not very pretty.
-    public static TokenMapper tm = new TokenMapper();
     
     /**
      * Compress the script
@@ -58,47 +60,22 @@ public class Compressor {
      * @return compressed script
      */
     private static String compress(String encodedSource, 
-    		                      int flags, 
-    		                      UintMap properties, 
-    		                      ScriptOrFnNode parseTree, 
-    		                      boolean escapeUnicode){
-    	
-    	 int length = encodedSource.length();
-         if (length == 0) { return ""; }
+    		                       int flags, 
+    		                       UintMap properties, 
+    		                       ScriptOrFnNode parseTree, 
+    		                       boolean escapeUnicode,
+    		                       TokenMapper tm,
+    		                       Map replacedTokensLookup){
          int indent = properties.getInt(Decompiler.INITIAL_INDENT_PROP, 0);
          if (indent < 0) throw new IllegalArgumentException();
          int indentGap = properties.getInt(Decompiler.INDENT_GAP_PROP, 4);
          if (indentGap < 0) throw new IllegalArgumentException();
          int caseGap = properties.getInt(Decompiler.CASE_GAP_PROP, 2);
          if (caseGap < 0) throw new IllegalArgumentException();
+         
          StringBuffer result = new StringBuffer();
          boolean justFunctionBody = (0 != (flags & Decompiler.ONLY_BODY_FLAG));
          boolean toSource = (0 != (flags & Decompiler.TO_SOURCE_FLAG));
-         // Spew tokens in source, for debugging.
-         // as TYPE number char
-         if (printSource) {
-             System.err.println("length:" + length);
-             for (int i = 0; i < length; ++i) {
-                 // Note that tokenToName will fail unless Context.printTrees
-                 // is true.
-                 String tokenname = null;
-                 //if (Token.printNames) {
-                     tokenname = Token.name(encodedSource.charAt(i));
-                 //}
-                 if (tokenname == null) {
-                     tokenname = "---";
-                 }
-                 String pad = tokenname.length() > 7
-                     ? "\t"
-                     : "\t\t";
-                 System.err.println
-                     (tokenname
-                      + pad + (int)encodedSource.charAt(i)
-                      + "\t'" + escapeString(encodedSource.substring(i, i+1), escapeUnicode)
-                      + "'");
-             }
-             System.err.println();
-         }
          int braceNesting = 0;
          boolean afterFirstEOL = false;
          int i = 0;
@@ -125,6 +102,13 @@ public class Compressor {
                  result.append('(');
              }
          }
+         
+         Stack positionStack = new Stack();
+         Stack functionPositionStack = new Stack();
+         
+         int length = encodedSource.length();
+         int lineCount = 1;
+         
          while (i < length) {
            if(i>0){
                prevToken = encodedSource.charAt(i-1);
@@ -137,8 +121,17 @@ public class Compressor {
                  if(Token.OBJECTLIT == encodedSource.charAt(jumpPos)){
                      i = printSourceString(encodedSource, i + 1, false, result, escapeUnicode);
                  }else{
+                	 ReplacedTokens replacedTokens = null;
+                	 if (positionStack.size() > 0) {
+                		 Integer pos = (Integer)positionStack.peek();
+                         replacedTokens = (ReplacedTokens)replacedTokensLookup.get(pos);
+                	 }
+                	 else {
+                		 replacedTokens = new ReplacedTokens(new HashMap(), new int[]{}, replacedTokensLookup, null);
+                	 }
+
                      i = tm.sourceCompress(	encodedSource, i + 1, false, result, prevToken, 
-                                             inArgsList, braceNesting, parseTree);
+                                             inArgsList, braceNesting, replacedTokens);
                  }
                  continue;
              case Token.STRING:
@@ -159,19 +152,27 @@ public class Compressor {
              case Token.THIS:
                  result.append("this");
                  break;
-             case Token.FUNCTION:
+             case Token.FUNCTION: {
                  ++i; // skip function type
-                 tm.functionNum++;
+                 tm.incrementFunctionNumber();
                  primeInArgsList = true;
                  primeFunctionNesting = true;
                  result.append("function");
                  if (Token.LP != getNext(encodedSource, length, i)) {
                      result.append(' ');
                  }
+                 Integer functionPos = new Integer(i-1);
+                 functionPositionStack.push(functionPos);
+                 DebugData debugData = tm.getDebugData(functionPos);
+                 debugData.compressedStart = lineCount;
                  break;
-             case FUNCTION_END:
-                 // Do nothing
+             }
+             case FUNCTION_END: {
+            	 Integer functionPos = (Integer)functionPositionStack.pop();
+                 DebugData debugData = tm.getDebugData(functionPos);
+                 debugData.compressedEnd = lineCount;
                  break;
+             }
              case Token.COMMA:
                  result.append(",");
                  break;
@@ -184,7 +185,9 @@ public class Compressor {
                  // // result.append('\n');
                  break;
              case Token.RC: {
-                tm.leaveNestingLevel(braceNesting);
+                 if (tm.leaveNestingLevel(braceNesting)) {
+                     positionStack.pop();
+                 }
                  --braceNesting;
                  /* don't print the closing RC if it closes the
                   * toplevel function and we're called from
@@ -229,6 +232,7 @@ public class Compressor {
                      primeInArgsList = false;
                  }
                  if(primeFunctionNesting){
+                     positionStack.push(new Integer(i));
                      tm.enterNestingLevel(braceNesting);
                      primeFunctionNesting = false;
                  }
@@ -267,6 +271,7 @@ public class Compressor {
                  }
                  if (newLine) {
                      result.append('\n');
+                     lineCount++;
                  }
                  /* add indent if any tokens remain,
                   * less setback if next token is
@@ -564,22 +569,123 @@ public class Compressor {
          }
          return result.toString();	
     }
+    
+    /**
+     * Collect the replaced tokens and store them in a lookup table for the next
+     * source pass. 
+     * 
+     * @param encodedSource encoded source string
+     * @param escapeUnicode escape chars with unicode.
+     * @param tm token mapper object.
+     * @return Map containing replaced tokens lookup information
+     */
+    private static Map collectReplacedTokens(String encodedSource, boolean escapeUnicode, TokenMapper tm) {
+    	int length = encodedSource.length();
+    	
+		int i = 0;
+		int prevToken = 0;
+		int braceNesting = 0;
+		
+		boolean inArgsList = false;
+        boolean primeFunctionNesting = false;
+        boolean primeInArgsList = false;
+		
+        if (encodedSource.charAt(i) == Token.SCRIPT) {
+            ++i;
+        }
 
-    private static int getNext(String source, int length, int i)
-    {
+        Stack positionStack = new Stack();
+        Stack functionPositionStack = new Stack();
+        Map tokenLookup = new HashMap();
+        
+		while (i < length) {
+			if (i > 0) {
+				prevToken = encodedSource.charAt(i - 1);
+			}
+			switch (encodedSource.charAt(i)) {
+				case Token.NAME:
+				case Token.REGEXP: {
+					int jumpPos = getSourceStringEnd(encodedSource, i + 1, escapeUnicode);
+					if (Token.OBJECTLIT == encodedSource.charAt(jumpPos)) {
+						i = printSourceString(encodedSource, i + 1, false, null, escapeUnicode);
+					} else {
+						i = tm.sourceCompress(encodedSource, i + 1, false, null, prevToken, inArgsList, braceNesting, null);
+					}
+					continue;
+				}
+				case Token.STRING: {
+					i = printSourceString(encodedSource, i + 1, true, null, escapeUnicode);
+					continue;
+				}
+				case Token.NUMBER: {
+					i = printSourceNumber(encodedSource, i + 1, null);
+					continue;
+				}
+				case Token.FUNCTION: {
+					++i; // skip function type
+					tm.incrementFunctionNumber();
+					primeInArgsList = true;
+					primeFunctionNesting = true;
+					functionPositionStack.push(new Integer(i-1));
+					break;
+				}
+				case Token.LC: {
+					++braceNesting;
+					break;
+				}
+				case Token.RC: {
+					Map m = tm.getCurrentTokens();
+					if (tm.leaveNestingLevel(braceNesting)) {
+						Integer pos = (Integer)positionStack.pop();
+						Integer functionPos = (Integer)functionPositionStack.pop();
+						int[] parents = new int[positionStack.size()];
+						int idx = 0;
+						for (Iterator itr = positionStack.iterator(); itr.hasNext();) {
+							parents[idx++] = ((Integer)itr.next()).intValue();
+						}
+						DebugData debugData = tm.getDebugData(functionPos);
+						ReplacedTokens replacedTokens = new ReplacedTokens(m, parents, tokenLookup, debugData); 
+						tokenLookup.put(pos, replacedTokens);
+					}
+					--braceNesting;
+					break;
+				}
+				case Token.LP: {
+					if (primeInArgsList) {
+						inArgsList = true;
+						primeInArgsList = false;
+					}
+					if (primeFunctionNesting) {
+						positionStack.push(new Integer(i));
+						tm.enterNestingLevel(braceNesting);
+						primeFunctionNesting = false;
+					}
+					break;
+				}
+				case Token.RP: {
+					if (inArgsList) {
+						inArgsList = false;
+					}
+					break;
+				}
+			}
+			++i;
+		}
+		return tokenLookup;
+	}
+
+    private static int getNext(String source, int length, int i) {
         return (i + 1 < length) ? source.charAt(i + 1) : Token.EOF;
     }
 
-    private static int getSourceStringEnd(String source, int offset, boolean escapeUnicode)
-    {
+    private static int getSourceStringEnd(String source, int offset, boolean escapeUnicode) {
         return printSourceString(source, offset, false, null, escapeUnicode);
     }
 
     private static int printSourceString(String source, int offset,
                                          boolean asQuotedString,
                                          StringBuffer sb,
-                                         boolean escapeUnicode)
-    {
+                                         boolean escapeUnicode) {
         int length = source.charAt(offset);
         ++offset;
         if ((0x8000 & length) != 0) {
@@ -708,22 +814,42 @@ public class Compressor {
     }
     
     public static final String compressScript(String source, int indent, int lineno, boolean escapeUnicode) {
-        //Make sure to clear out the TokenMapper state before running.
-        //This allows for more than one script to be compressed.
-        //However, this is not a very clean way to do the reset.
-        TokenMapper.reset();
-        Compressor.tm = new TokenMapper();
-
+    	return compressScript(source, indent, lineno, false, null);
+    }
+        
+    public static final String compressScript(String source, int indent, int lineno, boolean escapeUnicode, StringBuffer debugData) {
         CompilerEnvirons compilerEnv = new CompilerEnvirons();
 
         Parser parser = new Parser(compilerEnv, compilerEnv.getErrorReporter());
         
         ScriptOrFnNode tree = parser.parse(source, null, lineno);
         String encodedSource = parser.getEncodedSource();
+   	 	if (encodedSource.length() == 0) { return ""; }
+   	 	
         Interpreter compiler = new Interpreter();
-        compiler.compile(compilerEnv, tree, encodedSource, false);       
+        compiler.compile(compilerEnv, tree, encodedSource, false);
         UintMap properties = new UintMap(1);
         properties.put(Decompiler.INITIAL_INDENT_PROP, indent);
-        return compress(encodedSource, 0, properties, tree, escapeUnicode);
+        
+        TokenMapper tm = new TokenMapper(tree);
+        Map replacedTokensLookup = collectReplacedTokens(encodedSource, escapeUnicode, tm);
+        tm.reset();
+        
+        String compressedSource = compress(encodedSource, 0, properties, tree, escapeUnicode, tm, replacedTokensLookup);
+        if (debugData != null) {
+        	debugData.append("[\n");
+        	int count = 1;
+	        for (Iterator itr = replacedTokensLookup.keySet().iterator(); itr.hasNext();) {
+	        	Integer pos = (Integer)itr.next();
+	        	ReplacedTokens replacedTokens = (ReplacedTokens)replacedTokensLookup.get(pos);
+	        	debugData.append(replacedTokens.toJson());
+	        	if (count++ < replacedTokensLookup.size()) {
+	        		debugData.append(',');
+	        	}
+	        	debugData.append("\n");
+	        }
+        	debugData.append("]");
+        }
+        return compressedSource;
     }
 }

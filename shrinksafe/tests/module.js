@@ -11,6 +11,16 @@ shrinksafe.tests.module.compress = function(source){
 try{
 	tests.register("shrinksafe", 
 	[
+		function forwardReference(t){
+			var original = shrinksafe.tests.module.getContents("3241.js");
+			var compressed = shrinksafe.tests.module.compress(original);
+			t.assertTrue(original.length > compressed.length);
+			t.assertTrue(compressed.indexOf("test") == -1)
+
+			eval(compressed);
+			t.assertEqual("data", result);
+			delete result;
+		},
 		function nestedReference(t){
 			var original = shrinksafe.tests.module.getContents("5303.js");
 			var compressed = shrinksafe.tests.module.compress(original);

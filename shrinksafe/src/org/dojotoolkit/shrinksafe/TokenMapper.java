@@ -30,46 +30,42 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.mozilla.javascript.ObjArray;
 import org.mozilla.javascript.ScriptOrFnNode;
 import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Token;
 
 public class TokenMapper {
-	private ArrayList functionBracePositions = new ArrayList();
+	private List functionBracePositions = new ArrayList();
 
 	/**
 	 * Map of all replaced tokens
 	 */
-	private ArrayList replacedTokens = new ArrayList();
-
-	/**
-	 * Collection of Function nodes
-	 */
-	private static ObjArray funcObjects = new ObjArray();
+	private List replacedTokens = new ArrayList();
 
 	/**
 	 * Map of each Function node and all the variables in its current function
 	 * scope, other variables found while traversing the prototype chain and
 	 * variables found in the top-level scope.
 	 */
-	private static ArrayList functionVarMappings = new ArrayList();
+	private List functionVarMappings = new ArrayList();
+	private Map debugDataList = new HashMap();
 
-	public int functionNum = 0;
+	private int functionNum = 0;
 
 	private int parentScope = 0;
 
 	private int lastTokenCount = 0;
-
-	/**
-	 * Reset the static members for the TokenMapper.
-	 */
-	public static void reset() {
-		funcObjects = new ObjArray();
-		functionVarMappings = new ArrayList();
+	
+	public TokenMapper(ScriptOrFnNode parseTree) {
+		collectFunctionMappings(parseTree);
 	}
 
+	public void incrementFunctionNumber() {
+		functionNum++;
+	}
+	
 	/**
 	 * Generate new compressed tokens
 	 * <p>
@@ -82,7 +78,7 @@ public class TokenMapper {
 	 */
 	private String getMappedToken(String token, boolean hasNewMapping) {
 		String newToken = null;
-		HashMap tokens = null;
+		Map tokens = null;
 		String blank = new String("");
 		int localScope = functionBracePositions.size() - 1;
 
@@ -90,13 +86,13 @@ public class TokenMapper {
 
 		if (!oldToken.equalsIgnoreCase(blank)) {
 			return oldToken;
-		} else if (hasNewMapping || isInScopeChain(token)) {
+		} else if ((hasNewMapping || isInScopeChain(token))) {
 			newToken = new String("_" + Integer.toHexString(++lastTokenCount));
 			if (newToken.length() >= token.length() && token.charAt(0) != '_') {
 				newToken = token;
 				lastTokenCount--;
 			}
-			tokens = (HashMap) replacedTokens.get(hasNewMapping ? localScope : parentScope);
+			tokens = (Map) replacedTokens.get(hasNewMapping ? localScope : parentScope);
 			tokens.put(token, newToken);
 			return newToken;
 		}
@@ -114,14 +110,12 @@ public class TokenMapper {
 	 */
 	private boolean isInScopeChain(String token) {
 		int scope = functionBracePositions.size();
-		HashMap chainedScopeVars = (HashMap) functionVarMappings
-				.get(functionNum);
+		Map chainedScopeVars = (Map) functionVarMappings.get(functionNum);
 		if (!chainedScopeVars.isEmpty()) {
 			for (int i = scope; i > 0; i--) {
 				if (chainedScopeVars.containsKey(new Integer(i))) {
 					parentScope = i - 1;
-					List temp = Arrays.asList((String[]) chainedScopeVars
-							.get(new Integer(i)));
+					List temp = Arrays.asList((String[]) chainedScopeVars.get(new Integer(i)));
 					if (temp.indexOf(token) != -1) {
 						return true;
 					}
@@ -150,14 +144,14 @@ public class TokenMapper {
 		}
 
 		if (hasNewMapping) {
-			HashMap tokens = (HashMap) (replacedTokens.get(scope));
+			Map tokens = (Map) (replacedTokens.get(scope));
 			if (tokens.containsKey(token)) {
 				result = (String) tokens.get(token);
 				return result;
 			}
 		} else {
 			for (int i = scope; i > -1; i--) {
-				HashMap tokens = (HashMap) (replacedTokens.get(i));
+				Map tokens = (Map) (replacedTokens.get(i));
 				if (tokens.containsKey(token)) {
 					result = (String) tokens.get(token);
 					return result;
@@ -191,14 +185,19 @@ public class TokenMapper {
 	 * @param level
 	 *            scoping level
 	 */
-	private static void collectFuncNodes(ScriptOrFnNode parseTree, int level, ScriptOrFnNode parent) {
+	private void collectFuncNodes(ScriptOrFnNode parseTree, int level, ScriptOrFnNode parent) {
 		level++;
+		
+        DebugData debugData = new DebugData();
+        debugData.start = parseTree.getBaseLineno();
+        debugData.end = parseTree.getEndLineno();
+        debugData.paramAndVarNames = parseTree.getParamAndVarNames();
+        debugDataList.put(new Integer(parseTree.getEncodedSourceStart()), debugData);
+        
 		functionVarMappings.add(new HashMap());
 
-		HashMap bindingNames = (HashMap) functionVarMappings
-				.get(functionVarMappings.size() - 1);
+		Map bindingNames = (Map) functionVarMappings.get(functionVarMappings.size() - 1);
 		bindingNames.put(new Integer(level), parseTree.getParamAndVarNames());
-		funcObjects.add(parseTree);
 
 	    if (parent != null) {
 	        bindingNames.put(new Integer(level-1), parent.getParamAndVarNames());
@@ -207,7 +206,7 @@ public class TokenMapper {
 		int nestedCount = parseTree.getFunctionCount();
 		for (int i = 0; i != nestedCount; ++i) {
 			collectFuncNodes(parseTree.getFunctionNode(i), level, parseTree);
-			bindingNames = (HashMap) functionVarMappings.get(functionVarMappings.size() - 1);
+			bindingNames = (Map) functionVarMappings.get(functionVarMappings.size() - 1);
 			bindingNames.put(new Integer(level), parseTree.getParamAndVarNames());
         }
 	}
@@ -237,12 +236,9 @@ public class TokenMapper {
 	 */
 	public int sourceCompress(String encodedSource, int offset,
 			boolean asQuotedString, StringBuffer sb, int prevToken,
-			boolean inArgsList, int currentLevel, ScriptOrFnNode parseTree) {
+			boolean inArgsList, int currentLevel, ReplacedTokens replacedTokens) {
 
 		boolean hasNewMapping = false;
-
-		if (functionVarMappings.isEmpty())
-			collectFunctionMappings(parseTree);
 
 		int length = encodedSource.charAt(offset);
 		++offset;
@@ -250,17 +246,19 @@ public class TokenMapper {
 			length = ((0x7FFF & length) << 16) | encodedSource.charAt(offset);
 			++offset;
 		}
+		String str = encodedSource.substring(offset, offset + length);
+		if ((prevToken == Token.VAR) || (inArgsList)) {
+			hasNewMapping = true;
+		}
 		if (sb != null) {
-			String str = encodedSource.substring(offset, offset + length);
 			String sourceStr = new String(str);
-			if ((prevToken == Token.VAR) || (inArgsList)) {
-				hasNewMapping = true;
-			}
-			if (((functionBracePositions.size() > 0) && (currentLevel >= (((Integer) functionBracePositions
-					.get(functionBracePositions.size() - 1)).intValue())))
-					|| (inArgsList)) {
+			
+			if (((functionBracePositions.size() > 0) && 
+				(currentLevel >= (((Integer) functionBracePositions.get(functionBracePositions.size() - 1)).intValue()))) || 
+				(inArgsList)) {
 				if (prevToken != Token.DOT) {
-					str = this.getMappedToken(str, hasNewMapping);
+					// Look for replacement token in provided lookup object.
+					str = replacedTokens.find(str);
 				}
 			}
 			if ((!inArgsList) && (asQuotedString)) {
@@ -276,6 +274,13 @@ public class TokenMapper {
 				sb.append('"');
 			}
 		}
+		else if (((functionBracePositions.size() > 0) && 
+				(currentLevel >= (((Integer) functionBracePositions.get(functionBracePositions.size() - 1)).intValue()))) || 
+				(inArgsList)) {
+			if (prevToken != Token.DOT) {
+				getMappedToken(str, hasNewMapping);
+			}
+		}
 		return offset + length;
 	}
 
@@ -284,15 +289,37 @@ public class TokenMapper {
 		replacedTokens.add(new HashMap());
 	}
 
-	public void leaveNestingLevel(int braceNesting) {
+	public boolean leaveNestingLevel(int braceNesting) {
+		boolean tokensRemoved = false;
 		Integer bn = new Integer(braceNesting);
 
-		if ((functionBracePositions.contains(bn))
-				&& (replacedTokens.size() > 0)) {
+		if ((functionBracePositions.contains(bn)) && (replacedTokens.size() > 0)) {
 			// remove our mappings now!
 			int scopedSize = replacedTokens.size();
 			replacedTokens.remove(scopedSize - 1);
 			functionBracePositions.remove(bn);
+			tokensRemoved = true;
 		}
+		return tokensRemoved;
+	}
+	
+	public Map getCurrentTokens() {
+		Map m = null;
+		if (replacedTokens.size() > 0) {
+			m = (Map)replacedTokens.get(replacedTokens.size() - 1);
+		}
+		return m;
+	}
+	
+	public DebugData getDebugData(Integer functionPosition) {
+		return (DebugData)debugDataList.get(functionPosition);
+	}
+	
+	public void reset() {
+		functionNum = 0;
+		parentScope = 0;
+		lastTokenCount = 0;
+		functionBracePositions = new ArrayList();
+		replacedTokens = new ArrayList();
 	}
 }
