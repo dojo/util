@@ -985,7 +985,15 @@ function jsdoc_get_teaser(&$node) {
 }
 
 function jsdoc_get_body(&$node) {
-  return $node->body;
+  $version = jsdoc_get_version($node)->title;
+  $body = trim($node->body);
+  $variables = _jsdoc_get_variables();
+  foreach (array_unique(preg_split('%\s+%', strip_tags($body))) as $variable) {
+    if ($variables[$variable]) {
+      $body = str_replace($variable, l($variable, 'jsdoc/' . $version . '/' . $variable), $body);
+    }
+  }
+  return $body;
 }
 
 function jsdoc_is_function(&$node) {
@@ -2373,8 +2381,29 @@ function _jsdoc_node_prepare($node) {
   return $form;
 }
 
+function _jsdoc_get_variables() {
+  static $variables;
+  if (empty($variables)) {
+    if ($variables = cache_get('jsdoc_variables')) {
+      $variables = unserialize($variables->data);
+    }
+    else {
+      $variables = array();
+      $query = db_query("SELECT variable FROM {jsdoc_variables}");
+      while ($variable = db_fetch_object($query)) {
+        if (preg_match('%^(dojo|dijit|dojox)\.%', $variable->variable)) {
+          $variables[$variable->variable] = TRUE;
+        }
+      }
+      cache_set('jsdoc_variables', 'cache', serialize($variables), time() + 86400);
+    }
+  }
+
+  return $variables;
+}
+
 function _jsdoc_markup_code($text, $version, $base=false) {
-  static $variables = array();
+  $variables = _jsdoc_get_variables();
 
   $min = 99;
   $lines = preg_split('%\r?\n%', $text);
@@ -2406,19 +2435,20 @@ function _jsdoc_markup_code($text, $version, $base=false) {
   $highlighter->set_tab_width(4);
   $highlighter->add_keyword_group(4, '', true, array('Math', 'Error', 'Array'));
   $text = $highlighter->parse_code();
+  $replaced = array();
   if (preg_match_all('%[\w.$]+(?:\.(?:<span class="me\d+">)?[\w.$]+(?:</span>)?)+%', $text, $matches)) {
     natcasesort(array_unique($matches[0]));
     $matches = array_reverse($matches[0]);
     foreach ($matches as $i => $match) {
       $variable = preg_replace('%<[^>]+>%', '', $match);
-      if ($variables && array_key_exists($variable, $variables)) {
+      if ($variables && $variables[$variable]) {
+        $replaced[$i] = $match;
         $text = str_replace($match, "%$i%", $text);
       }
     }
     foreach ($matches as $i => $match) {
       $variable = preg_replace('%<[^>]+>%', '', $match);
       if ($variables[$variable]) {
-        $version = node_load($variables[$variable]);
         $text = str_replace("%$i%", l($match, 'jsdoc/' . $version->title . '/' . $variable, array('style' => 'border-bottom: 1px dotted #ccc;'), NULL, NULL, FALSE, TRUE), $text);
       }
     }
