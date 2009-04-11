@@ -733,7 +733,10 @@ function _jsdoc_convert_object(&$node, $object, $parent = FALSE, $method = FALSE
   $node->jsdoc_mixins = $object->mixins;
 
   if (!empty($object->tags)) {
-    $node->jsdoc_tags = explode(' ', $object->tags);
+    $node->jsdoc_tags = array();
+    foreach (explode(' ', $object->tags) as $tag) {
+      $node->jsdoc_tags[$tag] = TRUE;
+    }
   }
 
   $node->jsdoc_private = $object->private;
