@@ -642,6 +642,14 @@ function jsdoc_doc_insert($node) {
   }
 }
 
+function jsdoc_doc_delete(&$node) {
+  $query = db_query("SELECT nid FROM {jsdoc_objects} WHERE did = %d", $node->nid);
+  while ($nid = db_fetch_object($query)) {
+    set_time_limit(30);
+    node_delete($nid->nid);
+  }
+}
+
 // Implemented node-type hook functions
 // ====================================
 
@@ -676,7 +684,12 @@ function jsdoc_object_update($node) {
 /**
  * Implementation of hook_delete
  */
-function jsdoc_object_delete(&$node, $vid=null) {
+function jsdoc_object_delete(&$node) {
+  $type = 'jsdoc_' . $node->title;
+  $query = db_query("SELECT sid FROM {jsdoc_variables} WHERE variable = '%s'", $node->title);
+  if ($sid = db_fetch_object($query)) {
+    search_wipe($sid->sid, $type);
+  }
   db_query("DELETE FROM {jsdoc_objects} WHERE nid = %d", $node->nid);
 }
 
@@ -1258,6 +1271,16 @@ function jsdoc_object_nodes_load($name, $version=false, $exact=true, $broad=fals
       $nodes = array();
       foreach ($cache[$cache_key] as $nid) {
         $nodes[] = node_load($nid);
+      }
+      if (empty($nodes)) {
+        if ($broad) {
+          return array((object)array(
+            'title' => $name
+          ));
+        }
+        else {
+          return array();
+        }
       }
       return $nodes;
     }
