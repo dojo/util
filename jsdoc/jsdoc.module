@@ -63,6 +63,13 @@ function jsdoc_menu($may_cache) {
       'access' => true
     );
 
+  $items[] = array(
+    'path' => 'jsdoc/feedback/review',
+    'type' => MENU_CALLBACK,
+    'callback' => 'jsdoc_feedback_review',
+    'access' => true
+  );
+
     $items[] = array(
       'path' => 'jsdoc/404',
       'title' => t('Page not found'),
@@ -1403,6 +1410,41 @@ function jsdoc_feedback() {
   }
 
   print $count;
+}
+
+function jsdoc_feedback_review() {
+  $feedback = array();
+  if ($cached = cache_get('jsdoc_feedback')) {
+    $feedback = unserialize($cached->data);
+  }
+
+  $by_count = array();
+  foreach ($feedback as $page => $stats) {
+    $total = 0;
+    foreach ($stats as $type => $count) {
+      $total += $count;
+    }
+    $by_count[$total][] = array(
+      'page' => $page,
+      'feedback' => $stats
+    );
+  }
+
+  krsort($by_count);
+
+  $output = '<ul>';
+  foreach ($by_count as $pages) {
+    foreach ($pages as $page) {
+      $output .= '<li>' . $page['page'] . '<ul>';
+      foreach ($page['feedback'] as $type => $count) {
+        $output .= '<li>' . $type . ': ' . $count . '</li>';
+      }
+      $output .= '</ul></li>';
+    }
+  }
+  $output .= '</ul>';
+
+  return $output;
 }
 
 /**
