@@ -1,7 +1,5 @@
 <?php
 
-require_once('debug.php');
-
 class Symbol {
   public $id = NULL;
   public $name = NULL;

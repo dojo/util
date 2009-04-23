@@ -3,7 +3,6 @@
 require_once('JavaScriptStatements.php');
 require_once('JavaScriptFunction.php');
 require_once('DojoCommentBlock.php');
-require_once('debug.php');
 
 class Dojo {
   public static $block_keys = array('summary', 'description', 'returns', 'tags', 'exceptions');
