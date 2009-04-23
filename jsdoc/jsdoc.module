@@ -57,9 +57,16 @@ function jsdoc_menu($may_cache) {
     );
 
     $items[] = array(
+      'path' => 'jsdoc/feedback',
+      'type' => MENU_CALLBACK,
+      'callback' => 'jsdoc_feedback',
+      'access' => true
+    );
+
+    $items[] = array(
       'path' => 'jsdoc/404',
       'title' => t('Page not found'),
-      'type' => MEN_CALLBACK,
+      'type' => MENU_CALLBACK,
       'callback' => 'jsdoc_404',
       'access' => true
     );
@@ -1373,6 +1380,29 @@ function jsdoc_404() {
   }
 
   return '<p>' . t('The page you requested was not found.') . '</p>';
+}
+
+/**
+ * Path: jsdoc/feedback
+ */
+function jsdoc_feedback() {
+  $count = 0;
+  if ($_POST['page'] && $_POST['feedback']) {
+    $feedback = array();
+    if ($cached = cache_get('jsdoc_feedback')) {
+      $feedback = unserialize($cached->data);
+    }
+
+    if (!isset($feedback[$_POST['page']][$_POST['feedback']])) {
+      $feedback[$_POST['page']][$_POST['feedback']] = 0;
+    }
+
+    $count = ++$feedback[$_POST['page']][$_POST['feedback']];
+
+    cache_set('jsdoc_feedback', 'cache', serialize($feedback));
+  }
+
+  print $count;
 }
 
 /**
