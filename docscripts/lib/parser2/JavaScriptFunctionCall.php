@@ -2,22 +2,34 @@
 
 require_once('JavaScriptStatements.php');
 require_once('JavaScriptArray.php');
+require_once('Destructable.php');
 
-class JavaScriptFunctionCall {
+class JavaScriptFunctionCall extends Destructable {
   protected $call;
   protected $args;
 
+  protected $assignment;
   protected $resolved_args;
   protected $name;
   protected $global_scope;
 
-  public function __construct($call, $args) {
+  public function __construct($call, $args, $instantiated = FALSE) {
     $this->call = $call;
     $this->args = $args;
   }
 
+  public function __destruct() {
+    $this->mem_flush('call', 'args', 'assignment', 'resolved_args', 'name', 'global_scope');
+  }
+
   private function resolve() {
-    list ($this->global_scope, $this->name) = $this->call->resolve();
+    if (!$this->call->is_lookup()) {
+      $this->global_scope = FALSE;
+      $this->name = NULL;
+    }
+    else {
+      list ($this->global_scope, $this->name) = $this->call->resolve();
+    }
   }
 
   public function name() {
@@ -25,6 +37,20 @@ class JavaScriptFunctionCall {
       $this->resolve();
     }
     return $this->name;
+  }
+
+  public function setAssignment($assignment) {
+    $this->assignment = $assignment;
+  }
+
+  public function assignment() {
+    if ($this->assignment) {
+      if ($this->assignment->is_lookup()) {
+        list(, $assignment) = $this->assignment->resolve();
+        return $assignment;
+      }
+    }
+    return NULL;
   }
 
   public function is_global () {

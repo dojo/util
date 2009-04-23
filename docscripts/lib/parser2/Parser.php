@@ -2,13 +2,15 @@
 
 require_once('Scope.php');
 require_once('Symbol.php');
+require_once('Destructable.php');
 
-abstract class Parser {
+abstract class Parser extends Destructable {
   private static $symbol_tables = array();
 
-  private $tokens;
-  private $token_pos = 0;
-  private $token_length = 0;
+  protected $scopes = array();
+  protected $tokens;
+  protected $token_pos = 0;
+  protected $token_length = 0;
   private $symbol_table;
 
   public $token;
@@ -16,18 +18,28 @@ abstract class Parser {
 
   abstract protected function build();
   protected $symbol_class = Symbol;
-  protected $langauge;
 
   public function __construct($tokens) {
-    if (!$this->language) {
-      throw new Exception("Set the language on the subclass");
-    }
-    if (empty($this->symbol_tables[$this->language])) {
+    $id = get_class($this);
+    if (empty(self::$symbol_tables[$id])) {
+      $this->symbol_table = array();
       $this->build();
+      self::$symbol_tables[$id] = $this->symbol_table;
     }
-    $this->scope = new Scope();
+    $this->symbol_table = self::$symbol_tables[$id];
+    $this->scopes[] = $this->scope = new Scope();
     $this->tokens = $tokens;
     $this->token_length = count($tokens);
+  }
+
+  public function __destruct() {
+    $this->mem_flush('scopes', 'tokens', 'token', 'scope');
+  }
+
+  public function skip_terminators() {
+    while ($this->peek(';')) {
+      $this->advance(';');
+    }
   }
 
   /**
@@ -49,20 +61,21 @@ abstract class Parser {
   }
 
   /**
-   * Look at the next non-whitespace token for a value
+   * Look at the next non-whitespace token for a value. Also needed
+   * for std functions to move up to the next non-whitespace character
    */
-  public function peek($id) {
-    if (!is_array($id)) {
+  public function peek($id = NULL) {
+    if ($id && !is_array($id)) {
       $id = array($id);
     }
-    if (in_array("\n", $id) && $this->token->id == $id) {
+    if ($id && in_array("\n", $id) && $this->token->value == "\n") {
       return true;
     }
     while ($this->token->value == "\n") {
       // We can ignore line-breaks that are mid-expression
       $this->token = $this->next();
     }
-    return in_array($this->token->id, $id);
+    return $id ? in_array($this->token->id, $id) : NULL;
   }
 
   public function peek2($id) {
@@ -75,7 +88,7 @@ abstract class Parser {
       if (in_array("\n", $id) && $token['value'] == "\n") {
         return true;
       }
-      if ($token['value'] != "\n") {
+      if ($token['type'] != 'string' && $token['value'] != "\n") {
         return in_array($token['value'], $id);
       }
     }
@@ -115,7 +128,7 @@ abstract class Parser {
 
     $token = $this->token;
     if ($token->std) {
-      $this->advance();
+      $this->token = $this->next(); // Line breaks are *really* important to some statements
       $this->scope->reserve($token);
       return $token->std($this);
     }
@@ -222,7 +235,7 @@ abstract class Parser {
    *  Creates a new scope, setting the old one as its parent
    */
   public function new_scope() {
-    $scope = new Scope();
+    $this->scopes[] = $scope = new Scope();
     $scope->setParent($this->scope);
     return ($this->scope = $scope);
   }
@@ -374,6 +387,7 @@ abstract class Parser {
     $symbol = $this->symbol($name);
     $symbol->nud = 'nud_constant';
     $symbol->value = $value;
+    $symbol->arity = 'constant';
     return $symbol;
   }
 

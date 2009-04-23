@@ -143,6 +143,8 @@ if(!empty($_REQUEST['ns'])){
                 case "prototype" :
                 case "instance" :
                 case "private" :
+                case "deprecated" :
+                case "protected" :
                 case "attached" :
                   if($_REQUEST['showall']){ $print .= "<li>".$key2." - ".$val2."</li>"; }
                   break;
@@ -214,7 +216,7 @@ if(!empty($_REQUEST['ns'])){
 }
 
 if(!$ajaxy){ ?>
-<div dojoType="dijit.layout.BorderContainer" style="width:100%; height:100%;">q
+<div dojoType="dijit.layout.BorderContainer" style="width:100%; height:100%;">
 	<div dojoType="dojox.layout.ExpandoPane" easeOut="dojo.fx.easing.backIn" easeIn="dojo.fx.easing.backOut" title="Namespaces" region="left" style="width:250px" splitter="true">
 		<div dojoType="dijit.layout.TabContainer" tabPosition="bottom">
 			<?php

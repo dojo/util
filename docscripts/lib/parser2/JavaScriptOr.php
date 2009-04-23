@@ -10,8 +10,16 @@ class JavaScriptOr extends JavaScriptVariable {
     $this->ors = $ors;
   }
 
+  public function __destruct() {
+    $this->mem_flush('ors');
+  }
+
   public function types() {
-    return array_map(create_function('$item', 'return $item->type();'), $this->ors);
+    $mapped = array();
+    foreach ($this->ors as $item) {
+      $mapped[] = $item->type();
+    }
+    return $mapped;
   }
 
   public function type() {
@@ -19,5 +27,11 @@ class JavaScriptOr extends JavaScriptVariable {
     if (count($types) == 1) {
       return array_pop($types);
     }
+    // Assume that if one of them is a boolean, they all are
+    if (in_array('bool', $types)) {
+      return 'bool';
+    }
+
+    return 'Object';
   }
 }

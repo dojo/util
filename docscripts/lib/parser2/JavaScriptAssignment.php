@@ -4,12 +4,15 @@ require_once('JavaScriptVariable.php');
 
 class JavaScriptAssignment extends JavaScriptVariable {
   protected $value;
-
-  protected $resolve_value;
+  protected $resolved_value;
 
   public function __construct($variable, $value) {
     parent::__construct($variable);
     $this->value = $value;
+  }
+
+  public function __destruct() {
+    $this->mem_flush('value', 'resolved_value');
   }
 
   public function name() {
@@ -18,7 +21,11 @@ class JavaScriptAssignment extends JavaScriptVariable {
 
   public function value() {
     if (!isset($this->resolved_value)) {
-      $this->resolved_value = $this->value->convert();
+      $value = $this->value;
+      if (is_array($value) && count($value) == 1) {
+        $value = $value[0];
+      }
+      $this->resolved_value = $value->convert();
     }
     return $this->resolved_value;
   }
@@ -26,7 +33,11 @@ class JavaScriptAssignment extends JavaScriptVariable {
   public function types() {
     $value = $this->value();
     if (is_array($value)) {
-      return array_map(create_function('$item', 'return $item->type();'), $value);
+      $mapped = array();
+      foreach ($value as $item) {
+        $mapped[] = $item->type();
+      }
+      return $mapped;
     }
     return array($value->type());
   }

@@ -1,17 +1,28 @@
 <?php
 
-class JavaScriptVariable {
-  protected $variable;
+require_once('Destructable.php');
 
+class JavaScriptVariable extends Destructable {
+  protected $variable;
   protected $resolved_variable;
   protected $global_scope;
 
-  public function __construct($variable) {
+  public function __construct($variable, $instantiated = FALSE) {
     $this->variable = $variable;
   }
 
+  public function __destruct() {
+    $this->mem_flush('variable', 'resolved_variable', 'global_scope');
+  }
+
   private function resolve() {
-    list ($this->global_scope, $this->resolved_variable) = $this->variable->resolve();
+    if (!$this->variable->is_lookup()) {
+      $this->global_scope = FALSE;
+      $this->resolved_variable = NULL;
+    }
+    else {
+      list ($this->global_scope, $this->resolved_variable) = $this->variable->resolve();
+    }
   }
 
   public function value() {

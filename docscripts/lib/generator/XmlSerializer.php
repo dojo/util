@@ -1,7 +1,5 @@
 <?php
 
-require_once('Serializer.php');
-
 class XmlSerializer extends Serializer
 {
   protected $header = array('<?xml version="1.0" encoding="UTF-8"?>', '<javascript>');
@@ -24,8 +22,39 @@ class XmlSerializer extends Serializer
   }
 
   public function toObject($raw, $id=null) {
-    // Might use this later
-    return array();
+    return $this->ascend($raw, $raw->firstChild);
+  }
+
+  public function ascend($document, $node) {
+    $object = array();
+
+    if ($node->hasAttributes()) {
+      if ($node->attributes) {
+        foreach ($node->attributes as $attribute) {
+          $value = $attribute->value;
+          if ($value == 'true') {
+            $value = true;
+          }
+          elseif ($value == 'false') {
+            $value = false;
+          }
+          $object['@' . $attribute->name] = $value;
+        }
+      }
+    }
+    if ($node->childNodes) {
+      foreach ($node->childNodes as $child_node) {
+        if ($child_node->tagName) {
+          $object['#' . $child_node->tagName][] = $this->ascend($document, $child_node);
+        }
+        else {
+          // Text node
+          $object['content'] = $node->nodeValue;
+        }
+      }
+    }
+
+    return $object;
   }
 
   public function toString($raw, $id=null) {
@@ -44,6 +73,12 @@ class XmlSerializer extends Serializer
       }
       $lines[$i] = str_repeat("\t", $indent) . $line;
     }
+
+    if (count($lines) && substr($lines[0], -2) == '/>') {
+      $lines[0] = substr($lines[0], 0, -2) . '>';
+      array_splice($lines, 1, 0, array('</object>'));
+    }
+
     return implode("\n", $lines);
   }
 

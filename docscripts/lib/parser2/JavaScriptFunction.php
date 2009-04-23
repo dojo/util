@@ -1,10 +1,16 @@
 <?php
 
-class JavaScriptFunction {
+require_once('Destructable.php');
+
+class JavaScriptFunction extends Destructable {
   protected $statement;
 
-  public function __construct($statement) {
+  public function __construct($statement, $instantiated = FALSE) {
     $this->statement = $statement;
+  }
+
+  public function __destruct() {
+    $this->mem_flush('statement');
   }
 
   public function type() {

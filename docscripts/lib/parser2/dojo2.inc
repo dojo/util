@@ -8,6 +8,7 @@ require_once('JavaScriptParser.php');
 require_once('JavaScriptStatements.php');
 require_once('JavaScriptFunction.php');
 require_once('Dojo.php');
+require_once('DojoCommentBlock.php');
 
 $_dojo_properties_modules = array();
 
@@ -153,7 +154,10 @@ function dojo_get_contents($namespace, $file_name) {
 
   $lines = preg_replace('%/\*={3,}|={3,}\*/%', '', file_get_contents($location . '/' . $file_name));
   $parser = new JavaScriptParser(JavaScriptLanguage::tokenize($lines));
-  // print_r($parser->statements());
+  // print '<pre>';
+  // $statements = $parser->statements();
+  // print $statements[0]->resolve();
+  // print '</pre>';
   // die();
   $package = new JavaScriptStatements($parser->statements());
 
@@ -166,6 +170,8 @@ function dojo_get_contents($namespace, $file_name) {
     }
   }
 
+  $output['#resource'] = $file_name;
+
   // Handle dojo.require calls
   foreach ($package->function_calls(TRUE, 'dojo.require') as $call) {
     if ($module = $call->arguments()->getString(0)) {
@@ -173,34 +179,48 @@ function dojo_get_contents($namespace, $file_name) {
     }
   }
 
+  // Handle mixin/extend calls
   foreach ($package->function_calls(TRUE, 'dojo.mixin', 'dojo.extend') as $call) {
     $arguments = $call->arguments();
-    $root = $arguments->getVariable(0);
-    if (!$root) {
-      continue;
+    $assignment = $call->assignment();
+    $root = NULL;
+    if ($constructor = $arguments->getFunction(0)) {
+      if ($assignment) {
+        Dojo::roll_out($constructor, $assignment, $output);
+      }
     }
-    $mixin = $call->name() == 'dojo.mixin';
-    for ($i = 1; $i < $arguments->length; $i++) {
-      if ($arguments->getObject($i)) {
-        foreach ($arguments->getObject($i)->values() as $key => $values) {
-          $full_name = "$root.$key";
-          foreach ($values as $value) {
-            if ($value instanceof JavaScriptVariable) {
-              $key = $mixin ? $full_name : "$root.prototype.$key";
-              if ($key != $value->value()) {
-                $output[$key]['alias'] = $value->value();
+    else {
+      $root = $arguments->getVariable(0, TRUE);
+    }
+
+    foreach (array_diff(array_unique(array($assignment, $root)), array(NULL)) as $root) {
+      $mixin = $call->name() == 'dojo.mixin';
+      for ($i = 1; $i < $arguments->length; $i++) {
+        if ($arguments->getObject($i)) {
+          foreach ($arguments->getObject($i)->values() as $key => $values) {
+            $full_name = "$root.$key";
+            foreach ($values as $value) {
+              if ($value instanceof JavaScriptVariable) {
+                $key = $mixin ? $full_name : "$root.prototype.$key";
+                if ($key != $value->value()) {
+                  $output[$key]['alias'] = $value->value();
+                }
               }
-            }
-            else {
-              Dojo::roll_out($value, $full_name, $output);
-              $output[$full_name][$mixin ? 'attached' : 'prototype'] = $root;
+              else {
+                Dojo::roll_out($value, $full_name, $output);
+                $output[$full_name][$mixin ? 'attached' : 'prototype'] = $root;
+              }
             }
           }
         }
-      }
-      elseif ($arguments->getVariable($i)) {
-        $full_name = $arguments->getVariable($i);
-        $output[$root]['chains'][$mixin ? 'normal' : 'prototoype'][] = $full_name;
+        elseif ($root && $full_name = $arguments->getVariable($i)) {
+          if ($mixin) {
+            $output[$root]['mixins']['normal'][] = $full_name;
+          }
+          else {
+            $output[$root]['chains']['prototype'][] = $full_name;
+          }
+        }
       }
     }
   }
@@ -208,11 +228,15 @@ function dojo_get_contents($namespace, $file_name) {
   foreach ($package->function_calls(TRUE, 'dojo.declare') as $call) {
     $arguments = $call->arguments();
     $name = $arguments->getString(0);
+    if (!$name) {
+      continue;
+    }
     $output[$name]['type'] = 'Function';
     if ($superclass = $arguments->getVariable(1)) {
-      // Note: Could be null
-      $output[$name]['chains']['prototype'][] = $superclass;
-      $output[$name]['chains']['call'][] = $superclass;
+      if ($superclass != 'null') {
+        $output[$name]['chains']['prototype'][] = $superclass;
+        $output[$name]['chains']['call'][] = $superclass;
+      }
     }
     elseif ($superclasses = $arguments->getArray(1)) {
       for($i = 0; TRUE; $i++) {
@@ -226,42 +250,141 @@ function dojo_get_contents($namespace, $file_name) {
       }
     }
     if ($mixin = $arguments->getObject(2)) {
+      $keys = $block_keys = Dojo::$block_keys;
+      $constructors = array();
       // Remember that bad code can have multiple matching keys
       foreach ($mixin->values() as $key => $values) {
+        $keys[] = $key;
         $full_name = "$name.$key";
         foreach ($values as $value) {
           if ($value instanceof JavaScriptFunction) {
             if (in_array($key, array('constructor', 'preamble', 'postscript'))) {
+              $constructors[] = $value;
               $output[$full_name]['constructor'] = $key;
-              // TODO: Handle constructor functions differently
-              // These functions will have to wait until the whole file is complete
-              continue;
             }
-            $output[$full_name]['prototype'] = $name;
+          }
+          elseif ($value->type() == 'variable') {
+            $output[$full_name]['alias'] = $value->value();
+            continue;
+          }
+
+          Dojo::roll_out($value, $full_name, $output);
+          $output[$full_name]['prototype'] = $name;
+        }
+      }
+
+      $constructors[] = $mixin; // Main mixin "wins"
+      foreach ($constructors as $object) {
+        $comments = new DojoCommentBlock($object->comments(), $keys, array('example'));
+        foreach ($comments->all() as $key => $text) {
+          if ($key == 'tags') {
+            if (empty($output[$name]['tags'])) {
+              $output[$name]['tags'] = array();
+            }
+            $output[$name]['tags'] = array_unique(array_merge($output[$name]['tags'], preg_split('%\s+%', trim($text))));
+          }
+          elseif ($key == 'example') {
+            if (empty($output[$name]['examples'])) {
+              $output[$name]['examples'] = $text;
+            }
+            else {
+              $output[$name]['examples'] = array_merge($output[$name]['examples'], $text);
+            }
+          }
+          elseif (in_array($key, $block_keys)) {
+            $output[$name][$key] = $text;
           }
           else {
-            Dojo::roll_out($value, $full_name, $output);
+            $full_name = "$name.$key";
+            if (empty($output[$full_name])) {
+              $output[$full_name] = array();
+            }
+            Dojo::property_text($text, $output[$full_name]);
           }
         }
       }
     }
   }
 
+  // Variable assignments (global)
   foreach ($package->assignments(TRUE) as $variable) {
     $name = $variable->name();
-
-    // TODO: Handle nested objects
-
-    Dojo::roll_out($variable->value(), $name, $output);
-
     $parts = explode('.', $name);
-    array_pop($parts);
-    if (count($parts)) {
+    $name = implode('.', array_diff($parts, array('prototype')));
+    $last = array_pop($parts);
+
+    $is_prototype = ($last == 'prototype');
+
+    Dojo::roll_out($variable->value(), $name, $output, $is_prototype);
+
+    if (count($parts) && !$is_prototype) {
       $output[$name]['attached'] = implode('.', $parts);
     }
   }
 
-  // TODO: Calculate private and private_parent
+  // dojo.provide creates new objects if needed
+  if (!empty($output['#provides'])) {
+    $parts = explode('.', $output['#provides']);
+    while (count($parts)) {
+      if (!array_key_exists(implode('.', $parts), $output)) {
+        $output[implode('.', $parts)] = array('type' => 'Object');
+      }
+      array_pop($parts);
+    }
+  }
+
+  // Set privacy, classlikeness, and clean up the summary a bit
+  foreach ($output as $object_name => $object) {
+    if ($object_name{0} == '#') {
+      continue;
+    }
+    $parts = explode('.', $object_name);
+    $last = array_pop($parts);
+    if ($last{0} == '_') {
+      $output[$object_name]['private'] = true;
+    }
+    if (preg_match('%\._+[^A-Z]%', implode('.', $parts), $match)) {
+        $output[$object_name]['private_parent'] = true;
+    }
+    if (is_array($object['tags'])) {
+      foreach ($object['tags'] as $tag) {
+        if ($tag == 'protected') {
+          unset($output[$object_name]['private']);
+          $output[$object_name]['protected'] = true;
+        }
+        elseif ($tag == 'private') {
+          unset($output[$object_name]['protected']);
+          $output[$object_name]['private'] = true;
+        }
+        elseif ($tag == 'deprecated') {
+          $output[$object_name]['deprecated'] = true;
+        }
+      }
+      $output[$object_name]['tags'] = array_diff($object['tags'], array('private', 'protected', 'deprecated'));
+    }
+
+    if (isset($object['inferred_type'])) {
+      if (empty($object['type'])) {
+        $output[$object_name]['type'] = $object['inferred_type'];
+      }
+      unset($output[$object_name]['inferred_type']);
+    }
+
+    if ($object['type'] == 'Function') {
+      if (preg_match('%^(_*)[A-Z]%', $last, $match)) {
+        if (strlen($match[1]) < 2) {
+          unset($output[$object_name]['private']);
+        }
+        $output[$object_name]['classlike'] = true;
+      }
+      elseif ($object['prototype'] && $output[$object['prototype']]) {
+        $output[$object['prototype']]['classlike'] = true;
+      }
+      elseif ($object['instance'] && $output[$object['instance']]) {
+        $output[$object['instance']]['classlike'] = true;
+      }
+    }
+  }
 
   return $output;
 }

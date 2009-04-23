@@ -1,5 +1,7 @@
 <?php
 
+require_once('debug.php');
+
 class Symbol {
   public $id = NULL;
   public $name = NULL;
@@ -22,11 +24,122 @@ class Symbol {
 
   public $bp = 0;
 
+  public function is_lookup($statement = NULL) {
+    if (!$statement) {
+      $statement = $this;
+    }
+
+    $first = $statement->first;
+    $second = $statement->second;
+
+    if ($first && $statement->arity == 'binary' && ($statement->id == '.' || $statement->id == '[')) {
+      return (is_object($first) && $first->is_lookup() && $second->arity == 'literal');
+    }
+    else {
+      return ($statement->arity == 'name' || $statement->arity == 'literal' || $statement->arity == 'this');
+    }
+  }
+
+  public function resolve($statement = NULL, $public = FALSE, $firsts = array()) {
+    if (!$statement) {
+      $public = TRUE; // Whether the call is non-resursive
+      $statement = $this;
+    }
+
+    $first = $statement->first;
+    $second = $statement->second;
+
+    if ($first && $statement->arity == 'binary' && ($statement->id == '.' || $statement->id == '[')) {
+      // foo.bar.baz or foo["bar"].baz
+      list($is_global, $name) = $this->resolve($first, FALSE, $firsts);
+
+      if (!$second->arity == 'literal') {
+        throw new Exception(sprintf('Line %d, char %d: Lookup is not by literal: %s', $statement->line_number, $statement->char_pos, $second));
+      }
+
+      if (is_object($name) && $name->id == '{') {
+        // The parent item resolved to an object
+        // so we need to continue the lookup
+        foreach ($name->first as $value) {
+          // -> first has all values with their key
+          if ($value->key == $second->value) {
+            if ($value->first() == $statement->first()) {
+               // Object references itself, within itself
+              continue;
+            }
+            if ($value->arity == 'name') {
+              // Contains an actual variable name
+              return array($value->global_scope, $value->value);
+            }
+            elseif ($value->arity == 'binary' && ($value->id == '.' || $value->id == '[')) {
+              // Contains a new variable for us to resolve
+              return $this->resolve($value, TRUE, $firsts);
+            }
+            elseif (!$public && $value->id == '{') {
+              // Contains an object
+              return array(NULL, $value);
+            }
+          }
+        }
+
+        $name = $statement->value;
+      }
+
+      if (!is_string($name)) {
+        throw new Exception(sprintf('Line %d, char %d: Parent variable resolution returned an unknown (%s)', $statement->line_number, $statement->char_pos, $statement));
+      }
+
+      return array($is_global, sprintf('%s.%s', $name, $second->value));
+    }
+    elseif ($statement->arity == 'name' || $statement->arity == 'literal' || $statement->arity == 'this') {
+      // This is the first item in the variable (e.g. for foo.bar.baz, it would be foo)
+      // It only matters if it's an object or an assignment
+      if ($assignment = $statement->scope->assigned($statement->value)) {
+        if ($assignment->first() != $statement->first() && !in_array($statement->first(), $firsts)) {
+          if ($assignment->arity == 'name') {
+            return array($assignment->global_scope, $assignment->value);
+          }
+          elseif ($assignment->arity == 'binary' && ($assignment->id == '.' || $assignment->id == '[')) {
+            // Deal with stuff like c = p.constructor;
+            // followed by p = c.superclass
+            // where they "look each other up"
+            $firsts[] = $statement->first();
+            return $this->resolve($assignment, TRUE, $firsts);
+          }
+          elseif (!$public && $assignment->id == '{') {
+            return array(NULL, $assignment);
+          }
+        }
+      }
+
+      return array($statement->global_scope, $statement->value);
+    }
+
+    throw new Exception(sprintf('Line %d, char %d: Expected a variable in the form foo.bar with %s', $statement->line_number, $statement->char_pos, $statement->id));
+  }
+
+  public function first($statement = NULL) {
+    if (!$statement) {
+      $statement = $this;
+    }
+
+    $first = $statement->first;
+    $second = $statement->second;
+
+    if ($first && $statement->arity == 'binary' && ($statement->id == '.' || $statement->id == '[')) {
+      return $this->first($first);
+    }
+    elseif ($statement->arity == 'name') {
+      return $statement->value;
+    }
+  }
+
   /**
    * Creates a symbol with a statement denotation function
    * that reads until it finds an opening {
    */
   public function block($parser) {
+    $parser->peek('{');
     $token = $parser->token;
     $parser->advance('{');
     return $token->std($parser);
@@ -98,6 +211,7 @@ class Symbol {
   }
 
   public function __toString() {
+    // debug_backtrace_clean();
     if ($this->id == '(name)' || $this->id == '(literal)') {
       return '(' . substr($this->id, 1, strlen($this->id) - 2) . " {$this->value})";
     }

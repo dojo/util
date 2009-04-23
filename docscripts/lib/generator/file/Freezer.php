@@ -10,14 +10,19 @@ final class Freezer
   private $queue;
   private $limit = 500;
 
-  function __construct($directory, $suffix) {
+  public static function clean($directory, $suffix) {
+    $loc = $directory . '/' . $suffix;
+    file_exists($loc) && unlink($loc);
+  }
+
+  public function __construct($directory, $suffix) {
     $this->queue = array();
     $this->nodes_location = $directory . '/' . $suffix;
     touch($this->nodes_location);
     $this->nodes = fopen($this->nodes_location, 'r');
   }
 
-  function __destruct() {
+  public function __destruct() {
     $this->flush();
 
     fclose($this->nodes);

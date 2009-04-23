@@ -1,16 +1,25 @@
 <?php
 
-class JavaScriptObject {
-  protected $values;
+require_once('Destructable.php');
 
+class JavaScriptObject extends Destructable {
+  protected $statement;
   protected $keys;
 
-  public function __construct($values) {
-    $this->values = $values;
+  public function __construct($statement) {
+    $this->statement = $statement;
+  }
+
+  public function __destruct() {
+    $this->mem_flush('statement', 'keys');
   }
 
   public function type() {
     return 'Object';
+  }
+
+  public function comments() {
+    return $this->statement->comments;
   }
 
   public function values() {
@@ -19,7 +28,7 @@ class JavaScriptObject {
     }
 
     $keys = array();
-    foreach ($this->values as $value) {
+    foreach ($this->statement->first as $value) {
       if (is_array($value)) {
         $value = $value[0];
       }

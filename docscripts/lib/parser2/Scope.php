@@ -1,9 +1,15 @@
 <?php
 
-class Scope {
+require_once('Destructable.php');
+
+class Scope extends Destructable {
   protected $_parent;
   protected $definitions = array();
   protected $assignments = array();
+
+  public function __destruct() {
+    $this->mem_flush('_parent', 'definitions', 'assignments');
+  }
 
   /**
    * Turns a name symbol into a variable symbol
@@ -34,13 +40,26 @@ class Scope {
    * @param Symbol $expression The expression being assigned
    */
   public function assignment($to_expression, $expression) {
-    if ($to_expression->arity == 'name' || $to_expression->arity == 'literal') {
-      $this->assignments[$to_expression->value] = $expression;
+    // Only let through assignments to actual lookups (foo or foo.bar.baz)
+    // where the assignment is also a lookup, or an object (which may contain lookups)
+    if (is_object($to_expression) && $to_expression->is_lookup() && is_object($expression) && ($expression->is_lookup() || $expression->id == '{')) {
+      if ($this !== $to_expression->scope) {
+        // The assignment might be referencing a higher scope (e.g. without var)
+        $to_expression->scope->assignment($to_expression, $expression);
+      }
+      else {
+        $this->assignments[$to_expression->value] = $expression;
+      }
     }
   }
 
   public function assigned($variable) {
-    return $this->assignments[$variable];
+    if (isset($this->assignments[$variable])) {
+      return $this->assignments[$variable];
+    }
+    if (isset($this->parent)) {
+      return $this->_parent->assigned($variable);
+    }
   }
 
   /**
@@ -88,11 +107,11 @@ class Scope {
         }
         $symbol = $symbol_table['(name)'];
         $s = clone $symbol;
-        $s->global_scope = true;
-        $s->reserved = false;
+        $s->global_scope = TRUE;
+        $s->reserved = FALSE;
         $s->nud = 'nud_itself';
-        $s->led = null;
-        $s->std = null;
+        $s->led = NULL;
+        $s->std = NULL;
         $s->lbp = 0;
         $s->scope = $scope;
         return $s;

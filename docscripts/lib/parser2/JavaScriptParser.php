@@ -4,7 +4,6 @@ require_once('Parser.php');
 require_once('JavaScriptSymbol.php');
 
 class JavaScriptParser extends Parser {
-  protected $language = 'javascript';
   protected $symbol_class = JavaScriptSymbol;
 
   protected function build() {
@@ -27,7 +26,7 @@ class JavaScriptParser extends Parser {
     $this->symbol('(end)');
     $this->symbol('(name)');
 
-    $this->assignment('=');
+    $this->assignment('=')->led = 'led_equals';
     $this->assignment('+=');
     $this->assignment('-=');
     $this->assignment('*=');
@@ -104,6 +103,7 @@ class JavaScriptParser extends Parser {
     $this->constant('false', FALSE);
     $this->constant('null', 'null');
     $this->constant('undefined', NULL);
+    $this->constant('arguments', 'arguments');
 
     $this->symbol('(literal)')->nud = 'nud_itself';
 

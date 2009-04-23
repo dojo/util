@@ -18,7 +18,7 @@ class JavaScriptLanguage {
     for ($i = 0; $i < strlen($lines); $i++) {
       $char = $lines{$i};
 
-      $positions[$i] = array($line_number, ++$char_pos);
+      $positions[$i] = $line_number . '|' . ++$char_pos;
 
       if ($char == "\n") {
         ++$line_number;
@@ -29,7 +29,7 @@ class JavaScriptLanguage {
     for ($i = 0; $i < strlen($lines); $i++) {
       $char = $lines{$i};
 
-      list($line_number, $char_pos) = $positions[$i];
+      list($line_number, $char_pos) = explode('|', $positions[$i], 2);
 
       if (count($tokens)) {
         $pop = &$tokens[count($tokens) - 1];
@@ -113,6 +113,7 @@ class JavaScriptLanguage {
       case '*':
       case '%':
       case '~':
+      case '^':
         $tokens[] = self::new_token('operator', $char, compact($extras));
         break;
       case "'":
@@ -147,8 +148,9 @@ class JavaScriptLanguage {
         $multi = FALSE;
         $escaped = FALSE;
         $last = '';
-        for ($j = $i + 1; $j < strlen($lines); $j++) {
-          $letter = $lines{$j};
+        $length = strlen($lines);
+        for ($j = $i + 1; $j <= $length; $j++) {
+          $letter = ($j == $length) ? "\n" : $lines{$j};
           if ($single) {
             if ($letter == "\n") {
               $instruction = 'comment';
@@ -157,7 +159,7 @@ class JavaScriptLanguage {
             }
           }
           elseif ($multi) {
-            if ($letter == '/' && $last == '*') {
+            if (strlen($content) > 2 && $letter == '/' && $last == '*') {
               $content .= $letter;
               $instruction = 'comment';
               $i = $j;
@@ -179,7 +181,7 @@ class JavaScriptLanguage {
           elseif ($last === '') {
             // If it's not a comment, it might be a regex
             // which can only occur after certain operators
-            if (in_array($last_expression['value'], array(')')) || ($last_expression['type'] != 'operator' && $last_expression['value'] != 'return')) {
+            if (in_array($last_expression['value'], array(')', ']')) || ($last_expression['type'] != 'operator' && $last_expression['value'] != 'return')) {
               $content = '/';
               $instruction = 'operator';
               break;
@@ -190,7 +192,7 @@ class JavaScriptLanguage {
             $content .= $letter;
             $instruction = 'regex';
             $i = $j;
-            for ($k = $j + 1; $k < strlen($lines); $k++) {
+            for ($k = $j + 1; $k < $length; $k++) {
               $modifier = $lines{$k};
               if ($modifier == ' ' || $modifier == "\t") {
                 $last = $modifier;
@@ -253,7 +255,9 @@ class JavaScriptLanguage {
       }
     }
 
+    // print '<pre>';
     // print_r($tokens);
+    // print '</pre>';
     // die();
 
     return $tokens;

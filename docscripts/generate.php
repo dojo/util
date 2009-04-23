@@ -2,24 +2,25 @@
 
 # php generate.php
 # -- Runs everything in the modules directory
-# php generate.php custom
-# -- Runs only the module starting with "custom"
+# php generate.php custom custom2
+# -- Runs only the module starting with custom, custom2, etc.
+# php generate.php --store=file
+# -- Specifies storage type. "file" and "resource" currently supported
+# php generate.php --serialize=xml,json
+# -- Comma-separated list of serializations. "xml" and "json" supported
 # php generate.php --outfile=custom-api custom
 # -- Runs the custom module, serializes to custom-api.xml
-# php generate.php dijit dojo
-# -- Runs both dijit and dojo modules
 
 if ($_SERVER['HTTP_HOST']) {
   die('Run from command line');
 }
 
+ini_set('display_errors', 1);
 error_reporting(E_ALL ^ E_NOTICE);
 $debug = true;
 
-require_once('includes/dojo.inc');
-require_once('lib/generator/JsonSerializer.php');
-require_once('lib/generator/XmlSerializer.php');
-require_once('lib/generator/Freezer.php');
+require_once('lib/parser2/dojo2.inc');
+// Use file serializers by default
 
 $keys = array();
 $namespaces = array();
@@ -30,12 +31,19 @@ $namespaces = array();
 // 3. Serialize objects
 
 $args = array();
-$outfile = null;
+$kwargs = array();
 $clean = false;
 foreach (array_slice($argv, 1) as $arg) {
   if ($arg{0} == '-') {
-    if (preg_match('%^--outfile=(.+)$%', $arg, $match)) {
-      $outfile = $match[1];
+    if (preg_match('%^--(outfile|store|serialize)=([^ ]+)$%', $arg, $match)) {
+      if ($match[1] == 'serialize') {
+        foreach (explode(',', $match[2]) as $serialize_type) {
+          $kwargs[$match[1]][$serialize_type] = true;
+        }
+      }
+      else {
+        $kwargs[$match[1]] = $match[2];
+      }
     }
     elseif ($arg == '--clean') {
       $clean = true;
@@ -48,16 +56,40 @@ foreach (array_slice($argv, 1) as $arg) {
     $args[] = $arg;
   }
 }
-
-function _unlink($loc){
-  file_exists($loc) && unlink($loc);
+if (!isset($kwargs['serialize'])) {
+  $kwargs['serialize'] = array(
+    'json' => true,
+    'xml' => true
+  );
+}
+if (!isset($kwargs['store'])) {
+  $kwargs['store'] = 'file';
 }
 
+require_once('lib/generator/' . $kwargs['store'] . '/Freezer.php');
+require_once('lib/generator/' . $kwargs['store'] . '/Serializer.php');
+require_once('lib/generator/JsonSerializer.php');
+require_once('lib/generator/XmlSerializer.php');
+
 if ($clean) {
-  _unlink('cache/nodes');
-  _unlink('cache/resources');
-  _unlink('cache/' . ($outfile ? $outfile : 'api') . '.json');
-  _unlink('cache/' . ($outfile ? $outfile : 'api') . '.xml');
+  Freezer::clean('cache', 'nodes');
+  Freezer::clean('cache', 'resources');
+  if ($kwargs['outfile']) {
+    if (isset($kwargs['serialize']['json'])) {
+      JsonSerializer::clean('cache', 'json', $kwargs['outfile']);
+    }
+    if (isset($kwargs['serialize']['xml'])) {
+      XmlSerializer::clean('cache', 'xml', $kwargs['outfile']);
+    }
+  }
+  else {
+    if (isset($kwargs['serialize']['json'])) {
+      JsonSerializer::clean('cache', 'json');
+    }
+    if (isset($kwargs['serialize']['xml'])) {
+      XmlSerializer::clean('cache', 'xml');
+    }
+  }
 }
 
 $files = dojo_get_files($args);
@@ -78,7 +110,7 @@ foreach ($files as $set){
     continue;
   }
 
-  print "$namespace/$file\t\t" . memory_get_usage() . "\n";
+  printf("%-100s %6s KB\n", $namespace . '/' . $file, number_format(memory_get_usage() / 1024));
   flush();
 
   $contents = dojo_get_contents($namespace, $file);
@@ -111,7 +143,7 @@ foreach ($files as $set){
     $new = !empty($node);
 
     // Handle file-level information
-    if (!is_array($node['#provides']) || !in_array($provides, $node['#provides'])) {
+    if ($provides && (!is_array($node['#provides']) || !in_array($provides, $node['#provides']))) {
       $node['#provides'][] = $provides;
     }
 
@@ -121,7 +153,7 @@ foreach ($files as $set){
 
     $node['#resource'][] = "$namespace/$resource";
 
-    if (trim($content['type'])) {
+    if (trim($content['type']) && (empty($node['type']) || $content['type'] != 'Object')) {
       $node['type'] = $content['type'];
     }
 
@@ -225,7 +257,7 @@ foreach ($files as $set){
         $types = array_keys($content['chains']);
         if (!empty($types)) {
           print_r($types);
-          die();
+          die('Unexpected chain type');
         }
       }
 
@@ -338,14 +370,24 @@ foreach ($roots as $id => $root) {
 print "=== SERIALIZING OBJECTS ===\n";
 
 // Aggregate and save
-if ($outfile) {
-  $json = new JsonSerializer('cache', 'json', $outfile);
-  $xml = new XmlSerializer('cache', 'xml', $outfile);
+$serializers = array();
+if ($kwargs['outfile']) {
+  if (isset($kwargs['serialize']['json'])) {
+    $serializers['json'] = new JsonSerializer('cache', 'json', $kwargs['outfile']);
+  }
+  if (isset($kwargs['serialize']['xml'])) {
+    $serializers['xml'] = new XmlSerializer('cache', 'xml', $kwargs['outfile']);
+  }
 }
 else {
-  $json = new JsonSerializer('cache', 'json');
-  $xml = new XmlSerializer('cache', 'xml');
+  if (isset($kwargs['serialize']['json'])) {
+    $serializers['json'] = new JsonSerializer('cache', 'json');
+  }
+  if (isset($kwargs['serialize']['xml'])) {
+    $serializers['xml'] = new XmlSerializer('cache', 'xml');
+  }
 }
+
 foreach ($roots as $id => $root) {
   if(!$id){
     // Minor bug
@@ -362,11 +404,12 @@ foreach ($roots as $id => $root) {
     }
   }
 
-  print "$id\t\t" . memory_get_usage() . "\n";
+  printf("%-100s %6s KB\n", $id, number_format(memory_get_usage() / 1024));
   flush();
 
-  $json->setObject($id, $node);
-  $xml->setObject($id, $node);
+  foreach ($serializers as $serializer) {
+    $serializer->setObject($id, $node);
+  }
 }
 
 // * Assemble parent/child relationships

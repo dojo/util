@@ -8,8 +8,9 @@ require_once('JavaScriptNumber.php');
 require_once('JavaScriptRegExp.php');
 require_once('JavaScriptFunction.php');
 require_once('JavaScriptObject.php');
+require_once('Destructable.php');
 
-class JavaScriptArray {
+class JavaScriptArray extends Destructable {
   protected $args;
   protected $resolved_args;
   public $length;
@@ -17,6 +18,10 @@ class JavaScriptArray {
   public function __construct($args) {
     $this->length = count($args);
     $this->args = $args;
+  }
+
+  public function __destruct() {
+    $this->mem_flush('args', 'resolved_args');
   }
 
   public function type() {
@@ -30,48 +35,48 @@ class JavaScriptArray {
 
   private function getType($position, $type) {
     $args = $this->all();
-    if ($args[$position] instanceof $type) {
+    if (get_class($args[$position]) == $type) {
       return $args[$position];
     }
   }
 
-  public function getVariable($position) {
-    if ($variable = $this->getType($position, JavaScriptVariable)) {
-      return $variable->value();
+  public function getVariable($position, $is_global = FALSE) {
+    if ($variable = $this->getType($position, 'JavaScriptVariable')) {
+      return (!$is_global || $variable->is_global()) ? $variable->value() : NULL;
     }
-    if ($variable = $this->getType($position, JavaScriptLiteral)) {
-      return $variable->value();
+    if ($variable = $this->getType($position, 'JavaScriptLiteral')) {
+      return $is_global ? NULL : $variable->value();
     }
   }
 
   public function getString($position) {
-    if ($string = $this->getType($position, JavaScriptString)) {
+    if ($string = $this->getType($position, 'JavaScriptString')) {
       return $string->value();
     }
   }
 
   public function getNumber($position) {
-    if ($number = $this->getType($position, JavaScriptNumber)) {
+    if ($number = $this->getType($position, 'JavaScriptNumber')) {
       return $number->value();
     }
   }
 
   public function getRegExp($position) {
-    if ($regexp = $this->getType($position, JavaScriptRegExp)) {
+    if ($regexp = $this->getType($position, 'JavaScriptRegExp')) {
       return $regexp->value();
     }
   }
 
   public function getFunction($position) {
-    return $this->getType($position, JavaScriptFunction);
+    return $this->getType($position, 'JavaScriptFunction');
   }
 
   public function getArray($position) {
-    return $this->getType($position, JavaScriptArray);
+    return $this->getType($position, 'JavaScriptArray');
   }
 
   public function getObject($position) {
-    return $this->getType($position, JavaScriptObject);
+    return $this->getType($position, 'JavaScriptObject');
   }
 
   public function all() {
@@ -81,7 +86,9 @@ class JavaScriptArray {
 
     $args = array();
     foreach ($this->args as $arg) {
-      $args[] = $arg->convert();
+      if (is_object($arg)) {
+        $args[] = $arg->convert();
+      }
     }
 
     return ($this->resolved_args = $args);

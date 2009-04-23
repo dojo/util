@@ -16,58 +16,6 @@ require_once('JavaScriptAssignment.php');
 require_once('JavaScriptOr.php');
 
 class JavaScriptSymbol extends Symbol {
-  public function resolve($statement = NULL) {
-    if (!$statement) {
-      $statement = $this;
-    }
-
-    $first = ($statement->arity == 'name') ? $statement : $statement->first;
-    $second = $statement->second;
-    $global_scope = FALSE;
-
-    if ($first->id == '.' || $first->id == '[') {
-      list($is_global, $name) = $this->resolve($statement->first);
-      if ($name->id == '{') {
-        foreach($name->first as $value) {
-          if ($value->key == $second->value) {
-            return $this->resolve($value);
-          }
-        }
-      }
-    }
-    else {
-      if ($first->arity == 'name' && ($assigned = $first->scope->assigned($first->value))) {
-        if ($assigned->id == '{') {
-          // foo.bar.baz.qoo is (.(.(. foo bar) baz) qoo)
-          foreach ($assigned->first as $value) {
-            if ($value->key == $second->value) {
-              return array($value->is_global, $value);
-            }
-          }
-          return array(FALSE, $first->value);
-        }
-        elseif ($assigned->id != '.' && $assigned->id != '[' && $assigned->arity != 'name') {
-          return array($first->global_scope, $first->value);
-        }
-        list($is_global, $name) = $this->resolve($assigned);
-      }
-      else {
-        $is_global = $first->global_scope;
-        $name = $first->value;
-      }
-    }
-
-    if ($second) {
-      $name .= '.' . $second->value;
-    }
-
-    if ($is_global) {
-      $global_scope = TRUE;
-    }
-
-    return array($global_scope, $name);
-  }
-
   /**
    * Guesses the type of the current symbol
    */
@@ -104,7 +52,7 @@ class JavaScriptSymbol extends Symbol {
       case 'function':
         return new JavaScriptFunction($this);
       case '{':
-        return new JavaScriptObject($this->first);
+        return new JavaScriptObject($this);
       case '[':
       case '.':
         if ($this->arity == 'unary') {
@@ -117,7 +65,12 @@ class JavaScriptSymbol extends Symbol {
       case '||':
         $output = array();
 
-        $first = $this->first->convert(TRUE);
+        $first = $this->first;
+        if (is_array($first) && count($first == 1)) {
+          $first = $first[0];
+        }
+        $first = $first->convert(TRUE);
+
         if (is_array($first)) {
           $output = array_merge($output, $first);
         }
@@ -137,9 +90,25 @@ class JavaScriptSymbol extends Symbol {
 
       switch ($this->arity) {
       case 'name':
+        if ($this->value == 'new') {
+          // TODO: Make new matter
+          if ($this->first->id == 'function') {
+            return new JavaScriptFunction($this->first, true);
+          }
+          elseif ($this->first->id == '(') {
+            return new JavaScriptFunctionCall($this->first, $this->second, true);
+          }
+          elseif ($this->first->id == '.' || $this->first->id == '[') {
+            return new JavaScriptVariable($this->first, true);
+          }
+          else {
+            throw new Exception("Line {$this->first->line_number}, char {$this->first->char_pos}: New statement preceeds unknown");
+          }
+        }
         return new JavaScriptVariable($this);
       case 'literal':
       case 'operator':
+      case 'this':
         return new JavaScriptLiteral($this);
       }
     }
@@ -165,6 +134,10 @@ class JavaScriptSymbol extends Symbol {
           break;
         }
         $parser->advance(',');
+        if ($parser->peek(']')) {
+          // Be lenient about trailing commas
+          break;
+        }
       }
     }
     $parser->advance(']');
@@ -174,15 +147,13 @@ class JavaScriptSymbol extends Symbol {
   }
 
   public function std_break($parser) {
-    if ($parser->peek(';')) {
-      $parser->advance(';');
-    }
+    $parser->skip_terminators();
     $this->arity = 'statement';
     return $this;
   }
 
   public function lbp_colon($parser, $left) {
-    if ($parser->peek2(array('for', 'while', 'do'))) {
+    if ($left->arity == 'name' && $parser->peek2(array('for', 'while', 'do'))) {
       return 100;
     }
     return 0;
@@ -191,12 +162,12 @@ class JavaScriptSymbol extends Symbol {
   public function led_colon($parser, $left) {
     $this->first = $left;
     if ($parser->token->arity != 'name') {
-      throw new Exception('Expected a property name');
+      throw new Exception("Line {$left->line_number}, char {$left->char_pos}: Expected a property name");
     }
     $parser->token->arity = 'literal';
     $this->second = $parser->expression();
-    $this->arity ='binary';
-    $parser->advance();
+    $this->arity = 'binary';
+    $parser->skip_terminators();
     return $this;
   }
 
@@ -229,7 +200,7 @@ class JavaScriptSymbol extends Symbol {
       while (1) {
         $token = $parser->token;
         if ($token->arity != 'name' && $token->arity != 'literal') {
-          throw new Exception("Bad key: {$token->id}");
+          throw new Exception("Line {$token->line_number}, char {$token->char_pos}: Bad key: {$token->id}");
         }
         $comments = $parser->comments_before($token);
         if (!empty($comments)) {
@@ -249,10 +220,18 @@ class JavaScriptSymbol extends Symbol {
         if (!$parser->peek(',')) {
           break;
         }
+        $token = $parser->token;
         $parser->advance(',');
+        if ($parser->peek('}')) {
+          // Be lenient about trailing commas
+          break;
+        }
       }
     }
 
+    if ($parser->peek('}')) {
+      $this->comments = array_merge($this->comments, $parser->comments_before($parser->token));
+    }
     $parser->advance('}');
     $this->first = $values;
     $this->arity = 'unary';
@@ -271,17 +250,20 @@ class JavaScriptSymbol extends Symbol {
     }
     else {
       $this->first = $parser->expression($parser);
-      if ($parser->peek(';')) {
-        $parser->advance(';');
-      }
+      $parser->skip_terminators();
     }
     $parser->advance('while');
     $parser->advance('(');
     $this->second = $parser->expression();
     $parser->advance(')');
-    if ($parser->peek(';')) {
-      $parser->advance(';');
-    }
+    $parser->skip_terminators();
+    return $this;
+  }
+
+  public function led_equals($parser, $left) {
+    $this->first = $left;
+    $this->second = $parser->expression(9);
+    $parser->scope->assignment($this->first, $this->second);
     return $this;
   }
 
@@ -303,7 +285,7 @@ class JavaScriptSymbol extends Symbol {
     }
 
     if (!$parser->peek(')')) {
-      // var swallows the ;
+      // var can possibly swallow the ;
       if ($parser->peek(';')) {
         $parser->advance(';');
       }
@@ -319,9 +301,7 @@ class JavaScriptSymbol extends Symbol {
       $this->block = $parser->expression();
     }
 
-    if ($parser->peek(';')) {
-      $parser->advance(';');
-    }
+    $parser->skip_terminators();
 
     $this->arity = 'statement';
     return $this;
@@ -378,9 +358,7 @@ class JavaScriptSymbol extends Symbol {
       $this->second = $parser->expression();
     }
 
-    if ($parser->peek(';')) {
-      $parser->advance(';');
-    }
+    $parser->skip_terminators();
     
     if ($parser->peek('else')) {
       $parser->advance('else');
@@ -394,51 +372,12 @@ class JavaScriptSymbol extends Symbol {
         $this->third = $parser->expression();
       }
 
-      if ($parser->peek(';')) {
-        $parser->advance(';');
-      }
+      $parser->skip_terminators();
     }
     else {
       $this->third = NULL;
     }
     $this->arity = 'statement';
-    return $this;
-  }
-
-  public function led_parenthesis($parser, $left) {
-    if ($left->id == 'function') {
-      return $this->executed_function($left, $parser);
-    }
-
-    if ($left->id == '{') {
-      $expression = $parser->expression();
-      $parser->advance(')');
-      return $expression;
-    }
-    if ($left->id != '.' && $left->id != '[') {
-      if (($left->arity != 'unary' || $left->id != 'function') && $left->arity != 'this' && $left->arity != 'name' && $left->id != '(' && $left->id != '&&' && $left->id != '||' && $left->id != '?') {
-        throw new Exception("Line {$parser->token->line_number}, char {$parser->token->char_pos}: Expected a variable name");
-      }
-    }
-
-    $arguments = array();
-
-    if (!$parser->peek(')')) {
-      while (1) {
-        $arguments[] = $parser->expression();
-        if (!$parser->peek(',')) {
-          break;
-        }
-        $parser->advance(',');
-      }
-    }
-
-    // e.g. foo(bar) has a foo first, bar second
-    $this->arity = 'binary';
-    $this->first = $left;
-    $this->second = $arguments;
-
-    $parser->advance(')');
     return $this;
   }
 
@@ -459,9 +398,7 @@ class JavaScriptSymbol extends Symbol {
       }
     }
     $parser->advance(')');
-    if ($parser->peek(';')) {
-      $parser->advance(';');
-    }
+    $parser->skip_terminators();
 
     // Make assignments within the function scope (in $function)
     // between the arguments in the expression and the passed arguments
@@ -478,10 +415,51 @@ class JavaScriptSymbol extends Symbol {
     return $this;
   }
 
+  public function led_parenthesis($parser, $left) {
+    if ($left->id == 'function') {
+      return $this->executed_function($left, $parser);
+    }
+
+    if ($left->id == '{') {
+      $expression = $parser->expression();
+      $parser->advance(')');
+      return $expression;
+    }
+
+    if (!$parser->peek(')')) {
+      while (1) {
+        $arguments[] = $parser->expression();
+        if (!$parser->peek(',')) {
+          break;
+        }
+        $parser->advance(',');
+      }
+    }
+
+    if ($left->arity == 'operator' && $left->id != '.' && $left->id != '[' && count($arguments) == 1) {
+      $arguments = $arguments[0];
+    }
+
+    // e.g. foo(bar) has a foo first, [bar] second
+    $this->arity = 'binary';
+    $this->first = $left;
+    $this->second = $arguments;
+
+    $parser->advance(')');
+    return $this;
+  }
+
   public function nud_parenthesis($parser) {
     // '(' can mean function call, or executed function
     $is_function = $parser->peek('function');
-    $expressions = $parser->statements(array(')'));
+    $expressions = array();
+    while (1) {
+      $expressions[] = $parser->expression();
+      if ($parser->peek(')')) {
+        break;
+      }
+      $parser->advance(',');
+    }
     $parser->advance(')');
 
     if ($is_function && $parser->peek('(')) {
@@ -537,18 +515,18 @@ class JavaScriptSymbol extends Symbol {
       $this->third = $this->block($parser);
     }
 
+    $parser->skip_terminators();
+
     $this->arity = 'statement';
 
     return $this;
   }
 
   public function std_return($parser) {
-    if (!$parser->peek("\n") && !$parser->peek(';')) {
+    if (!$parser->peek("\n") && !$parser->peek(';') && !$parser->peek('}')) {
       $this->first = $parser->expression();
     }
-    if ($parser->peek(';')) {
-      $parser->advance(';');
-    }
+    $parser->skip_terminators();
     $this->arity = 'statement';
     return $this;
   }
@@ -609,9 +587,10 @@ class JavaScriptSymbol extends Symbol {
   public function std_var($parser) {
     $assignments = array();
     while (1) {
+      $parser->peek();
       $token = $parser->token;
       if ($token->arity != 'name') {
-        throw new Exception('Expected a new variable name');
+        throw new Exception("Line {$token->line_number}, char {$token->char_pos}: Expected a new variable name");
       }
       $parser->scope->define($token);
       $parser->advance();
@@ -635,9 +614,7 @@ class JavaScriptSymbol extends Symbol {
       }
       $parser->advance(',');
     }
-    if ($parser->peek(';')) {
-      $parser->advance(';');
-    }
+    $parser->skip_terminators();
     return $assignments;
   }
 
@@ -651,6 +628,7 @@ class JavaScriptSymbol extends Symbol {
     else {
       $this->second = $parser->expression();
     }
+    $parser->skip_terminators();
     $this->arity = 'statement';
     return $this;
   }

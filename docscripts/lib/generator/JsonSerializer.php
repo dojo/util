@@ -1,7 +1,5 @@
 <?php
 
-require_once('Serializer.php');
-
 class JsonSerializer extends Serializer
 {
   protected $header = array('{');
