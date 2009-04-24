@@ -34,6 +34,7 @@ $ajaxy = !empty($_REQUEST['ajaxy']);
 			dojo.require("dojox.layout.ExpandoPane");
 			dojo.require("dijit.layout.ContentPane");
 			dojo.require("dijit.layout.TabContainer");
+			dojo.require("dijit.layout.AccordionContainer");
 			dojo.require("dojo.fx.easing");
 			dojo.require("dijit.TitlePane");
 			function tgShow(id){
@@ -45,7 +46,7 @@ $ajaxy = !empty($_REQUEST['ajaxy']);
 				dojo.connect(window,"onclick",function(e){
 					if(e.target && e.target.href){
 						e.preventDefault();
-						dijit.byId('apiPane').setHref(e.target.href + "&ajaxy=true");
+						dijit.byId('apiPane').attr("href", e.target.href + "&ajaxy=true");
 					}
 				});
 			});
@@ -208,12 +209,12 @@ if(!empty($_REQUEST['ns'])){
 }
 
 if(!$ajaxy){ ?>
-<div dojoType="dijit.layout.BorderContainer" style="width:100%; height:100%;">q
+<div dojoType="dijit.layout.BorderContainer" style="width:100%; height:100%;">
 	<div dojoType="dojox.layout.ExpandoPane" easeOut="dojo.fx.easing.backIn" easeIn="dojo.fx.easing.backOut" title="Namespaces" region="left" style="width:250px" splitter="true">
-		<div dojoType="dijit.layout.TabContainer" tabPosition="bottom">
+		<div dojoType="dijit.layout.AccordionContainer" style="width:250px" tabPosition="top">
 			<?php
 				foreach($trees as $ns => $list){
-					print "<div attachParent=\"true\" dojoType=\"dijit.layout.ContentPane\" title=\"".$ns."\">";
+					print "\n\n<div dojoType=\"dijit.layout.ContentPane\" title=\"".$ns."\">";
 					print $list;
 					print "</div>";
 				}
