@@ -2599,9 +2599,10 @@ function _jsdoc_markup_text($text, $version, $format = false){
 
   $tokens = array();
   if (preg_match_all('%`([^`]+)`%', $text, $matches)) {
-    foreach (array_unique($matches[1]) as $i => $match) {
-      $tokens[$i] = "<code>$match</code>";
-      $text = str_replace($matches[0][$i], "!$i!", $text);
+    foreach (array_unique($matches[0]) as $i => $match) {
+      $code = substr($match, 1, -1);
+      $tokens[$i] = "<code>$code</code>";
+      $text = str_replace($match, "!$i!", $text);
     }
   }
 
