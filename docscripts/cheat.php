@@ -89,7 +89,8 @@
 				}
 
 				if(ap.hasTag("includeDijit")){
-					dojo.load("dijit.dijit", function(){
+					dojo.require("dijit.dijit");
+					dojo.addOnLoad(function(){
 
 						ap.addIn("dijit._Widget.prototype", null, "dijit");
 						ap.addIn("dijit", null, "dijit");
