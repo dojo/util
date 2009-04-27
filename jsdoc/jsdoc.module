@@ -1023,7 +1023,7 @@ function jsdoc_get_body(&$node) {
   $body = trim($node->body);
   $variables = _jsdoc_get_variables();
   foreach (array_unique(preg_split('%\s+%', strip_tags($body))) as $variable) {
-    if ($variables[$variable]) {
+    if ($variables[$variable] && $variable != $node->title) {
       $body = str_replace($variable, l($variable, 'jsdoc/' . $version . '/' . $variable), $body);
     }
   }
@@ -2581,12 +2581,41 @@ function _jsdoc_markup_text($text, $version, $format = false){
     $format = variable_get('jsdoc_input_format', 1);
   }
 
+  $lines = array();
+  $tabbed = FALSE;
+  foreach (explode("\n", $text) as $line) {
+    if ($line{0} == "\t") {
+      if (!$tabbed) {
+        $lines[] = "";
+      }
+      $tabbed = TRUE;
+    }
+    else {
+      $tabbed = FALSE;
+    }
+    $lines[] = $line;
+  }
+  $text = implode("\n", $lines);
+
+  $tokens = array();
+  if (preg_match_all('%`([^`]+)`%', $text, $matches)) {
+    foreach (array_unique($matches[1]) as $i => $match) {
+      $tokens[$i] = "<code>$match</code>";
+      $text = str_replace($matches[0][$i], "!$i!", $text);
+    }
+  }
+
   $text = check_markup($text, $format, FALSE);
+
   if (preg_match_all('%(?:\s*(?:<pre>|<code>)\s*)+(.*?)(?:\s*(?:</pre>|</code>)\s*)+%s', $text, $matches, PREG_SET_ORDER)) {
     foreach ($matches as $match) {
       $match[1] = str_replace('&lt;', '<', str_replace('&gt;', '>', $match[1]));
       $text = str_replace($match[0], _jsdoc_markup_code($match[1], $version), $text);
     }
+  }
+
+  foreach ($tokens as $i => $token) {
+    $text = str_replace("!$i!", $token, $text);
   }
 
   return $text;
