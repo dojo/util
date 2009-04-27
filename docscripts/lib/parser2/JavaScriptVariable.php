@@ -4,7 +4,7 @@ require_once('Destructable.php');
 
 class JavaScriptVariable extends Destructable {
   protected $variable;
-  protected $resolved_variable;
+  protected $resolved_variables;
   protected $global_scope;
 
   public function __construct($variable, $instantiated = FALSE) {
@@ -12,24 +12,37 @@ class JavaScriptVariable extends Destructable {
   }
 
   public function __destruct() {
-    $this->mem_flush('variable', 'resolved_variable', 'global_scope');
+    $this->mem_flush('variable', 'resolved_variables', 'global_scope');
   }
 
   private function resolve() {
     if (!$this->variable->is_lookup()) {
       $this->global_scope = FALSE;
-      $this->resolved_variable = NULL;
+      $this->resolved_variables = array();
     }
     else {
-      list ($this->global_scope, $this->resolved_variable) = $this->variable->resolve();
+      foreach ($this->variable->resolve(TRUE) as $resolved) {
+        list($global_scope, $variable) = $resolved;
+        if ($global_scope) {
+          $this->global_scope = TRUE;
+        }
+        $this->resolved_variables[] = $variable;
+      }
     }
   }
 
   public function value() {
-    if (!isset($this->resolved_variable)) {
+    if (!isset($this->resolved_variables)) {
       $this->resolve();
     }
-    return $this->resolved_variable;
+    return count($this->resolved_variables) ? $this->resolved_variables[0] : NULL;
+  }
+
+  public function values() {
+    if (!isset($this->resolved_variables)) {
+      $this->resolve();
+    }
+    return is_array($this->resolved_variables) ? $this->resolved_variables : array();
   }
 
   public function type() {
@@ -42,5 +55,9 @@ class JavaScriptVariable extends Destructable {
       $this->resolve();
     }
     return !!$this->global_scope;
+  }
+
+  public function __toString() {
+    return '(' . $this->type() . ')';
   }
 }

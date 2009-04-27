@@ -22,6 +22,14 @@ class Symbol {
 
   public $bp = 0;
 
+  public function possible_variable() {
+    return $this->value == '.' || $this->value == '[' || $this->arity == 'name';
+  }
+
+  public function is_option() {
+    return $this->first && ($this->value == '||' || $this->value == '&&');
+  }
+
   public function is_lookup($statement = NULL) {
     if (!$statement) {
       $statement = $this;
@@ -38,7 +46,7 @@ class Symbol {
     }
   }
 
-  public function resolve($statement = NULL, $public = FALSE, $firsts = array()) {
+  public function resolve($as_array = FALSE, $statement = NULL, $public = FALSE, $firsts = array()) {
     if (!$statement) {
       $public = TRUE; // Whether the call is non-resursive
       $statement = $this;
@@ -47,70 +55,90 @@ class Symbol {
     $first = $statement->first;
     $second = $statement->second;
 
+    $results = array();
+
     if ($first && $statement->arity == 'binary' && ($statement->id == '.' || $statement->id == '[')) {
       // foo.bar.baz or foo["bar"].baz
-      list($is_global, $name) = $this->resolve($first, FALSE, $firsts);
+      foreach ($this->resolve(TRUE, $first, FALSE, $firsts) as $resolved) {
+        list($is_global, $name) = $resolved;
 
-      if (!$second->arity == 'literal') {
-        throw new Exception(sprintf('Line %d, char %d: Lookup is not by literal: %s', $statement->line_number, $statement->char_pos, $second));
-      }
-
-      if (is_object($name) && $name->id == '{') {
-        // The parent item resolved to an object
-        // so we need to continue the lookup
-        foreach ($name->first as $value) {
-          // -> first has all values with their key
-          if ($value->key == $second->value) {
-            if ($value->first() == $statement->first()) {
-               // Object references itself, within itself
-              continue;
-            }
-            if ($value->arity == 'name') {
-              // Contains an actual variable name
-              return array($value->global_scope, $value->value);
-            }
-            elseif ($value->arity == 'binary' && ($value->id == '.' || $value->id == '[')) {
-              // Contains a new variable for us to resolve
-              return $this->resolve($value, TRUE, $firsts);
-            }
-            elseif (!$public && $value->id == '{') {
-              // Contains an object
-              return array(NULL, $value);
-            }
-          }
+        if (!$second->arity == 'literal') {
+          throw new Exception(sprintf('Line %d, char %d: Lookup is not by literal: %s', $statement->line_number, $statement->char_pos, $second));
         }
 
-        $name = $statement->value;
+        if (is_object($name) && $name->id == '{') {
+          // The parent item resolved to an object
+          // so we need to continue the lookup
+          foreach ($name->first as $value) {
+            // -> first has all values with their key
+            if ($value->key == $second->value) {
+              if ($value->first() == $statement->first()) {
+                 // Object references itself, within itself
+                continue;
+              }
+              if ($value->arity == 'name') {
+                // Contains an actual variable name
+                $results[] = array($value->global_scope, $value->value);
+                break 2;
+              }
+              elseif ($value->arity == 'binary' && ($value->id == '.' || $value->id == '[')) {
+                // Contains a new variable for us to resolve
+                $results = array_merge($results, $this->resolve(TRUE, $value, TRUE, $firsts));
+                break 2;
+              }
+              elseif (!$public && $value->id == '{') {
+                // Contains an object
+                $results[] = array(NULL, $value);
+                break 2;
+              }
+            }
+          }
+
+          $name = $statement->value;
+        }
+
+        if (!is_string($name)) {
+          throw new Exception(sprintf('Line %d, char %d: Parent variable resolution returned an unknown (%s)', $statement->line_number, $statement->char_pos, $statement));
+        }
+
+        if ($is_global && $name == 'this') {
+          $results[] = array($is_global, $second->value);
+        }
+        else {
+          $results[] = array($is_global, sprintf('%s.%s', $name, $second->value));
+        }
       }
 
-      if (!is_string($name)) {
-        throw new Exception(sprintf('Line %d, char %d: Parent variable resolution returned an unknown (%s)', $statement->line_number, $statement->char_pos, $statement));
-      }
-
-      return array($is_global, sprintf('%s.%s', $name, $second->value));
+      return $as_array ? $results : $results[0];
     }
     elseif ($statement->arity == 'name' || $statement->arity == 'literal' || $statement->arity == 'this') {
       // This is the first item in the variable (e.g. for foo.bar.baz, it would be foo)
       // It only matters if it's an object or an assignment
-      if ($assignment = $statement->scope->assigned($statement->value)) {
-        if ($assignment->first() != $statement->first() && !in_array($statement->first(), $firsts)) {
-          if ($assignment->arity == 'name') {
-            return array($assignment->global_scope, $assignment->value);
-          }
-          elseif ($assignment->arity == 'binary' && ($assignment->id == '.' || $assignment->id == '[')) {
-            // Deal with stuff like c = p.constructor;
-            // followed by p = c.superclass
-            // where they "look each other up"
-            $firsts[] = $statement->first();
-            return $this->resolve($assignment, TRUE, $firsts);
-          }
-          elseif (!$public && $assignment->id == '{') {
-            return array(NULL, $assignment);
+      if ($assignments = $statement->scope->assigned($statement->value, TRUE)) {
+        foreach ($assignments as $assignment) {
+          if ($assignment->first() != $statement->first() && !in_array($statement->first(), $firsts)) {
+            if ($assignment->arity == 'name') {
+              $results[] = array($assignment->global_scope, $assignment->value);
+            }
+            elseif ($assignment->arity == 'binary' && ($assignment->id == '.' || $assignment->id == '[')) {
+              // Deal with stuff like c = p.constructor;
+              // followed by p = c.superclass
+              // where they "look each other up"
+              $results = array_merge($results, $this->resolve(TRUE, $assignment, TRUE, array_merge($firsts, array($statement->first()))));
+            }
+            elseif (!$public && $assignment->id == '{') {
+              $results[] = array(NULL, $assignment);
+            }
           }
         }
       }
 
-      return array($statement->global_scope, $statement->value);
+      if (count($results)) {
+        return $as_array ? $results : $results[0];
+      }
+
+      $result = array($statement->global_scope, $statement->value);
+      return $as_array ? array($result) : $result;
     }
 
     throw new Exception(sprintf('Line %d, char %d: Expected a variable in the form foo.bar with %s', $statement->line_number, $statement->char_pos, $statement->id));

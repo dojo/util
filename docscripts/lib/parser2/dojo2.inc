@@ -308,17 +308,18 @@ function dojo_get_contents($namespace, $file_name) {
 
   // Variable assignments (global)
   foreach ($package->assignments(TRUE) as $variable) {
-    $name = $variable->name();
-    $parts = explode('.', $name);
-    $name = implode('.', array_diff($parts, array('prototype')));
-    $last = array_pop($parts);
+    foreach ($variable->names() as $name) {
+      $parts = explode('.', $name);
+      $name = implode('.', array_diff($parts, array('prototype')));
+      $last = array_pop($parts);
 
-    $is_prototype = ($last == 'prototype');
+      $is_prototype = ($last == 'prototype');
 
-    Dojo::roll_out($variable->value(), $name, $output, $is_prototype);
+      Dojo::roll_out($variable->value(), $name, $output, $is_prototype);
 
-    if (count($parts) && !$is_prototype) {
-      $output[$name]['attached'] = implode('.', $parts);
+      if (count($parts) && !$is_prototype) {
+        $output[$name]['attached'] = implode('.', $parts);
+      }
     }
   }
 

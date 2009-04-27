@@ -387,6 +387,15 @@ class JavaScriptSymbol extends Symbol {
       // led_parenthesis might have already swallowed it
       $parser->advance('(');
     }
+    // Variables refer to outer scope
+    $scope = $parser->scope;
+    if ($parent = $scope->parent()) {
+      $parser->scope = $parent;
+    }
+    else {
+      $parent = $scope;
+    }
+
     $arguments = array();
     if (!$parser->peek(')')) {
       while (1) {
@@ -399,6 +408,7 @@ class JavaScriptSymbol extends Symbol {
     }
     $parser->advance(')');
     $parser->skip_terminators();
+    $parser->scope = $scope;
 
     // Make assignments within the function scope (in $function)
     // between the arguments in the expression and the passed arguments

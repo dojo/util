@@ -37,4 +37,8 @@ class JavaScriptObject extends Destructable {
 
     return ($this->keys = $keys);
   }
+
+  public function __toString() {
+    return '(' . $this->type() . ')';
+  }
 }

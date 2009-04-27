@@ -35,4 +35,8 @@ class JavaScriptFunction extends Destructable {
     }
     return $parameters;
   }
+
+  public function __toString() {
+    return '(' . $this->type() . ')';
+  }
 }

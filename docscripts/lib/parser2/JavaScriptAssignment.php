@@ -19,6 +19,10 @@ class JavaScriptAssignment extends JavaScriptVariable {
     return parent::value();
   }
 
+  public function names() {
+    return parent::values();
+  }
+
   public function value() {
     if (!isset($this->resolved_value)) {
       $value = $this->value;
@@ -47,5 +51,6 @@ class JavaScriptAssignment extends JavaScriptVariable {
     if (count($types) == 1) {
       return array_pop($types);
     }
+    return '';
   }
 }

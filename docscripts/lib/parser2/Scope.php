@@ -42,23 +42,72 @@ class Scope extends Destructable {
   public function assignment($to_expression, $expression) {
     // Only let through assignments to actual lookups (foo or foo.bar.baz)
     // where the assignment is also a lookup, or an object (which may contain lookups)
-    if (is_object($to_expression) && $to_expression->is_lookup() && is_object($expression) && ($expression->is_lookup() || $expression->id == '{')) {
+    if (is_object($to_expression) && $to_expression->is_lookup()) {
       if ($this !== $to_expression->scope) {
         // The assignment might be referencing a higher scope (e.g. without var)
-        $to_expression->scope->assignment($to_expression, $expression);
+        return $to_expression->scope->assignment($to_expression, $expression);
       }
-      else {
-        $this->assignments[$to_expression->value] = $expression;
+
+      $this->assignments[$to_expression->value] = array();
+
+      $expressions = array($expression);
+      if ($possibilities = $this->possibilities($expression)) {
+        $expressions = $possibilities;
+      }
+      foreach ($expressions as $expression) {
+        if (is_object($expression) && ($expression->is_lookup() || $expression->id == '{')) {
+          $this->assignments[$to_expression->value][] = $expression;
+        }
       }
     }
   }
 
-  public function assigned($variable) {
+  protected function possibilities($symbol, $possibilities=array()) {
+    $symbols = $symbol;
+    if (!is_array($symbols)) {
+      $symbols = array($symbols);
+    }
+    foreach ($symbols as $symbol) {
+      if (is_array($symbol)) {
+        $possibilities = $this->possibilities($symbol, $possibilities);
+      }
+      elseif ($symbol->is_option()) {
+        $firsts = $symbol->first;
+        if (!is_array($firsts)) {
+          $firsts = array($firsts);
+        }
+        foreach ($firsts as $first) {
+          if (is_array($first)) {
+            $possibilities = $this->possibilities($first, $possibilities);
+          }
+          elseif ($first->possible_variable()) {
+            $possibilities[] = $first;
+          }
+        }
+
+        $seconds = $symbol->second;
+        if (!is_array($seconds)) {
+          $seconds = array($seconds);
+        }
+        foreach ($seconds as $second) {
+          if (is_array($second) || $second->is_option()) {
+            $possibilities = $this->possibilities($second, $possibilities);
+          }
+          elseif ($second->possible_variable()) {
+            $possibilities[] = $second;
+          }
+        }
+      }
+    }
+    return $possibilities;
+  }
+
+  public function assigned($variable, $as_array=FALSE) {
     if (isset($this->assignments[$variable])) {
-      return $this->assignments[$variable];
+      return $as_array ? $this->assignments[$variable] : $this->assignments[$variable][0];
     }
     if (isset($this->parent)) {
-      return $this->_parent->assigned($variable);
+      return $this->_parent->assigned($variable, $as_array);
     }
   }
 
@@ -132,6 +181,10 @@ class Scope extends Destructable {
 
     if ($token = $this->definitions[$symbol->value]) {
       if ($token->reserved) {
+        $symbol->reserved = TRUE;
+        if (!$this->parent()) {
+          $symbol->global_scope = TRUE;
+        }
         return;
       }
       if ($token->arity == 'name') {
@@ -139,7 +192,10 @@ class Scope extends Destructable {
       }
     }
 
+    $symbol->reserved = TRUE;
+    if (!$this->parent()) {
+      $symbol->global_scope = TRUE;
+    }
     $this->definitions[$symbol->value] = $symbol;
-    $symbol->reserved = true;
   }
 }
