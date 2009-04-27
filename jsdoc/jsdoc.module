@@ -951,7 +951,7 @@ function jsdoc_get_return_summary(&$node) {
 }
 
 function jsdoc_get_return_types(&$node) {
-  if (empty($node->jsdoc_get_return_types)) {
+  if (empty($node->jsdoc_return_types)) {
     return array();
   }
   return $node->jsdoc_return_types;
@@ -1514,7 +1514,7 @@ function jsdoc_jsonp($batch=false, $json=false) {
               'summary' => jsdoc_get_return_summary($node)
             );
             foreach (jsdoc_get_return_types($node) as $type) {
-              $themed = _jsdoc_get_type_themed($type, $node, true);
+              $themed = _jsdoc_get_type_themed($type->type, $node, true);
               if ($themed) {
                 $formatted->returns['types'][] = $themed;
               }
@@ -2002,7 +2002,7 @@ function _jsdoc_get_title_themed($node) {
     'summary' => jsdoc_get_return_summary($node)
   );
   foreach (jsdoc_get_return_types($node) as $type) {
-    $themed->return->types[] = _jsdoc_get_type_themed($type, $node, false);
+    $themed->return->types[] = _jsdoc_get_type_themed($type->type, $node, false);
   }
 
   $parts = explode('.', $node->title);
@@ -2093,7 +2093,7 @@ function _jsdoc_get_object_themed($node, $title=null, $depth=0) {
         'summary' => jsdoc_get_return_summary($node)
       );
       foreach (jsdoc_get_return_types($node) as $type) {
-        $object->return->types[] = _jsdoc_get_type_themed($type, $node, false);
+        $object->return->types[] = _jsdoc_get_type_themed($type->type, $node, false);
       }
 
       $signature = _jsdoc_build_function_signature($node, $parameters);
