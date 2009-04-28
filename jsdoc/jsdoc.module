@@ -1812,11 +1812,17 @@ function jsdoc_get_oo_info(&$node, $child=NULL) {
     'node' => $node
   );
 
+  $child_attribute = false;
+  if ($child) {
+    list($child_attribute) = array_slice(explode('.', $child), -1);
+  }
   $children = array();
   foreach ($mixin_chain as $mixin) {
     foreach (array('methods', 'properties') as $child_type) {
       foreach ($mixin->$child_type as $item) {
-        if ($child && $item->title != $child) {
+        list($item_attribute) = array_slice(explode('.', $item->title), -1);
+
+        if ($child_attribute && $item_attribute != $child_attribute) {
           continue;
         }
 
@@ -1824,7 +1830,7 @@ function jsdoc_get_oo_info(&$node, $child=NULL) {
           $title = $item->title;
         }
         else {
-          list($title) = array_slice(explode('.', $item->title), -1);
+          $title = $item_attribute;
         }
 
         if (jsdoc_get_type($item) == 'Constructor' && ($resolved = jsdoc_resolve_constructor($item))) {
