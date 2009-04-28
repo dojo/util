@@ -2161,44 +2161,42 @@ function _jsdoc_get_fields($type, $node) {
     list($prototype_chain, $mixin_chain, $children) = jsdoc_get_oo_info($obj);
 
     foreach ($children as $child) {
-      if (jsdoc_get_type($child) != 'Function') {
-        $title = $child->title;
+      $title = $child->title;
 
-        $field = (object)array(
-          'title' => $title,
-          'summary' => $child->summary,
-          'types' => false
+      $field = (object)array(
+        'title' => $title,
+        'summary' => $child->summary,
+        'types' => false
         );
-        if (!$cleaned) {
-          $field->url = 'jsdoc/' . jsdoc_get_version($node)->title . '/' . $obj->title . '.' . $child->title;
-          $field->a = l($title, $field->url);
-        }
-
-        $field_types = preg_split('%\|+%', jsdoc_get_type($child));
-        foreach ($field_types as $field_type) {
-          $found = 0;
-          $field_type = str_replace('?', '', $field_type, $found);
-          $optional = ($found > 0);
-          $found = 0;
-          $field_type = str_replace('...', '', $field_type, $found);
-          $repeating = ($found > 0);
-
-          $field_obj = jsdoc_object_node_load($field_type, jsdoc_get_version($node));
-          $field_type = (object)array(
-            'title' => $field_obj->title,
-            'repeating' => $repeating,
-            'optional' => $optional,
-            'summary' => jsdoc_get_teaser($field_obj)
-          );
-          if (!$cleaned) {
-            $field_type->url = $field_obj->jsdoc_url;
-            $field_type->a = l($field_obj->title, $field_obj->jsdoc_url);
-          }
-          $field->types[] = $field_type;
-        }
-
-        $fields[$field->title] = $field;
+      if (!$cleaned) {
+        $field->url = 'jsdoc/' . jsdoc_get_version($node)->title . '/' . $obj->title . '.' . $child->title;
+        $field->a = l($title, $field->url);
       }
+
+      $field_types = preg_split('%\|+%', jsdoc_get_type($child));
+      foreach ($field_types as $field_type) {
+        $found = 0;
+        $field_type = str_replace('?', '', $field_type, $found);
+        $optional = ($found > 0);
+        $found = 0;
+        $field_type = str_replace('...', '', $field_type, $found);
+        $repeating = ($found > 0);
+
+        $field_obj = jsdoc_object_node_load($field_type, jsdoc_get_version($node));
+        $field_type = (object)array(
+          'title' => $field_obj->title,
+          'repeating' => $repeating,
+          'optional' => $optional,
+          'summary' => jsdoc_get_teaser($field_obj)
+          );
+        if (!$cleaned) {
+          $field_type->url = $field_obj->jsdoc_url;
+          $field_type->a = l($field_obj->title, $field_obj->jsdoc_url);
+        }
+        $field->types[] = $field_type;
+      }
+
+      $fields[$field->title] = $field;
     }
 
     if (empty($fields)) {
