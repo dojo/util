@@ -587,6 +587,11 @@ function jsdoc_doc_form(&$node) {
 		'#type' => 'file'
 	);
 
+	$form['download'] = array(
+		'#title' => t('Documentation URL'),
+		'#type' => 'textfield'
+	);
+
 	return $form;
 }
 
@@ -605,54 +610,60 @@ function jsdoc_doc_update($node) {
 }
 
 function jsdoc_doc_insert($node) {
+  $start = time();
   if ($file = file_check_upload()) {
-    $start = time();
-
     $doc = fopen($file->filepath, 'r');
-    $buffer = array();
-    while (!feof($doc)) {
-      set_time_limit(30);
+  }
+  elseif ($node->download) {
+    $doc = fopen($node->download, 'r');
+  }
+  else {
+    return;
+  }
 
-      $line = stream_get_line($doc, 9999, "\n");
-      if (preg_match('%^\t"([^"]+)": \{%', $line, $match)) {
-        $id = $match[1];
-        $in = true;
-      }
-      elseif (preg_match('%^\t\}%', $line, $match)) {
-        $in = false;
-        $json = json_decode('{' . implode("\n", $buffer) . '}');
+  $buffer = array();
+  while (!feof($doc)) {
+    set_time_limit(30);
 
-        if ($nid = db_result(db_query("SELECT n.nid FROM {node} AS n INNER JOIN {jsdoc_objects} j ON (j.nid = n.nid) WHERE BINARY n.title = '%s' AND j.did = %d", $id, $node->nid))) {
-          $object = node_load($nid);
-          $object->json = $json;
-        }
-        else {
-          $object = (object)array(
-            'title' => $id,
-            'type' => 'jsdoc_object',
-            'version' => $node,
-            'json' => $json
-          );
-        }
-
-        node_save($object);
-        node_load($object->nid, NULL, TRUE);
-        $buffer = array();
-      }
-      elseif($in) {
-        $buffer[] = $line;
-      }
+    $line = stream_get_line($doc, 9999, "\n");
+    if (preg_match('%^\t"([^"]+)": \{%', $line, $match)) {
+      $id = $match[1];
+      $in = true;
     }
+    elseif (preg_match('%^\t\}%', $line, $match)) {
+      $in = false;
+      $json = json_decode('{' . implode("\n", $buffer) . '}');
 
-    // cache_set("jsdoc_namespaces_{$version->title}
+      if ($nid = db_result(db_query("SELECT n.nid FROM {node} AS n INNER JOIN {jsdoc_objects} j ON (j.nid = n.nid) WHERE BINARY n.title = '%s' AND j.did = %d", $id, $node->nid))) {
+        $object = node_load($nid);
+        $object->json = $json;
+      }
+      else {
+        $object = (object)array(
+          'title' => $id,
+          'type' => 'jsdoc_object',
+          'version' => $node,
+          'json' => $json
+        );
+      }
 
-    $query = db_query("DELETE FROM {cache} WHERE cid LIKE 'jsdoc_namespaces_%s:%%'", $node->title);
-
-    $query = db_query("SELECT n.nid FROM {node} AS n INNER JOIN {jsdoc_objects} AS j ON (j.nid = n.nid) WHERE type = 'jsdoc_object' AND j.did = %d AND changed < %d", $node->nid, $start);
-    while ($nid = db_fetch_object($query)) {
-      set_time_limit(30);
-      node_delete($nid->nid);
+      node_save($object);
+      node_load($object->nid, NULL, TRUE);
+      $buffer = array();
     }
+    elseif($in) {
+      $buffer[] = $line;
+    }
+  }
+
+  // cache_set("jsdoc_namespaces_{$version->title}
+
+  $query = db_query("DELETE FROM {cache} WHERE cid LIKE 'jsdoc_namespaces_%s:%%'", $node->title);
+
+  $query = db_query("SELECT n.nid FROM {node} AS n INNER JOIN {jsdoc_objects} AS j ON (j.nid = n.nid) WHERE type = 'jsdoc_object' AND j.did = %d AND changed < %d", $node->nid, $start);
+  while ($nid = db_fetch_object($query)) {
+    set_time_limit(30);
+    node_delete($nid->nid);
   }
 }
 
