@@ -921,8 +921,8 @@ function jsdoc_get_versions($node = FALSE, $title = NULL) {
     if ($version->json && $node->title != $title) {
       $parts = explode('.', $title);
       if (count($parts) > 1) {
-        array_pop($parts);
-        $title = implode('.', $parts);
+        $last = array_pop($parts);
+        $parent = implode('.', $parts);
         $found = FALSE;
         $json = unserialize($version->json);
         $properties = array();
@@ -933,7 +933,11 @@ function jsdoc_get_versions($node = FALSE, $title = NULL) {
           $properties = array_merge($properties, $json->properties);
         }
         foreach ($properties as $property) {
-          if ($property->name == $title) {
+          if ($property->scope == 'normal' && $property->name == $title) {
+            $found = TRUE;
+            break;
+          }
+          elseif ($property->name == $last) {
             $found = TRUE;
             break;
           }
