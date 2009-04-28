@@ -2601,6 +2601,9 @@ function _jsdoc_markup_text($text, $version, $exclude, $format = false){
   foreach (explode("\n", $text) as $line) {
     if ($line{0} == "\t") {
       if (!$tabbed) {
+        if (empty($lines)) {
+          $lines[] = "";
+        }
         $lines[] = "";
       }
       $tabbed = TRUE;
