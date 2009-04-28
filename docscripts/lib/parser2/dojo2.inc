@@ -191,6 +191,9 @@ function dojo_get_contents($namespace, $file_name) {
     }
     else {
       $root = $arguments->getVariable(0, TRUE);
+      if ($call->name() == 'dojo.extend') {
+        $output[$root]['type'] = 'Function';
+      }
     }
 
     foreach (array_diff(array_unique(array($assignment, $root)), array(NULL)) as $root) {

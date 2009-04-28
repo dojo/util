@@ -77,12 +77,19 @@ class JavaScriptSymbol extends Symbol {
         else {
           $output[] = $first;
         }
-        $second = $this->second->convert(TRUE);
-        if (is_array($second)) {
-          $output = array_merge($output, $second);
+
+        $seconds = $this->second;
+        if (!is_array($seconds)) {
+          $seconds = array($seconds);
         }
-        else {
-          $output[] = $second;
+        foreach ($seconds as $second) {
+          $second = $second->convert(TRUE);
+          if (is_array($second)) {
+            $output = array_merge($output, $second);
+          }
+          else {
+            $output[] = $second;
+          }
         }
 
         return $recursing ? $output : new JavaScriptOr($output);
@@ -387,14 +394,6 @@ class JavaScriptSymbol extends Symbol {
       // led_parenthesis might have already swallowed it
       $parser->advance('(');
     }
-    // Variables refer to outer scope
-    $scope = $parser->scope;
-    if ($parent = $scope->parent()) {
-      $parser->scope = $parent;
-    }
-    else {
-      $parent = $scope;
-    }
 
     $arguments = array();
     if (!$parser->peek(')')) {
@@ -408,7 +407,6 @@ class JavaScriptSymbol extends Symbol {
     }
     $parser->advance(')');
     $parser->skip_terminators();
-    $parser->scope = $scope;
 
     // Make assignments within the function scope (in $function)
     // between the arguments in the expression and the passed arguments
