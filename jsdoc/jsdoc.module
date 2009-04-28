@@ -998,7 +998,7 @@ function jsdoc_get_examples(&$node, $markedup=false) {
 
   $examples = array();
   foreach ($node->jsdoc_examples as $example) {
-    $examples[] = _jsdoc_markup_text($example, jsdoc_get_version($node));
+    $examples[] = _jsdoc_markup_text($example, jsdoc_get_version($node), $node->title);
   }
 
   return ($node->jsdoc_formatted_examples = $examples);
@@ -1663,7 +1663,7 @@ function jsdoc_child_node_view($node, $name) {
 
     $function = (object)array(
       'source' => jsdoc_get_source($actual, true),
-      'markedup' => _jsdoc_markup_code(jsdoc_get_source($actual, true), jsdoc_get_version($node)->nid, FALSE),
+      'markedup' => _jsdoc_markup_code(jsdoc_get_source($actual, true), jsdoc_get_version($node)->nid, $actual->title, FALSE),
       'signature' => _jsdoc_build_function_signature($actual, $parameters)
     );
     if (count($parameters)) {
@@ -1964,7 +1964,7 @@ function jsdoc_object_node_view($node) {
 
     $function = (object)array(
       'source' => jsdoc_get_source($actual, true),
-      'markedup' => _jsdoc_markup_code(jsdoc_get_source($actual, true), jsdoc_get_version($node)->nid, $base),
+      'markedup' => _jsdoc_markup_code(jsdoc_get_source($actual, true), jsdoc_get_version($node)->nid, $actual->title, $base),
       'signature' => _jsdoc_build_function_signature($actual, $parameters)
     );
     if (count($parameters)) {
@@ -2526,7 +2526,7 @@ function _jsdoc_get_variables() {
   return $variables;
 }
 
-function _jsdoc_markup_code($text, $version, $base=false) {
+function _jsdoc_markup_code($text, $version, $exclude, $base=false) {
   $variables = _jsdoc_get_variables();
 
   $min = 99;
@@ -2565,14 +2565,14 @@ function _jsdoc_markup_code($text, $version, $base=false) {
     $matches = array_reverse($matches[0]);
     foreach ($matches as $i => $match) {
       $variable = preg_replace('%<[^>]+>%', '', $match);
-      if ($variables && $variables[$variable]) {
+      if ($variables && $variables[$variable] && $variable != $exclude) {
         $replaced[$i] = $match;
         $text = str_replace($match, "%$i%", $text);
       }
     }
     foreach ($matches as $i => $match) {
       $variable = preg_replace('%<[^>]+>%', '', $match);
-      if ($variables[$variable]) {
+      if ($variables && $variables[$variable]) {
         $text = str_replace("%$i%", l($match, 'jsdoc/' . $version->title . '/' . $variable, array('style' => 'border-bottom: 1px dotted #ccc;'), NULL, NULL, FALSE, TRUE), $text);
       }
     }
@@ -2580,18 +2580,16 @@ function _jsdoc_markup_code($text, $version, $base=false) {
   if ($base && preg_match_all('%<span class="kw1">this</span>(\.(?:<span class="me\d+">[\w.$]+</span>)+)%', $text, $matches, PREG_SET_ORDER)) {
     foreach ($matches as $match) {
       $variable = $base . preg_replace('%<[^>]+>%', '', $match[1]);
-      if ($variables && array_key_exists($variable, $variables)) {
-        if ($variables[$variable]) {
-          $version = node_load($variables[$variable]);
-          $text = str_replace($match[0], l($match[0], 'jsdoc/' . $version->title . '/' . $variable, array('style' => 'border-bottom: 1px dotted #ccc;'), NULL, NULL, FALSE, TRUE), $text);
-        }
+      if ($variables && $variables[$variable]) {
+        $version = node_load($variables[$variable]);
+        $text = str_replace($match[0], l($match[0], 'jsdoc/' . $version->title . '/' . $variable, array('style' => 'border-bottom: 1px dotted #ccc;'), NULL, NULL, FALSE, TRUE), $text);
       }
     }
   }
   return $text;
 }
 
-function _jsdoc_markup_text($text, $version, $format = false){
+function _jsdoc_markup_text($text, $version, $exclude, $format = false){
   if (!$format) {
     $format = variable_get('jsdoc_input_format', 1);
   }
@@ -2626,7 +2624,7 @@ function _jsdoc_markup_text($text, $version, $format = false){
   if (preg_match_all('%(?:\s*(?:<pre>|<code>)\s*)+(.*?)(?:\s*(?:</pre>|</code>)\s*)+%s', $text, $matches, PREG_SET_ORDER)) {
     foreach ($matches as $match) {
       $match[1] = str_replace('&lt;', '<', str_replace('&gt;', '>', $match[1]));
-      $text = str_replace($match[0], _jsdoc_markup_code($match[1], $version), $text);
+      $text = str_replace($match[0], _jsdoc_markup_code($match[1], $version, $exclude), $text);
     }
   }
 
