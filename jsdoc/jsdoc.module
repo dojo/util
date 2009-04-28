@@ -1428,6 +1428,8 @@ function jsdoc_feedback() {
 }
 
 function jsdoc_feedback_review() {
+  drupal_set_title(t('Feedback Review'));
+
   $feedback = array();
   if ($cached = cache_get('jsdoc_feedback')) {
     $feedback = unserialize($cached->data);
@@ -1450,7 +1452,7 @@ function jsdoc_feedback_review() {
   $output = '<ul>';
   foreach ($by_count as $pages) {
     foreach ($pages as $page) {
-      $output .= '<li>' . $page['page'] . '<ul>';
+      $output .= '<li>' . l($page['page'], sprintf('jsdoc/%s', $page['page'])) . '<ul>';
       foreach ($page['feedback'] as $type => $count) {
         $output .= '<li>' . $type . ': ' . $count . '</li>';
       }
