@@ -1076,8 +1076,13 @@ function jsdoc_get_type(&$node) {
     return $node->jsdoc_type;
   }
 
-  $type = $node->jsdoc_raw_type;
-  unset($node->jsdoc_raw_type);
+  if (isset($node->type)) {
+    $type = $node->type->title;
+  }
+  else {
+    $type = $node->jsdoc_raw_type;
+    unset($node->jsdoc_raw_type);
+  }
 
   if ($type == 'Function') {
     if (jsdoc_is_classlike($node)) {
@@ -2169,7 +2174,7 @@ function _jsdoc_get_fields($type, $node) {
           $field->a = l($title, $field->url);
         }
 
-        $field_types = preg_split('%\|+%', jsdoc_get_type($node));
+        $field_types = preg_split('%\|+%', jsdoc_get_type($child));
         foreach ($field_types as $field_type) {
           $found = 0;
           $field_type = str_replace('?', '', $field_type, $found);
