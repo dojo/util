@@ -1774,8 +1774,8 @@ function jsdoc_get_oo_info(&$node, $child=NULL) {
     $mixin_chain[] = (object)array(
       'scope' => 'prototype',
       'from' => 'prototype',
-      'methods' => jsdoc_get_methods($mixin, 'prototype'),
-      'properties' => jsdoc_get_properties($mixin, 'prototype'),
+      'methods' => jsdoc_get_methods($node, 'prototype'),
+      'properties' => jsdoc_get_properties($node, 'prototype'),
       'in_prototype_chain' => true,
       'node' => $mixin
     );
