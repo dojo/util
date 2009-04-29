@@ -1076,7 +1076,7 @@ function jsdoc_get_type(&$node) {
     return $node->jsdoc_type;
   }
 
-  if (isset($node->type)) {
+  if (is_object($node->type)) {
     $type = $node->type->title;
   }
   else {
@@ -1796,8 +1796,8 @@ function jsdoc_get_oo_info(&$node, $child=NULL) {
     $mixin_chain[] = (object)array(
       'scope' => 'instance',
       'from' => 'instance',
-      'methods' => jsdoc_get_methods($mixin, 'instance'),
-      'properties' => jsdoc_get_properties($mixin, 'instance'),
+      'methods' => jsdoc_get_methods($node, 'instance'),
+      'properties' => jsdoc_get_properties($node, 'instance'),
       'in_prototype_chain' => false,
       'node' => $mixin
     );
