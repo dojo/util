@@ -514,7 +514,7 @@ if(!doh.robot["_robotLoaded"]){
 	var iframesrc;
 	var scripts = document.getElementsByTagName("script");
 	for(var x = 0; x<scripts.length; x++){
-		var s = scripts[x].src;
+		var s = scripts[x].getAttribute('src');
 		if(s && (s.substr(s.length-9) == "runner.js")){
 			iframesrc = s.substr(0, s.length-9)+'Robot.html';
 			break;
@@ -522,7 +522,8 @@ if(!doh.robot["_robotLoaded"]){
 	}
 	// if loaded with dojo, there might not be a runner.js!
 	if(!iframesrc && window["dojo"]){
-		iframesrc = dojo.moduleUrl("util", "doh/")+"Robot.html";
+		// if user set document.domain to something else, send it to the Robot too
+		iframesrc = dojo.moduleUrl("util", "doh/")+"Robot.html?domain="+escape(document.domain);
 	}
 	document.writeln('<div id="dohrobotview" style="border:0px none; margin:0px; padding:0px; position:absolute; bottom:0px; right:0px; width:1px; height:1px; overflow:hidden; visibility:hidden; background-color:red;"></div>'+
 		'<iframe style="border:0px none; z-index:32767; padding:0px; margin:0px; position:absolute; left:0px; top:0px; height:42px; width:200px; overflow:hidden; background-color:transparent;" tabIndex="-1" src="'+iframesrc+'" ALLOWTRANSPARENCY="true"></iframe>');

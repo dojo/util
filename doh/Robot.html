@@ -1,6 +1,24 @@
 <html style="margin:0px; padding:0px;">
 <body style="margin:0px; padding:0px; border:0px none;background-color:transparent;" onload="init()">
 <script>
+	// support document.domain
+	// Yes, we need this try/catch to handle document.domain.
+	// If one page explicitly sets document.domain,
+	// ALL pages (this page, test case, page to be tested) must also explicitly set document.domain,
+	// or you get Permission Denied.
+	// So it's not as easy as just setting document.domain to whatever the browser reports,
+	// because you don't know if the user explicitly set that.
+	try{
+		// Was the passed domain just a stupid browser default?
+		// If so, this statement will work.
+		window.frameElement.ownerDocument;
+	}catch(e){
+		// Permission Denied.
+		// Means user explicitly set document.domain elsewhere.
+		// robot.js passes the document.domain as a GET parameter.
+		var domain=unescape(/[\\?&]domain=([^&#]*)/.exec(window.location.href)[1]);
+		document.domain=domain;
+	}
 	// find doh
 	var doc = window.frameElement.ownerDocument;
 	var w = doc.parentWindow || doc.defaultView || top;
