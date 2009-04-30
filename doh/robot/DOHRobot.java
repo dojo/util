@@ -69,6 +69,7 @@ public final class DOHRobot extends Applet{
 	private int docScreenY = -100;
 	private int docScreenXMax;
 	private int docScreenYMax;
+	private boolean mouseSecurity = false;
 
 	// The last reported mouse x,y.
 	// If this is different from the real one, something's up.
@@ -171,8 +172,49 @@ public final class DOHRobot extends Applet{
 		}
 	}
 
+	private boolean mouseSecure() throws Exception{
+		// Use MouseInfo to ensure that mouse is inside browser.
+		// Only works in Java 1.5, but the DOHRobot must compile for 1.4.
+		if(!mouseSecurity){ return true; }
+		Class mouseInfoClass;
+		Class pointerInfoClass;
+		try{
+			mouseInfoClass = Class.forName("java.awt.MouseInfo");
+			pointerInfoClass = Class.forName("java.awt.PointerInfo");
+		}catch(ClassNotFoundException e){
+			// Java 1.4
+			e.printStackTrace();
+			return true;
+		}
+		Method getPointerInfo = mouseInfoClass.getMethod("getPointerInfo", new Class[0]);
+		Method getLocation = pointerInfoClass.getMethod("getLocation", new Class[0]);
+		Object pointer=null;
+		try{
+			pointer = getPointerInfo.invoke(pointerInfoClass,new Object[0]);
+		}catch(java.lang.reflect.InvocationTargetException e){
+			e.getTargetException().printStackTrace();
+		}
+		Point mousePosition = (Point)(getLocation.invoke(pointer,new Object[0]));
+		return mousePosition.x >= docScreenX
+			&& mousePosition.x <= docScreenXMax
+			&& mousePosition.y >= docScreenY
+			&& mousePosition.y <= docScreenYMax;
+	}
+
 	private boolean isSecure(double key){
-		boolean result = this.key != -1 && this.key == key;
+		boolean result = this.key != -1 && this.key != -2 && this.key == key;
+		try{
+			result=result&&mouseSecure();
+		}catch(Exception e){
+			e.printStackTrace();
+			result=false;
+		}
+		if(!result&&this.key!=-2){
+			this.key=-2;
+			window.eval("doh.robot._appletDead=true;");
+			log("User aborted test; mouse moved off of browser");
+			alert("User aborted test; mouse moved off of browser.");
+		}
 		log("Key secure: " + result);
 		return result;
 	}
@@ -262,6 +304,7 @@ public final class DOHRobot extends Applet{
 			this.docScreenY = y;
 			this.docScreenXMax = x + w;
 			this.docScreenYMax = y + h;
+			mouseSecurity=true;
 		}
 		log("< setDocumentBounds");
 	}
@@ -1385,6 +1428,8 @@ public final class DOHRobot extends Applet{
 					&& p.getActions().matches(".*resolve.*")){
 				throw new SecurityException(
 						"DOH: liveconnect resolve locks up Safari. Denying resolve request.");
+			}else if(p.equals(new java.awt.AWTPermission("watchMousePointer"))){
+				// enable robot to watch mouse
 			}else{
 				oldsecurity.checkPermission(p);
 			}
