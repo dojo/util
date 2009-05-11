@@ -300,8 +300,8 @@ public final class DOHRobot extends Applet{
 		// browsers have this
 		if(!inited){
 			inited = true;
-			this.docScreenX = x;
-			this.docScreenY = y;
+			this.lastMouseX = this.docScreenX = x;
+			this.lastMouseY = this.docScreenY = y;
 			this.docScreenXMax = x + w;
 			this.docScreenYMax = y + h;
 			mouseSecurity=true;
