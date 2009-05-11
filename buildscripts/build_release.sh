@@ -77,7 +77,7 @@ mv $srcName $buildName
 #Run the build.
 cd $buildName/util/buildscripts/
 chmod +x ./build.sh
-./build.sh profile=standard version=$1 releaseName=$buildName cssOptimize=comments.keepLines optimize=shrinksafe.keepLines cssImportIgnore=../dijit.css action=release 
+./build.sh profile=standard version=$1 releaseName=$buildName cssOptimize=comments.keepLines optimize=shrinksafe.keepLines action=release 
 # remove tests and demos, but only for the actual release:
 chmod +x ./clean_release.sh
 ./clean_release.sh ../../release $buildName
