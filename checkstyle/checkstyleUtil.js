@@ -326,6 +326,7 @@ checkstyleUtil.makeSimpleFixes = function(contents){
 		contents = checkstyleUtil.fixSpaceAfter(contents, noSpaceAfter[i], comments);
 	}
 	contents = contents.split("    ").join("\t")
+				.split("  ").join("\t")
 				.split(") {").join("){")
 				.split("\tif (").join("\tif(")
 				.split("} else").join("}else")
