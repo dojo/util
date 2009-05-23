@@ -325,7 +325,15 @@ checkstyleUtil.makeSimpleFixes = function(contents){
 	for(var i = 0; i < noSpaceAfter.length; i++){
 		contents = checkstyleUtil.fixSpaceAfter(contents, noSpaceAfter[i], comments);
 	}
-	contents = contents.split("    ").join("\t").split(") {").join("){");
+	contents = contents.split("    ").join("\t")
+				.split(") {").join("){")
+				.split("\tif (").join("\tif(")
+				.split("} else").join("}else")
+				.split("}\telse").join("}else")
+				.split("}else {").join("}else{")
+				.split("\twhile (").join("\twhile(")
+				.split("\tfor (").join("\tfor(")
+				.split("\tswitch (").join("\tswitch(");
 	
 	comments = checkstyleUtil.getComments(contents);
 	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "==", comments);
