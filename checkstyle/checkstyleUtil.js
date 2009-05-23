@@ -4,7 +4,7 @@ checkstyleUtil = {
 
 checkstyleUtil.applyRules = function(fileName, contents){
 	// Do not process JSON files
-	if(contents.charAt(0) == "{") {
+	if(contents.charAt(0) == "{"){
 		return;
 	}
 	
@@ -44,9 +44,25 @@ checkstyleUtil.getComments = function(contents){
 			idx = contents.indexOf(start, endComment);
 		}	
 	}
+	function markQuotes(quote){
+		var inQuote = false;
+		for(var i = 0; i < contents.length; i++){
+			if(comments[i]){
+				continue;
+			}
+			if(contents.charAt(i) == quote 
+				&& (i == 0 || contents.charAt(i - 1) != "\\")){
+				inQuote = !inQuote;
+			} else if(inQuote){
+				comments[i] = true;
+			}
+		}
+	}
 	
 	markComments("//", sep);
 	markComments("/*", "*/");
+	markQuotes("\"");
+	markQuotes('\'');
 	return comments;
 }
 
@@ -128,18 +144,18 @@ checkstyleUtil.createSpaceWrappedSearch = function(token, message){
 		
 		var idx = contents.indexOf(token);
 		var before, after;
+		var tokenLength = token.length;
 
 		while(idx > -1){
 			before = contents.charAt(idx - 1);
-			after = contents.charAt(idx + 2);
+			after = contents.charAt(idx + tokenLength);
 			if(!comments[idx] && 
-				((before != " " && before != "\t" && (token != " == " || before != "!")) || 
+				((before != " " && before != "\t" && (token != "==" || before != "!")) || 
 				(
-					(after != " " && contents.charCodeAt(idx + 2) != 13 
-						&& contents.charCodeAt(idx + 2) != 10)
-				&& 	(token != " == " || after != "=")
+					(after != " " && contents.charCodeAt(idx + tokenLength) != 13 
+						&& contents.charCodeAt(idx + tokenLength) != 10)
+				&& 	(token != "==" || after != "=")
 				))){
-				
 				checkstyleUtil.addError(message, fileName, contents, idx);
 			}
 			idx = contents.indexOf(token, idx + token.length);
@@ -260,12 +276,14 @@ checkstyleUtil.rules = {
 			var nextChar = checkstyleUtil.getNextChar(contents, idx + 1);
 			if(!comments[idx] && nextChar && nextChar.value.charCodeAt(0) != 13){
 				checkstyleUtil.addError("Tabs should be used instead of spaces", fileName, contents, idx);
+				var nextLine = checkstyleUtil.findNextCharPos(contents, idx + 1, "\n");
+				if(nextLine < 0){
+					break;
+				}
+				idx = contents.indexOf("  ", nextLine + 1);
+			} else{
+				idx = contents.indexOf("  ", idx + 2);
 			}
-			var nextLine = checkstyleUtil.findNextCharPos(contents, idx + 1, "\n");
-			if(nextLine < 0){
-				break;
-			}
-			idx = contents.indexOf("  ", nextLine + 1);
 		}
 	},
 	
@@ -307,7 +325,7 @@ checkstyleUtil.makeSimpleFixes = function(contents){
 	for(var i = 0; i < noSpaceAfter.length; i++){
 		contents = checkstyleUtil.fixSpaceAfter(contents, noSpaceAfter[i], comments);
 	}
-	contents =  contents.split("	").join("\t").split("){").join("){");
+	contents = contents.split("    ").join("\t").split(") {").join("){");
 	
 	comments = checkstyleUtil.getComments(contents);
 	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "==", comments);

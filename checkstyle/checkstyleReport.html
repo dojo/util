@@ -90,7 +90,8 @@
 		}
 
 		function onFolderClick(evt) {
-			var folderName = evt.grid.store.getValue(evt.grid.getItem(evt.rowIndex), "file");
+			var folderName = evt.grid.store.getValue(
+								evt.grid.getItem(evt.rowIndex), "file");
 			if (dojo.trim(folderName) == "All") {
 				folderName = "";
 			} else if (folderName.charAt(folderName.length - 1) != "/"){
@@ -98,7 +99,7 @@
 			}
 
 			showAllErrors({file: folderName + "*", folder: 0});
-			dijit.byId("mainTab").selectChild(dijit.byId("messagesGrid"));
+			dijit.byId("mainTab").selectChild(dijit.byId("errorsTab"));
 		}
 		var chartInitialized = false;
 
@@ -432,61 +433,65 @@
 			</h1>
 		</div>
 		<div id="mainTab" dojoType="dijit.layout.TabContainer" region="center" style="padding: 0;">
-			<table dojoType="dojox.grid.DataGrid" id="messagesGrid"
-				class="checkstyleGrid" store="checkstyleStore" title="Error List"
-				query="{ folder: 0 }" rowsPerPage="50" rowSelector="20px"
-				onRowClick="doEdit(arguments[0])"
-				>
-				<script type="dojo/connect" event="_onFetchBegin" args="size, req">
-					dojo.byId("totalErrors").innerHTML = size;
-				</script>
-				<thead>
-					<tr>
-						<th field="file" width="300px">File</th>
-						<th field="line" width="40px">Line</th>
-						<th field="msg" width="auto" formatter="formatMessage">Message</th>
-					</tr>
-				</thead>
-			</table>
+			<div id="errorsTab" dojoType="dijit.layout.BorderContainer" title="Error List" style="height:100%;width:100%;">
+				<table dojoType="dojox.grid.DataGrid" id="messagesGrid"
+					class="checkstyleGrid" store="checkstyleStore" 
+					query="{ folder: 0 }" rowsPerPage="50" rowSelector="20px"
+					onRowClick="doEdit(arguments[0])"
+					region="top"
+					style="height:50%;"
+					>
+					<script type="dojo/connect" event="_onFetchBegin" args="size, req">
+						dojo.byId("totalErrors").innerHTML = size;
+					</script>
+					<thead>
+						<tr>
+							<th field="file" width="300px">File</th>
+							<th field="line" width="40px">Line</th>
+							<th field="msg" width="auto" formatter="formatMessage">Message</th>
+						</tr>
+					</thead>
+				</table>
+				<div dojoType="dijit.layout.ContentPane" region="bottom" splitter="true" style="height:45%;">
+					<div>
+						<div dojoType="dijit.form.ToggleButton" 
+							 id="showFileErrorsBtn"
+							 label="Show File Errors" 
+							 iconClass="dijitRadioIcon"
+							 onclick="showCurrentErrors()"
+							 disabled="true"
+							 ></div>
+						<div dojoType="dijit.form.ToggleButton" 
+							 id="showAllErrorsBtn"
+							 label="Show All Errors" 
+							 iconClass="dijitRadioIcon"
+							 checked="true"
+							 onclick="showAllErrors()"></div>
+						<div dojoType="dijit.form.Button" 
+							 id="makeFixesBtn"
+							 label="Make Fixes" 
+							 onclick="makeSimpleFixes()"></div>
+						<div dojoType="dijit.form.Button" 
+							 id="saveFileBtn"
+							 label="Save" 
+							 onclick="saveFile()"></div>
+						<div dojoType="dijit.form.Button" 
+							 id="saveAllFileBtn"
+							 label="Save All" 
+							 onclick="showSaveDialog()"></div>
+					</div>
+					<div>
+						<textarea id="editInput" rows="7" cols="100"></textarea>
+					</div>
+				</div>
+			</div>
 			<div id="chartTab" dojoType="dijit.layout.BorderContainer" style="width:100%;height:100%;" title="Worst Modules">
 				<div dojoType="dijit.layout.ContentPane" region="top">
 					This chart displays the folders of depth 2 in descending order of checkstyle violations.
 				</div>
 				<div dojoType="dijit.layout.ContentPane" region="center">
-					<div id="chart" style="height:500px; width: 1000px;"></div>
+					<div id="chart" style="height:400px; width: 1000px;"></div>
 				</div>
-			</div>
-		</div>
-		<div id="editTab" dojoType="dijit.layout.ContentPane" region="bottom" splitter="true">
-			<div>
-				<div dojoType="dijit.form.ToggleButton" 
-					 id="showFileErrorsBtn"
-					 label="Show File Errors" 
-					 iconClass="dijitRadioIcon"
-					 onclick="showCurrentErrors()"
-					 disabled="true"
-					 ></div>
-				<div dojoType="dijit.form.ToggleButton" 
-					 id="showAllErrorsBtn"
-					 label="Show All Errors" 
-					 iconClass="dijitRadioIcon"
-					 checked="true"
-					 onclick="showAllErrors()"></div>
-				<div dojoType="dijit.form.Button" 
-					 id="makeFixesBtn"
-					 label="Make Fixes" 
-					 onclick="makeSimpleFixes()"></div>
-				<div dojoType="dijit.form.Button" 
-					 id="saveFileBtn"
-					 label="Save" 
-					 onclick="saveFile()"></div>
-				<div dojoType="dijit.form.Button" 
-					 id="saveAllFileBtn"
-					 label="Save All" 
-					 onclick="showSaveDialog()"></div>
-			</div>
-			<div>
-				<textarea id="editInput" rows="15" cols="100"></textarea>
 			</div>
 		</div>
 	</div>
