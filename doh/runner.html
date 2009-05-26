@@ -259,6 +259,7 @@
 				<td width="*" class="header" valign="bottom">
 					<button class="tab" onclick="doh.showTestPage();">Test Page</button>
 					<button class="tab" onclick="doh.showLogPage();">Log</button>
+                    <button class="tab" onclick="doh.showPerfTestsPage();">Performance Tests Results</button>
 				</td>
 			</tr>
 			<tr valign="top" style="border: 0; padding: 0; margin: 0;">
@@ -300,10 +301,11 @@
 					<div style="position: relative; width: 99%; height: 100%; top: 0px; left: 0px;">
 						<div class="tabBody"
 							style="z-index: 1;">
-<pre id="logBody"></pre>
+							<pre id="logBody"></pre>
+							<div id="perfTestsBody" style="background-color: white;"></div>
 						</div>
 						<iframe id="testBody" class="tabBody"
-							style="z-index: 0;"></iframe>
+							style="z-index: -1;"></iframe>
 						<!--
 							src="http://redesign.dojotoolkit.org"></iframe>
 						-->

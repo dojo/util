@@ -1,4 +1,4 @@
-// package system gunk. 
+// package system gunk. 																	   e
 try{
 	dojo.provide("doh.runner");
 }catch(e){
@@ -372,7 +372,8 @@ doh._testFinished = function(group, fixture, success){
 doh.registerGroup = function(	/*String*/ group, 
 								/*Array||Function||Object*/ tests, 
 								/*Function*/ setUp, 
-								/*Function*/ tearDown){
+								/*Function*/ tearDown,
+								/*String*/ type){
 	// summary:
 	//		registers an entire group of tests at once and provides a setUp and
 	//		tearDown facility for groups. If you call this method with only
@@ -390,8 +391,11 @@ doh.registerGroup = function(	/*String*/ group,
 	//		description or test functions.
 	// setUp: a function for initializing the test group
 	// tearDown: a function for initializing the test group
+	// type: The type of tests these are, such as a group of performance tests
+	//		null/undefied are standard DOH tests, the valye 'perf' enables 
+	//		registering them as performance tests.
 	if(tests){
-		this.register(group, tests);
+		this.register(group, tests, type);
 	}
 	if(setUp){
 		this._groups[group].setUp = setUp;
@@ -401,7 +405,7 @@ doh.registerGroup = function(	/*String*/ group,
 	}
 }
 
-doh._getTestObj = function(group, test){
+doh._getTestObj = function(group, test, type){
 	var tObj = test;
 	if(typeof test == "string"){
 		if(test.substr(0, 4)=="url:"){
@@ -430,10 +434,47 @@ doh._getTestObj = function(group, test){
 		}
 		// FIXME: try harder to get the test name here
 	}
+
+	//Augment the test with some specific options to make it identifiable as a 
+	//particular type of test so it can be executed properly.
+	if(type === "perf" || tObj.testType === "perf"){
+		tObj.testType = "perf";
+
+		//Build an object on the root DOH class to contain all the test results.
+		//Cache it on the test object for quick lookup later for results storage.
+		if(!doh.perfTestResults){
+			doh.perfTestResults = {};
+			doh.perfTestResults[group] = {};
+		}
+		if(!doh.perfTestResults[group]){
+			doh.perfTestResults[group] = {};
+		}
+		if(!doh.perfTestResults[group][tObj.name]){
+			doh.perfTestResults[group][tObj.name] = {};
+		}
+		tObj.results = doh.perfTestResults[group][tObj.name];
+		
+		//If it's not set, then set the trial duration 
+		//default to 100ms.
+		if(!("trialDuration" in tObj)){
+			tObj.trialDuration = 100;
+		}
+		
+		//If it's not set, then set the delay between trial runs to 100ms
+		//default to 100ms to allow for GC and to make IE happy.
+		if(!("trialDelay" in tObj)){
+			tObj.trialDelay = 100;
+		}
+
+		//If it's not set, then set number of times a trial is run to 10.
+		if(!("trialIterations" in tObj)){
+			tObj.trialIterations = 10;
+		}
+	} 
 	return tObj;
 }
 
-doh.registerTest = function(/*String*/ group, /*Function||Object*/ test){
+doh.registerTest = function(/*String*/ group, /*Function||Object*/ test, /*String*/ type){
 	// summary:
 	//		add the provided test function or fixture object to the specified
 	//		test group.
@@ -444,12 +485,15 @@ doh.registerTest = function(/*String*/ group, /*Function||Object*/ test){
 	//		*least* a "runTest" method, and may also contain "setUp" and
 	//		"tearDown" methods. These will be invoked on either side of the
 	//		"runTest" method (respectively) when the test is run.
+	// type:
+	//		An identifier denoting the type of testing that the test performs, such
+	//		as a performance test.  If null, defaults to regular DOH test.
 	if(!this._groups[group]){
 		this._groupCount++;
 		this._groups[group] = [];
 		this._groups[group].inFlight = 0;
 	}
-	var tObj = this._getTestObj(group, test);
+	var tObj = this._getTestObj(group, test, type);
 	if(!tObj){ return null; }
 	this._groups[group].push(tObj);
 	this._testCount++;
@@ -457,30 +501,32 @@ doh.registerTest = function(/*String*/ group, /*Function||Object*/ test){
 	return tObj;
 }
 
-doh.registerTests = function(/*String*/ group, /*Array*/ testArr){
+doh.registerTests = function(/*String*/ group, /*Array*/ testArr, /*String*/ type){
 	// summary:
 	//		registers a group of tests, treating each element of testArr as
 	//		though it were being (along with group) passed to the registerTest
-	//		method.
+	//		method.  It also uses the type to decide how the tests should
+	//		behave, by defining the type of tests these are, such as performance tests
 	for(var x=0; x<testArr.length; x++){
-		this.registerTest(group, testArr[x]);
+		this.registerTest(group, testArr[x], type);
 	}
 }
 
 // FIXME: move implementation to _browserRunner?
 doh.registerUrl = function(	/*String*/ group, 
 								/*String*/ url, 
-								/*Integer*/ timeout){
+								/*Integer*/ timeout,
+								/*String*/ type){
 	this.debug("ERROR:");
 	this.debug("\tNO registerUrl() METHOD AVAILABLE.");
 	// this._urls.push(url);
 }
 
-doh.registerString = function(group, str){
+doh.registerString = function(group, str, type){
 }
 
 // FIXME: remove the doh.add alias SRTL.
-doh.register = doh.add = function(groupOrNs, testOrNull){
+doh.register = doh.add = function(groupOrNs, testOrNull, type){
 	// summary:
 	// 		"magical" variant of registerTests, registerTest, and
 	// 		registerTestNs. Will accept the calling arguments of any of these
@@ -488,9 +534,9 @@ doh.register = doh.add = function(groupOrNs, testOrNull){
 	if(	(arguments.length == 1)&&
 		(typeof groupOrNs == "string") ){
 		if(groupOrNs.substr(0, 4)=="url:"){
-			this.registerUrl(groupOrNs);
+			this.registerUrl(groupOrNs, null, null, type);
 		}else{
-			this.registerTest("ungrouped", groupOrNs);
+			this.registerTest("ungrouped", groupOrNs, type);
 		}
 	}
 	if(arguments.length == 1){
@@ -499,18 +545,18 @@ doh.register = doh.add = function(groupOrNs, testOrNull){
 	}
 	if(typeof testOrNull == "string"){
 		if(testOrNull.substr(0, 4)=="url:"){
-			this.registerUrl(testOrNull);
+			this.registerUrl(testOrNull, null, null, type);
 		}else{
-			this.registerTest(groupOrNs, testOrNull);
+			this.registerTest(groupOrNs, testOrNull, type);
 		}
 		// this.registerTestNs(groupOrNs, testOrNull);
 		return;
 	}
 	if(doh._isArray(testOrNull)){
-		this.registerTests(groupOrNs, testOrNull);
+		this.registerTests(groupOrNs, testOrNull, type);
 		return;
 	}
-	this.registerTest(groupOrNs, testOrNull);
+	this.registerTest(groupOrNs, testOrNull, type);
 };
 
 doh.registerDocTests = function(module){
@@ -756,6 +802,312 @@ try{
 	}
 }
 
+doh._runPerfFixture = function(/*String*/groupName, /*Object*/fixture){
+	//	summary:
+	//		This function handles how to execute a 'performance' test
+	//		which is different from a straight UT style test.  These
+	//		will often do numerous iterations of the same operation and
+	//		gather execution statistics about it, like max, min, average, 
+	//		etc.  It makes use of the already in place DOH deferred test 
+	//		handling since it is a good idea to put a pause inbetween each 
+	//		iteration to allow for GC cleanup and the like.
+	//
+	//	groupName:
+	//		The test group that contains this performance test.
+	//	fixture:
+	//		The performance test fixture.
+	var tg = this._groups[groupName];
+	fixture.startTime = new Date();
+
+	//Perf tests always need to act in an async manner as there is a 
+	//number of iterations to flow through.
+	var def = new doh.Deferred();
+	tg.inFlight++;
+	def.groupName = groupName;
+	def.fixture = fixture;
+
+	def.addErrback(function(err){
+		doh._handleFailure(groupName, fixture, err);
+	});
+
+	//Set up the finalizer.
+	var retEnd = function(){
+		if(fixture["tearDown"]){ fixture.tearDown(doh); }
+		tg.inFlight--;
+		if((!tg.inFlight)&&(tg.iterated)){
+			doh._groupFinished(groupName, !tg.failures);
+		}
+		doh._testFinished(groupName, fixture, def.results[0]);
+		if(doh._paused){
+			doh.run();
+		}
+	};
+
+	//Since these can take who knows how long, we don't want to timeout
+	//unless explicitly set
+	var timer;
+	var to = fixture.timeout; 
+	if(to > 0) {
+		timer = setTimeout(function(){
+			// ret.cancel();
+			// retEnd();
+			def.errback(new Error("test timeout in "+fixture.name.toString()));
+		}, to);
+	}
+	
+	//Set up the end calls to the test into the deferred we'll return.
+	def.addBoth(function(arg){
+		if(timer){
+			clearTimeout(timer);
+		}
+		retEnd();
+	});
+
+	//Okay, now set up the timing loop for the actual test.
+	//This is down as an async type test where there is a delay
+	//between each execution to allow for GC time, etc, so the GC
+	//has less impact on the tests.
+	var res = fixture.results;
+	res.trials = [];
+
+	//Try to figure out how many calls are needed to hit a particular threshold.
+	var itrDef = doh._calcTrialIterations(groupName, fixture);
+	itrDef.addErrback(function(err){
+		fixture.endTime = new Date();
+		def.errback(err);
+	});
+
+	//Blah, since tests can be deferred, the actual run has to be deferred until after
+	//we know how many iterations to run.  This is just plain ugly.
+	itrDef.addCallback(function(iterations){
+		if(iterations){
+			var countdown = fixture.trialIterations;
+			doh.debug("TIMING TEST: [" + fixture.name + 
+					  "]\n\t\tITERATIONS PER TRIAL: " + 
+					  iterations + "\n\tTRIALS: " +
+					  countdown);
+
+			//Figure out how many times we want to run our 'trial'.
+			//Where each trial consists of 'iterations' of the test.
+
+			var trialRunner = function() {
+				//Set up our function to execute a block of tests
+				var start = new Date();
+				var tTimer = new doh.Deferred();
+				var tCountdown = iterations;
+
+				var tState = {
+					countdown: iterations
+				};
+				var testRunner = function(state){
+					while(state){
+						try{
+							state.countdown--;
+							if(state.countdown){
+								var ret = fixture.runTest(doh);
+								if(ret instanceof doh.Deferred){
+									//Deferreds have to be handled async,
+									//otherwise we just keep looping.
+									var atState = {
+										countdown: state.countdown
+									};
+									ret.addCallback(function(){
+										testRunner(atState);
+									});
+									ret.addErrback(function(err) {
+										doh._handleFailure(groupName, fixture, err);
+										fixture.endTime = new Date();
+										def.errback(err);
+									});
+									state = null;
+								}
+							}else{
+								tTimer.callback(new Date());
+								state = null;
+							}
+						}catch(err){
+							fixture.endTime = new Date();
+							tTimer.errback(err);
+						}
+					}
+				};
+				tTimer.addCallback(function(end){
+					//Figure out the results and try to factor out function call costs.
+					var tResults = {
+						trial: (fixture.trialIterations - countdown),
+						testIterations: iterations,
+						executionTime: (end.getTime() - start.getTime()),
+						average: (end.getTime() - start.getTime())/iterations
+					};
+					res.trials.push(tResults);
+					doh.debug("\n\t\tTRIAL #: " +
+							  tResults.trial + "\n\tTIME: " + 
+							  tResults.executionTime + "ms.\n\tAVG TEST TIME: " +
+							  (tResults.executionTime/tResults.testIterations) + "ms.");
+
+					//Okay, have we run all the trials yet?
+					countdown--;
+					if(countdown){
+						setTimeout(trialRunner, fixture.trialDelay);
+					}else{
+						//Okay, we're done, lets compute some final performance results.
+						var t = res.trials;
+
+
+
+						//We're done.
+						fixture.endTime = new Date();
+						def.callback(true);
+					}
+				});
+				tTimer.addErrback(function(err){
+					fixture.endTime = new Date();
+					def.errback(err);
+				});
+				testRunner(tState);
+			};
+			trialRunner();
+		}
+	});
+
+	//Set for a pause, returned the deferred.
+	if(def.fired < 0){
+		doh.pause();
+	}
+	return def;
+};
+
+doh._calcTrialIterations =  function(/*String*/ groupName, /*Object*/ fixture){
+	//	summary:
+	//		This function determines the rough number of iterations to
+	//		use to reach a particular MS threshold.  This returns a deferred
+	//		since tests can theoretically by async.  Async tests aren't going to
+	//		give great perf #s, though.
+	//		The callback is passed the # of iterations to hit the requested 
+	//		threshold.
+	//
+	//	fixture:
+	//		The test fixture we want to calculate iterations for.
+	var def = new doh.Deferred();
+	var calibrate = function () {
+		var testFunc = fixture.runTest;
+
+		//Set the initial state.  We have to do this as a loop instead
+		//of a recursive function.  Otherwise, it blows the call stack
+		//on some browsers.
+		var iState = {
+			start: new Date(),
+			curIter: 0,
+			iterations: 5
+		};
+		var handleIteration = function(state){
+			while(state){
+				if(state.curIter < state.iterations){
+					try{
+						var ret = testFunc(doh);
+						if(ret instanceof doh.Deferred){
+							var aState = {
+								start: state.start,
+								curIter: state.curIter + 1,
+								iterations: state.iterations
+							};
+							ret.addCallback(function(){
+								handleIteration(aState);
+							});
+							ret.addErrback(function(err) {
+								fixture.endTime = new Date();
+								def.errback(err);
+							});
+							state = null;
+						}else{
+							state.curIter++;
+						}
+					}catch(err){
+						fixture.endTime = new Date();
+						def.errback(err);
+						return;
+					}
+				}else{
+					var end = new Date();
+					var totalTime = (end.getTime() - state.start.getTime());
+					if(totalTime < fixture.trialDuration){
+						var nState = {
+							iterations: state.iterations * 2,
+							curIter: 0
+						}
+						state = null;
+						setTimeout(function(){
+							nState.start = new Date();
+							handleIteration(nState);
+						}, 50);
+					}else{
+						var itrs = state.iterations;
+						setTimeout(function(){def.callback(itrs)}, 50);
+						state = null;
+					}
+				}
+			}
+		};
+		handleIteration(iState);
+	};
+	setTimeout(calibrate, 10);
+	return def;
+};
+
+doh._runRegFixture = function(/*String*/groupName, /*Object*/fixture){
+	//	summary:
+	//		Function to run a generic doh test.  These are not
+	//		specialized tests, like performance groups and such.
+	//
+	//	groupName:
+	//		The groupName of the test.
+	//	fixture:
+	//		The test fixture to execute.
+	var tg = this._groups[groupName];
+	fixture.startTime = new Date();
+	var ret = fixture.runTest(this); 
+	fixture.endTime = new Date();
+	// if we get a deferred back from the test runner, we know we're
+	// gonna wait for an async result. It's up to the test code to trap
+	// errors and give us an errback or callback.
+	if(ret instanceof doh.Deferred){
+		tg.inFlight++;
+		ret.groupName = groupName;
+		ret.fixture = fixture;
+
+		ret.addErrback(function(err){
+			doh._handleFailure(groupName, fixture, err);
+		});
+
+		var retEnd = function(){
+			if(fixture["tearDown"]){ fixture.tearDown(doh); }
+			tg.inFlight--;
+			if((!tg.inFlight)&&(tg.iterated)){
+				doh._groupFinished(groupName, !tg.failures);
+			}
+			doh._testFinished(groupName, fixture, ret.results[0]);
+			if(doh._paused){
+				doh.run();
+			}
+		}
+
+		var timer = setTimeout(function(){
+			// ret.cancel();
+			// retEnd();
+			ret.errback(new Error("test timeout in "+fixture.name.toString()));
+		}, fixture["timeout"]||1000);
+
+		ret.addBoth(function(arg){
+			clearTimeout(timer);
+			retEnd();
+		});
+		if(ret.fired < 0){
+			doh.pause();
+		}
+		return ret;
+	}
+};
+
 doh._runFixture = function(groupName, fixture){
 	var tg = this._groups[groupName];
 	this._testStarted(groupName, fixture);
@@ -767,50 +1119,18 @@ doh._runFixture = function(groupName, fixture){
 		// another test or group-level setUp function
 		fixture.group = tg; 
 		// only execute the parts of the fixture we've got
+
 		if(fixture["setUp"]){ fixture.setUp(this); }
 		if(fixture["runTest"]){  // should we error out of a fixture doesn't have a runTest?
-			fixture.startTime = new Date();
-			var ret = fixture.runTest(this); 
-			fixture.endTime = new Date();
-			// if we get a deferred back from the test runner, we know we're
-			// gonna wait for an async result. It's up to the test code to trap
-			// errors and give us an errback or callback.
-			if(ret instanceof doh.Deferred){
-
-				tg.inFlight++;
-				ret.groupName = groupName;
-				ret.fixture = fixture;
-
-				ret.addErrback(function(err){
-					doh._handleFailure(groupName, fixture, err);
-				});
-
-				var retEnd = function(){
-					if(fixture["tearDown"]){ fixture.tearDown(doh); }
-					tg.inFlight--;
-					if((!tg.inFlight)&&(tg.iterated)){
-						doh._groupFinished(groupName, !tg.failures);
-					}
-					doh._testFinished(groupName, fixture, ret.results[0]);
-					if(doh._paused){
-						doh.run();
-					}
+			if(fixture.testType === "perf"){
+				//Always async deferred, so return it.
+				return doh._runPerfFixture(groupName, fixture);
+			}else{
+				//May or may not by async.
+				var ret = doh._runRegFixture(groupName, fixture);
+				if(ret){
+					return ret;
 				}
-
-				var timer = setTimeout(function(){
-					// ret.cancel();
-					// retEnd();
-					ret.errback(new Error("test timeout in "+fixture.name.toString()));
-				}, fixture["timeout"]||1000);
-
-				ret.addBoth(function(arg){
-					clearTimeout(timer);
-					retEnd();
-				});
-				if(ret.fired < 0){
-					doh.pause();
-				}
-				return ret;
 			}
 		}
 		if(fixture["tearDown"]){ fixture.tearDown(this); }
@@ -966,6 +1286,82 @@ doh.run = function(){
 	this._paused = false;
 	this._onEnd();
 	this._report();
+}
+
+//Statistics functions to handle computing performance metrics.
+//Taken from dojox.math
+//	basic statistics
+doh.standardDeviation = function(/* Number[] */a){
+	//	summary:
+	//		Returns the standard deviation of the passed arguments.
+	return Math.sqrt(this.variance(a));	//	Number
+};
+
+doh.variance = function(/* Number[] */a){
+	//	summary:
+	//		Find the variance in the passed array of numbers.
+	var mean=0, squares=0;
+	dojo.forEach(a, function(item){
+		mean+=item;
+		squares+=Math.pow(item,2);
+	});
+	return (squares/a.length)-Math.pow(mean/a.length, 2);	//	Number
+};
+
+doh.mean = function(/* Number[] */a){
+	//	summary:
+	//		Returns the mean value in the passed array.
+	var t=0;
+	dojo.forEach(a, function(v){
+		t += v;
+	});
+	return t / Math.max(a.length, 1);	//	Number
+};
+
+doh.min = function(/* Number[] */a){
+	//	summary:
+	//		Returns the min value in the passed array.
+	return Math.min.apply(null, a);		//	Number
+};
+
+doh.max = function(/* Number[] */a){
+	//	summary:
+	//		Returns the max value in the passed array.
+	return Math.max.apply(null, a);		//	Number
+},
+
+doh.median= function(/* Number[] */a){
+	//	summary:
+	//		Returns the value closest to the middle from a sorted version of the passed array.
+	return a.slice(0).sort()[Math.ceil(a.length/2)-1];	//	Number
+},
+
+doh.mode = function(/* Number[] */a){
+	//	summary:
+	//		Returns the mode from the passed array (number that appears the most often).
+	//		This is not the most efficient method, since it requires a double scan, but
+	//		is ensures accuracy.
+	var o = {}, r = 0, m = Number.MIN_VALUE;
+	dojo.forEach(a, function(v){
+		(o[v]!==undefined)?o[v]++:o[v]=1;
+	});
+
+	//	we did the lookup map because we need the number that appears the most.
+	for(var p in o){
+		if(m < o[p]){
+			m = o[p], r = p;
+		}
+	}
+	return r;	//	Number
+};
+
+doh.average = function(/* Number [] */ a){
+	var i;
+	var s = 0;
+	for(i = 0; i < a.length; i++){
+		s += a[i];
+	}
+	return s/a.length;
 }
 
 tests = doh;

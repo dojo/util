@@ -200,6 +200,111 @@ if(window["dojo"]){
 					cell.setAttribute('_target',_loggedMsgLen+1);
 					row.insertCell(-1).innerHTML=doh._totalTime+"ms";
 				}
+				
+				//This location can do the final performance rendering for the results
+				//of any performance tests.
+				var plotResults = null;
+				var standby;
+				if(window.dojo){
+					//If we have dojo, well, we'll use the dojo charting functions.
+					dojo.require("dojox.charting.Chart2D");
+					dojo.require("dojox.charting.DataChart");
+					dojo.require("dojox.charting.plot2d.Scatter");
+					dojo.require("dojox.charting.plot2d.Lines");
+					dojo.require("dojo.data.ItemFileReadStore");
+					plotResults = doh._dojoPlotPerfResults;
+				}else{
+					plotResults = doh._asciiPlotPerfResults;
+				}
+				try{
+					var g;
+					var pBody = byId("perfTestsBody");
+					var chartsToRender = [];
+
+					if(doh.perfTestResults){
+						doh.showPerfTestsPage();
+					}
+					for(g in doh.perfTestResults){
+						console.log("Appending results to view.");
+						var grp = doh.perfTestResults[g];
+						var hdr = document.createElement("h1");
+						hdr.appendChild(document.createTextNode("Group: " + g));
+						pBody.appendChild(hdr);
+						var ind = document.createElement("blockquote");
+						pBody.appendChild(ind);
+						var f;
+						for(f in grp){
+							var fResults = grp[f];
+							var fhdr = document.createElement("h3");
+							fhdr.appendChild(document.createTextNode("TEST: " + f));
+							fhdr.style.textDecoration = "underline";
+							ind.appendChild(fhdr);
+							var div = document.createElement("div");
+							ind.appendChild(div);
+
+							//Figure out the basic info
+							var results = "<b>TRIAL SIZE: </b>"  + fResults.trials[0].testIterations + " iterations<br>" +
+								"<b>NUMBER OF TRIALS: </b>" + fResults.trials.length + "<br>";
+							
+							//Figure out the average test pass cost.
+							var i;
+							var iAvgArray = [];
+							var tAvgArray = [];
+							for(i = 0; i < fResults.trials.length; i++){
+								iAvgArray.push(fResults.trials[i].average);
+								tAvgArray.push(fResults.trials[i].executionTime);
+							}
+							results += "<b>AVERAGE TRIAL EXECUTION TIME: </b>" + doh.average(tAvgArray).toFixed(10) + "ms.<br>";
+							results += "<b>MAXIMUM TEST ITERATION TIME: </b>" + doh.max(iAvgArray).toFixed(10) + "ms.<br>";
+							results += "<b>MINIMUM TEST ITERATION TIME: </b>" + doh.min(iAvgArray).toFixed(10) + "ms.<br>";
+							results += "<b>AVERAGE TEST ITERATION TIME: </b>" + doh.average(iAvgArray).toFixed(10) + "ms.<br>";
+							results += "<b>MEDIAN TEST ITERATION TIME: </b>" + doh.median(iAvgArray).toFixed(10) + "ms.<br>";
+							results += "<b>VARIANCE TEST ITERATION TIME: </b>" + doh.variance(iAvgArray).toFixed(10) + "ms.<br>";
+							results += "<b>STANDARD DEVIATION ON TEST ITERATION TIME: </b>" + doh.standardDeviation(iAvgArray).toFixed(10) + "ms.<br>";
+
+							//Okay, attach it all in.
+							div.innerHTML = results;
+							
+							div = document.createElement("div");
+							div.innerHTML = "<h3>Average Test Execution Time (in milliseconds, with median line)</h3>";
+							ind.appendChild(div);
+							div = document.createElement("div");
+							dojo.style(div, "width", "600px");
+							dojo.style(div, "height", "250px");
+							ind.appendChild(div);
+							chartsToRender.push({
+								div: div,
+								title: "Average Test Execution Time",
+								data: iAvgArray
+							});
+
+							div = document.createElement("div");
+							div.innerHTML = "<h3>Average Trial Execution Time (in milliseconds, with median line)</h3>";
+							ind.appendChild(div);
+							div = document.createElement("div");
+							dojo.style(div, "width", "600px");
+							dojo.style(div, "height", "250px");
+							ind.appendChild(div);
+							chartsToRender.push({
+								div: div,
+								title: "Average Trial Execution Time",
+								data: tAvgArray
+							});
+						}
+					}
+					
+					//Lazy-render these to give the browser time and not appear locked.
+					var delayedRenders = function() {
+						if(chartsToRender.length){
+							var chartData = chartsToRender.shift();
+							plotResults(chartData.div, chartData.title, chartData.data);
+						}
+						setTimeout(delayedRenders, 50);
+					};
+					setTimeout(delayedRenders, 150);
+				}catch(e){
+					console.log(e);
+				}
 				or.apply(doh,arguments);
 			}
 		})(doh._report);
@@ -509,7 +614,13 @@ if(window["dojo"]){
 		var tabzidx = 1;
 		var _showTab = function(toShow, toHide){
 			// FIXME: I don't like hiding things this way.
-			byId(toHide).style.display = "none";
+			var i;
+			for(i = 0; i < toHide.length; i++){
+				var node = byId(toHide[i]);
+				if(node){
+					node.style.display="none";
+				}
+			}
 			with(byId(toShow).style){
 				display = "";
 				zIndex = ++tabzidx;
@@ -517,11 +628,15 @@ if(window["dojo"]){
 		}
 
 		doh.showTestPage = function(){
-			_showTab("testBody", "logBody");
+			_showTab("testBody", ["logBody", "perfTestsBody"]);
 		}
 
 		doh.showLogPage = function(){
-			_showTab("logBody", "testBody");
+			_showTab("logBody", ["testBody", "perfTestsBody"]);
+		}
+
+		doh.showPerfTestsPage = function(){
+			_showTab("perfTestsBody", ["testBody", "logBody"]);
 		}
 
 		var runAll = true;
@@ -616,6 +731,57 @@ if(window["dojo"]){
 				while((node=btns[idx++])){
 					node.onclick = toggleRunning;
 				}
+
+				//Performance report generating functions!
+				doh._dojoPlotPerfResults = function(div, name, dataArray) {
+					var median = doh.median(dataArray);
+					var medarray = [];
+
+					var i;
+					for(i = 0; i < dataArray.length; i++){
+						medarray.push(median);
+					}
+
+					var data = {
+						label: "name",
+						items: [
+							{name: name, trials: dataArray},
+							{name: "Median", trials: medarray}
+						]
+					};
+					var ifs = new dojo.data.ItemFileReadStore({data: data});
+
+					var min = Math.floor(doh.min(dataArray));
+					var max = Math.ceil(doh.max(dataArray));
+					var step = (max - min)/10;
+
+					//Lets try to pad out the bottom and top a bit
+					//Then recalc the step.
+					if(min > 0){
+						min = min - step;
+						if(min < 0){
+							min = 0;
+						}
+						min = Math.floor(min);
+					}
+					if(max > 0){
+						max = max + step;
+						max = Math.ceil(max);
+					}
+					step = (max - min)/10;
+
+					var chart = new dojox.charting.DataChart(div, {
+						type: dojox.charting.plot2d.Lines,
+						displayRange:dataArray.length,
+						xaxis: {min: 1, max: dataArray.length, majorTickStep: Math.ceil((dataArray.length - 1)/10), htmlLabels: false},
+						yaxis: {min: min, max: max, majorTickStep: step, vertical: true, htmlLabels: false}
+					});
+					chart.setStore(ifs, {name:"*"}, "trials");
+				};
+
+				doh._asciiPlotPerfResults = function(){
+					//TODO:  Implement!
+				};
 			}
 		);
 	}else{
@@ -649,6 +815,27 @@ if(window["dojo"]){
 			}
 			doh._testFinished = function(g, f, s){
 				_doh._testFinished(_thisGroup, f, s);
+
+				//Okay, there may be performance info we need to filter back
+				//to the parent, so do that here.
+				if(doh.perfTestResults){
+					try{
+						gName = g.toString();
+						var localFName = f.name;
+						while(localFName.indexOf("::") >= 0){
+							localFName = localFName.substring(localFName.indexOf("::") + 2, localFName.length);
+						}
+						if(!_doh.perfTestResults){
+							_doh.perfTestResults = {};
+						}
+						if(!_doh.perfTestResults[gName]){
+							_doh.perfTestResults[gName] = {};
+						}
+						_doh.perfTestResults[gName][f.name] = doh.perfTestResults[gName][localFName];
+					}catch (e){
+						doh.debug(e);
+					}
+				}
 			}
 			doh._groupStarted = function(g){
 				if(!this._setParent){
@@ -657,7 +844,8 @@ if(window["dojo"]){
 					this._setParent = true;
 				}
 			}
-			doh._report = function(){};
+			doh._report = function(){
+			};
 		}
 	}
 
