@@ -238,10 +238,6 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 	return kwArgs;
 }
 
-buildUtil.interningDojoUriRegExpString = "(((templatePath|templateCssPath)\\s*(=|:)\\s*)|dojo\\.uri\\.cache\\.allow\\(\\s*)dojo\\.(module)?Url\\(\\s*?[\\\"\\']([\\w\\.\\/]+)[\\\"\\'](([\\,\\s]*)[\\\"\\']([\\w\\.\\/]*)[\\\"\\'])?\\s*\\)";
-buildUtil.interningGlobalDojoUriRegExp = new RegExp(buildUtil.interningDojoUriRegExpString, "g");
-buildUtil.interningLocalDojoUriRegExp = new RegExp(buildUtil.interningDojoUriRegExpString);
-
 //Even though these are i18n-specific, they are not in i18nUtil.js since one is referenced
 //in this file. Want to avoid circular dependency loading issues.
 buildUtil.masterRequireLocalizationRegExpString = "dojo.(requireLocalization)\\(([\\w\\W]*?)\\)";
@@ -1070,8 +1066,13 @@ buildUtil.internTemplateStringsInFile = function(resourceFile, srcRoot, prefixes
 	fileUtil.saveUtf8File(resourceFile, resourceContent);
 }
 
+buildUtil.interningDojoUriRegExpString = "(((templatePath|templateCssPath)\\s*(=|:)\\s*)dojo\\.(module)?Url\\(|dojo\\.cache\\s*\\(\\s*)\\s*?[\\\"\\']([\\w\\.\\/]+)[\\\"\\'](([\\,\\s]*)[\\\"\\']([\\w\\.\\/]*)[\\\"\\'])?(\\s*,\\s*)?([^\\)]*)?\\s*\\)";
+buildUtil.interningGlobalDojoUriRegExp = new RegExp(buildUtil.interningDojoUriRegExpString, "g");
+buildUtil.interningLocalDojoUriRegExp = new RegExp(buildUtil.interningDojoUriRegExpString);
+
 buildUtil.interningRegexpMagic = function(resourceFile, resourceContent, srcRoot, prefixes, skiplist){
 	var shownFileName = false;
+
 	return resourceContent.replace(buildUtil.interningGlobalDojoUriRegExp, function(matchString){
 		var parts = matchString.match(buildUtil.interningLocalDojoUriRegExp);
 
@@ -1094,11 +1095,20 @@ buildUtil.interningRegexpMagic = function(resourceFile, resourceContent, srcRoot
 			//buildUtil.jsEscape will add starting and ending double-quotes.
 			var jsEscapedContent = buildUtil.jsEscape(fileUtil.readFile(filePath));
 			if(jsEscapedContent){
-				if(matchString.indexOf("dojo.uri.cache.allow") != -1){
-					//Handle dojo.uri.cache-related interning.
-					var parenIndex = matchString.lastIndexOf(")");
-					matchString = matchString.substring(0, parenIndex + 1) + ", " + jsEscapedContent;
-					matchString = matchString.replace("dojo.uri.cache.allow", "dojo.uri.cache.set");
+				if(matchString.indexOf("dojo.cache") != -1){
+					//Handle dojo.cache-related interning.
+					var endContent = parts[11];
+					if(!endContent){
+						endContent = jsEscapedContent;
+					}else{
+						var braceIndex = endContent.indexOf("{");
+						if(braceIndex != -1){
+							endContent = endContent.substring(0, braceIndex + 1)
+								+ 'value: ' + jsEscapedContent + ','
+								+ endContent.substring(braceIndex + 1, endContent.length);
+						}
+					}
+					matchString = 'dojo.cache("' + parts[6] + '", "' + parts[9] + '", ' + endContent + ')';
 				}else{
 					//Handle templatePath/templateCssPath-related interning.
 					if(parts[3] == "templatePath"){
