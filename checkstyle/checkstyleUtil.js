@@ -59,10 +59,35 @@ checkstyleUtil.getComments = function(contents){
 		}
 	}
 	
+	function markRegexs() {
+		var idx = contents.indexOf("/g");
+		
+		while(idx > -1) {
+			if(!comments[idx]){
+				// Look back until either a forward slash
+				// or a new line is found
+				var prevChar = contents.charAt(idx - 1);
+				var i = idx;
+				while(prevChar != "\n" && prevChar != "/" && i > 0){
+					prevChar = contents.charAt(--i);
+				}
+				if(prevChar == "/"){
+					for(; i < idx; i++){
+						comments[i] = true;
+					}
+				}
+			}
+			idx = contents.indexOf("/g", idx + 2)
+		}
+	}
+	
 	markComments("//", sep);
 	markComments("/*", "*/");
 	markQuotes("\"");
 	markQuotes('\'');
+	markRegexs();
+	
+	
 	return comments;
 }
 
