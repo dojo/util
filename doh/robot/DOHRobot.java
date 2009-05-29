@@ -1392,10 +1392,12 @@ public final class DOHRobot extends Applet{
 
 		private boolean isActive = false;
 		private boolean isOpera = false;
+		private boolean isLinux = false;
 		private SecurityManager oldsecurity = null;
 
 		public RobotSecurityManager(boolean isOpera, SecurityManager oldsecurity){
 			this.isOpera = isOpera;
+			this.isLinux = System.getProperty("os.name").toLowerCase().indexOf("linux") != -1;
 			this.oldsecurity = oldsecurity;
 		}
 
@@ -1423,7 +1425,7 @@ public final class DOHRobot extends Applet{
 			// Java does like 50 of these on the first JS call
 			// 6*50=300 seconds!
 			// Opera freaks out though if we deny resolve
-			if(isActive && !isOpera
+			if(isActive && !isOpera && !isLinux
 					&& java.net.SocketPermission.class.isInstance(p)
 					&& p.getActions().matches(".*resolve.*")){
 				throw new SecurityException(
