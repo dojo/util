@@ -205,105 +205,107 @@ if(window["dojo"]){
 				//of any performance tests.
 				var plotResults = null;
 				var standby;
-				if(window.dojo){
-					//If we have dojo, well, we'll use the dojo charting functions.
-					dojo.require("dojox.charting.Chart2D");
-					dojo.require("dojox.charting.DataChart");
-					dojo.require("dojox.charting.plot2d.Scatter");
-					dojo.require("dojox.charting.plot2d.Lines");
-					dojo.require("dojo.data.ItemFileReadStore");
-					plotResults = doh._dojoPlotPerfResults;
-				}else{
-					plotResults = doh._asciiPlotPerfResults;
-				}
-				try{
-					var g;
-					var pBody = byId("perfTestsBody");
-					var chartsToRender = [];
-
-					if(doh.perfTestResults){
-						doh.showPerfTestsPage();
+				if(doh.perfTestResults){
+					if(window.dojo){
+						//If we have dojo and here are perf tests results, 
+						//well, we'll use the dojo charting functions
+						dojo.require("dojox.charting.Chart2D");
+						dojo.require("dojox.charting.DataChart");
+						dojo.require("dojox.charting.plot2d.Scatter");
+						dojo.require("dojox.charting.plot2d.Lines");
+						dojo.require("dojo.data.ItemFileReadStore");
+						plotResults = doh._dojoPlotPerfResults;
+					}else{
+						plotResults = doh._asciiPlotPerfResults;
 					}
-					for(g in doh.perfTestResults){
-						console.log("Appending results to view.");
-						var grp = doh.perfTestResults[g];
-						var hdr = document.createElement("h1");
-						hdr.appendChild(document.createTextNode("Group: " + g));
-						pBody.appendChild(hdr);
-						var ind = document.createElement("blockquote");
-						pBody.appendChild(ind);
-						var f;
-						for(f in grp){
-							var fResults = grp[f];
-							var fhdr = document.createElement("h3");
-							fhdr.appendChild(document.createTextNode("TEST: " + f));
-							fhdr.style.textDecoration = "underline";
-							ind.appendChild(fhdr);
-							var div = document.createElement("div");
-							ind.appendChild(div);
+					try{
+						var g;
+						var pBody = byId("perfTestsBody");
+						var chartsToRender = [];
 
-							//Figure out the basic info
-							var results = "<b>TRIAL SIZE: </b>"  + fResults.trials[0].testIterations + " iterations<br>" +
-								"<b>NUMBER OF TRIALS: </b>" + fResults.trials.length + "<br>";
-							
-							//Figure out the average test pass cost.
-							var i;
-							var iAvgArray = [];
-							var tAvgArray = [];
-							for(i = 0; i < fResults.trials.length; i++){
-								iAvgArray.push(fResults.trials[i].average);
-								tAvgArray.push(fResults.trials[i].executionTime);
+						if(doh.perfTestResults){
+							doh.showPerfTestsPage();
+						}
+						for(g in doh.perfTestResults){
+							var grp = doh.perfTestResults[g];
+							var hdr = document.createElement("h1");
+							hdr.appendChild(document.createTextNode("Group: " + g));
+							pBody.appendChild(hdr);
+							var ind = document.createElement("blockquote");
+							pBody.appendChild(ind);
+							var f;
+							for(f in grp){
+								var fResults = grp[f];
+								var fhdr = document.createElement("h3");
+								fhdr.appendChild(document.createTextNode("TEST: " + f));
+								fhdr.style.textDecoration = "underline";
+								ind.appendChild(fhdr);
+								var div = document.createElement("div");
+								ind.appendChild(div);
+
+								//Figure out the basic info
+								var results = "<b>TRIAL SIZE: </b>"  + fResults.trials[0].testIterations + " iterations<br>" +
+									"<b>NUMBER OF TRIALS: </b>" + fResults.trials.length + "<br>";
+
+								//Figure out the average test pass cost.
+								var i;
+								var iAvgArray = [];
+								var tAvgArray = [];
+								for(i = 0; i < fResults.trials.length; i++){
+									iAvgArray.push(fResults.trials[i].average);
+									tAvgArray.push(fResults.trials[i].executionTime);
+								}
+								results += "<b>AVERAGE TRIAL EXECUTION TIME: </b>" + doh.average(tAvgArray).toFixed(10) + "ms.<br>";
+								results += "<b>MAXIMUM TEST ITERATION TIME: </b>" + doh.max(iAvgArray).toFixed(10) + "ms.<br>";
+								results += "<b>MINIMUM TEST ITERATION TIME: </b>" + doh.min(iAvgArray).toFixed(10) + "ms.<br>";
+								results += "<b>AVERAGE TEST ITERATION TIME: </b>" + doh.average(iAvgArray).toFixed(10) + "ms.<br>";
+								results += "<b>MEDIAN TEST ITERATION TIME: </b>" + doh.median(iAvgArray).toFixed(10) + "ms.<br>";
+								results += "<b>VARIANCE TEST ITERATION TIME: </b>" + doh.variance(iAvgArray).toFixed(10) + "ms.<br>";
+								results += "<b>STANDARD DEVIATION ON TEST ITERATION TIME: </b>" + doh.standardDeviation(iAvgArray).toFixed(10) + "ms.<br>";
+
+								//Okay, attach it all in.
+								div.innerHTML = results;
+
+								div = document.createElement("div");
+								div.innerHTML = "<h3>Average Test Execution Time (in milliseconds, with median line)</h3>";
+								ind.appendChild(div);
+								div = document.createElement("div");
+								dojo.style(div, "width", "600px");
+								dojo.style(div, "height", "250px");
+								ind.appendChild(div);
+								chartsToRender.push({
+									div: div,
+									title: "Average Test Execution Time",
+									data: iAvgArray
+								});
+
+								div = document.createElement("div");
+								div.innerHTML = "<h3>Average Trial Execution Time (in milliseconds, with median line)</h3>";
+								ind.appendChild(div);
+								div = document.createElement("div");
+								dojo.style(div, "width", "600px");
+								dojo.style(div, "height", "250px");
+								ind.appendChild(div);
+								chartsToRender.push({
+									div: div,
+									title: "Average Trial Execution Time",
+									data: tAvgArray
+								});
 							}
-							results += "<b>AVERAGE TRIAL EXECUTION TIME: </b>" + doh.average(tAvgArray).toFixed(10) + "ms.<br>";
-							results += "<b>MAXIMUM TEST ITERATION TIME: </b>" + doh.max(iAvgArray).toFixed(10) + "ms.<br>";
-							results += "<b>MINIMUM TEST ITERATION TIME: </b>" + doh.min(iAvgArray).toFixed(10) + "ms.<br>";
-							results += "<b>AVERAGE TEST ITERATION TIME: </b>" + doh.average(iAvgArray).toFixed(10) + "ms.<br>";
-							results += "<b>MEDIAN TEST ITERATION TIME: </b>" + doh.median(iAvgArray).toFixed(10) + "ms.<br>";
-							results += "<b>VARIANCE TEST ITERATION TIME: </b>" + doh.variance(iAvgArray).toFixed(10) + "ms.<br>";
-							results += "<b>STANDARD DEVIATION ON TEST ITERATION TIME: </b>" + doh.standardDeviation(iAvgArray).toFixed(10) + "ms.<br>";
-
-							//Okay, attach it all in.
-							div.innerHTML = results;
-							
-							div = document.createElement("div");
-							div.innerHTML = "<h3>Average Test Execution Time (in milliseconds, with median line)</h3>";
-							ind.appendChild(div);
-							div = document.createElement("div");
-							dojo.style(div, "width", "600px");
-							dojo.style(div, "height", "250px");
-							ind.appendChild(div);
-							chartsToRender.push({
-								div: div,
-								title: "Average Test Execution Time",
-								data: iAvgArray
-							});
-
-							div = document.createElement("div");
-							div.innerHTML = "<h3>Average Trial Execution Time (in milliseconds, with median line)</h3>";
-							ind.appendChild(div);
-							div = document.createElement("div");
-							dojo.style(div, "width", "600px");
-							dojo.style(div, "height", "250px");
-							ind.appendChild(div);
-							chartsToRender.push({
-								div: div,
-								title: "Average Trial Execution Time",
-								data: tAvgArray
-							});
 						}
+
+						//Lazy-render these to give the browser time and not appear locked.
+						var delayedRenders = function() {
+							if(chartsToRender.length){
+								var chartData = chartsToRender.shift();
+								plotResults(chartData.div, chartData.title, chartData.data);
+							}
+							setTimeout(delayedRenders, 50);
+						};
+						setTimeout(delayedRenders, 150);
+					}catch(e){
+						doh.debug(e);
 					}
-					
-					//Lazy-render these to give the browser time and not appear locked.
-					var delayedRenders = function() {
-						if(chartsToRender.length){
-							var chartData = chartsToRender.shift();
-							plotResults(chartData.div, chartData.title, chartData.data);
-						}
-						setTimeout(delayedRenders, 50);
-					};
-					setTimeout(delayedRenders, 150);
-				}catch(e){
-					console.log(e);
 				}
 				or.apply(doh,arguments);
 			}
