@@ -236,6 +236,7 @@ if(window["dojo"]){
 							var f;
 							for(f in grp){
 								var fResults = grp[f];
+								if(!fResults){ continue; }
 								var fhdr = document.createElement("h3");
 								fhdr.appendChild(document.createTextNode("TEST: " + f));
 								fhdr.style.textDecoration = "underline";
