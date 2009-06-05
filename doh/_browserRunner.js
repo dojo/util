@@ -626,7 +626,7 @@ if(window["dojo"]){
 			}
 			toShow = byId(toShow);
 			if(toShow){
-				with(byId(toShow).style){
+				with(toShow.style){
 					display = "";
 					zIndex = ++tabzidx;
 				}
