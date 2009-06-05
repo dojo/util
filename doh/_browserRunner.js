@@ -624,9 +624,12 @@ if(window["dojo"]){
 					node.style.display="none";
 				}
 			}
-			with(byId(toShow).style){
-				display = "";
-				zIndex = ++tabzidx;
+			toShow = byId(toShow);
+			if(toShow){
+				with(byId(toShow).style){
+					display = "";
+					zIndex = ++tabzidx;
+				}
 			}
 		}
 
