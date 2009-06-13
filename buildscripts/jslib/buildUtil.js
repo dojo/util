@@ -1591,7 +1591,6 @@ buildUtil.baseMappings = {
 	"indexOf": "array",
 	"lastIndexOf": "array",
 	"forEach": "array",
-	"_everyOrSome": "array",
 	"every": "array",
 	"some": "array",
 	"map": "array",
