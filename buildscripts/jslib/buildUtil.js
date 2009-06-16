@@ -50,8 +50,7 @@ buildUtil.DojoBuildOptions = {
 			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
 			+ "Dojo Shrinksafe will be used on the files, and line returns will be removed. "
 			+ "If \"shrinksafe.keepLines\" is specified, then Dojo Shrinksafe will be used "
-			+ "on the files, and line returns will be preserved. If \"packer\" is specified, "
-			+ "Then Dean Edwards' Packer will be used."
+			+ "on the files, and line returns will be preserved."
 	},
 	"layerOptimize": {
 		defaultValue: "shrinksafe",
@@ -59,8 +58,7 @@ buildUtil.DojoBuildOptions = {
 			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
 			+ "Dojo Shrinksafe will be used on the files, and line returns will be removed. "
 			+ "If \"shrinksafe.keepLines\" is specified, then Dojo Shrinksafe will be used "
-			+ "on the layer files, and line returns will be preserved. If \"packer\" is specified, "
-			+ "Then Dean Edwards' Packer will be used."
+			+ "on the layer files, and line returns will be preserved."
 	},
 	"cssOptimize": {
 		defaultValue: "",
@@ -1192,39 +1190,25 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 	copyright = copyright || "";
 
 	//Use rhino to help do minifying/compressing.
-	//Even when using Dean Edwards' Packer, run it through the custom rhino so
-	//that the source is formatted nicely for Packer's consumption (in particular get
-	//commas after function definitions).
 	var context = Packages.org.mozilla.javascript.Context.enter();
 	try{
 		// Use the interpreter for interactive input (copied this from Main rhino class).
 		context.setOptimizationLevel(-1);
 
-		if(optimizeType.indexOf("shrinksafe") == 0){
+		if(optimizeType.indexOf("shrinksafe") == 0 || optimizeType == "packer"){
 			//Apply compression using custom compression call in Dojo-modified rhino.
 			fileContents = new String(Packages.org.dojotoolkit.shrinksafe.Compressor.compressScript(fileContents, 0, 1));
 			if(optimizeType.indexOf(".keepLines") == -1){
 				fileContents = fileContents.replace(/[\r\n]/g, "");
 			}
-		}else if(optimizeType == "comments" || optimizeType == "packer"){
+		}else if(optimizeType == "comments"){
 			//Strip comments
 			var script = context.compileString(fileContents, fileName, 1, null);
 			fileContents = new String(context.decompileScript(script, 0));
 			
-			if(optimizeType == "packer"){
-				buildUtil.setupPacker();
-
-				// var base62 = false;
-				// var shrink = true;
-				var base62 = true;
-				var shrink = true;
-				var packer = new Packer();
-				fileContents = packer.pack(fileContents, base62, shrink);
-			}else{
-				//Replace the spaces with tabs.
-				//Ideally do this in the pretty printer rhino code.
-				fileContents = fileContents.replace(/    /g, "\t");
-			}
+			//Replace the spaces with tabs.
+			//Ideally do this in the pretty printer rhino code.
+			fileContents = fileContents.replace(/    /g, "\t");
 
 			//If this is an nls bundle, make sure it does not end in a ;
 			//Otherwise, bad things happen.
@@ -1242,18 +1226,12 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 
 
 buildUtil.setupPacker = function(){
-	//summary: loads the files needed to run Dean Edwards' Packer.
-	if(typeof(Packer) == "undefined"){
-		load("jslib/packer/base2.js");
-		load("jslib/packer/Packer.js");
-		load("jslib/packer/Words.js");
-
-	}
+	// no-op.
 }
 
 buildUtil.optimizeJsDir = function(/*String*/startDir, /*RegeExp*/optimizeIgnoreRegExp, /*String?*/copyrightText, /*String?*/optimizeType, /*String?*/stripConsole){
 	//summary: strips the JS comments from all the files in "startDir", and all subdirectories.
-	//Also runs shrinksafe or packer minification, and console call removal.
+	//Also runs shrinksafe minification, and console call removal.
 	var copyright = (copyrightText || fileUtil.readFile("copyright.txt")) + fileUtil.getLineSeparator();
 	var fileList = fileUtil.getFilteredFileList(startDir, /\.js$/, true);
 	

@@ -41,39 +41,26 @@ function optimizeJs(/*String fileName*/fileName, /*String*/fileContents, /*Strin
 	copyright = copyright || "";
 
 	//Use rhino to help do minifying/compressing.
-	//Even when using Dean Edwards' Packer, run it through the custom rhino so
-	//that the source is formatted nicely for Packer's consumption (in particular get
-	//commas after function definitions).
 	var context = Packages.org.mozilla.javascript.Context.enter();
 	try{
 		// Use the interpreter for interactive input (copied this from Main rhino class).
 		context.setOptimizationLevel(-1);
 
-		if(optimizeType.indexOf("shrinksafe") == 0){
+		// the "packer" type is now just a synonym for shrinksafe
+		if(optimizeType.indexOf("shrinksafe") == 0 || optimizeType == "packer"){
 			//Apply compression using custom compression call in Dojo-modified rhino.
 			fileContents = new String(Packages.org.dojotoolkit.shrinksafe.Compressor.compressScript(fileContents, 0, 1));
 			if(optimizeType.indexOf(".keepLines") == -1){
 				fileContents = fileContents.replace(/[\r\n]/g, "");
 			}
-		}else if(optimizeType == "comments" || optimizeType == "packer"){
+		}else if(optimizeType == "comments"){
 			//Strip comments
 			var script = context.compileString(fileContents, fileName, 1, null);
 			fileContents = new String(context.decompileScript(script, 0));
 			
-			if(optimizeType == "packer"){
-				buildUtil.setupPacker();
-
-				// var base62 = false;
-				// var shrink = true;
-				var base62 = true;
-				var shrink = true;
-				var packer = new Packer();
-				fileContents = packer.pack(fileContents, base62, shrink);
-			}else{
-				//Replace the spaces with tabs.
-				//Ideally do this in the pretty printer rhino code.
-				fileContents = fileContents.replace(/    /g, "\t");
-			}
+			//Replace the spaces with tabs.
+			//Ideally do this in the pretty printer rhino code.
+			fileContents = fileContents.replace(/    /g, "\t");
 
 			//If this is an nls bundle, make sure it does not end in a ;
 			//Otherwise, bad things happen.
