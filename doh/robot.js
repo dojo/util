@@ -407,7 +407,9 @@ if(!doh.robot["_robotLoaded"]){
 		//
 		// duration:
 		//		Approximate time Robot will spend moving the mouse
-		//		The default is 100ms.
+		//		The default is 100ms. This also affects how many mousemove events will
+		//		be generated: one event/1ms (1kHz), so 100ms duration will trigger mousemove
+		//		events 100 times.
 		//
 		// absolute:
 		//		Boolean indicating whether the x and y values are absolute coordinates.

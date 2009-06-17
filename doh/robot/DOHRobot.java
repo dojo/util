@@ -1319,9 +1319,9 @@ public final class DOHRobot extends Applet{
 					}
 
 				}
-				robot.setAutoDelay(Math.max(duration/100,1));
+				robot.setAutoDelay(1);
 				robot.mouseMove(x1, y1);
-				int d = 100;
+				int d = duration;
 				for (int t = 0; t <= d; t++){
 					x1 = (int) easeInOutQuad((double) t, (double) lastMouseX,
 							(double) x2 - lastMouseX, (double) d);
