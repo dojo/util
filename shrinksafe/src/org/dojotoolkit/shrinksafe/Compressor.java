@@ -551,6 +551,10 @@ public class Compressor {
              case Token.XMLATTR:
                  result.append('@');
                  break;
+            case Token.DEBUGGER:
+                System.out.println("WARNING: Found a `debugger;` statement in code being compressed");
+                result.append("debugger");
+                break;
              default:
                  // If we don't know how to decompile it, raise an exception.
                  throw new RuntimeException();

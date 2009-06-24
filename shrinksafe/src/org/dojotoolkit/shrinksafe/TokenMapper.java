@@ -24,7 +24,7 @@
  *   Richard Backhouse
  */
  
- package org.dojotoolkit.shrinksafe;
+package org.dojotoolkit.shrinksafe;
 
 import java.util.ArrayList;
 import java.util.Arrays;
