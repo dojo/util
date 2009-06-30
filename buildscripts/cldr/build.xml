@@ -241,7 +241,7 @@
 		</scriptdef>
 
 		<transformCldr destdir="${json}">
-			<fileset dir="${ldml}/core/main" includes="**/*.xml" />
+			<fileset dir="${ldml}/core/common/main" includes="**/*.xml" />
 		</transformCldr>
 		<java jar="../../shrinksafe/js.jar" failonerror="true" fork="true" logError="true" >
 			<arg value="arrayInherit.js" />
