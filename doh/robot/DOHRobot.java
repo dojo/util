@@ -51,6 +51,7 @@ public final class DOHRobot extends Applet{
 	private boolean altgraph = false;
 	private boolean ctrl = false;
 	private boolean alt = false;
+	private boolean meta = false;
 	// shake hands with JavaScript the first keypess to wake up FF2/Mac
 	private boolean jsready = false;
 	private String keystring = "";
@@ -550,7 +551,7 @@ public final class DOHRobot extends Applet{
 	}
 
 	public void typeKey(double sec, final int charCode, final int keyCode,
-			final boolean alt, final boolean ctrl, final boolean shift,
+			final boolean alt, final boolean ctrl, final boolean shift, final boolean meta,
 			final int delay, final boolean async){
 		if(!isSecure(sec))
 			return;
@@ -561,7 +562,7 @@ public final class DOHRobot extends Applet{
 				try{
 					log("> typeKey Robot " + charCode + ", " + keyCode + ", " + async);
 					KeyPressThread thread = new KeyPressThread(charCode,
-							keyCode, alt, ctrl, shift, delay, async?null:previousThread);
+							keyCode, alt, ctrl, shift, meta, delay, async?null:previousThread);
 					previousThread = async?previousThread:thread;
 					thread.start();
 					log("< typeKey Robot");
@@ -940,7 +941,7 @@ public final class DOHRobot extends Applet{
 	}
 
 	private void _typeKey(final int cCode, final int kCode, final boolean a,
-			final boolean c, final boolean s){
+			final boolean c, final boolean s, final boolean m){
 		AccessController.doPrivileged(new PrivilegedAction(){
 			public Object run(){
 				int charCode = cCode;
@@ -948,6 +949,7 @@ public final class DOHRobot extends Applet{
 				boolean alt = a;
 				boolean ctrl = c;
 				boolean shift = s;
+				boolean meta = m;
 				boolean altgraph = false;
 				log("> _typeKey Robot " + charCode + ", " + keyCode);
 				try{
@@ -982,9 +984,15 @@ public final class DOHRobot extends Applet{
 							log("Pressing ctrl");
 							robot.keyPress(KeyEvent.VK_CONTROL);
 						}
+						if(meta){
+							log("Pressing meta");
+							robot.keyPress(KeyEvent.VK_META);
+						}
 						if(keyboardCode != KeyEvent.VK_SHIFT
 								&& keyboardCode != KeyEvent.VK_ALT
-								&& keyboardCode != KeyEvent.VK_CONTROL){
+								&& keyboardCode != KeyEvent.VK_ALT_GRAPH
+								&& keyboardCode != KeyEvent.VK_CONTROL
+								&& keyboardCode != KeyEvent.VK_META){
 							try{
 								robot.keyPress(keyboardCode);
 								robot.keyRelease(keyboardCode);
@@ -1010,6 +1018,11 @@ public final class DOHRobot extends Applet{
 							log("Releasing shift");
 							robot.keyRelease(KeyEvent.VK_SHIFT);
 							shift = false;
+						}
+						if(meta){
+							log("Releasing meta");
+							robot.keyRelease(KeyEvent.VK_META);
+							meta = false;
 						}
 					}
 				}catch(Exception e){
@@ -1043,17 +1056,19 @@ public final class DOHRobot extends Applet{
 		private boolean alt;
 		private boolean ctrl;
 		private boolean shift;
+		private boolean meta;
 		private int delay;
 		private Thread myPreviousThread = null;
 
 		public KeyPressThread(int charCode, int keyCode, boolean alt,
-				boolean ctrl, boolean shift, int delay, Thread myPreviousThread){
+				boolean ctrl, boolean shift, boolean meta, int delay, Thread myPreviousThread){
 			log("KeyPressThread constructor " + charCode + ", " + keyCode);
 			this.charCode = charCode;
 			this.keyCode = keyCode;
 			this.alt = alt;
 			this.ctrl = ctrl;
 			this.shift = shift;
+			this.meta = meta;
 			this.delay = delay;
 			this.myPreviousThread = myPreviousThread;
 		}
@@ -1069,7 +1084,7 @@ public final class DOHRobot extends Applet{
 				Thread.sleep(delay);
 				log("> run KeyPressThread");
 
-				_typeKey(charCode, keyCode, alt, ctrl, shift);
+				_typeKey(charCode, keyCode, alt, ctrl, shift, meta);
 			}catch(Exception e){
 				log("Bad parameters passed to _typeKey");
 				e.printStackTrace();
@@ -1125,6 +1140,8 @@ public final class DOHRobot extends Applet{
 						shift=true;
 					}else if(vkCode==KeyEvent.VK_ALT_GRAPH){
 						altgraph=true;
+					}else if(vkCode==KeyEvent.VK_META){
+						meta=true;
 					}
 				}
 				if(!isUnsafe(vkCode)){
@@ -1185,6 +1202,8 @@ public final class DOHRobot extends Applet{
 						shift=false;
 					}else if(vkCode==KeyEvent.VK_ALT_GRAPH){
 						altgraph=false;
+					}else if(vkCode==KeyEvent.VK_META){
+						meta=false;
 					}
 				}
 				robot.keyRelease(vkCode);

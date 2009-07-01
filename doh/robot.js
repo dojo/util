@@ -44,13 +44,13 @@ if(!doh.robot["_robotLoaded"]){
 	}else{
 		window.onunload=cleanup;
 	}
-	var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ alt, /*Boolean*/ ctrl, /*Boolean*/ shift, /*Integer, optional*/ delay, /*Boolean*/ async){
+	var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ alt, /*Boolean*/ ctrl, /*Boolean*/ shift, /*Boolean*/ meta, /*Integer, optional*/ delay, /*Boolean*/ async){
 		// internal function to type one non-modifier key
 
 		// typecasting Numbers helps Sun's IE plugin lookup methods that take int arguments
 
 		// otherwise JS will send a double and Sun will complain
-		_robot.typeKey(isSecure(), Number(charCode), Number(keyCode), Boolean(alt), Boolean(ctrl), Boolean(shift), Number(delay||0), Boolean(async||false));
+		_robot.typeKey(isSecure(), Number(charCode), Number(keyCode), Boolean(alt), Boolean(ctrl), Boolean(shift), Boolean(meta), Number(delay||0), Boolean(async||false));
 	};
 
 	doh.robot = {
@@ -263,10 +263,10 @@ if(!doh.robot["_robotLoaded"]){
 
 		this._assertRobot();
 		if(!modifiers){
-			modifiers = {alt:false, ctrl:false, shift:false};
+			modifiers = {alt:false, ctrl:false, shift:false, meta:false};
 		}else{
 			// normalize modifiers
-			var attrs = ["alt", "ctrl", "shift"];
+			var attrs = ["alt", "ctrl", "shift", "meta"];
 			for(var i = 0; i<attrs.length; i++){
 				if(!modifiers[attrs[i]]){
 					modifiers[attrs[i]] = false;
@@ -275,11 +275,11 @@ if(!doh.robot["_robotLoaded"]){
 		}
 		var isChar = typeof(charOrCode)=="string";
 		if(asynchronous){
-			_keyPress(isChar?charOrCode.charCodeAt(0):0, isChar?0:charOrCode, modifiers.alt, modifiers.ctrl, modifiers.shift, delay, true);
+			_keyPress(isChar?charOrCode.charCodeAt(0):0, isChar?0:charOrCode, modifiers.alt, modifiers.ctrl, modifiers.shift, modifiers.meta, delay, true);
 			return;
 		}
 		this.sequence(function(){
-			_keyPress(isChar?charOrCode.charCodeAt(0):0, isChar?0:charOrCode, modifiers.alt, modifiers.ctrl, modifiers.shift, 0);
+			_keyPress(isChar?charOrCode.charCodeAt(0):0, isChar?0:charOrCode, modifiers.alt, modifiers.ctrl, modifiers.shift, modifiers.meta, 0);
 		},delay);
 	},
 
