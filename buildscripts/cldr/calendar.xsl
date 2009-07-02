@@ -4,7 +4,7 @@
 <xsl:output method="text" indent="yes" saxon:byte-order-mark="yes"/>
 <!-- list the data elements whose spaces should be preserved
    it seems listing only the parent node doesn't work -->
-<xsl:preserve-space elements="month day quarter am pm era pattern dateFormatItem appendItem displayName localizedPatternChars"/>
+<xsl:preserve-space elements="month day quarter am pm era pattern dateFormatItem appendItem displayName"/>
 <xsl:strip-space elements="*"/> 
 <xsl:variable name="index" select="number(1)" saxon:assignable="yes"/>
 
@@ -60,10 +60,6 @@
 <xsl:template name="calendar" match="calendar">
     <!-- will be overridden with 'true' if from 'locale' alias, see 'invoke_template_by_name' -->   
     <xsl:param name="fromLocaleAlias" select="false()"/>
-
-    <xsl:if test="count(/ldml/dates/localizedPatternChars)>0">
-    	"patternChars":"<xsl:value-of select="/ldml/dates/localizedPatternChars"/>",
-	</xsl:if>
 
     <!-- insert 'locale' alias information  start -->
     <xsl:if test="$fromLocaleAlias">
