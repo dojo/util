@@ -222,10 +222,10 @@ if(!doh.robot["_robotLoaded"]){
 		this.sequence(function(){
 			duration=duration||0;
 			if(typeof(chars) == Number){
-				_keyPress(chars, chars, false, false, false, delay);
+				_keyPress(chars, chars, false, false, false, false, delay);
 			}else if(chars.length){
 				for(var i = 0; i<chars.length; i++){
-					_keyPress(chars.charCodeAt(i), 0, false, false, false, duration/chars.length);
+					_keyPress(chars.charCodeAt(i), 0, false, false, false, false, duration/chars.length);
 				}
 			}
 		}, delay, duration);
