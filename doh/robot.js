@@ -44,18 +44,22 @@ if(!doh.robot["_robotLoaded"]){
 	}else{
 		window.onunload=cleanup;
 	}
-	var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ alt, /*Boolean*/ ctrl, /*Boolean*/ shift, /*Integer, optional*/ delay, /*Boolean*/ async){
+	var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ alt, /*Boolean*/ ctrl, /*Boolean*/ shift, /*Boolean*/ meta, /*Integer, optional*/ delay, /*Boolean*/ async){
 		// internal function to type one non-modifier key
 
 		// typecasting Numbers helps Sun's IE plugin lookup methods that take int arguments
 
 		// otherwise JS will send a double and Sun will complain
-		_robot.typeKey(isSecure(), Number(charCode), Number(keyCode), Boolean(alt), Boolean(ctrl), Boolean(shift), Number(delay||0), Boolean(async||false));
+		_robot.typeKey(isSecure(), Number(charCode), Number(keyCode), Boolean(alt), Boolean(ctrl), Boolean(shift), Boolean(meta), Number(delay||0), Boolean(async||false));
 	};
 
 	doh.robot = {
 	_robotLoaded: true,
 	_robotInitialized: false,
+	// prime the event pump for fast browsers like Google Chrome - it's so fast, it doesn't stop to listen for keypresses!
+	_spaceReceived: false,
+	_primePump: false,
+	
 	_killApplet: function(){}, // overridden by Robot.html
 
 	killRobot: function(){
@@ -101,6 +105,11 @@ if(!doh.robot["_robotLoaded"]){
 	_initRobot: function(r){
 		// called from Robot
 		// Robot calls _initRobot in its startup sequence
+
+		// Prevent rerunning the whole test (see #8958 for details)
+		if(doh._initRobotCalled){ return; }
+		doh._initRobotCalled = true;
+
 		// add dohRobot class to HTML element so tests can use that in CSS rules if desired
 		document.documentElement.className = document.documentElement.className.replace(/\S$/, "& ") + "dohRobot";
 		window.scrollTo(0, 0);
@@ -217,10 +226,10 @@ if(!doh.robot["_robotLoaded"]){
 		this.sequence(function(){
 			duration=duration||0;
 			if(typeof(chars) == Number){
-				_keyPress(chars, chars, false, false, false, delay);
+				_keyPress(chars, chars, false, false, false, false, delay);
 			}else if(chars.length){
 				for(var i = 0; i<chars.length; i++){
-					_keyPress(chars.charCodeAt(i), 0, false, false, false, duration/chars.length);
+					_keyPress(chars.charCodeAt(i), 0, false, false, false, false, duration/chars.length);
 				}
 			}
 		}, delay, duration);
@@ -258,10 +267,10 @@ if(!doh.robot["_robotLoaded"]){
 
 		this._assertRobot();
 		if(!modifiers){
-			modifiers = {alt:false, ctrl:false, shift:false};
+			modifiers = {alt:false, ctrl:false, shift:false, meta:false};
 		}else{
 			// normalize modifiers
-			var attrs = ["alt", "ctrl", "shift"];
+			var attrs = ["alt", "ctrl", "shift", "meta"];
 			for(var i = 0; i<attrs.length; i++){
 				if(!modifiers[attrs[i]]){
 					modifiers[attrs[i]] = false;
@@ -270,11 +279,11 @@ if(!doh.robot["_robotLoaded"]){
 		}
 		var isChar = typeof(charOrCode)=="string";
 		if(asynchronous){
-			_keyPress(isChar?charOrCode.charCodeAt(0):0, isChar?0:charOrCode, modifiers.alt, modifiers.ctrl, modifiers.shift, delay, true);
+			_keyPress(isChar?charOrCode.charCodeAt(0):0, isChar?0:charOrCode, modifiers.alt, modifiers.ctrl, modifiers.shift, modifiers.meta, delay, true);
 			return;
 		}
 		this.sequence(function(){
-			_keyPress(isChar?charOrCode.charCodeAt(0):0, isChar?0:charOrCode, modifiers.alt, modifiers.ctrl, modifiers.shift, 0);
+			_keyPress(isChar?charOrCode.charCodeAt(0):0, isChar?0:charOrCode, modifiers.alt, modifiers.ctrl, modifiers.shift, modifiers.meta, 0);
 		},delay);
 	},
 
@@ -402,7 +411,8 @@ if(!doh.robot["_robotLoaded"]){
 		//
 		// duration:
 		//		Approximate time Robot will spend moving the mouse
-		//		The default is 100ms.
+		//		The default is 100ms. This also affects how many mousemove events will
+		//		be generated, which is the log of the duration.
 		//
 		// absolute:
 		//		Boolean indicating whether the x and y values are absolute coordinates.
@@ -509,7 +519,7 @@ if(!doh.robot["_robotLoaded"]){
 	var iframesrc;
 	var scripts = document.getElementsByTagName("script");
 	for(var x = 0; x<scripts.length; x++){
-		var s = scripts[x].src;
+		var s = scripts[x].getAttribute('src');
 		if(s && (s.substr(s.length-9) == "runner.js")){
 			iframesrc = s.substr(0, s.length-9)+'Robot.html';
 			break;
