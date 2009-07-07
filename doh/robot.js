@@ -56,6 +56,10 @@ if(!doh.robot["_robotLoaded"]){
 	doh.robot = {
 	_robotLoaded: true,
 	_robotInitialized: false,
+	// prime the event pump for fast browsers like Google Chrome - it's so fast, it doesn't stop to listen for keypresses!
+	_spaceReceived: false,
+	_primePump: false,
+	
 	_killApplet: function(){}, // overridden by Robot.html
 
 	killRobot: function(){
@@ -408,8 +412,7 @@ if(!doh.robot["_robotLoaded"]){
 		// duration:
 		//		Approximate time Robot will spend moving the mouse
 		//		The default is 100ms. This also affects how many mousemove events will
-		//		be generated: one event/1ms (1kHz), so 100ms duration will trigger mousemove
-		//		events 100 times.
+		//		be generated, which is the log of the duration.
 		//
 		// absolute:
 		//		Boolean indicating whether the x and y values are absolute coordinates.

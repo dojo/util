@@ -68,6 +68,7 @@
 		doh.robot.mouseWheelSize = e.detail ? (e.detail * -1) : (e.wheelDelta / 120);
 		if(e.preventDefault){ e.preventDefault(); }
 		else { e.returnValue = false; }
+		doh.robot._primePump = true;
 		doh.robot._initKeyboard();
 		return false;
 	}
@@ -88,7 +89,18 @@
 		var c = e.charCode ? e.charCode :
                    (e.keyCode ? e.keyCode :
                    (e.which ? e.which : 0)); // opera
-		if(c == 32){
+		if(doh.robot._primePump){
+			// event pump was primed with spaces and JS finally received one
+			// tell robot to stop sending spaces now
+			if(c == 32){
+				doh.robot._spaceReceived = true;
+			}
+			else if(c == 13){
+				// enter: start accepting keys
+				doh.robot._primePump = false;
+			}
+		}
+		else if(c == 32){
 			keystring += String.fromCharCode(charCode);
 			charCode = 32;
 			if(keystring.length >= expectedlength){
@@ -127,8 +139,15 @@
 		document.getElementsByTagName('input')[0].addEventListener('DOMMouseScroll', _onmousewheel, false);
 	}
 </script>
-<applet width="1" height="1" code="DOHRobot.class" archive="robot/DOHRobot.jar" MAYSCRIPT style="position:absolute;left:0px;top:22px;"><param name="mayscript" value="true"><param name="scriptable" value="true"><param name="initial_focus" value="false"></applet>
 <script>
+	// taken from hostenv_browser.js
+	// Dojo is not always available to DOH
+	var needsSecurityManager='<param name="needsSecurityManager" value="'+((
+		(Math.max(navigator.appVersion.indexOf("WebKit"), navigator.appVersion.indexOf("Safari"), 0) > 0 && navigator.userAgent.indexOf("Chrome/") == -1 && parseFloat(navigator.appVersion.split("Version/")[1]) < 4) // Safari 3
+		|| (document.all && navigator.userAgent.indexOf("Opera") == -1 && parseFloat(navigator.appVersion.split("MSIE ")[1]) < 8)) // IE6,7
+		?"true":"false")+'">';
+	var appletString = '<applet width="1" height="1" code="DOHRobot.class" archive="robot/DOHRobot.jar" MAYSCRIPT style="position:absolute;left:0px;top:22px;"><param name="mayscript" value="true"><param name="scriptable" value="true"><param name="initial_focus" value="false">'+needsSecurityManager+'</applet>';
+	document.write(appletString);
 	// if no Java, the applet is officially dead
 	if(/MSIE/.test(navigator.appVersion)){
 		// navigator.javaEnabled() not known for its reliability in IE6
