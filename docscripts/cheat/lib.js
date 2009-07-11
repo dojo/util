@@ -160,7 +160,7 @@ dojo.provide("util.docscripts.cheat.lib");
 				"Widget-Events":[
 					"onClick", "onFocus", "onDblClick", "onKeyPress", "onMouseOver", "onBlur",
 					"onKeyDown", "onKeyUp", "onMouseEnter", "onMouseLeave", "onMouseOut", "onMouseMove",
-					"onMouseUp", "onMouseDown",
+					"onMouseUp", "onMouseDown"
 				],
 				
 				"ARIA-A11y-i18n":[
