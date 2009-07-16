@@ -65,7 +65,7 @@ if(!doh.robot["_robotLoaded"]){
 	killRobot: function(){
 		if(doh.robot._robotLoaded){
 			doh.robot._robotLoaded = false;
-			document.documentElement.className = document.documentElement.className.replace(/ ?dohRobot/);
+			document.documentElement.className = document.documentElement.className.replace(/ ?dohRobot/, "");
 			doh.robot._killApplet();
 		}
 	},
@@ -111,7 +111,7 @@ if(!doh.robot["_robotLoaded"]){
 		doh._initRobotCalled = true;
 
 		// add dohRobot class to HTML element so tests can use that in CSS rules if desired
-		document.documentElement.className = document.documentElement.className.replace(/\S$/, "& ") + "dohRobot";
+		document.documentElement.className += " dohRobot";
 		window.scrollTo(0, 0);
 //		document.documentElement.scrollTop = document.documentElement.scrollLeft = 0;
 		_robot = r;
