@@ -259,6 +259,7 @@ if(!doh.robot["_robotLoaded"]){
 		//			- shift
 		//			- alt
 		//			- ctrl
+		//			- meta
 		//
 		// asynchronous:
 		//		If true, the delay happens asynchronously and immediately, outside of the browser's JavaScript thread and any previous calls.
