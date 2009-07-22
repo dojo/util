@@ -85,6 +85,45 @@ try{
 			// make sure we don't die when we find a debugger; statement 
 			var src = shrinksafe.tests.module.loader("9444.js");
 			t.t(src.compressed.indexOf("debugger") > -1);
+		},
+		
+		function mungeStrings(t){
+			
+			var src = shrinksafe.tests.module.loader("8828.js");
+			
+			t.t(src.compressed.indexOf("ab") > -1); // basic test
+			t.t(src.compressed.indexOf('"a"+n') > -1); // basic expected miss
+			t.t(src.compressed.indexOf('thisisatestspanning"+h') > -1);
+			t.t(src.compressed.indexOf("testingmultiplelines") > -1);
+			t.t(src.compressed.indexOf("testingcombined\"+") > -1);
+			
+			var boo = eval(src.compressed);
+			t.is(5, result.length);
+			
+			t.t(result[3].indexOf("TheQuickredFox") > -1); // complex var post eval
+			t.is(result[4], "thisisatestspanning4lines"); // multiline post eval
+			
+			delete result;
+			
+			var expected = [
+				"testing","testbarsimple",
+				"testingcombinedbarvariables",
+				"test \"+weird syntax",
+				"testbasic",
+				"test \"mixed\"",
+				"testingmultiplelines",
+				"test \"mixed\" andmunge",
+				"test",
+				"tesbart",
+				"\"slightly\"+\"off\""
+			];
+			
+			var data = string_tests();
+			data.forEach(function(str, i){
+				t.is(expected[i], str);
+			});
+			
+			delete string_tests;
 		}
 		
 		

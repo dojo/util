@@ -135,7 +135,17 @@ public class Compressor {
                  }
                  continue;
              case Token.STRING:
-                 i = printSourceString(encodedSource, i + 1, true, result, escapeUnicode);
+                 StringBuffer buf = new StringBuffer();
+                 i--;
+                 do {
+                    i++;
+                    i = printSourceString(encodedSource, i + 1, false, buf, escapeUnicode);
+                 } while(Token.ADD == encodedSource.charAt(i) &&
+                   Token.STRING == getNext(encodedSource, length, i));
+                 result.append('"');
+                 result.append(escapeString(buf.toString(), escapeUnicode));
+                 result.append('"');
+                 
                  continue;
              case Token.NUMBER:
                  i = printSourceNumber(encodedSource, i + 1, result);
