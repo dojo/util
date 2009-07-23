@@ -220,12 +220,14 @@ if(!doh.robot["_robotLoaded"]){
 		//
 		// duration:
 		//		Time, in milliseconds, to spend pressing all of the keys.
+		//		The default is (string length)*50 ms.
 		//
 
 		this._assertRobot();
 		this.sequence(function(){
-			duration=duration||0;
-			if(typeof(chars) == Number){
+			var isNum = typeof(chars) == Number;
+			duration=duration||(isNum?50:chars.length*50);
+			if(isNum){
 				_keyPress(chars, chars, false, false, false, false, delay);
 			}else if(chars.length){
 				for(var i = 0; i<chars.length; i++){
