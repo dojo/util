@@ -8,6 +8,8 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.net.URL;
 import java.awt.datatransfer.*;
+import javax.swing.JOptionPane;
+import javax.swing.JDialog;
 
 public final class DOHRobot extends Applet{
 	// order of execution:
@@ -120,7 +122,11 @@ public final class DOHRobot extends Applet{
 									securitymanager.checkTopLevelWindow(null);
 									// xdomain
 									if(charMap == null){
-										if(!confirm("DOH has detected that the current Web page is attempting to access DOH, but belongs to a different domain than the one you agreed to let DOH automate. If you did not intend to start a new DOH test by visiting this Web page, press Cancel now and leave the Web page. Otherwise, press OK to trust this domain to automate DOH tests.")){
+										if(!confirm("DOH has detected that the current Web page is attempting to access DOH,\n"+
+													"but belongs to a different domain than the one you agreed to let DOH automate.\n"+
+													"If you did not intend to start a new DOH test by visiting this Web page,\n"+
+													"press Cancel now and leave the Web page.\n"+
+													"Otherwise, press OK to trust this domain to automate DOH tests.")){
 											stop();
 											return null;
 										}
@@ -289,11 +295,14 @@ public final class DOHRobot extends Applet{
 	}
 
 	private boolean confirm(final String s){
-		return ((Boolean) AccessController.doPrivileged(new PrivilegedAction(){
-			public Object run(){
-				return ((Boolean) window.eval("top.confirm(\"" + s + "\");"));
-			}
-		})).booleanValue();
+		// show a Java confirm dialog.
+		// Mac seems to lock up when showing a JS confirm from Java.
+		//return JOptionPane.showConfirmDialog(this, s, "doh.robot", JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION);
+		JOptionPane pane = new JOptionPane(s, JOptionPane.DEFAULT_OPTION, JOptionPane.OK_CANCEL_OPTION);
+		JDialog dialog = pane.createDialog(this, "doh.robot");
+		dialog.setLocationRelativeTo(this);
+		dialog.show();
+		return ((Integer)pane.getValue()).intValue()==JOptionPane.OK_OPTION;
 	}
 
 	// mouse discovery code
