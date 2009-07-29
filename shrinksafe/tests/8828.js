@@ -2,17 +2,17 @@ var result = [], string_tests;
 
 (function(){
 	// testing string munging
-	
+
 	var n = "c";
 	result.push("a" + "b", "a" + n);
-	
+
 	var ll = "+";
 	result.push(ll);
-	
+
 	var color = "red";
 	var f = "The" + "Quick" + color + "Fox";
 	result.push(f);
-	
+
 	var h = 4;
 	var multiline = "this" +
 		"is" + "a" + "test"
@@ -41,7 +41,11 @@ var result = [], string_tests;
 		"t" + "e" + "s" + "t",
 		"t" + "e" + "s" + c + "t",
 		// weirdest example imaginable?:
-		'"slightly"+"off"'
+		'"slightly"+"off"',
+		// fail:
+		!"a" + "b",
+		(!"a") + "b",
+		!("a") + "b"
 	];
 
 	string_tests = function(){

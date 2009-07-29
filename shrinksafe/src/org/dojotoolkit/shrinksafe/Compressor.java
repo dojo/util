@@ -135,17 +135,25 @@ public class Compressor {
                  }
                  continue;
              case Token.STRING:
-                 StringBuffer buf = new StringBuffer();
-                 i--;
-                 do {
-                    i++;
-                    i = printSourceString(encodedSource, i + 1, false, buf, escapeUnicode);
-                 } while(Token.ADD == encodedSource.charAt(i) &&
-                   Token.STRING == getNext(encodedSource, length, i));
-                 result.append('"');
-                 result.append(escapeString(buf.toString(), escapeUnicode));
-                 result.append('"');
-                 
+
+// NOTE: this is the disabled "string munging" code provided in bugs.dojotoolkit.org/ticket/8828
+// simply uncomment this block, and run the build.sh script located in the root shrinksafe folder.
+// there is a far-egde-case this is deemed unsafe in, so is entirely disabled for sanity of devs.
+//
+//                 StringBuffer buf = new StringBuffer();
+//                 i--;
+//                 do {
+//                    i++;
+//                    i = printSourceString(encodedSource, i + 1, false, buf, escapeUnicode);
+//                 } while(Token.ADD == encodedSource.charAt(i) &&
+//                   Token.STRING == getNext(encodedSource, length, i));
+//                 result.append('"');
+//                 result.append(escapeString(buf.toString(), escapeUnicode));
+//                 result.append('"');
+//
+// now comment out this line to complete the patch:
+                 i = printSourceString(encodedSource, i + 1, true, result, escapeUnicode); 
+
                  continue;
              case Token.NUMBER:
                  i = printSourceNumber(encodedSource, i + 1, result);

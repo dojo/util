@@ -89,6 +89,13 @@ try{
 		
 		function mungeStrings(t){
 			
+			// this test is skipped intentionally. You must manually enabled the 
+			// code in Compressor.java which enables this functionality. The functionality
+			// is not considered completely "safe" and thus has been disabled.
+			// simply uncomment the block in Compressor.java to reinstate functionality. 
+			// original patch came under [ccla]. See bugs.dojotoolkit.org/ticket/8828
+			return; 
+			
 			var src = shrinksafe.tests.module.loader("8828.js");
 			
 			t.t(src.compressed.indexOf("ab") > -1); // basic test
@@ -115,7 +122,9 @@ try{
 				"test \"mixed\" andmunge",
 				"test",
 				"tesbart",
-				"\"slightly\"+\"off\""
+				"\"slightly\"+\"off\"",
+				// fails:
+				"falseb", "falseb", "falseb"
 			];
 			
 			var data = string_tests();
