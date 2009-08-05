@@ -667,7 +667,8 @@ doh.is = doh.assertEqual = function(/*Object*/ expected, /*Object*/ actual, /*St
 	if(arguments.length < 2){ 
 		throw doh._AssertFailure("assertEqual failed because it was not passed 2 arguments"); 
 	} 
-	if((expected === actual)||(expected == actual)||( isNaN(expected) && isNaN(actual) )){ 
+	if((expected === actual)||(expected == actual)||
+				( typeof expected == "number" && typeof actual == "number" && isNaN(expected) && isNaN(actual) )){ 
 		return true;
 	}
 	if(	(this._isArray(expected) && this._isArray(actual))&&
