@@ -7,18 +7,19 @@ shrinksafe.tests.module.getContents = function(path){
 	return readFile(path); // String
 }
 
-shrinksafe.tests.module.compress = function(source){
+shrinksafe.tests.module.compress = function(source, stripConsole){
 	// summary: Shorthand to compress some String version of JS code
-	return new String(Packages.org.dojotoolkit.shrinksafe.Compressor.compressScript(source, 0, 1)).toString();
+	return new String(Packages.org.dojotoolkit.shrinksafe.Compressor.compressScript(source, 0, 1, stripConsole)).toString();
 }
 
-shrinksafe.tests.module.loader = function(path){
+
+shrinksafe.tests.module.loader = function(path, stripConsole){
 	// summary: Simple function to load and compress some file. Returns and object
 	//	 with 'original' and 'compressed' members, respectively. 
 	var s = shrinksafe.tests.module.getContents(path);
 	return {
 		original: s, 
-		compressed: shrinksafe.tests.module.compress(s)
+		compressed: shrinksafe.tests.module.compress(s, stripConsole)
 	};
 }
 
@@ -27,7 +28,7 @@ try{
 	[
 		function forwardReference(t){
 			
-			var src = shrinksafe.tests.module.loader("3241.js");
+			var src = shrinksafe.tests.module.loader("3241.js", null);
 
 			t.assertTrue(src.original.length > src.compressed.length);
 			t.assertTrue(src.compressed.indexOf("test") == -1)
@@ -38,7 +39,7 @@ try{
 		},
 
 		function nestedReference(t){
-			var src = shrinksafe.tests.module.loader("5303.js");
+			var src = shrinksafe.tests.module.loader("5303.js", null);
 			
 			t.assertTrue(src.original.length > src.compressed.length);
 			t.assertTrue(src.compressed.indexOf("say_hello") == -1)
@@ -55,7 +56,7 @@ try{
 		function varConflict(t){
 			// ensuring a shrunken variable won't overwrite an existing variable 
 			// name, regardless of scope.
-			var src = shrinksafe.tests.module.loader("8974.js");
+			var src = shrinksafe.tests.module.loader("8974.js", null);
 
 			t.assertTrue(src.original.length > src.compressed.length);
 			t.assertTrue(src.compressed.indexOf("variabletwo") == -1)
@@ -67,7 +68,7 @@ try{
 		
 		function varlists(t){
 			// test to ensure var a, b, c; always works
-			var src = shrinksafe.tests.module.loader("1768.js");
+			var src = shrinksafe.tests.module.loader("1768.js", null);
 			
 			// ensure the things we expect to hide are hidden
 			t.t(src.compressed.indexOf("superlong") == -1);
@@ -81,9 +82,61 @@ try{
 			
 		},
 		
+		function stripConsoleNormal(t){
+			var src = shrinksafe.tests.module.loader("stripconsole.js", "normal");
+
+			t.assertTrue(src.compressed.indexOf("console.debug(\"debug here!\"") == -1)
+			t.assertTrue(src.compressed.indexOf("console.warn(\"warn here!\")") != -1)
+			t.assertTrue(src.compressed.indexOf("console.error(\"error here!\")") != -1)
+
+			eval(src.compressed);
+			// make sure expected output occurs.
+			t.assertEqual("WARN: warn here!ERROR: error here!notconsole debug here!notconsole warn here!", result);
+			delete result;
+		},
+
+		function stripConsoleWarns(t){
+			var src = shrinksafe.tests.module.loader("stripconsole.js", "warn");
+
+			t.assertTrue(src.original.length > src.compressed.length);
+			t.assertTrue(src.compressed.indexOf("console.debug(\"debug here!\"") == -1)
+			t.assertTrue(src.compressed.indexOf("console.warn(\"warn here!\")") == -1)
+			t.assertTrue(src.compressed.indexOf("console.error(\"error here!\")") != -1)
+
+			eval(src.compressed);
+			// make sure expected output occurs.
+			t.assertEqual("ERROR: error here!notconsole debug here!notconsole warn here!", result);
+			delete result;
+		},
+
+		function stripConsoleAll(t){
+			var src = shrinksafe.tests.module.loader("stripconsole.js", "all");
+
+			t.assertTrue(src.original.length > src.compressed.length);
+			t.assertTrue(src.compressed.indexOf("console.debug(\"debug here!\"") == -1)
+			t.assertTrue(src.compressed.indexOf("console.warn(\"warn here!\")") == -1)
+			t.assertTrue(src.compressed.indexOf("console.error(\"error here!\")") == -1)
+
+			eval(src.compressed);
+			// make sure expected output occurs.
+			t.assertEqual("notconsole debug here!notconsole warn here!", result);
+			delete result;
+		},
+
+		function stripConsoleComplex(t){
+			var src = shrinksafe.tests.module.loader("stripcomplex.js", "normal");
+
+			t.assertTrue(src.original.length > src.compressed.length);
+
+			eval(src.compressed);
+			// make sure expected output occurs.
+			t.assertEqual("ERROR: wooosome \\ dodgy \" characters *$!?//3-3fn saw arg 'wooo'.ERROR: Error return statement.", result);
+			delete result;
+		},
+
 		function debuggerCall(t){
 			// make sure we don't die when we find a debugger; statement 
-			var src = shrinksafe.tests.module.loader("9444.js");
+			var src = shrinksafe.tests.module.loader("9444.js", null);
 			t.t(src.compressed.indexOf("debugger") > -1);
 		},
 		
@@ -134,8 +187,6 @@ try{
 			
 			delete string_tests;
 		}
-		
-		
 	]);
 }catch(e){
 	doh.debug(e);

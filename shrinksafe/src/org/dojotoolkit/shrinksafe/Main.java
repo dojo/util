@@ -54,6 +54,7 @@ public class Main {
 	protected static ToolErrorReporter errorReporter;
 	protected static int exitCode = 0;
 	protected static boolean escapeUnicode = false; 
+	protected static String stripConsole = null;
 
 	static {
 		global.initQuitAction(new IProxy(IProxy.SYSTEM_EXIT, null));
@@ -162,6 +163,19 @@ public class Main {
 			else if (arg.equals("-escape-unicode")) {
 				escapeUnicode = true;
 			}
+			else if (arg.equals("-stripConsole")) {
+				if (i >= (args.length-1)) {
+					usageError = getMessage("msg.shell.stripConsoleMissingArg");
+				} else {
+					stripConsole = args[++i];
+					if (!stripConsole.equals("normal") &&
+							!stripConsole.equals("warn") &&
+							!stripConsole.equals("all")) {
+						usageError = getMessage("msg.shell.stripConsoleInvalid");
+					}
+				}
+			}
+
 		}
 
 		// print error and usage message
@@ -184,7 +198,7 @@ public class Main {
 			for (int i=0; i < files.length; i++) {
 				try {
 					String source = (String)readFileOrUrl(files[i], true);
-					cout.append(Compressor.compressScript(source, 0, 1, escapeUnicode));
+					cout.append(Compressor.compressScript(source, 0, 1, escapeUnicode, stripConsole));
 				} catch(IOException ex) {
 					// continue processing files
 				}
@@ -194,7 +208,7 @@ public class Main {
 			// Convert to String using the default encoding
 			String source = new String(data);
 			if (source != null) {
-				cout.append(Compressor.compressScript(source, 0, 1, escapeUnicode));
+				cout.append(Compressor.compressScript(source, 0, 1, escapeUnicode, stripConsole));
 			}
 		}
 

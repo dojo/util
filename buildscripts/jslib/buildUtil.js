@@ -50,7 +50,7 @@ buildUtil.DojoBuildOptions = {
 			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
 			+ "Dojo Shrinksafe will be used on the files, and line returns will be removed. "
 			+ "If \"shrinksafe.keepLines\" is specified, then Dojo Shrinksafe will be used "
-			+ "on the files, and line returns will be preserved."
+			+ "on the files, and line returns will be preserved.  See also \"stripConsole\"."
 	},
 	"layerOptimize": {
 		defaultValue: "shrinksafe",
@@ -77,14 +77,12 @@ buildUtil.DojoBuildOptions = {
 	},
 	
 	"stripConsole": {
-		defaultValue: "",
+		defaultValue: undefined,
 		helpText: "Strips console method calls from JS source. Applied to layers and individual modules "
-			+ "resource files. Valid values are \"normal\" (strips all but console.warn and console.error "
-			+ "calls), \"all\" (strips all console calls), \"normal,warn\" (strips all but console.error "
-			+ "calls), \"normal,error\" (strips all but console.warn errors). WARNING: stripConsole is "
-			+ "regexp-based and could cause code side effects. Make sure to only "
-			+ "call console methods on their own line, not as part of an expression and always be sure "
-			+ "to use braces around code blocks that have console calls (like if/else)."
+			+ "resource files. Valid values are \"none\" (leaves all console calls alone, same as "
+			+ "default \"\"), \"normal\" (strips all but console.warn and console.error calls), "
+			+ "\"warn\" (strips all but console.error calls), \"all\" (strips all console calls).  "
+			+ "NOTE: only has effect if optimize includes use of shrinksafe."
 	},
 
 	"copyTests": {
@@ -233,6 +231,16 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 		logger.info("NOTE: expandProvide not compatible with xdomain builds. Ignoring expandProvide option.");
 		kwArgs.expandProvide = false;
 	}
+	
+	//Notify on incompatible options.
+	if(kwArgs.optimize && kwArgs.optimize != "shrinksafe" && kwArgs.stripConsole){
+		logger.info("NOTE: stripConsole is only supported for an optimize=shrinksafe value.");
+	}
+	if(kwArgs.layerOptimize && kwArgs.layerOptimize != "shrinksafe" && kwArgs.stripConsole){
+		logger.info("layerOPtimize: [" + kwArgs.layerOptimize + "]");
+		logger.info("NOTE: stripConsole is only supported for an layerOptimize=shrinksafe value.");
+	}
+
 	return kwArgs;
 }
 
@@ -1185,9 +1193,30 @@ buildUtil.convertArrayToObject = function(/*Array*/ary){
 	return result; //Object
 }
 
-buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileContents, /*String*/copyright, /*String*/optimizeType){
+buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileContents, /*String*/copyright, /*String*/optimizeType, /*String*/stripConsole){
 	//summary: either strips comments from string or compresses it.
 	copyright = copyright || "";
+
+	// understand stripConsole from dojo 1.3 and before
+	if (stripConsole == "none") {
+		stripConsole = undefined;
+	} else if (stripConsole == "normal,warn") {
+		//logger.info("Converting stripConsole "normal,warn" to \"warn\"
+		logger.warn("stripConsole value \"normal,warn\" replaced with \"warn\".  Please update your build scripts.");
+		stripConsole = "warn";
+	} else if (stripConsole == "normal,error") {
+		logger.warn("stripConsole value \"normal,error\" replaced with \"all\".  Please update your build scripts.");
+		stripConsole = "all";
+	}
+
+	// sanity check stripConsole
+	if (stripConsole != undefined && !stripConsole.match(/normal|warn|all/)) {
+		throw "Invalid stripConsole provided (" + stripConsole + ")";
+	}
+	if (stripConsole == undefined) {
+		// java will receive undefined as "undefined" but null as null.
+		stripConsole = null;
+	}
 
 	//Use rhino to help do minifying/compressing.
 	var context = Packages.org.mozilla.javascript.Context.enter();
@@ -1197,7 +1226,7 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 
 		if(optimizeType.indexOf("shrinksafe") == 0 || optimizeType == "packer"){
 			//Apply compression using custom compression call in Dojo-modified rhino.
-			fileContents = new String(Packages.org.dojotoolkit.shrinksafe.Compressor.compressScript(fileContents, 0, 1));
+			fileContents = new String(Packages.org.dojotoolkit.shrinksafe.Compressor.compressScript(fileContents, 0, 1, stripConsole));
 			if(optimizeType.indexOf(".keepLines") == -1){
 				fileContents = fileContents.replace(/[\r\n]/g, "");
 			}
@@ -1260,7 +1289,7 @@ buildUtil.optimizeJsDir = function(/*String*/startDir, /*RegeExp*/optimizeIgnore
 				//Do comment removal.
 				if(optimizeType){
 					try{
-						fileContents = buildUtil.optimizeJs(fileList[i], fileContents, copyright, optimizeType);
+						fileContents = buildUtil.optimizeJs(fileList[i], fileContents, copyright, optimizeType, stripConsole);
 					}catch(e){
 						logger.error("Could not strip comments for file: " + fileList[i] + ", error: " + e);
 					}
@@ -1269,14 +1298,6 @@ buildUtil.optimizeJsDir = function(/*String*/startDir, /*RegeExp*/optimizeIgnore
 					fileContents = copyright + fileContents;
 				}
 
-				if(stripConsole){
-					try{
-						fileContents = buildUtil.stripConsole(fileContents, stripConsole);
-					}catch(e){
-						logger.error("Could not strip console calls for file: " + fileList[i] + ", error: " + e);
-					}
-				}
-				
 				//Write out the file with appropriate copyright.
 				fileUtil.saveUtf8File(fileList[i], fileContents);
 			}
@@ -1863,30 +1884,6 @@ buildUtil.insertSymbols = function(/*String*/startDir, /*Object*/kwArgs){
 			fileUtil.saveFile(startDir + "/symboltable.txt", symbolText);
 		}
 	}
-}
-
-buildUtil.stripConsole = function(/*String*/fileContents, /*String*/stripConsole){
-	//summary: removes console.* calls from the fileContents.
-	//stripConsole can have values of "normal", "all" or "normal,warn" or "normal,error"
-	if(stripConsole){
-		var methods = "assert|count|debug|dir|dirxml|group|groupEnd|info|profile|profileEnd|time|timeEnd|trace|log";
-		if(stripConsole.indexOf("all") != -1){
-			methods += "|warn|error";
-		}else{
-			if(stripConsole.indexOf("warn") != -1){
-				methods += "|warn";
-			}
-			if(stripConsole.indexOf("error") != -1){
-				methods += "|error";
-			}
-		}
-		var regexp = new RegExp("console\\.(" + methods + ")\\s*\\(", "g");
-		
-		var results = buildUtil.extractMatchedParens(regexp, fileContents, true);
-		fileContents = results ? results[0] : fileContents;
-	}
-
-	return fileContents;
 }
 
 buildUtil.extractMatchedParens = function(/*RegExp*/ regexp, /*String*/fileContents, /*Boolean*/removeTrailingComma){

@@ -112,7 +112,7 @@ function release(){
 	//Do this after the copy step above. If it is done as part
 	//of that loop, then dojo path gets set first usually, and any prefixes
 	//after it are wrong.
-	for(var i = 0; i < prefixes.length; i++){
+	for(i = 0; i < prefixes.length; i++){
 		prefixes[i][1] = kwArgs.releaseDir + "/"  + prefixes[i][0].replace(/\./g, "/");
 	}
 
@@ -136,7 +136,7 @@ function release(){
 		kwArgs.buildLayers += ",";
 		kwArgs.buildLayers = kwArgs.buildLayers.replace(/\\/g, "/");
 	}
-	for(var i = 0; i < result.length; i++){
+	for(i = 0; i < result.length; i++){
 		var currentLayer = result[i];
 		var layerName = currentLayer.layerName;
 		var layerLegalText = (currentLayer.copyrightFile ? fileUtil.readFile(currentLayer.copyrightFile) : defaultLegalText);
@@ -177,9 +177,6 @@ function release(){
 		//Flatten resources
 		fileContents = i18nUtil.flattenLayerFileBundles(fileName, fileContents, kwArgs);
 
-		//Remove console statements if desired
-		fileContents = buildUtil.stripConsole(fileContents, kwArgs.stripConsole);
-
 		//Save uncompressed file.
 		var uncompressedFileName = fileName + ".uncompressed.js";
 		var uncompressedContents = layerLegalText + fileContents;
@@ -192,7 +189,7 @@ function release(){
 		//"dojo" gets converted to a shortened name.
 		if(kwArgs.internStrings){
 			logger.info("Interning strings for file: " + fileName);
-			var prefixes = dependencies["prefixes"] || [];
+			prefixes = dependencies["prefixes"] || [];
 			var skiplist = dependencies["internSkipList"] || [];
 			buildUtil.internTemplateStringsInFile(uncompressedFileName, dojoReleaseDir, prefixes, skiplist);
 
@@ -204,14 +201,14 @@ function release(){
 
 		//Save compressed file.
 		logger.trace("Optimizing (" + kwArgs.layerOptimize + ") file: " + fileName);
-		var compressedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, kwArgs.layerOptimize);
+		var compressedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, kwArgs.layerOptimize, kwArgs.stripConsole);
 		fileUtil.saveUtf8File(fileName, compressedContents);
 
 	}
 
 	//Save the dependency lists to build.txt
 	var buildText = "Files baked into this build:" + lineSeparator;
-	for(var i = 0; i < result.length; i++){
+	for(i = 0; i < result.length; i++){
 		buildText += lineSeparator + result[i].layerName + ":" + lineSeparator;
 		buildText += result[i].depList.join(lineSeparator) + lineSeparator;
 	}
@@ -223,8 +220,8 @@ function release(){
 	var layerIgnoreRegExp = new RegExp("(" + layerIgnoreString + ")");
 	var nlsIgnoreRegExp = new RegExp("\\/nls\\/(" + nlsIgnoreString + ")_");
 
-	for(var i = 0; i < prefixes.length; i++){
-		var copyrightText = null;
+	for(i = 0; i < prefixes.length; i++){
+		copyrightText = null;
 		if(prefixes[i][2]){
 			copyrightText = fileUtil.readFile(prefixes[i][2]);
 		}

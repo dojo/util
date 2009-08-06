@@ -36,7 +36,7 @@ function readFile(/*String*/path, /*String?*/encoding){
 
 //TODO: inlining this function since the new shrinksafe.jar is used, and older
 //versions of Dojo's buildscripts are not compatible.
-function optimizeJs(/*String fileName*/fileName, /*String*/fileContents, /*String*/copyright, /*String*/optimizeType){
+function optimizeJs(/*String fileName*/fileName, /*String*/fileContents, /*String*/copyright, /*String*/optimizeType, /*String*/stripConsole){
 	//summary: either strips comments from string or compresses it.
 	copyright = copyright || "";
 
@@ -49,7 +49,7 @@ function optimizeJs(/*String fileName*/fileName, /*String*/fileContents, /*Strin
 		// the "packer" type is now just a synonym for shrinksafe
 		if(optimizeType.indexOf("shrinksafe") == 0 || optimizeType == "packer"){
 			//Apply compression using custom compression call in Dojo-modified rhino.
-			fileContents = new String(Packages.org.dojotoolkit.shrinksafe.Compressor.compressScript(fileContents, 0, 1));
+			fileContents = new String(Packages.org.dojotoolkit.shrinksafe.Compressor.compressScript(fileContents, 0, 1, stripConsole));
 			if(optimizeType.indexOf(".keepLines") == -1){
 				fileContents = fileContents.replace(/[\r\n]/g, "");
 			}
@@ -197,7 +197,7 @@ build = {
 		}
 		
 		//Minify the contents
-		return optimizeJs(layerName, layerContents, layerLegalText, kwArgs.layerOptimize);
+		return optimizeJs(layerName, layerContents, layerLegalText, kwArgs.layerOptimize, "");
 
 	}
 };

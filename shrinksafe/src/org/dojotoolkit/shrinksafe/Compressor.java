@@ -30,6 +30,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Stack;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.mozilla.javascript.CompilerEnvirons;
 import org.mozilla.javascript.Decompiler;
@@ -64,6 +66,7 @@ public class Compressor {
     		                       UintMap properties, 
     		                       ScriptOrFnNode parseTree, 
     		                       boolean escapeUnicode,
+    		                       String stripConsole,
     		                       TokenMapper tm,
     		                       Map replacedTokensLookup){
          int indent = properties.getInt(Decompiler.INITIAL_INDENT_PROP, 0);
@@ -72,7 +75,26 @@ public class Compressor {
          if (indentGap < 0) throw new IllegalArgumentException();
          int caseGap = properties.getInt(Decompiler.CASE_GAP_PROP, 2);
          if (caseGap < 0) throw new IllegalArgumentException();
+
+         String stripConsoleRegex = "assert|count|debug|dir|dirxml|group|groupEnd|info|profile|profileEnd|time|timeEnd|trace|log";
+         if (stripConsole == null) {
+        	 // may be null if unspecified on Main cmd line
+        	 stripConsoleRegex = null;
+         } else if (stripConsole.equals("normal")) {
+        	 // leave default
+         } else if (stripConsole.equals("warn")) {
+        	 stripConsoleRegex += "|warn";
+         } else if (stripConsole.equals("all")) {
+        	 stripConsoleRegex += "|warn|error";
+         } else {
+        	 throw new IllegalArgumentException("unrecognised value for stripConsole: " + stripConsole + "!");
+         }
          
+         Pattern stripConsolePattern = null;
+         if (stripConsoleRegex != null) {
+        	 stripConsolePattern = Pattern.compile(stripConsoleRegex);
+         }
+
          StringBuffer result = new StringBuffer();
          boolean justFunctionBody = (0 != (flags & Decompiler.ONLY_BODY_FLAG));
          boolean toSource = (0 != (flags & Decompiler.TO_SOURCE_FLAG));
@@ -83,6 +105,14 @@ public class Compressor {
          boolean primeFunctionNesting = false;
          boolean inArgsList = false;
          boolean primeInArgsList = false;
+
+         boolean discardingConsole = false; // control skipping "console.stuff()"
+         int     consoleParenCount = 0; // counter for parenthesis counting
+         StringBuffer discardMe = new StringBuffer(); // throwaway buffer
+         ReplacedTokens dummyTokens = new ReplacedTokens(new HashMap(), new int[]{}, replacedTokensLookup, null);
+         int lastMeaningfulToken = Token.SEMI;
+         int lastMeaningfulTokenBeforeConsole = Token.SEMI;
+
          int topFunctionType;
          if (encodedSource.charAt(i) == Token.SCRIPT) {
              ++i;
@@ -113,11 +143,110 @@ public class Compressor {
            if(i>0){
                prevToken = encodedSource.charAt(i-1);
            }
+            if (discardingConsole) {
+                // while we are skipping a console command, discard tokens
+                int thisToken = encodedSource.charAt(i);
+                /* Logic for controlling state of discardingConsole */
+                switch (thisToken) {
+                case Token.LP:
+                    consoleParenCount++;
+                    break;
+                case Token.RP:
+                    consoleParenCount--;
+                    if (consoleParenCount == 0) {
+                        // paren count fell to zero, must be end of console call
+                        discardingConsole = false;
+                        
+                        if (i < (length - 1)) {
+                        	int nextToken = getNext(encodedSource, length, i);
+
+                        	if ((lastMeaningfulTokenBeforeConsole != Token.SEMI &&
+                        			lastMeaningfulTokenBeforeConsole != Token.LC &&
+                        			lastMeaningfulTokenBeforeConsole != Token.RC) ||
+                        			nextToken != Token.SEMI) {
+                        		// Either the previous or the following token
+                        		// may use our return value, insert undefined
+                        		// e.g. true ? console.log("bizarre") : (bar = true);
+                        		result.append("undefined");
+                        	} else {
+                            	if (Token.SEMI == nextToken) {
+                            		// munch following semicolon
+                            		i++;
+                            	}
+                        	}
+						}
+						if ((i < (length - 1))
+								&& (Token.EOL == getNext(encodedSource, length, i))) {
+							// as a nicety, munch following linefeed
+							i++;
+						}
+                    }
+                    break;
+                }
+                /*
+                 * advance i - borrow code from later switch statements (could
+                 * mingle this whole discardingConsole block in with rest of
+                 * function but it would be _ugly_) Use discardMe in place of
+                 * result, so we don't use the processed source Specific case
+                 * blocks for all source elements > 1 char long
+                 */
+                switch (thisToken) {
+                case Token.NAME:
+                case Token.REGEXP:
+                    int jumpPos = getSourceStringEnd(encodedSource, i + 1,
+                            escapeUnicode);
+                    if (Token.OBJECTLIT == encodedSource.charAt(jumpPos)) {
+                        i = printSourceString(encodedSource, i + 1, false,
+                                discardMe, escapeUnicode);
+                    } else {
+                        i = tm.sourceCompress(encodedSource, i + 1, false,
+                                discardMe, prevToken, inArgsList, braceNesting,
+                                dummyTokens);
+                    }
+                    break;
+                case Token.STRING:
+                    i = printSourceString(encodedSource, i + 1, true,
+                            discardMe, escapeUnicode);
+                    break;
+                case Token.NUMBER:
+                    i = printSourceNumber(encodedSource, i + 1, discardMe);
+                    break;
+                default:
+                    // all plain tokens (no data to skip)
+                    i++;
+                }
+                // while discarding console, avoid the normal processing
+                continue;
+            }
+
            // System.out.println(Token.name(getNext(source, length, i)));
-           switch(encodedSource.charAt(i)) {
+           int thisToken = encodedSource.charAt(i);
+
+           switch(thisToken) {
              case Token.NAME:
              case Token.REGEXP:  // re-wrapped in '/'s in parser...
                  int jumpPos = getSourceStringEnd(encodedSource, i+1, escapeUnicode);
+                 if (stripConsolePattern != null && thisToken == Token.NAME) {
+                	 // Check to see if this is a console.something() call that we
+                	 //  care about, if so switch on discardingConsole
+                     int nextTokenAt = tm.sourceCompress(encodedSource, i + 1, false, discardMe, prevToken, 
+                             inArgsList, braceNesting, dummyTokens);
+                	 if (encodedSource.substring(i+2, i+2+encodedSource.charAt(i+1)).equals("console") &&
+                         (encodedSource.charAt(nextTokenAt) == Token.DOT)) {
+                		 // Find the name of the console method and check it
+                    	 int afterFnName = printSourceString(encodedSource, nextTokenAt+2, false, discardMe, escapeUnicode);
+                    	 Matcher m = stripConsolePattern.matcher(encodedSource.substring(nextTokenAt + 3, afterFnName));
+                    	 if (m.matches()) {
+                    		 // Must be an open parenthesis e.g. "console.log("
+                    		 if (encodedSource.charAt(afterFnName) == Token.LP) {
+		                		 discardingConsole = true;
+		                		 consoleParenCount = 0;
+		                		 lastMeaningfulTokenBeforeConsole = lastMeaningfulToken;
+		                		 continue;
+                    		 }
+                    	 }
+                     }
+                 }
                  if(Token.OBJECTLIT == encodedSource.charAt(jumpPos)){
                      i = printSourceString(encodedSource, i + 1, false, result, escapeUnicode);
                  }else{
@@ -577,6 +706,9 @@ public class Compressor {
                  // If we don't know how to decompile it, raise an exception.
                  throw new RuntimeException();
              }
+             if (thisToken != Token.EOL) {
+                 lastMeaningfulToken = thisToken;
+             }
              ++i;
          }
          if (!toSource) {
@@ -589,9 +721,9 @@ public class Compressor {
                  result.append(')');
              }
          }
-         return result.toString();	
+         return result.toString();
     }
-    
+
     /**
      * Collect the replaced tokens and store them in a lookup table for the next
      * source pass. 
@@ -831,15 +963,15 @@ public class Compressor {
         return (sb == null) ? s : sb.toString();
     }
     
-    public static final String compressScript(String source, int indent, int lineno) {
-    	return compressScript(source, indent, lineno, false);
+    public static final String compressScript(String source, int indent, int lineno, String stripConsole) {
+    	return compressScript(source, indent, lineno, false, stripConsole);
     }
     
-    public static final String compressScript(String source, int indent, int lineno, boolean escapeUnicode) {
-    	return compressScript(source, indent, lineno, false, null);
+    public static final String compressScript(String source, int indent, int lineno, boolean escapeUnicode, String stripConsole) {
+    	return compressScript(source, indent, lineno, false, stripConsole, null);
     }
         
-    public static final String compressScript(String source, int indent, int lineno, boolean escapeUnicode, StringBuffer debugData) {
+    public static final String compressScript(String source, int indent, int lineno, boolean escapeUnicode, String stripConsole, StringBuffer debugData) {
         CompilerEnvirons compilerEnv = new CompilerEnvirons();
 
         Parser parser = new Parser(compilerEnv, compilerEnv.getErrorReporter());
@@ -857,7 +989,7 @@ public class Compressor {
         Map replacedTokensLookup = collectReplacedTokens(encodedSource, escapeUnicode, tm);
         tm.reset();
         
-        String compressedSource = compress(encodedSource, 0, properties, tree, escapeUnicode, tm, replacedTokensLookup);
+        String compressedSource = compress(encodedSource, 0, properties, tree, escapeUnicode, stripConsole, tm, replacedTokensLookup);
         if (debugData != null) {
         	debugData.append("[\n");
         	int count = 1;

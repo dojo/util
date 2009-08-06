@@ -1,4 +1,4 @@
-// package system gunk. 																	   e
+// package system gunk.
 try{
 	dojo.provide("doh.runner");
 }catch(e){
