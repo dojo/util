@@ -1462,7 +1462,7 @@ buildUtil.flattenCss = function(/*String*/fileName, /*String*/fileContents, /*St
 	});
 }
 
-buildUtil.guardProvideRegExpString = "dojo\\.provide\\(([\\'\\\"][^\\'\\\"]*[\\'\\\"])\\)";
+buildUtil.guardProvideRegExpString = "dojo\\s*\\.\\s*provide\\s*\\(\\s*([\\'\\\"][^\\'\\\"]*[\\'\\\"])\\s*\\)";
 buildUtil.guardProvideRegExp = new RegExp(buildUtil.guardProvideRegExpString);
 buildUtil.guardProvideRegExpGlobal = new RegExp(buildUtil.guardProvideRegExpString, "g");
 
