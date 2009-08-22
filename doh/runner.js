@@ -1377,7 +1377,12 @@ tests = doh;
 				rhino: ["doh._rhinoRunner"],
 				spidermonkey: ["doh._rhinoRunner"]
 			});
-			var _shouldRequire = dojo.isBrowser ? (dojo.global == dojo.global["parent"]) : true;
+			try{
+				var _shouldRequire = dojo.isBrowser ? (dojo.global == dojo.global["parent"] || !Boolean(dojo.global.parent.doh) ) : true;
+			}catch(e){
+				//can't access dojo.global.parent.doh, then we need to do require
+				_shouldRequire = true;
+			}
 			if(_shouldRequire){
 				if(dojo.isBrowser){
 					dojo.addOnLoad(function(){

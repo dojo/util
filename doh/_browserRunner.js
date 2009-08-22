@@ -3,11 +3,15 @@ if(window["dojo"]){
 }
 
 // FIXME: need to add prompting for monkey-do testing
-// FIXME: need to implement progress bar
-// FIXME: need to implement errors in progress bar
 
 (function(){
-	if(window.parent == window){
+	try{
+		var topdog = (window.parent == window) || !Boolean(window.parent.doh);
+	}catch(e){
+		//can't access window.parent.doh, then consider ourselves as topdog
+		topdog=true;
+	}
+	if(topdog){
 		// we're the top-dog window.
 
 		// borrowed from Dojo, etc.
