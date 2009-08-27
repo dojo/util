@@ -1,5 +1,9 @@
 //Test file for the flattening of CSS files.
 //Run this file from the util/buildscripts/tests/css directory.
+
+//Example call to run the test:
+//java -classpath ../../../shrinksafe/js.jar org.mozilla.javascript.tools.shell.Main flattenTest.js
+
 load("../../jslib/logger.js");
 load("../../jslib/buildUtil.js");
 load("../../jslib/fileUtil.js");
