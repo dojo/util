@@ -142,7 +142,7 @@ function release(){
 		var layerLegalText = (currentLayer.copyrightFile ? fileUtil.readFile(currentLayer.copyrightFile) : defaultLegalText);
 		var fileName = dojoReleaseDir + currentLayer.layerName;
 		var fileContents = currentLayer.contents;
-		
+
 		//Build up string of files to ignore for the directory optimization step
 		var ignoreName = layerName.replace(/\.\.\//g, "");
 		var nameSegment = ignoreName.replace(/\.js$/, "");
@@ -170,7 +170,7 @@ function release(){
 		}
 
 		//Burn in xd path for dojo if requested, and only do this in dojo.xd.js.
-		if(layerName.match(/dojo\.xd\.js/) && kwArgs.xdDojoPath){
+		if(layerName == "dojo.xd.js" && kwArgs.xdDojoPath){
 			fileContents = buildUtilXd.setXdDojoConfig(fileContents, kwArgs.xdDojoPath);
 		}
 
@@ -203,7 +203,6 @@ function release(){
 		logger.trace("Optimizing (" + kwArgs.layerOptimize + ") file: " + fileName);
 		var compressedContents = buildUtil.optimizeJs(fileName, fileContents, layerLegalText, kwArgs.layerOptimize, kwArgs.stripConsole);
 		fileUtil.saveUtf8File(fileName, compressedContents);
-
 	}
 
 	//Save the dependency lists to build.txt
