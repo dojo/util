@@ -154,6 +154,14 @@ fileUtil.saveFile = function(/*String*/fileName, /*String*/fileContents, /*Strin
 	//summary: saves a file.
 	var outFile = new java.io.File(fileName);
 	var outWriter;
+	
+	var parentDir = outFile.getParentFile();
+	if(!parentDir.exists()){
+		if(!parentDir.mkdirs()){
+			throw "Could not create directory: " + parentDir.getAbsolutePath();
+		}
+	}
+	
 	if(encoding){
 		outWriter = new java.io.OutputStreamWriter(new java.io.FileOutputStream(outFile), encoding);
 	}else{
