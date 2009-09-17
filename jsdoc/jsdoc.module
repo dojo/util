@@ -1127,9 +1127,14 @@ function jsdoc_get_mixins(&$node, $type = NULL) {
   $resolved_mixins = array('prototype' => array(), 'instance' => array(), 'normal' => array());
   foreach ($node->jsdoc_mixins as $from => $mixins) {
     foreach ($mixins as $mixin) {
-      $mixin_node = jsdoc_object_node_load($mixin->location, $version);
+      $location = $mixin->location;
+      if (substr($location, -10) == '.prototype') {
+        $location = substr($location, 0, -10);
+      }
+      $mixin_node = jsdoc_object_node_load($location, $version);
       if ($mixin_node->nid) {
         $resolved_mixins[$from][] = (object)array(
+          'attached' => $node,
           'scope' => $mixin->scope,
           'node' => $mixin_node
         );
@@ -1702,17 +1707,15 @@ function jsdoc_child_node_view($node, $name) {
 function _jsdoc_resolve_mixins($node, $from) {
   $resolved_mixins = array();
 
+  $all_mixins = array();
   if ($from == 'prototype') {
-    $all_mixins = array();
     $prototype_chain = jsdoc_get_prototype_chain($node);
     foreach ($prototype_chain as $parent) {
       if (!$parent->nid) { continue; }
       $all_mixins[] = $parent;
     }
   }
-  else {
-    $all_mixins = array($node);
-  }
+  $all_mixins[] = $node;
 
   foreach ($all_mixins as $parent) {
     foreach (jsdoc_get_mixins($parent, $from) as $mixin) {
@@ -1723,6 +1726,7 @@ function _jsdoc_resolve_mixins($node, $from) {
       $resolved_mixins[] = $mixin;
     }
     $resolved_mixins[] = (object)array(
+      'attached' => $node,
       'scope' => 'prototype',
       'node' => $parent
     );
@@ -1766,6 +1770,7 @@ function jsdoc_get_oo_info(&$node, $child=NULL) {
     // Resolve prototype-level items
     foreach (_jsdoc_resolve_mixins($node, 'prototype') as $mixin) {
       $mixin_chain[] = (object)array(
+        'attached' => $mixin->attached,
         'scope' => 'prototype',
         'from' => $mixin->scope,
         'methods' => jsdoc_get_methods($mixin->node, $mixin->scope),
@@ -1775,7 +1780,16 @@ function jsdoc_get_oo_info(&$node, $child=NULL) {
       );
     }
 
-    $returned_mixin_chain = $mixin_chain;
+    $returned_mixin_chain = array();
+    $returned_mixin_titles = array();
+    foreach ($mixin_chain as $mixin) {
+      if ($mixin->in_prototype_chain || $mixin->attached->title == $node->title) {
+        if (!$returned_mixin_titles[$mixin->node->title]) {
+          $returned_mixin_titles[$mixin->node->title] = TRUE;
+          $returned_mixin_chain[] = $mixin;
+        }
+      }
+    }
 
     $mixin_chain[] = (object)array(
       'scope' => 'prototype',
@@ -1805,7 +1819,7 @@ function jsdoc_get_oo_info(&$node, $child=NULL) {
       'methods' => jsdoc_get_methods($node, 'instance'),
       'properties' => jsdoc_get_properties($node, 'instance'),
       'in_prototype_chain' => false,
-      'node' => $mixin
+      'node' => $node
     );
   }
 
