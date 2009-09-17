@@ -1,5 +1,6 @@
 <?php
 
+require_once('JavaScriptFunction.php');
 require_once('JavaScriptFunctionCall.php');
 require_once('JavaScriptAssignment.php');
 require_once('Destructable.php');
@@ -66,8 +67,8 @@ class JavaScriptStatements extends Destructable {
     }
   }
 
-  public function assignments($global_scope = FALSE) {
-    $assignments = $this->function_assignments = isset($this->function_assignments) ? $this->function_assignments : $this->resolve_something('resolve_assignments');
+  public function assignments($global_scope=FALSE, $into_functions=TRUE) {
+    $assignments = $this->function_assignments = isset($this->function_assignments) ? $this->function_assignments : $this->resolve_something('resolve_assignments', array(), !$into_functions);
     if ($global_scope) {
       $filtered = array();
       foreach ($assignments as $item) {
@@ -96,7 +97,7 @@ class JavaScriptStatements extends Destructable {
     }
   }
 
-  private function resolve_something($found_callback, $passed_args = array(), $somethings = array(), $statements = NULL, $parent = NULL) {
+  private function resolve_something($found_callback, $passed_args = array(), $seen_function=FALSE, $somethings = array(), $statements = NULL, $parent = NULL) {
     if (!$statements) {
       $statements = $this->statements;
     }
@@ -108,9 +109,18 @@ class JavaScriptStatements extends Destructable {
     foreach ($statements as $statement) {
       if (is_array($statement)) {
         foreach ($statement as $st) {
-          $somethings = $this->resolve_something($found_callback, $passed_args, $somethings, $st, NULL);
+          if (!$seen_function || $st->id != 'function') {
+            $somethings = $this->resolve_something($found_callback, $passed_args, $seen_function, $somethings, $st, NULL);
+          }
         }
         continue;
+      }
+
+      if ($statement->id == 'function') {
+        if ($seen_function) {
+          continue;
+        }
+        $seen_function = TRUE;
       }
 
       if ($something = call_user_func_array(array($this, $found_callback), array_merge(array($statement, $parent), $passed_args))) {
@@ -118,16 +128,16 @@ class JavaScriptStatements extends Destructable {
       }
 
       if ($statement->first) {
-        $somethings = $this->resolve_something($found_callback, $passed_args, $somethings, $statement->first, $statement);
+        $somethings = $this->resolve_something($found_callback, $passed_args, $seen_function, $somethings, $statement->first, $statement);
       }
       if ($statement->second) {
-        $somethings = $this->resolve_something($found_callback, $passed_args, $somethings, $statement->second, $statement);
+        $somethings = $this->resolve_something($found_callback, $passed_args, $seen_function, $somethings, $statement->second, $statement);
       }
       if ($statement->third) {
-        $somethings = $this->resolve_something($found_callback, $passed_args, $somethings, $statement->third, $statement);
+        $somethings = $this->resolve_something($found_callback, $passed_args, $seen_function, $somethings, $statement->third, $statement);
       }
       if (!empty($statement->block)) {
-        $somethings = $this->resolve_something($found_callback, $passed_args, $somethings, $statement->block, $statement);
+        $somethings = $this->resolve_something($found_callback, $passed_args, $seen_function, $somethings, $statement->block, $statement);
       }
     }
 

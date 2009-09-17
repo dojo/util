@@ -52,7 +52,6 @@ class DojoCommentBlock {
 
       $comment = preg_replace('%(^//\s*|^/\*\s*|\s*\*/$)%', '', $comment);
       foreach (explode("\n", $comment) as $line) {
-        $line = preg_replace('%^(\s*\*\s*)+%', '', $line); // if they have ' * multilines like this'
         if (preg_match($expression, $line, $match)) {
           if ($key && !empty($buffer)) {
             $this->swallow($blocks, $key, $buffer);

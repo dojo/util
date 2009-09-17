@@ -116,6 +116,7 @@ class JavaScriptSymbol extends Symbol {
       case 'literal':
       case 'operator':
       case 'this':
+      case 'unary':
         return new JavaScriptLiteral($this);
       }
     }

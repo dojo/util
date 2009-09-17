@@ -2,9 +2,12 @@
 
 # php generate.php
 # -- Runs everything in the modules directory
-# php generate.php custom custom2
+# php generate.php dojo
+# php generate.php dijit
+# php generate.php dojox
 # -- Runs only the module starting with custom, custom2, etc.
 # php generate.php --store=file
+# php generate.php --store=mysql --db_host=localhost --db_user=api --db_password=password --db_name=api
 # -- Specifies storage type. "file" and "resource" currently supported
 # php generate.php --serialize=xml,json
 # -- Comma-separated list of serializations. "xml" and "json" supported
@@ -34,10 +37,26 @@ $namespaces = array();
 $args = array();
 $kwargs = array();
 $clean = false;
+$db_host = 'localhost';
+$db_user = 'root';
+$db_password = '';
+$db_name = 'generate';
 foreach (array_slice($argv, 1) as $arg) {
   if ($arg{0} == '-') {
-    if (preg_match('%^--(outfile|store|serialize)=([^ ]+)$%', $arg, $match)) {
-      if ($match[1] == 'serialize') {
+    if (preg_match('%^--(outfile|store|serialize|db_host|db_user|db_password|db_name)=([^ ]+)$%', $arg, $match)) {
+      if ($match[1] == 'db_host') {
+        $db_host = $match[2];
+      }
+      elseif ($match[1] == 'db_user') {
+        $db_user = $match[2];
+      }
+      elseif ($match[1] == 'db_password') {
+        $db_password = $match[2];
+      }
+      elseif ($match[1] == 'db_name') {
+        $db_name == $match[2];
+      }
+      elseif ($match[1] == 'serialize') {
         foreach (explode(',', $match[2]) as $serialize_type) {
           $kwargs[$match[1]][$serialize_type] = true;
         }
@@ -227,6 +246,9 @@ foreach ($files as $set){
       if (!empty($content['mixins'][$scope])) {
         if (empty($node['mixins'][$scope])) {
           $node['mixins'][$scope] = array();
+        }
+        if (!is_array($content['mixins'][$scope])) {
+          print $content['mixins'][$scope];
         }
         $node['mixins'][$scope] = array_unique(array_merge($node['mixins'][$scope], $content['mixins'][$scope]));
       }

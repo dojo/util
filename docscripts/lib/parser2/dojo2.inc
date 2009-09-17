@@ -186,7 +186,7 @@ function dojo_get_contents($namespace, $file_name) {
     $root = NULL;
     if ($constructor = $arguments->getFunction(0)) {
       if ($assignment) {
-        Dojo::roll_out($constructor, $assignment, $output);
+        Dojo::roll_out($constructor, $assignment, FALSE, $output);
       }
     }
     else {
@@ -210,7 +210,7 @@ function dojo_get_contents($namespace, $file_name) {
                 }
               }
               else {
-                Dojo::roll_out($value, $full_name, $output);
+                Dojo::roll_out($value, $full_name, FALSE, $output);
                 $output[$full_name][$mixin ? 'attached' : 'prototype'] = $root;
               }
             }
@@ -254,58 +254,43 @@ function dojo_get_contents($namespace, $file_name) {
     }
     if ($mixin = $arguments->getObject(2)) {
       $keys = $block_keys = Dojo::$block_keys;
+      $new_keys = array();
       $constructors = array();
       // Remember that bad code can have multiple matching keys
       foreach ($mixin->values() as $key => $values) {
-        $keys[] = $key;
+        $new_keys[] = $key;
         $full_name = "$name.$key";
         foreach ($values as $value) {
           if ($value instanceof JavaScriptFunction) {
             if (in_array($key, array('constructor', 'preamble', 'postscript'))) {
-              $constructors[] = $value;
               $output[$full_name]['constructor'] = $key;
+              $output[$full_name]['prototype'] = $name;
+              $constructors[$full_name] = $value;
+              continue;
             }
           }
           elseif ($value->type() == 'variable') {
-            $output[$full_name]['alias'] = $value->value();
+            if ($full_name != $value->value()) {
+              $output[$full_name]['alias'] = $value->value();
+            }
             continue;
           }
 
-          Dojo::roll_out($value, $full_name, $output);
+          $new_keys = array_unique(array_merge($new_keys, Dojo::roll_out($value, $full_name, FALSE, $output, $new_keys)));
           $output[$full_name]['prototype'] = $name;
         }
       }
 
-      $constructors[] = $mixin; // Main mixin "wins"
-      foreach ($constructors as $object) {
-        $comments = new DojoCommentBlock($object->comments(), $keys, array('example'));
-        foreach ($comments->all() as $key => $text) {
-          if ($key == 'tags') {
-            if (empty($output[$name]['tags'])) {
-              $output[$name]['tags'] = array();
-            }
-            $output[$name]['tags'] = array_unique(array_merge($output[$name]['tags'], preg_split('%\s+%', trim($text))));
-          }
-          elseif ($key == 'example') {
-            if (empty($output[$name]['examples'])) {
-              $output[$name]['examples'] = $text;
-            }
-            else {
-              $output[$name]['examples'] = array_merge($output[$name]['examples'], $text);
-            }
-          }
-          elseif (in_array($key, $block_keys)) {
-            $output[$name][$key] = $text;
-          }
-          else {
-            $full_name = "$name.$key";
-            if (empty($output[$full_name])) {
-              $output[$full_name] = array();
-            }
-            Dojo::property_text($text, $output[$full_name]);
+      foreach ($constructors as $full_name => $constructor) {
+        $new_keys = array_unique(array_merge($new_keys, Dojo::roll_out($constructor, $name, FALSE, $output, $new_keys)));
+        foreach ($output[$name] as $key => $value) {
+          if ($key != 'chains') {
+            $output[$full_name][$key] = $value;
           }
         }
       }
+
+      Dojo::roll_out_comment_block($mixin, $name, $output, $new_keys);
     }
   }
 
@@ -318,7 +303,7 @@ function dojo_get_contents($namespace, $file_name) {
 
       $is_prototype = ($last == 'prototype');
 
-      Dojo::roll_out($variable->value(), $name, $output, $is_prototype);
+      Dojo::roll_out($variable->value(), $name, FALSE, $output, array(), $is_prototype);
 
       if (count($parts) && !$is_prototype) {
         $output[$name]['attached'] = implode('.', $parts);
@@ -381,12 +366,13 @@ function dojo_get_contents($namespace, $file_name) {
         }
         $output[$object_name]['classlike'] = true;
       }
-      elseif ($object['prototype'] && $output[$object['prototype']]) {
-        $output[$object['prototype']]['classlike'] = true;
-      }
-      elseif ($object['instance'] && $output[$object['instance']]) {
-        $output[$object['instance']]['classlike'] = true;
-      }
+    }
+
+    if ($object['prototype'] && $output[$object['prototype']]) {
+      $output[$object['prototype']]['classlike'] = true;
+    }
+    elseif ($object['instance'] && $output[$object['instance']]) {
+      $output[$object['instance']]['classlike'] = true;
     }
   }
 
