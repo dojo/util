@@ -453,16 +453,19 @@ function jsdoc_form_alter($form_id, &$form) {
     unset($form['taxonomy']);
   }
   elseif ($form_id == 'search_form' && $form['module']['#value'] == 'jsdoc') {
-    $options = array('' => '-----');
-
     foreach (jsdoc_get_versions() as $version) {
       $options[$version->title] = $version->title;
+    }
+
+    if (empty($options)) {
+      $options = array('' => '-----');
     }
 
     $form['jsdoc_version'] = array(
       '#title' => t('Version'),
       '#type' => 'select',
       '#options' => $options,
+      '#default_value' => jsdoc_get_version()->title
     );
 
     if ($version = search_query_extract($form['basic']['inline']['keys']['#default_value'], 'version')) {
@@ -1609,6 +1612,9 @@ function _jsdoc_resolve_child($node, $name) {
   foreach ($children as $possible) {
     if ($possible->title == $name || $node->title . '.' . $possible->title == $name) {
       $actual = $possible->node;
+      $actual->type = $possible->type;
+      unset($actual->jsdoc_type);
+      break;
     }
   }
 
