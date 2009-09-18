@@ -1693,6 +1693,23 @@ function jsdoc_child_node_view($node, $name) {
       '#weight' => 30
     );
   }
+  elseif (($object = jsdoc_object_node_load(jsdoc_get_type($actual), jsdoc_get_version($node))) && $object->nid) {
+    list($prototype_chain, $mixin_chain, $children) = jsdoc_get_oo_info($object);
+
+    $theme_children = array();
+    foreach ($children as $child) {
+      if ($child->instance || $child->prototype) {
+        $theme_children[] = $child;
+      }
+    }
+
+    if (count($theme_children)) {
+      $form['children'] = array(
+        '#value' => theme('jsdoc_object_children', $theme_children),
+        '#weight' => 40
+      );
+    }
+  }
 
   return drupal_render_form('jsdoc_child_form', $form);
 }
@@ -1744,10 +1761,6 @@ function _jsdoc_resolve_mixins($node, $from) {
   return $resolved_mixins;
 }
 
-function jsdoc_get_children(&$node) {
-  
-}
-
 function jsdoc_get_oo_info(&$node, $child=NULL) {
   if (isset($node->jsdoc_oo_info)) {
     return $node->jsdoc_oo_info;
@@ -1784,7 +1797,7 @@ function jsdoc_get_oo_info(&$node, $child=NULL) {
     $returned_mixin_titles = array();
     foreach ($mixin_chain as $mixin) {
       if ($mixin->in_prototype_chain || $mixin->attached->title == $node->title) {
-        if (!$returned_mixin_titles[$mixin->node->title]) {
+        if ($mixin->node->title != $node->title && !$returned_mixin_titles[$mixin->node->title]) {
           $returned_mixin_titles[$mixin->node->title] = TRUE;
           $returned_mixin_chain[] = $mixin;
         }
@@ -1797,7 +1810,7 @@ function jsdoc_get_oo_info(&$node, $child=NULL) {
       'methods' => jsdoc_get_methods($node, 'prototype'),
       'properties' => jsdoc_get_properties($node, 'prototype'),
       'in_prototype_chain' => true,
-      'node' => $mixin
+      'node' => $node
     );
 
     // Now with instance-level items
@@ -1821,6 +1834,8 @@ function jsdoc_get_oo_info(&$node, $child=NULL) {
       'in_prototype_chain' => false,
       'node' => $node
     );
+
+    array_pop($prototype_chain);
   }
 
   $mixin_chain[] = (object)array(
@@ -1893,6 +1908,8 @@ function jsdoc_get_oo_info(&$node, $child=NULL) {
             $children[$title]->inheritance[] = _jsdoc_get_object_themed($mixin->node);
           }
         }
+
+        $children[$mixin->scope] = TRUE;
 
         if ($title == $item->title) {
           $children[$title]->actual_title = $title;
@@ -2193,7 +2210,7 @@ function _jsdoc_get_fields($type, $node) {
         'title' => $title,
         'summary' => $child->summary,
         'types' => false
-        );
+      );
       if (!$cleaned) {
         $field->url = 'jsdoc/' . jsdoc_get_version($node)->title . '/' . $obj->title . '.' . $child->title;
         $field->a = l($title, $field->url);
