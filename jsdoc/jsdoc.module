@@ -1909,7 +1909,8 @@ function jsdoc_get_oo_info(&$node, $child=NULL) {
           }
         }
 
-        $children[$mixin->scope] = TRUE;
+        $scope = $mixin->scope;
+        $children[$title]->$scope = TRUE;
 
         if ($title == $item->title) {
           $children[$title]->actual_title = $title;
