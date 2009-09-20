@@ -61,7 +61,7 @@ abstract class Serializer extends AbstractSerializer
   }
 
   protected function getString($id) {
-    $query = db_query("SELECT value FROM freezer WHERE namespace = '%s' AND id = '%s'", $this->namespace, $id);
+    $query = db_query("SELECT value FROM freezer WHERE namespace = '%s' AND id = '%s' AND BINARY id = '%s'", $this->namespace, $id, $id);
     if ($result = db_fetch_assoc($query)) {
       return $result['value'];
     }
@@ -75,9 +75,9 @@ abstract class Serializer extends AbstractSerializer
 
     $content = mysql_escape_string($this->toString($value, $id));
 
-    $query = db_query("SELECT 1 FROM freezer WHERE namespace = '%s' AND id = '%s'", $this->namespace, $id);
+    $query = db_query("SELECT 1 FROM freezer WHERE namespace = '%s' AND id = '%s' AND BINARY id = '%s'", $this->namespace, $id, $id);
     if (db_fetch_assoc($query)) {
-      db_query("UPDATE freezer SET value = '%s' WHERE namespace = '%s' AND id = '%s'", $content, $this->namespace, $id);
+      db_query("UPDATE freezer SET value = '%s' WHERE namespace = '%s' AND id = '%s' AND BINARY id = '%s'", $content, $this->namespace, $id, $id);
     }
     else {
       db_query("INSERT INTO freezer (namespace, id, value) VALUES ('%s', '%s', '%s')", $this->namespace, $id, $content);
