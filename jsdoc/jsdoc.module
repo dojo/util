@@ -2095,12 +2095,15 @@ function _jsdoc_get_title_themed($node) {
   return $themed;  
 }
 
-function _jsdoc_get_object_themed($node, $title=null, $depth=0) {
+function _jsdoc_get_object_themed(&$node, $title=null, $depth=0) {
   if (is_null($title)) {
     $title = $node->title;
   }
+  if (isset($node->jsdoc_object_themed)) {
+    return $node->jsdoc_object_themed;
+  }
 
-  $object = (object)array(
+  $object = $node->jsdoc_object_themed = (object)array(
     'title' => $title,
     'url' => $node->jsdoc_url,
     'tags' => jsdoc_get_tags($node),
@@ -2174,7 +2177,7 @@ function _jsdoc_get_object_themed($node, $title=null, $depth=0) {
     }
   }
 
-  return $object;
+  return ($node->jsdoc_object_themed = $object);
 }
 
 function jsdoc_resolve_constructor(&$node) {
@@ -2195,11 +2198,17 @@ function jsdoc_resolve_constructor(&$node) {
   return ($node->jsdoc_resolved_constructor = $node->jsdoc_constructor);
 }
 
-function _jsdoc_get_fields($type, $node) {
+function _jsdoc_get_fields($type, &$node) {
   // I basically want to find the children of this as
   // if it appeared in the normal API.
-  $fields = array();
-  $obj = jsdoc_object_node_load($type, jsdoc_get_version($node), TRUE, TRUE);
+  static $cache = array();
+  $version = jsdoc_get_version($node);
+  if (isset($cache[$version->title][$type])) {
+    return $cache[$version->title][$type];
+  }
+
+  $fields = $cache[$version->title][$type] = array();
+  $obj = jsdoc_object_node_load($type, $version, TRUE, TRUE);
   // It will have an nid if it's local. For example type: Function isn't local
   if ($obj && $obj->nid) {
     list($prototype_chain, $mixin_chain, $children) = jsdoc_get_oo_info($obj);
@@ -2213,7 +2222,7 @@ function _jsdoc_get_fields($type, $node) {
         'types' => false
       );
       if (!$cleaned) {
-        $field->url = 'jsdoc/' . jsdoc_get_version($node)->title . '/' . $obj->title . '.' . $child->title;
+        $field->url = 'jsdoc/' . $version->title . '/' . $obj->title . '.' . $child->title;
         $field->a = l($title, $field->url);
       }
 
@@ -2226,7 +2235,7 @@ function _jsdoc_get_fields($type, $node) {
         $field_type = str_replace('...', '', $field_type, $found);
         $repeating = ($found > 0);
 
-        $field_obj = jsdoc_object_node_load($field_type, jsdoc_get_version($node));
+        $field_obj = jsdoc_object_node_load($field_type, $version);
         $field_type = (object)array(
           'title' => $field_obj->title,
           'repeating' => $repeating,
@@ -2247,7 +2256,7 @@ function _jsdoc_get_fields($type, $node) {
       return;
     }else{
       uksort($fields, 'strnatcasecmp');
-      return $fields;
+      return ($cache[$version->title][$type] = $fields);
     }
   }
 }
@@ -2274,7 +2283,7 @@ function _jsdoc_get_parameters_themed(&$node, $cleaned=false) {
     return $node->jsdoc_parameters_themed;
   }
 
-  $parameters = array();
+  $parameters = $node->jsdoc_parameters_themed = array();
   $retrieved_parameters = jsdoc_get_parameters($node);
 
   foreach ($retrieved_parameters as $item) {
