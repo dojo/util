@@ -143,7 +143,7 @@ try{
 		function nestedReference(t){
 			var src = shrinksafe.tests.module.loader("9676.js", null);
 			eval(src.compressed); // will throw on failure
-			t.assertEqual(3, result);
+			t.assertEqual(6, result);
 			delete result;
 		},
 

@@ -683,6 +683,10 @@ public class Compressor {
                  break;
              case Token.SUB:
                  result.append("-");
+                 nextToken = encodedSource.charAt(i + 1);
+                 if (nextToken == Token.NEG) {
+                     result.append(' ');
+                 }
                  break;
              case Token.MUL:
                  result.append("*");
