@@ -140,6 +140,13 @@ try{
 			t.t(src.compressed.indexOf("debugger") > -1);
 		},
 		
+		function nestedReference(t){
+			var src = shrinksafe.tests.module.loader("9676.js", null);
+			eval(src.compressed); // will throw on failure
+			t.assertEqual(3, result);
+			delete result;
+		},
+
 		function mungeStrings(t){
 			
 			// this test is skipped intentionally. You must manually enabled the 
