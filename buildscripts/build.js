@@ -274,7 +274,11 @@ function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kw
 	if(prefixName == "dojo" && kwArgs.query == "sizzle"){
 		fileUtil.copyFile(releasePath + "/_base/query-sizzle.js", releasePath + "/_base/query.js");
 	}
-
+	
+	if(!copiedFiles){ 
+		logger.info(" ********** Not Copied: " + prefixPath ); 
+	}
+	
 	//Make sure to copy over any "source" files for the layers be targeted by
 	//buildLayers. Otherwise dependencies will not be calculated correctly.
 	if(buildLayers){
