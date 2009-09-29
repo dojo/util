@@ -798,6 +798,9 @@ function _jsdoc_convert_object(&$node, $object, $parent = FALSE, $method = FALSE
             }
           }
         }
+        if (!$node->jsdoc_constructor && !empty($constructors)) {
+          $node->jsdoc_constructor = reset($constructors);
+        }
       }
     }
 
@@ -2183,6 +2186,12 @@ function _jsdoc_get_object_themed(&$node, $title=null, $depth=0) {
 function jsdoc_resolve_constructor(&$node) {
   if ($node->jsdoc_resolved_constructor) {
     return $node->jsdoc_resolved_constructor;
+  }
+
+  if ($node->jsdoc_constructor) {
+    $constructor = (object)array();
+    _jsdoc_convert_object($constructor, $node->jsdoc_constructor, $node, TRUE);
+    return ($node->jsdoc_resolved_constructor = $constructor);
   }
 
   $superclass = jsdoc_get_parent_prototype($node);
