@@ -629,7 +629,7 @@ class JavaScriptSymbol extends Symbol {
 
   public function std_while($parser) {
     $parser->advance('(');
-    $this->first = $parser->expression();
+    $this->first = $parser->statements(array(')'));
     $parser->advance(')');
     if ($parser->peek('{')) {
       $this->second = $this->block($parser);

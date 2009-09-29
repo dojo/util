@@ -200,7 +200,9 @@ function dojo_get_contents($namespace, $file_name) {
       $mixin = $call->name() == 'dojo.mixin';
       for ($i = 1; $i < $arguments->length; $i++) {
         if ($arguments->getObject($i)) {
+          $keys = array();
           foreach ($arguments->getObject($i)->values() as $key => $values) {
+            $keys[] = $key;
             $full_name = "$root.$key";
             foreach ($values as $value) {
               if ($value instanceof JavaScriptVariable) {
@@ -215,6 +217,7 @@ function dojo_get_contents($namespace, $file_name) {
               }
             }
           }
+          Dojo::roll_out_comment_block($arguments->getObject($i), $root, $output, $keys);
         }
         elseif ($root && $full_name = $arguments->getVariable($i)) {
           if ($mixin) {
