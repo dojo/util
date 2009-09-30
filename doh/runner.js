@@ -105,7 +105,7 @@ doh._AssertFailure = function(msg, hint){
 	// The JUM is dead! Long live the JUM!
 
 	if(!(this instanceof doh._AssertFailure)){
-		return new doh._AssertFailure(msg);
+		return new doh._AssertFailure(msg, hint);
 	}
 	if(hint){
 		msg = (new String(msg||""))+" with hint: \n\t\t"+(new String(hint)+"\n");
