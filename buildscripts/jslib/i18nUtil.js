@@ -8,10 +8,10 @@ i18nUtil.setup = function(/*Object*/kwArgs){
 		djConfig={
 			locale: 'xx',
 			extraLocale: kwArgs.localeList,
-			baseUrl: "../../dojo/"
+			baseUrl: buildScriptsPath + "../../dojo/"
 		};
 
-		load('../../dojo/dojo.js');
+		load(buildScriptsPath + '../../dojo/dojo.js');
 
 		//Now set baseUrl so it is current directory, since all the prefixes
 		//will be relative to the release dir from this directory.
