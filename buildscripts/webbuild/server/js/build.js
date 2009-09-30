@@ -81,7 +81,7 @@ build = {
 		//The path to this file. Assumes dojo builds under it.
 		/*String*/builderPath,
 		
-		//"1.1.1" or "1.2.0": used to choose directory of dojo to use.
+		//"1.1.1" or "1.3.2": used to choose directory of dojo to use.
 		/*String*/version,
 		
 		//"google" or "aol" 
@@ -95,7 +95,7 @@ build = {
 
 
 		//Validate.
-		if(version != "1.2.0"){
+		if(version != "1.3.2"){
 			return "invalid version";
 		}
 		if(cdnType != "google" && cdnType != "aol"){

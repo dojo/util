@@ -19,6 +19,14 @@
 		</description>
 		<servlet-class>org.dtk.BuilderServlet</servlet-class>
 		<init-param>
+			<param-name>builderPath</param-name>
+			<param-value>/Users/jr/src/dojo/trunk/util/buildscripts/webbuild/server/js/</param-value>
+		</init-param>
+		<init-param>
+			<param-name>cachePath</param-name>
+			<param-value>/Users/jr/src/dojo/trunk/util/buildscripts/webbuild/server/js/cache/</param-value>
+		</init-param>
+		<init-param>
 			<param-name>appDir</param-name>
 			<param-value>.</param-value>
 		</init-param>

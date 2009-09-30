@@ -66,7 +66,7 @@ public class BuilderServlet extends HttpServlet {
         Boolean isError = true;
 
         //Validate parameters
-        if(!version.equals("1.2.0")) {
+        if(!version.equals("1.3.2")) {
             result = "invalid version: " + version;
         }
         if(!cdn.equals("google") && !cdn.equals("aol")) {
