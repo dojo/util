@@ -2559,6 +2559,10 @@ function _jsdoc_node_prepare($node) {
   $form['summary']['#weight'] = $form['body']['#weight'] - 1;
 
   $teaser = jsdoc_get_teaser($node);
+  if (!$node->body || $node->body == t('n/a')) {
+    $node->body = $teaser;
+    $teaser = '';
+  }
   $body = jsdoc_get_body($node);
   if ($body == t('n/a')) {
     $body = '';
