@@ -279,8 +279,8 @@ function dojo_get_contents($namespace, $file_name) {
             continue;
           }
 
-          $new_keys = array_unique(array_merge($new_keys, Dojo::roll_out($value, $full_name, FALSE, $output, $new_keys)));
           $output[$full_name]['prototype'] = $name;
+          $new_keys = array_unique(array_merge($new_keys, Dojo::roll_out($value, $full_name, FALSE, $output, $new_keys)));
         }
       }
 

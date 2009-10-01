@@ -130,17 +130,30 @@ class Dojo {
             $variable_name = substr($variable->name(), 5);
             $comments->add_key($variable_name);
             $this_keys[] = $variable_name;
-            $variable_name = $parent . '.' . $variable_name;
+            $full_variable_name = $parent . '.' . $variable_name;
+
+            if (!$this_comment) {
+              $found = FALSE;
+              if (!empty($output[$name]['prototype'])) {
+                $found = TRUE;
+                $full_variable_name = $output[$name]['prototype'] . '.' . $variable_name;
+                $output[$full_variable_name]['prototype'] = $output[$name]['prototype'];
+              }
+              if (!empty($output[$name]['instance'])) {
+                $found = TRUE;
+                $full_variable_name = $output[$name]['instance'] . '.' . $variable_name;
+                $output[$full_variable_name]['instance'] = $output[$name]['instance'];
+              }
+              if (!$found) {
+                $output[$full_variable_name]['instance'] = $name;
+              }
+            }
 
             if ($variable_type = $variable->type()) {
               if ($variable_type == 'Function') {
-                self::roll_out($variable->value(), $variable_name, FALSE, $output);
+                self::roll_out($variable->value(), $full_variable_name, FALSE, $output);
               }
-              $output[$variable_name]['inferred_type'] = $variable_type;
-            }
-
-            if (!$this_comment) {
-              $output[$variable_name]['instance'] = $name;
+              $output[$full_variable_name]['inferred_type'] = $variable_type;
             }
           }
         }
