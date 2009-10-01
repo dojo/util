@@ -35,6 +35,11 @@ class DojoCommentBlock {
     // TODO: Add return type(s)
   }
 
+  public function get($key) {
+    $comments = $this->all();
+    return $comments[$key] ? $comments[$key] : '';
+  }
+
   public function all() {
     if (isset($this->blocks)) {
       return $this->blocks;

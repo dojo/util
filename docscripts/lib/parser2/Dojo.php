@@ -5,7 +5,7 @@ require_once('JavaScriptFunction.php');
 require_once('DojoCommentBlock.php');
 
 class Dojo {
-  public static $block_keys = array('summary', 'description', 'returns', 'tags', 'exceptions');
+  public static $block_keys = array('summary', 'description', 'returns', 'tags', 'this', 'exceptions');
 
   public static function property_text(&$text, &$on) {
     if (preg_match('%^\s*([a-z\s]+)\]\s*%', $text, $match)) {
@@ -108,7 +108,7 @@ class Dojo {
     self::set_type($object, $output[$name]);
 
     $keys = self::$block_keys;
-    $new_keys = array();
+    $this_keys = array();
 
     if ($object instanceof JavaScriptObject || $object instanceof JavaScriptFunction) {
       if ($object instanceof JavaScriptObject) {
@@ -116,21 +116,39 @@ class Dojo {
       }
       elseif ($object instanceof JavaScriptFunction) {
         $comments = new DojoCommentBlock($object->comments(), $keys, array('example'));
+        $parent = $this_comment = $comments->get('this');
+        if (!$parent) {
+          $parent = $name;
+        }
+        elseif ($parent == 'namespace') {
+          $parent = implode('.', array_slice(explode('.', $name), 0, -1));
+        }
         $body = new JavaScriptStatements($object->body());
 
         foreach ($body->assignments(FALSE, $into_function) as $variable) {
           if (substr($variable->name(), 0, 5) == 'this.') {
             $variable_name = substr($variable->name(), 5);
             $comments->add_key($variable_name);
-            $new_keys[] = $variable_name;
-            $variable_name = $name . '.' . $variable_name;
+            $this_keys[] = $variable_name;
+            $variable_name = $parent . '.' . $variable_name;
+
             if ($variable_type = $variable->type()) {
               if ($variable_type == 'Function') {
                 self::roll_out($variable->value(), $variable_name, FALSE, $output);
               }
               $output[$variable_name]['inferred_type'] = $variable_type;
             }
-            $output[$variable_name]['instance'] = $name;
+
+            if (!$this_comment) {
+              $output[$variable_name]['instance'] = $name;
+            }
+          }
+        }
+
+        $blocks = $comments->all();
+        foreach ($this_keys as $key) {
+          if ($blocks[$key]) {
+            self::property_text($blocks[$key], $output[$parent . '.' . $key]);
           }
         }
 
@@ -162,7 +180,7 @@ class Dojo {
           $output[$name]['returns'] = implode('|', array_unique($returns));
         }
 
-        self::roll_out_comments($comments, $name, $keys, $new_keys, $output);
+        self::roll_out_comments($comments, $name, $keys, array(), $output);
       }
     }
 

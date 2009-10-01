@@ -327,13 +327,15 @@ abstract class AbstractSerializer
       if (!$methods_node) {                     
         $methods_node = array();
       }                        
-      $object_node['#methods'][] = $methods_node;
-      $methods_node = &$object_node['#methods'][count($object_node['#methods']) - 1];
 
       foreach ($methods as $method_id => $method) {
         $method_node = array();
         $methods_node['#method'][] = $this->buildMethod($method_node, $method, $method_id);
       }
+    }
+
+    if ($methods_node) {
+      $object_node['#methods'][] = $methods_node;
     }
 
     return $object_node;
