@@ -13,6 +13,15 @@ load(buildScriptsPath + "jslib/i18nUtil.js");
 //Convert arguments to keyword arguments.
 var kwArgs = buildUtil.makeBuildOptions(arguments);
 
+//Remove the default namespaces that are created by Rhino, but only
+//if asked to -- it has bad consequences if the build system is used
+//with other rhino-based server-side code.
+if(kwArgs.removeDefaultNameSpaces){
+	delete com;
+	delete net;
+	delete org;
+}
+
 //Set logging level.
 logger.level = kwArgs["log"];
 

@@ -162,6 +162,12 @@ buildUtil.DojoBuildOptions = {
 		defaultValue: "default",
 		helpText: "Select a DOM query engine. Default value is the normal dojo.query engine. Using query=sizzle will use the Sizzle engine."
 			+ "Normal Dojo tests are not run routinely with the Sizzle engine. See dojo/_base/sizzle.js for the version of Sizzle."
+	},
+	"removeDefaultNameSpaces": {
+		defaultValue: false,
+		helpText: "Removes the default 'com', 'org' and 'net' namespaces that are present in Rhino. This is hazardous to use if "
+			+ "the build system is used as part of a Rhino-based server-side solution, so use with caution. Weird build errors "
+			+ "might occur. Only use if your own code includes things in a com, org or net namespace."
 	}
 };
 
