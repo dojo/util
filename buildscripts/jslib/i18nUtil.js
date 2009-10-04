@@ -53,10 +53,14 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/fileCo
 	
 	//TODO: register plain function handler (output source) in jsonRegistry?
 	var drl = dojo.requireLocalization;
+	var dupes = {};
 	dojo.requireLocalization = function(modulename, bundlename, locale){
-		drl(modulename, bundlename, locale);
-	//TODO: avoid dups?
-		djLoadedBundles.push({modulename: modulename, module: eval(modulename), bundlename: bundlename});
+		var dupName = [modulename, bundlename, locale].join(":");
+		if(!dupes[dupName]){
+			drl(modulename, bundlename, locale);
+			djLoadedBundles.push({modulename: modulename, module: eval(modulename), bundlename: bundlename});
+			dupes[dupName] = 1;
+		}
 	};
 	
 	var requireStatements = fileContents.match(/dojo\.requireLocalization\(.*\)\;/g);
