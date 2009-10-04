@@ -242,6 +242,10 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 		logger.info("NOTE: stripConsole is only supported for an layerOptimize=shrinksafe value.");
 	}
 
+	//Validate some values.
+	if(typeof kwArgs.scopeDjConfig != "string") {
+		throw "Due to deficiencies in the build system, scopeDjConfig needs to be a string.";
+	}
 	return kwArgs;
 }
 
