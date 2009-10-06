@@ -39,7 +39,8 @@ if(arguments[0] == "help"){
 function checkstyle(){
 	
 	var dirs, i;
-	var reportFile = "checkstyleData.js";
+	var reportFile = "./checkstyleData.js";
+
 	
 	if(kwArgs.files){
 		var files = kwArgs.files.split(" ");
@@ -75,7 +76,8 @@ function checkstyle(){
 			}
 		}
 	}
-	fileUtil.saveUtf8File(reportFile, checkstyleUtil.generateReport());
+	var report = checkstyleUtil.generateReport();
+	fileUtil.saveUtf8File(reportFile, report);
 }
 
 function runCommit(){

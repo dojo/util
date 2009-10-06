@@ -398,7 +398,7 @@ checkstyleUtil.fixSpaceBeforeAndAfter = function(contents, token, comments){
 		before = contents.charAt(idx - 1);
 		after = contents.charAt(idx + 2);
 		if(!comments[idx]){
-			if(before != " " && before != "\t" && (token != " == " || before != "!")){
+			if(before != " " && before != "\t" && (token != "==" || before != "!")){
 				contents = checkstyleUtil.insertChar(contents, " ", idx);
 				idx ++;
 			}
