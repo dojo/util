@@ -53,6 +53,7 @@
 	<script type="text/javascript" src="checkstyleUtil.js"></script>
 	<script type="text/javascript">
 		var singleFileStore;
+		var errorQuery;
 		var saveErrorMsg = "You may need to rename the checkstyle.php.rename.html file to checkstyle.php."
 								+ "\nPlease read the readme.txt file in the /util/checkstyle folder.";
 
@@ -64,6 +65,9 @@
 				document.title = "Dojo Checkstyle report generated on " + dateStr;
 				dojo.byId("reportDate").innerHTML = dateStr;	
 			}});
+			
+			dojo.connect(dijit.byId("messagesGrid"), "onRowClick", doEdit);
+			
 		});
 		var cachedFiles = {};
 		var changedFiles = [];
@@ -195,10 +199,15 @@
 		function doEdit(item) {
 			var grid = dijit.byId("messagesGrid");
 			var textarea = dojo.byId("editInput");
+			
+			var q = {folder: 0};
+			
+			if (errorQuery) {
+				q.file = errorQuery.file;
+			}
+			
 			grid.store.fetch({
-				query: {
-					folder: 0
-				},
+				query: q,
 				start: item.rowIndex,
 				count: 1,
 				onComplete: function(items) {
@@ -296,9 +305,13 @@
 			});
 
 			var grid = dijit.byId("messagesGrid");
-			grid.setStore(singleFileStore, grid.attr("query"), grid.attr("queryOptions"));
+			errorQuery = null;
+			grid.setStore(singleFileStore, {folder: 0}, grid.attr("queryOptions"));
 		}
+
 		function showAllErrors(query){
+			errorQuery = query;
+		
 			dijit.byId("showFileErrorsBtn").attr("checked", false);
 			dijit.byId("showAllErrorsBtn").attr("checked", true);
 			var grid = dijit.byId("messagesGrid");
@@ -308,7 +321,9 @@
 		
 		function makeSimpleFixes() {
 			var textarea = dojo.byId("editInput");
+		
 			textarea.value = checkstyleUtil.makeSimpleFixes(textarea.value);
+			
 			if(dojo.indexOf(changedFiles, textarea._file) < 0) {
 				changedFiles.push(textarea._file);
 			}
@@ -389,8 +404,6 @@
 					});
 				}
 			);
-			
-			
 		}
 		
 		var checkstyleStore;
@@ -437,7 +450,6 @@
 				<table dojoType="dojox.grid.DataGrid" id="messagesGrid"
 					class="checkstyleGrid" store="checkstyleStore" 
 					query="{ folder: 0 }" rowsPerPage="50" rowSelector="20px"
-					onRowClick="doEdit(arguments[0])"
 					region="top"
 					style="height:50%;"
 					>

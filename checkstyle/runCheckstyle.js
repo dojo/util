@@ -16,7 +16,7 @@ if(arguments[0] == "help"){
 		+ "To specify a list of files to process, use the 'files' parameter, passing a list of space separated files, e.g.\n\t\t"
 		+ "checkstyle files=\"dojo/_base/Color.js dojo/back.js\"\n\t"
 		+ "To force the script to fail when a specified file has failed the check, use the 'failOnError' parameter, e.g.\n\t\t"
-		+ "checkstyle failOnError=true files=\"dojo/_base/Color.js dojo/back.js\"\n\t\t"
+		+ "checkstyle failOnError=true files=\"dojo/_base/Color.js dojo/back.js\"\n\t"
 		+ "To commit fixes made by the checkstyleReport.html tool, use\n\t\t"
 		+ "checkstyle commit");
 		
