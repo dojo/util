@@ -1,5 +1,7 @@
 checkstyleUtil = {
-	errors: []
+	errors: [],
+	
+	commentNames: ["summary", "description", "example", "returns", "tags", "this"]
 };
 
 checkstyleUtil.applyRules = function(fileName, contents){
@@ -50,8 +52,13 @@ checkstyleUtil.getComments = function(contents){
 			if(comments[i]){
 				continue;
 			}
+			
+			// Only matches the quote if it doesn't have a backslash in front of it
+			// and if it isn't part of a regex.  The test for regex is very basic
+			// and may need improvement
 			if(contents.charAt(i) == quote 
-				&& (i == 0 || contents.charAt(i - 1) != "\\")){
+				&& (i == 0 || 
+					(contents.charAt(i - 1) != "\\" && contents.indexOf("/g", i) != i+1) )){
 				inQuote = !inQuote;
 			} else if(inQuote){
 				comments[i] = true;
@@ -192,7 +199,7 @@ checkstyleUtil.createSpaceWrappedSearch = function(token, message){
 
 checkstyleUtil.isEOL = function(contents, pos){
 	var c = contents.charCodeAt(pos);
-	return c == 10 || c == 13;
+	return c == 10 || c == 13 || contents.charAt(pos) == "\n";
 };
 
 // All the rules that will be applied to each file.
@@ -312,6 +319,52 @@ checkstyleUtil.rules = {
 		}
 	},
 	
+	"commentFormatting": function(fileName, contents, comments){
+		
+		var commentNames = checkstyleUtil.commentNames;
+		var invalidPrefixes = ["//", "//\t"];
+		var idx;
+		
+		for(var i = 0; i < commentNames.length; i++){
+			var comment = commentNames[i];
+
+			for(var j = 0; j < invalidPrefixes.length; j++){
+				idx = contents.indexOf(invalidPrefixes[j] + comment + ":");
+
+				// Make sure that there is a space before the comment.
+				while(idx > -1){
+					checkstyleUtil.addError("Must be just a space in a comment before \"" + comment + "\"" , fileName, contents, idx);
+					var nextLine = checkstyleUtil.findNextCharPos(contents, idx + 1, "\n");
+					if(nextLine < 0){
+						break;
+					}
+					idx = contents.indexOf(invalidPrefixes[j] + comment + ":", nextLine);
+				}
+			}
+			
+			idx = contents.indexOf(comment + ":");
+			
+			// Make sure that the comment name is on a line by itself. The body of the comment
+			// must be on the next line.
+			while(idx > -1){
+				if(comments[idx]){
+					var search = idx + comment.length + 1;
+				
+					// Make sure that there is nothing after the comment name on the same line.
+					while(!checkstyleUtil.isEOL(contents, search)){
+						if(contents[search] != " " && contents[search] != "\t"){
+							checkstyleUtil.addError("The comment \"" + comment + "\" must be followed by a new line" , 
+										fileName, contents, idx);
+							break;
+						}
+						search++;
+					}
+				}
+				idx = contents.indexOf(comment + ":", idx + comment.length + 2);
+			}
+		}
+	},
+	
 	"spacesAroundEquals": checkstyleUtil.createSpaceWrappedSearch("==", "The equals sign should be preceded and followed by a space"),
 	"spacesAroundOr": checkstyleUtil.createSpaceWrappedSearch("||", "The || sign should be preceded and followed by a space"),
 	"spacesAroundAnd": checkstyleUtil.createSpaceWrappedSearch("&&", "The && sign should be preceded and followed by a space")
@@ -350,6 +403,7 @@ checkstyleUtil.makeSimpleFixes = function(contents){
 	for(var i = 0; i < noSpaceAfter.length; i++){
 		contents = checkstyleUtil.fixSpaceAfter(contents, noSpaceAfter[i], comments);
 	}
+	/*
 	contents = contents.split("    ").join("\t")
 				.split("  ").join("\t")
 				.split(") {").join("){")
@@ -360,16 +414,116 @@ checkstyleUtil.makeSimpleFixes = function(contents){
 				.split("\twhile (").join("\twhile(")
 				.split("\tfor (").join("\tfor(")
 				.split("\tswitch (").join("\tswitch(");
+	*/
+	
+	contents = checkstyleUtil.replaceAllExceptComments(contents, "=  ", "= ", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.replaceAllExceptComments(contents, "    ", "\t", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.replaceAllExceptComments(contents, "  ", "\t", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.replaceAllExceptComments(contents, "\tif (", "\tif(", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.replaceAllExceptComments(contents, "} else", "}else", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.replaceAllExceptComments(contents, "}\telse", "}else", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.replaceAllExceptComments(contents, "}else {", "}else{", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.replaceAllExceptComments(contents, "\twhile (", "\twhile(", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.replaceAllExceptComments(contents, "\tfor (", "\tfor(", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.replaceAllExceptComments(contents, "\tswitch (", "\tswitch(", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.replaceAllExceptComments(contents, ") {", "){", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.replaceAllExceptComments(contents, "//summary:", "// summary:", {});
+	contents = checkstyleUtil.replaceAllExceptComments(contents, "//description:", "// description:", {});
+	comments = checkstyleUtil.getComments(contents);
 	
 	contents = checkstyleUtil.fixTrailingWhitespace(contents);
 	comments = checkstyleUtil.getComments(contents);
 	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "===", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "!==", comments);
 	comments = checkstyleUtil.getComments(contents);
 	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "==", comments);
 	comments = checkstyleUtil.getComments(contents);
 	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "||", comments);
 	comments = checkstyleUtil.getComments(contents);
 	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "&&", comments);
+	comments = checkstyleUtil.getComments(contents);
+	
+	contents = checkstyleUtil.fixCommentNames(contents);
+	
+	
+	
+	return contents;
+}
+
+checkstyleUtil.fixCommentNames = function(contents){
+	var commentNames = checkstyleUtil.commentNames;
+	var i;
+	
+	for(i = 0; i < commentNames.length; i++){
+		contents = checkstyleUtil.replaceAllExceptComments(contents, "//\t" + commentNames[i] + ":", "// " + commentNames[i] + ":", {});
+	}
+	
+	for(i = 0; i < commentNames.length; i++){
+		var commentName = commentNames[i];
+		var searchToken = "// " + commentName + ":";
+		var idx = contents.indexOf(searchToken);
+		
+		
+		while(idx > -1){
+			// If the comment name is not followed immediately by a new line, then insert a new line,
+			// two forward slashes and two tabs.
+			if(!checkstyleUtil.isEOL(contents, idx + commentName.length + 4)){
+				// Calculate how many tabs to put before the "//"
+				
+				var tabs = "";
+				var search = idx - 1;
+				while(!checkstyleUtil.isEOL(contents, search)){
+					tabs += contents.charAt(search);
+					search--;
+				}
+				var insertPos = idx + commentName.length + 4;
+				if(contents.charAt(insertPos) == " " || contents.charAt(insertPos) == "\t"){
+					contents = checkstyleUtil.deleteChar(contents, insertPos);
+				}
+				
+				contents = checkstyleUtil.insertChar(contents, "\n" + tabs + "//\t\t", idx + commentName.length + 4);
+			
+			}
+			idx = contents.indexOf(searchToken, idx + commentName.length);
+		}
+	}
+	return contents;
+}
+
+
+checkstyleUtil.replaceAllExceptComments = function(contents, old, newStr, comments){
+	var idx = contents.indexOf(old);
+	var toRemove = [];
+	
+	while(idx > -1){
+		if(!comments[idx]){
+			toRemove.push(idx);		
+		}
+
+		idx = contents.indexOf(old, idx + old.length);
+	}
+	
+	// Process the string backwards so we don't have to recompute the comments each time.
+	for(var i = toRemove.length - 1; i > -1; i--){
+		idx = toRemove[i];
+		if(!comments[idx]){
+			contents = contents.substring(0, idx)
+					+ newStr
+					+ contents.substring(idx + old.length, contents.length);
+		}
+	}
 	return contents;
 }
 
@@ -383,6 +537,8 @@ checkstyleUtil.deleteChar = function(contents, pos){
 checkstyleUtil.fixTrailingWhitespace = function(contents) {
 	var idx = contents.indexOf("\n");
 	
+	// Find each new line character, then iterate backwards until a non-whitespace character is found
+	// then remove the whitespace.
 	while(idx > -1){
 		var search = idx - 1;
 		
