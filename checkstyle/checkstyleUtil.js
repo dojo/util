@@ -362,6 +362,8 @@ checkstyleUtil.makeSimpleFixes = function(contents){
 				.split("\tswitch (").join("\tswitch(");
 	
 	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "===", comments);
+	comments = checkstyleUtil.getComments(contents);
 	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "==", comments);
 	comments = checkstyleUtil.getComments(contents);
 	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "||", comments);
@@ -393,18 +395,28 @@ checkstyleUtil.fixSpaceAfter = function(contents, token, comments){
 checkstyleUtil.fixSpaceBeforeAndAfter = function(contents, token, comments){
 	var idx = contents.indexOf(token);
 	var before, after;
+	var len = token.length;
 
 	while(idx > -1){
 		before = contents.charAt(idx - 1);
-		after = contents.charAt(idx + 2);
+		after = contents.charAt(idx + len);
 		if(!comments[idx]){
-			if(before != " " && before != "\t" && (token != "==" || before != "!")){
+			// Only insert a space before the token if:
+			// - char before is not a space or a tab
+			// - token is "==" and the char before is neither "!" or "="
+		
+			if(before != " " && before != "\t" && (token != "==" || (before != "!" && before != "="))){
 				contents = checkstyleUtil.insertChar(contents, " ", idx);
 				idx ++;
 			}
-			if((after != " " && contents.charCodeAt(idx + 2) != 13 
-					&& contents.charCodeAt(idx + 2) != 10)
-				&& 	(token != " == " || after != "=")){
+			
+			// Only insert a space after the token if:
+			// - char after is not a space
+			// - char after is not a new line
+			// - char after is not "="
+			if((after != " " && contents.charCodeAt(idx + len) != 13 
+					&& contents.charCodeAt(idx + len) != 10)
+					&& (token != "==" || after != "=")){
 				contents = contents = checkstyleUtil.insertChar(contents, " ", idx + token.length);
 				idx++;
 			}
