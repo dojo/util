@@ -361,6 +361,7 @@ checkstyleUtil.makeSimpleFixes = function(contents){
 				.split("\tfor (").join("\tfor(")
 				.split("\tswitch (").join("\tswitch(");
 	
+	contents = checkstyleUtil.fixTrailingWhitespace(contents);
 	comments = checkstyleUtil.getComments(contents);
 	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "===", comments);
 	comments = checkstyleUtil.getComments(contents);
@@ -377,6 +378,29 @@ checkstyleUtil.insertChar = function(contents, ch, pos){
 }
 checkstyleUtil.deleteChar = function(contents, pos){
 	return contents.substring(0, pos) + contents.substring(pos + 1);
+}
+
+checkstyleUtil.fixTrailingWhitespace = function(contents) {
+	var idx = contents.indexOf("\n");
+	
+	while(idx > -1){
+		var search = idx - 1;
+		
+		while(search > -1 && (contents.charAt(search) == " " || contents.charAt(search) == "\t")){
+			search--;
+		}
+		
+		if(search < idx -1){
+			contents = contents.substring(0, search + 1)
+					+ contents.substring(idx, contents.length);
+			
+			idx = contents.indexOf("\n", search + 2);
+		}else{
+			idx = contents.indexOf("\n", idx + 1);
+		}
+	}
+
+	return contents;
 }
 
 checkstyleUtil.fixSpaceAfter = function(contents, token, comments){
