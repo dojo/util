@@ -35,7 +35,7 @@ cd $buildName/util/buildscripts
 #Update the dojo version in the tag
 java -jar ../shrinksafe/js.jar changeVersion.js $version ../../dojo/_base/_loader/bootstrap.js
 cd ../../dojo
-svn commit -m "Updating dojo version for the tag." _base/_loader/bootstrap.js
+svn commit -m "Updating dojo version for the tag. \!strict" _base/_loader/bootstrap.js
 
 #Erase the SVN dir and replace with an exported SVN contents.
 cd ../..
