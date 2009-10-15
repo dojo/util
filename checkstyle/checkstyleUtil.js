@@ -1,7 +1,7 @@
 checkstyleUtil = {
 	errors: [],
 	
-	commentNames: ["summary", "description", "example", "returns", "tags", "this"]
+	commentNames: ["summary", "description", "example", "tags", "this"]
 };
 
 checkstyleUtil.applyRules = function(fileName, contents){
@@ -24,75 +24,160 @@ checkstyleUtil.applyRules = function(fileName, contents){
 checkstyleUtil.getComments = function(contents){
 	var comments = [];
 	
+	var i;
+	
 	// Initialize the array to false values.
-	for(var i = 0; i < contents.length; i++){
-		contents[i] = false;
+	for(i = 0; i < contents.length; i++){
+		comments[i] = 0;
 	}
 	
 	var sep = "\n";
 	
-	function markComments(start, end){
-		var idx = contents.indexOf(start);
-	
-		while(idx > -1){
-			var endComment = contents.indexOf(end, idx);
-			if(endComment < 0){
-				endComment = contents.length;
-			}
-			
-			for(var i = idx; i < endComment; i++){
-				comments[i] = true;
-			}
-			idx = contents.indexOf(start, endComment);
-		}	
-	}
-	function markQuotes(quote){
-		var inQuote = false;
-		for(var i = 0; i < contents.length; i++){
-			if(comments[i]){
-				continue;
-			}
-			
-			// Only matches the quote if it doesn't have a backslash in front of it
-			// and if it isn't part of a regex.  The test for regex is very basic
-			// and may need improvement
-			if(contents.charAt(i) == quote 
-				&& (i == 0 || 
-					(contents.charAt(i - 1) != "\\" && contents.indexOf("/g", i) != i+1) )){
-				inQuote = !inQuote;
-			} else if(inQuote){
-				comments[i] = true;
-			}
+	function markRange(start, stop){
+		for(var i = start; i < stop; i++){
+			comments[i] = 1;
 		}
 	}
-	
+
+
 	function markRegexs() {
 		var idx = contents.indexOf("/g");
-		
+		var i;
 		while(idx > -1) {
-			if(!comments[idx]){
+			if(!comments[idx] && contents.charAt(idx - 1) != "*"){
 				// Look back until either a forward slash
 				// or a new line is found
 				var prevChar = contents.charAt(idx - 1);
-				var i = idx;
+				i = idx;
 				while(prevChar != "\n" && prevChar != "/" && i > 0){
 					prevChar = contents.charAt(--i);
 				}
-				if(prevChar == "/"){
-					for(; i < idx; i++){
-						comments[i] = true;
-					}
+				if(prevChar == "/" && i < idx - 1){
+					markRange(i, idx);
 				}
 			}
 			idx = contents.indexOf("/g", idx + 2)
 		}
+		
+		// Now mark all .match and .replace function calls
+		// They generally contain regular expressions, and are just too bloody difficult.
+		var fnNames = ["match", "replace"];
+		var name;
+		
+		for (i = 0; i < fnNames.length; i++){
+			name = fnNames[i];
+			
+			idx = contents.indexOf(name + "(");
+			
+			while(idx > -1){
+				// Find the end parenthesis
+				if(comments[idx]){
+					idx = contents.indexOf(name + "(", idx + name.length);
+				} else {
+					var fnEnd = contents.indexOf(")", idx);
+					markRange(idx, fnEnd + 1);
+				}
+			}
+		}
+		
+		// Now look for all the lines that declare a regex variable, e.g.
+		// var begRegExp = /^,|^NOT |^AND |^OR |^\(|^\)|^!|^&&|^\|\|/i; 
+		
+		idx = contents.indexOf(" = /");
+		
+		while(idx > -1){
+			if(!comments[idx] && contents.charAt(idx + 4) != "*"){
+				var eol = contents.indexOf("\n", idx + 1);
+				markRange(idx + 3, Math.max(eol, idx + 4));
+			}
+		
+			idx = contents.indexOf(" = /", idx + 3);
+		}
 	}
-	
-	markComments("//", sep);
-	markComments("/*", "*/");
-	markQuotes("\"");
-	markQuotes('\'');
+
 	markRegexs();
+	
+	
+	var marker = null;
+	var ch;
+	
+	var DOUBLE_QUOTE = 1;
+	var SINGLE_QUOTE = 2;
+	var LINE_COMMENT = 3;
+	var MULTI_COMMENT = 4;
+	var UNMARK = 5;
+	
+	var pos;
+	
+	for (i = 0; i < contents.length; i++) {
+		var skip = false;
+		
+		if(comments[i]){
+			continue;
+		}
+		
+		ch = contents[i];
+		
+		switch(ch){
+			case "\"":
+				if(marker == DOUBLE_QUOTE) {
+					marker = UNMARK;
+				} else if (marker == null) {
+					marker = DOUBLE_QUOTE;
+					pos = i;
+				}
+				
+				break;
+			case "'":
+				if(marker == SINGLE_QUOTE) {
+					marker = UNMARK;
+				} else if (marker == null) {
+					marker = SINGLE_QUOTE;
+					pos = i;
+				}
+			
+				break;
+			case "/":
+				if(marker == null){
+					if(contents[i + 1] == "/"){
+						marker = LINE_COMMENT;
+						pos = i;
+						skip = true;
+					} else if(contents[i + 1] == "*"){
+						marker = MULTI_COMMENT;
+						pos = i;
+						skip = true;
+					}
+				}
+				
+				break;
+			case "*":
+				if (marker == MULTI_COMMENT){
+					if(contents[i + 1] == "/"){
+						marker = UNMARK;
+						skip = true;
+					}
+				}
+			
+				break;
+			case "\n":
+				if(marker == LINE_COMMENT){
+					marker = UNMARK;
+				}
+				break;
+		
+		}
+		if (marker != null) {	
+			comments[i] = 1;
+		}
+		if (marker == UNMARK){
+			marker = null;
+		}
+		if  (skip) {
+			i++;
+			comments[i] = 1;
+		}
+	}
 	
 	
 	return comments;
@@ -225,7 +310,7 @@ checkstyleUtil.rules = {
 		while(idx > -1){
 			if(!comments[idx]){
 				nextChar = checkstyleUtil.getNextChar(contents, idx + 1, comments, true);
-				if(nextChar.value == "}"){
+				if(nextChar && nextChar.value == "}"){
 					checkstyleUtil.addError("Trailing commas are not permitted", fileName, contents, idx);
 				}
 			}
