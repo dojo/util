@@ -239,11 +239,13 @@ dojo.provide("util.docscripts.cheat.lib");
 
 		save: function(){
 			dojo.xhrPost({ 
-				url:"api-gen.php",
+				url:"cheat.php",
 				content: { body: dojo.body().innerHTML, version: dojo.version.toString() },
 				load: function(response){
-					console.log('complete', response);
-					window.location.href = "./api.html";
+					window.location.href = "./cheat.html";
+				},
+				error: function(er){
+					console.log("Error in saving:", er.responseText);
 				}
 			});
 		},

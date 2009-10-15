@@ -19,9 +19,14 @@
 		$head .= "<style type='text/css'>" . file_get_contents("cheat/cheat.css") ."</style></head><body>";
 		$page = $head . $_POST['body'] . "<div class='note'><p>Dojo " . $_POST['version'] . 
 			" Docs generated " . date("Y-m-d") . "</p></div>" . $foot;
-		file_put_contents("./cheat.html", stripslashes($page));
+			
+		if(is_writable("./cheat.html")){
+			file_put_contents("./cheat.html", stripslashes($page));
+		}else{
+			header("HTTP", true, 500);
+			print "Unwritable File: cheat.html";
+		}
 		die;
-		
 	}
 	
 	print $head;
@@ -88,6 +93,13 @@
 					ap.addIn("dojo.Color.prototype", ap.getUl("Colors"));
 				}
 
+				var finish = function(){
+					ap.sortFields("container");
+					ap.buildNav();
+					ap.hasTag("build") && ap.save();
+					
+				}
+
 				if(ap.hasTag("includeDijit")){
 					dojo.require("dijit.dijit");
 					dojo.addOnLoad(function(){
@@ -97,24 +109,19 @@
 						ap.addIn("dijit._Templated.prototype", null, "dijit");
 						ap.addIn("dijit.WidgetSet.prototype", ap.getUl("Widget-Access"));
 						ap.addIn("dijit.popup", ap.getUl("Widget-Control"));
-
-						ap.sortFields("container");
-						ap.buildNav();
-
+						finish();
 					});
 					
 				}else{
-
-					ap.sortFields("container");
-					ap.buildNav();
-
+					finish();
 				}
 				
 				dojo.connect(dojo.global, "onkeypress", function(e){
 					if(e.keyCode == dojo.keys.ESCAPE && e.ctrlKey){
 						ap.save();
 					}
-				})
+				});
+				
 			});
 		</script>
 	
