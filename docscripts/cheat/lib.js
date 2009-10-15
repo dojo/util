@@ -50,7 +50,7 @@ dojo.provide("util.docscripts.cheat.lib");
 				],
 
 				"Ajax":[
-					"xhr", "xhrGet", "xhrPost", "xhrPut", "xhrDelete", "rawXhrPut", "rawXhrPost"
+					"xhr", "xhrGet", "xhrPost", "xhrPut", "xhrDelete", "rawXhrPut", "rawXhrPost", "contentHandlers"
 				],
 
 				"Language-Helpers":[
@@ -65,7 +65,7 @@ dojo.provide("util.docscripts.cheat.lib");
 
 				"Event-System":[
 					"connect", "publish", "subscribe", "pub", "sub", "unsubscribe", "disconnect", 
-					"fixEvent", "stopEvent", "connectPublisher"
+					"fixEvent", "stopEvent", "connectPublisher", "isCopyKey", "mouseButtons"
 				],
 
 				"NodeList-Events":[
@@ -81,7 +81,7 @@ dojo.provide("util.docscripts.cheat.lib");
 
 				"Objects-OO":[
 					"mixin", "declare", "extend", "delegate", "hitch", "partial", "setObject",
-					"getObject", "exists", "instantiate"
+					"getObject", "exists", "instantiate", "safeMixin" /* ? */
 				],
 
 				"Package-System":[
@@ -91,7 +91,7 @@ dojo.provide("util.docscripts.cheat.lib");
 
 				"Document-Lifecycle":[
 					"addOnLoad", "addOnUnload", "addOnWindowUnload","loaded", 
-					"unloaded", "loadInit",  "windowUnloaded"
+					"unloaded", "loadInit",  "windowUnloaded", "ready"
 				],
 
 
@@ -101,7 +101,7 @@ dojo.provide("util.docscripts.cheat.lib");
 				],
 
 				"DOM-Attributes":[
-					"hasAttr", "removeAttr",
+					"hasAttr", "removeAttr", "position", "getEffectiveAttrValue" /* FIXME: too long for base */,
 					"setSelectable", "isDescendant", "val", "attr", "coords", "marginBox", "contentBox"
 				],
 
@@ -116,7 +116,7 @@ dojo.provide("util.docscripts.cheat.lib");
 
 				"JSON":[
 					"fromJson", "toJson", "toJsonIndentStr", "formToObject", "queryToObject", "formToQuery", 
-					"formToJson", "objectToQuery"
+					"formToJson", "objectToQuery", "fieldToObject"
 				],
 
 				"Miscellaneous":[
@@ -129,7 +129,7 @@ dojo.provide("util.docscripts.cheat.lib");
 
 				"Sniffing":[
 					"isBrowser", "isFF", "isKhtml", "isMoz", "isMozilla", "isIE", "isOpera", "isBrowser", 
-					"isQuirks", "isWebKit", "isChrome"
+					"isQuirks", "isWebKit", "isChrome", /* new 1.4 */ "isMac"
 				]
 			},
 			
