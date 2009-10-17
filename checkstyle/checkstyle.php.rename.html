@@ -10,11 +10,9 @@
 	
 	function save($fileName, $contents) {
 		$fileName = "../../".$fileName.".checkstyle.js";
-		$contents = str_replace("\\\"", "\"", $contents);
-		$contents = str_replace("\\'", "'", $contents);
-		
+
 		$fh = fopen($fileName, 'w');
-		fwrite($fh, $contents);
+		fwrite($fh, stripslashes($contents));
 		fclose($fh);
 		
 		print "File saved to $fileName\n";
