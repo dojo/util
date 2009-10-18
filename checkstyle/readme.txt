@@ -12,3 +12,16 @@ This script will then be used to save fixed files.
 All fixed files end in '.checkstyle.js', e.g. dojo/back.js.checkstyle.js.
 Cnce you are satisfied with the changes, commit them all by typing:
 	checkstyle.sh commit
+	
+	
+Troubleshooting
+---------------
+1. It says the file was saved but nothing was saved
+
+	Use firebug's NET tab to see the result return from the checkstyle.php call.   If it's a
+	permission denied error, probably your webserver is running as a different user and
+	can't write into your workspace.   I solved this problem by doing:
+	
+	$ find . -type d -exec chmod 777 {} \;
+
+	from the root of my project.   Probably there's a better way.
