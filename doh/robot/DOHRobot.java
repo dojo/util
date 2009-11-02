@@ -54,6 +54,7 @@ public final class DOHRobot extends Applet{
 	private boolean ctrl = false;
 	private boolean alt = false;
 	private boolean meta = false;
+	private boolean numlockDisabled = false;
 	// shake hands with JavaScript the first keypess to wake up FF2/Mac
 	private boolean jsready = false;
 	private String keystring = "";
@@ -62,6 +63,9 @@ public final class DOHRobot extends Applet{
 	// setting firebugIgnore to true ensures Firebug doesn't break the applet
 	public boolean firebugIgnore = true;
 
+	private static String os=System.getProperty("os.name").toUpperCase();
+	private static Toolkit toolkit=Toolkit.getDefaultToolkit();
+	
 	private SecurityManager securitymanager;
 	private double key = -1;
 
@@ -490,7 +494,7 @@ public final class DOHRobot extends Applet{
 				Thread.yield();
 				// calibrate the mouse wheel now that textbox is focused
 				int dir=1;
-				if(System.getProperty("os.name").toUpperCase().indexOf("MAC") != -1){
+				if(os.indexOf("MAC") != -1){
 					dir=-1;
 				}
 				robot.mouseWheel(dir);
@@ -948,6 +952,8 @@ public final class DOHRobot extends Applet{
 				case 47:
 					keyboardCode = KeyEvent.VK_HELP;
 					break;
+				default:
+					keyboardCode = keyCode;
 
 			}
 		}
@@ -965,10 +971,29 @@ public final class DOHRobot extends Applet{
 							|| (ctrl && alt && keyboardCode == KeyEvent.VK_DELETE)){
 			log("You are not allowed to press this key combination!");
 			return true;
+		// bugged keys cases go next
 		}else{
 			log("Safe to press.");
 			return false;
 		}
+	}
+
+	private boolean disableNumlock(int vk, boolean shift){
+		boolean result = !numlockDisabled&&shift&&toolkit.getLockingKeyState(KeyEvent.VK_NUM_LOCK)
+			&&os.indexOf("WINDOWS")!=-1
+			&&(
+				// any numpad buttons are suspect
+				vk==KeyEvent.VK_LEFT
+				||vk==KeyEvent.VK_UP
+				||vk==KeyEvent.VK_RIGHT
+				||vk==KeyEvent.VK_DOWN
+				||vk==KeyEvent.VK_HOME
+				||vk==KeyEvent.VK_END
+				||vk==KeyEvent.VK_PAGE_UP
+				||vk==KeyEvent.VK_PAGE_DOWN
+		);
+		log("disable numlock: "+result);
+		return result;
 	}
 
 	private void _typeKey(final int cCode, final int kCode, final boolean a,
@@ -997,6 +1022,9 @@ public final class DOHRobot extends Applet{
 						keyboardCode = event.getKeyCode();
 					}
 
+					// Java bug: on Windows, shift+arrow key unpresses shift when numlock is on.
+					// See: http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4838497
+					boolean disableNumlock=disableNumlock(keyboardCode,shift||applet().shift);
 					// run through exemption list
 					if(!isUnsafe(keyboardCode)){
 						if(shift){
@@ -1018,6 +1046,16 @@ public final class DOHRobot extends Applet{
 						if(meta){
 							log("Pressing meta");
 							robot.keyPress(KeyEvent.VK_META);
+						}
+						if(disableNumlock){
+							robot.keyPress(KeyEvent.VK_NUM_LOCK);
+							robot.keyRelease(KeyEvent.VK_NUM_LOCK);
+							numlockDisabled=true;
+						}else if(numlockDisabled&&!(applet().shift||shift)){
+							// only turn it back on when the user is finished pressing shifted arrow keys
+							robot.keyPress(KeyEvent.VK_NUM_LOCK);
+							robot.keyRelease(KeyEvent.VK_NUM_LOCK);
+							numlockDisabled=false;
 						}
 						if(keyboardCode != KeyEvent.VK_SHIFT
 								&& keyboardCode != KeyEvent.VK_ALT
@@ -1173,6 +1211,10 @@ public final class DOHRobot extends Applet{
 						altgraph=true;
 					}else if(vkCode==KeyEvent.VK_META){
 						meta=true;
+					}else if(disableNumlock(vkCode,shift)){
+						robot.keyPress(KeyEvent.VK_NUM_LOCK);
+						robot.keyRelease(KeyEvent.VK_NUM_LOCK);
+						numlockDisabled=true;
 					}
 				}
 				if(!isUnsafe(vkCode)){
@@ -1231,6 +1273,11 @@ public final class DOHRobot extends Applet{
 						ctrl=false;
 					}else if(vkCode==KeyEvent.VK_SHIFT){
 						shift=false;
+						if(numlockDisabled){
+							robot.keyPress(KeyEvent.VK_NUM_LOCK);
+							robot.keyRelease(KeyEvent.VK_NUM_LOCK);
+							numlockDisabled=false;
+						}
 					}else if(vkCode==KeyEvent.VK_ALT_GRAPH){
 						altgraph=false;
 					}else if(vkCode==KeyEvent.VK_META){
@@ -1418,7 +1465,7 @@ public final class DOHRobot extends Applet{
 					Thread.sleep(1000);
 				}
 				int dir = 1;
-				if(System.getProperty("os.name").toUpperCase().indexOf("MAC") != -1){
+				if(os.indexOf("MAC") != -1){
 					// yay for Apple
 					dir = -1;
 				}
@@ -1519,7 +1566,7 @@ public final class DOHRobot extends Applet{
 		});
 	}
 	private static java.awt.datatransfer.Clipboard getSystemClipboard() {
-		return Toolkit.getDefaultToolkit().getSystemClipboard();
+		return toolkit.getSystemClipboard();
 	}
 	
 	private static class TextTransferable implements Transferable, ClipboardOwner {
