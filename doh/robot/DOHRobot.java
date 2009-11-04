@@ -979,8 +979,9 @@ public final class DOHRobot extends Applet{
 	}
 
 	private boolean disableNumlock(int vk, boolean shift){
-		boolean result = !numlockDisabled&&shift&&toolkit.getLockingKeyState(KeyEvent.VK_NUM_LOCK)
+		boolean result = !numlockDisabled&&shift
 			&&os.indexOf("WINDOWS")!=-1
+			&&toolkit.getLockingKeyState(KeyEvent.VK_NUM_LOCK) // only works on Windows
 			&&(
 				// any numpad buttons are suspect
 				vk==KeyEvent.VK_LEFT
