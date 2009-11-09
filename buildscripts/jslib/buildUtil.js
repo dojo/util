@@ -50,7 +50,18 @@ buildUtil.DojoBuildOptions = {
 			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
 			+ "Dojo Shrinksafe will be used on the files, and line returns will be removed. "
 			+ "If \"shrinksafe.keepLines\" is specified, then Dojo Shrinksafe will be used "
-			+ "on the files, and line returns will be preserved.  See also \"stripConsole\"."
+			+ "on the files, and line returns will be preserved.  See also \"stripConsole\". "
+			+ "Google Closure's compiler can be used by specifying \"closure\" as the value. "
+			+ "It does not use the stripConsole build option, and it REQUIRES Java 6 to run, and it may make "
+			+ "some complaints about the code and print out 'error's, but if the build completes, "
+			+ "then the code should work. Do not taunt happy Closure compiler. To use Closure compiler, "
+			+ "download it from here:\n"
+			+ "http://code.google.com/p/closure-compiler/downloads/list\n"
+			+ "And place the compiler.jar file somewhere you can easily reference. Then use the following "
+			+ "to execute the build (remember Java 6):\n"
+			+ "java -classpath ../shrinksafe/js.jar:../closurecompiler/compiler.jar org.mozilla.javascript.tools.shell.Main build.js\n"
+			+ "and place your build arguments on the same line after that text. Change the ../closurecompiler "
+			+ "path to the path where you keep Closure's compiler.jar." 
 	},
 	"layerOptimize": {
 		defaultValue: "shrinksafe",
@@ -58,7 +69,18 @@ buildUtil.DojoBuildOptions = {
 			+ "then code comments are stripped. If \"shrinksafe\" is specified, then "
 			+ "Dojo Shrinksafe will be used on the files, and line returns will be removed. "
 			+ "If \"shrinksafe.keepLines\" is specified, then Dojo Shrinksafe will be used "
-			+ "on the layer files, and line returns will be preserved."
+			+ "on the layer files, and line returns will be preserved. "
+			+ "Google Closure's compiler can be used by specifying \"closure\" as the value. "
+			+ "It does not use the stripConsole build option, and it REQUIRES Java 6 to run, and it may make "
+			+ "some complaints about the code and print out 'error's, but if the build completes, "
+			+ "then the code should work. Do not taunt happy Closure compiler. To use Closure compiler, "
+			+ "download it from here:\n"
+			+ "http://code.google.com/p/closure-compiler/downloads/list\n"
+			+ "And place the compiler.jar file somewhere you can easily reference. Then use the following "
+			+ "to execute the build (remember Java 6):\n"
+			+ "java -classpath ../shrinksafe/js.jar:../closurecompiler/compiler.jar org.mozilla.javascript.tools.shell.Main build.js\n"
+			+ "and place your build arguments on the same line after that text. Change the ../closurecompiler "
+			+ "path to the path where you keep Closure's compiler.jar." 
 	},
 	"cssOptimize": {
 		defaultValue: "",
@@ -252,6 +274,19 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 	if(typeof kwArgs.scopeDjConfig != "string") {
 		throw "Due to deficiencies in the build system, scopeDjConfig needs to be a string.";
 	}
+
+
+	//Do some hackery for closure compiler.
+	if(kwArgs.optimize.indexOf("closure") == 0 || kwArgs.layerOptimize.indexOf("closure") == 0){
+		//directly call JSSourceFile.fromCode will actually invoke SourceFile.fromCode,
+		//which will lead to error: "Cannot convert com.google.javascript.jscomp.SourceFile$Preloaded@26afa68a to com.google.javascript.jscomp.JSSourceFile"
+		//don't know whether it's a bug in closure or rhino - liucougar
+		var JSSourceFilefromCode=java.lang.Class.forName('com.google.javascript.jscomp.JSSourceFile').getMethod('fromCode',[java.lang.String,java.lang.String]);
+		buildUtil.closurefromCode = function(filename,content){
+			return JSSourceFilefromCode.invoke(null,[filename,content])
+		}
+	}
+
 	return kwArgs;
 }
 
@@ -1241,6 +1276,28 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 			if(optimizeType.indexOf(".keepLines") == -1){
 				fileContents = fileContents.replace(/[\r\n]/g, "");
 			}
+		}else if(optimizeType.indexOf("closure") == 0){
+			var jscomp = com.google.javascript.jscomp;
+			var flags = com.google.common.flags;
+
+			//Fake extern
+			var externSourceFile = buildUtil.closurefromCode("fakeextern.js", " ");
+
+			//Set up source input
+			var jsSourceFile = buildUtil.closurefromCode(String(fileName), String(fileContents));
+		
+			//Set up options
+			var options = new jscomp.CompilerOptions();
+			options.prettyPrint = optimizeType.indexOf(".keepLines") !== -1;
+			var FLAG_compilation_level = flags.Flag.value(jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS);
+			FLAG_compilation_level.get().setOptionsForCompilationLevel(options);
+			var FLAG_warning_level = flags.Flag.value(jscomp.WarningLevel.DEFAULT);
+			FLAG_warning_level.get().setOptionsForWarningLevel(options);
+
+			//Run the compiler
+			var compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
+			result = compiler.compile(externSourceFile, jsSourceFile, options);
+			fileContents = compiler.toSource();
 		}else if(optimizeType == "comments"){
 			//Strip comments
 			var script = context.compileString(fileContents, fileName, 1, null);
