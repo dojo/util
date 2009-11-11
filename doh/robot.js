@@ -228,10 +228,11 @@ if(!doh.robot["_robotLoaded"]){
 			var isNum = typeof(chars) == Number;
 			duration=duration||(isNum?50:chars.length*50);
 			if(isNum){
-				_keyPress(chars, chars, false, false, false, false, delay);
+				_keyPress(chars, chars, false, false, false, false, 0);
 			}else if(chars.length){
-				for(var i = 0; i<chars.length; i++){
-					_keyPress(chars.charCodeAt(i), 0, false, false, false, false, duration/chars.length);
+				_keyPress(chars.charCodeAt(0), 0, false, false, false, false, 0);
+				for(var i = 1; i<chars.length; i++){
+					_keyPress(chars.charCodeAt(i), 0, false, false, false, false, Math.max(Math.floor(duration/chars.length)-20, 0)); // 20ms is fudge for processing time until robot handles wall clock
 				}
 			}
 		}, delay, duration);
