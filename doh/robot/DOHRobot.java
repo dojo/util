@@ -1417,22 +1417,45 @@ public final class DOHRobot extends Applet{
 					}
 
 				}
-				int delay = (int)Math.ceil(Math.log(duration+1));
-				robot.setAutoDelay(delay);
-				robot.mouseMove(x1, y1);
-				int d = duration/delay-2; // - start,end
-				for (int t = 0; t <= d; t++){
+				// manual precision
+				robot.setAutoWaitForIdle(false);
+				int intermediateSteps = duration==1?0: // duration==1 -> user wants to jump the mouse
+					((((int)Math.ceil(Math.log(duration+1)))|1)); // |1 to ensure an odd # of intermediate steps for sensible interpolation
+				// assumption: intermediateSteps will always be >=0
+				int delay = duration/(intermediateSteps+1); // +1 to include last move
+				// First mouse movement fires at t=0 to official last know position of the mouse.
+				robot.mouseMove(lastMouseX, lastMouseY);
+				long date,date2;
+				date=new Date().getTime();
+				// Shift lastMouseX/Y in the direction of the movement for interpolating over the smaller interval.
+				lastMouseX=x1;
+				lastMouseY=y1;
+				// Now interpolate mouse movement from (lastMouseX=x1,lastMouseY=y1) to (x2,y2)
+				// precondition: the amount of time that has passed since the first mousemove is 0*delay.
+				// invariant: each time you end an iteration, after you increment t, the amount of time that has passed is t*delay
+				for (int t = 0; t < intermediateSteps; t++){
+					Thread.sleep(delay);
 					x1 = (int) easeInOutQuad((double) t, (double) lastMouseX,
-							(double) x2 - lastMouseX, (double) d);
+							(double) x2 - lastMouseX, (double) intermediateSteps-1);
 					y1 = (int) easeInOutQuad((double) t, (double) lastMouseY,
-							(double) y2 - lastMouseY, (double) d);
+							(double) y2 - lastMouseY, (double) intermediateSteps-1);
+					//log("("+x1+","+y1+")");
 					robot.mouseMove(x1, y1);
 				}
+				// postconditions:
+				//	t=intermediateSteps
+				// 	intermediateSteps*delay time has passed,
+				// 	time remaining = duration-intermediateSteps*delay = (steps+1)*delay-intermediateSteps*delay = delay
+				// You theoretically need 1 more delay for the whole duration to have passed.
+				// In practice, you want less than that due to roundoff errors in Java's clock granularity.
+				Thread.sleep(delay);
 				robot.mouseMove(x, y);
+				robot.setAutoWaitForIdle(true);
+				date2=new Date().getTime();
+				//log("mouseMove statistics: duration= "+duration+" steps="+intermediateSteps+" delay="+delay);
+				//log("mouseMove discrepency: "+(date2-date-duration)+"ms");
 				lastMouseX = x;
 				lastMouseY = y;
-				robot.waitForIdle();
-				robot.setAutoDelay(1);
 			}catch(Exception e){
 				log("Bad parameters passed to mouseMove");
 				e.printStackTrace();
