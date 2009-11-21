@@ -101,7 +101,7 @@ dojo.provide("util.docscripts.cheat.lib");
 				],
 
 				"DOM-Attributes":[
-					"hasAttr", "removeAttr", "position", "getEffectiveAttrValue" /* FIXME: too long for base */,
+					"hasAttr", "removeAttr", "position", "getNodeProp",
 					"setSelectable", "isDescendant", "val", "attr", "coords", "marginBox", "contentBox"
 				],
 
