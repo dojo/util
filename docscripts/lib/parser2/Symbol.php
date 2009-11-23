@@ -67,6 +67,8 @@ class Symbol {
         }
 
         if (is_object($name) && $name->id == '{') {
+          $is_global = $first->global_scope;
+
           // The parent item resolved to an object
           // so we need to continue the lookup
           foreach ($name->first as $value) {
@@ -94,7 +96,7 @@ class Symbol {
             }
           }
 
-          $name = $statement->value;
+          $name = $first->value;
         }
 
         if (!is_string($name)) {
