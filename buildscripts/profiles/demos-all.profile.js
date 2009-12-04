@@ -19,12 +19,6 @@ dependencies = {
 				"dijit.dijit-all"
 			]
 		},
-		{
-			name: "../dojox/off/offline.js",
-			dependencies: [
-				"dojox.off.offline"
-			]
-		},
 			
 		// Here are the various demos with promotion:
 		{
@@ -67,13 +61,6 @@ dependencies = {
 			name: "../demos/castle/src.js",
 			dependencies: [
 				"demos.castle.src"
-			]
-		},
-		{
-			// The Offline demos
-			name: "../demos/offline/src.js",
-			dependencies: [
-				"demos.offline.src"
 			]
 		},
 		{

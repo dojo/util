@@ -12,12 +12,6 @@ var dependencies = {
       dependencies: [ "dijit.dijit" ]
     },
     {
-      name: "../dojox/off/offline.js",
-      resourceName: "dojox.off.offline",
-      layerDependencies: [ ],
-      dependencies: [ "dojox.off.offline" ]
-    },
-    {
       name: "../foo/page/view.js",
       resourceName: "foo.page.view",
       layerDependencies: [ "dojo.js", "../dijit/dijit.js" ],

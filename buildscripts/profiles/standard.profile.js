@@ -22,14 +22,6 @@ dependencies = {
 			]
 		},
 		{
-			name: "../dojox/off/offline.js",
-			layerDependencies: [
-			],
-			dependencies: [
-				"dojox.off.offline"
-			]
-		},
-		{
 			name: "../dojox/grid/DataGrid.js",
 			dependencies: [
 				"dojox.grid.DataGrid"

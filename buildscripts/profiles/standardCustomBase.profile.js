@@ -30,14 +30,6 @@ dependencies = {
 			dependencies: [
 				"dijit.dijit-all"
 			]
-		},
-		{
-			name: "../dojox/off/offline.js",
-			layerDependencies: [
-			],
-			dependencies: [
-				"dojox.off.offline"
-			]
 		}
 	],
 
