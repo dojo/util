@@ -112,10 +112,10 @@ cd ..
 rm -rf release/
 
 # generate api.xml and api.json
-#cd util/docscripts/
-#php -q generate.php
-#mv api.* ../../../../build/
-#cd ../../../../
+cd util/docscripts/
+php -q generate.php
+mv api.* ../../../../build/
+cd ../../../../
 
 # make a folder structure appropriate for directly extracting on downloads.dojotoolkit.org
 mv build release-$1
@@ -134,4 +134,7 @@ tar -czvf dj-$1-dtk.tar.gz release-$1
 #Finished.
 outDirName=`pwd`
 echo "Build complete. Files are in: $outDirName"
+echo "A copy/paste command to push files to downloads.dojotoolkit.org with permission:"
+echo "scp dj-$1-dtk.tar.gz download.dojotoolkit.org:/srv/www/vhosts/download.dojotoolkit.org"
+echo "... then extract in place and rm dj-$1-dtk.tar.gz"
 cd ../util/buildscripts
