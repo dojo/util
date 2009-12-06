@@ -44,7 +44,6 @@ svn export http://svn.dojotoolkit.org/src/tags/$tagName $buildName
 
 # clobber cruft that we don't want in builds
 rm -rf ./$buildName/dijit/themes/noir
-rm -rf ./$buildName/dojox/off/demos
 rm -rf ./$buildName/dijit/bench
 
 #Make a shrinksafe bundle
@@ -97,11 +96,40 @@ mv $buildName.tar.gz ../../
 #copy compressed and uncompressed Dojo to the root
 cp $buildName/dojo/dojo.js* ../../
 
-# md5sum the release files
+# remove the testless release build, and unpack a -src archive to rebuild from
 cd ../../
+rm -rf $buildName/
+tar -xzvf $srcName.tar.gz
+cd $srcName/util/buildscripts/
+
+# build the version that will be extracted and live on downloads.dojotoolkit.org (with tests)
+./build.sh action=release version=$1 profile=standard cssOptimize=comments.keepLines releaseName=$buildName
+
+# cleanup the -src extraction, moving the newly built tree into place. 
+cd ../../release
+mv $buildName ../../
+cd ..
+rm -rf release/
+
+# generate api.xml and api.json
+#cd util/docscripts/
+#php -q generate.php
+#mv api.* ../../../../build/
+#cd ../../../../
+
+# make a folder structure appropriate for directly extracting on downloads.dojotoolkit.org
+mv build release-$1
+rm -rf release-$1/$srcName/
+cd release-$1
+
+# md5sum the release files
 for i in *.zip; do md5sum $i > $i.md5; done
 for i in *.gz; do md5sum $i > $i.md5; done
 for i in *.js; do md5sum $i > $i.md5; done
+
+# pack up the whole thing for easy copying
+cd ..
+tar -czvf dj-$1-dtk.tar.gz release-$1
 
 #Finished.
 outDirName=`pwd`
