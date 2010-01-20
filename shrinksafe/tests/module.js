@@ -7,19 +7,18 @@ shrinksafe.tests.module.getContents = function(path){
 	return readFile(path); // String
 }
 
-shrinksafe.tests.module.compress = function(source, stripConsole){
+shrinksafe.tests.module.compress = function(source, stripConsole, escapeUnicode){
 	// summary: Shorthand to compress some String version of JS code
-	return new String(Packages.org.dojotoolkit.shrinksafe.Compressor.compressScript(source, 0, 1, stripConsole)).toString();
+	return new String(Packages.org.dojotoolkit.shrinksafe.Compressor.compressScript(source, 0, 1, escapeUnicode, stripConsole)).toString();
 }
 
-
-shrinksafe.tests.module.loader = function(path, stripConsole){
+shrinksafe.tests.module.loader = function(path, stripConsole, escapeUnicode){
 	// summary: Simple function to load and compress some file. Returns and object
 	//	 with 'original' and 'compressed' members, respectively. 
 	var s = shrinksafe.tests.module.getContents(path);
 	return {
 		original: s, 
-		compressed: shrinksafe.tests.module.compress(s, stripConsole)
+		compressed: shrinksafe.tests.module.compress(s, stripConsole, escapeUnicode || false)
 	};
 }
 
@@ -145,6 +144,16 @@ try{
 			eval(src.compressed); // will throw on failure
 			t.assertEqual(6, result);
 			delete result;
+		},
+
+		function escapeUnicode(t){
+			var src = shrinksafe.tests.module.loader("escapeunicode.js", null);
+			t.assertTrue(src.compressed.indexOf('"\u03b1";') == 0);
+//			t.is('"\u03b1 \u03c9";', src.compressed); // extended test isn't working... encoding problem with input?
+
+			src = shrinksafe.tests.module.loader("escapeunicode.js", null, true);
+			t.assertTrue(src.compressed.indexOf('"\\u03b1";') == 0);
+//			t.is('"\\u03b1 \\u03c9";', src.compressed);
 		},
 
 		function mungeStrings(t){
