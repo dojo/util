@@ -976,7 +976,7 @@ public class Compressor {
     }
     
     public static final String compressScript(String source, int indent, int lineno, boolean escapeUnicode, String stripConsole) {
-    	return compressScript(source, indent, lineno, false, stripConsole, null);
+    	return compressScript(source, indent, lineno, escapeUnicode, stripConsole, null);
     }
         
     public static final String compressScript(String source, int indent, int lineno, boolean escapeUnicode, String stripConsole, StringBuffer debugData) {
