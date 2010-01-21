@@ -100,6 +100,15 @@ doh.debug = function(){
 	// YOUR TEST RUNNER NEEDS TO IMPLEMENT THIS
 }
 
+doh.error = function(){
+	// summary:
+	//		logging method to be used to send Error objects, so that
+	//		whatever debugging or logging facility you have can decide to treat it
+	//		as an Error object and show additional information - such as stack trace
+
+	// YOUR TEST RUNNER NEEDS TO IMPLEMENT THIS
+}
+
 doh._AssertFailure = function(msg, hint){
 	// idea for this as way of dis-ambiguating error types is from JUM. 
 	// The JUM is dead! Long live the JUM!
@@ -780,7 +789,7 @@ doh._handleFailure = function(groupName, fixture, e){
 	}else{
 		this._errorCount++;
 	}
-	this.debug(e);
+	this.error(e);
 	if(fixture.runTest["toSource"]){
 		var ss = fixture.runTest.toSource();
 		this.debug("\tERROR IN:\n\t\t", ss);

@@ -316,6 +316,7 @@ if(window["dojo"]){
 			}
 		})(doh._report);
 		
+		doh.error = undefined;
 		if(this["opera"] && opera.postError){
 			doh.debug = function(){
 				var msg = "";
@@ -326,6 +327,12 @@ if(window["dojo"]){
 				opera.postError("DEBUG:"+msg);
 			}
 		}else if(window["console"]){
+			if(console.error){
+				doh.error = function(){
+					sendToLogPane.call(window, arguments);
+					console.error.apply(console, arguments);
+				};
+			} 
 			if(console.debug){
 				doh.debug = function(){
 					sendToLogPane.call(window, arguments);
@@ -351,6 +358,7 @@ if(window["dojo"]){
 				sendToLogPane.call(window, arguments);
 			}
 		}
+		doh.error = doh.error || doh.debug;
 
 		var loaded = false;
 		var groupTemplate = null;
