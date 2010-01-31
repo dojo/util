@@ -35,7 +35,7 @@ class JavaScriptArray extends Destructable {
 
   private function getType($position, $type) {
     $args = $this->all();
-    if (get_class($args[$position]) == $type) {
+	if ($args[$position] && get_class($args[$position]) == $type) {
       return $args[$position];
     }
   }
