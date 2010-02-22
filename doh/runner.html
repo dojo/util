@@ -41,22 +41,20 @@
 			if(qstr.length){
 				var qparts = qstr.split("&");
 				for(var x=0; x<qparts.length; x++){
-					var tp = qparts[x].split("=");
-					if(tp[0] == "dojoUrl"){
-						window.dojoUrl = tp[1];
-					}
-					if(tp[0] == "testUrl"){
-						window.testUrl = tp[1];
-					}
-					if(tp[0] == "testModule"){
-						window.testModule = tp[1];
-					}
-					if(tp[0] == "registerModulePath"){
-						var modules = tp[1].split(";");
-						window.registerModulePath=[];
-						for (var i=0; i<modules.length;i++){
-							window.registerModulePath.push(modules[i].split(","));
-						}
+					var tp = qparts[x].split("="), name=tp[0], value=tp[1].replace(/[<>"']/g, "");	// replace() to avoid XSS attack
+					switch(name){
+						case "dojoUrl":
+						case "testUrl":
+						case "testModule":
+							window[name] = value;
+							break;
+						case "registerModulePath":
+							var modules = value.split(";");
+							window.registerModulePath=[];
+							for (var i=0; i<modules.length;i++){
+								window.registerModulePath.push(modules[i].split(","));
+							}
+						break;
 					}
 				}
 			}
