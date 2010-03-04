@@ -79,7 +79,7 @@ buildUtil.DojoBuildOptions = {
 	},
 
 	"copyTests": {
-		defaultValue: true,
+		defaultValue: false,
 		helpText: "Turn on or off copying of test files."
 	},
 	"log": {
