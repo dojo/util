@@ -69,7 +69,7 @@ buildUtil.DojoBuildOptions = {
 			+ "is specified, then code comments are stripped, but line returns are preserved."
 	},
 	"copyTests": {
-		defaultValue: true,
+		defaultValue: false,
 		helpText: "Turn on or off copying of test files."
 	},
 	"log": {
