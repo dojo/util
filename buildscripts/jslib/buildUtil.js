@@ -112,7 +112,7 @@ buildUtil.DojoBuildOptions = {
 		helpText: "Turn on or off copying of test files."
 	},
 	"mini": {
-		defaultValue: false,
+		defaultValue: true,
 		helpText: "Removes files like tests, demos dijit/bench, unfinished themes, and interned "
 			+ "Dijit templates from the build. Overrides the value set for copyTests."
 	},
