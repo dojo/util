@@ -267,7 +267,7 @@ function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kw
 	}
 	
 	if(kwArgs.mini){
-		copyRegExps.exclude = /\/tests\/|\/demos\/|tests\.js|dijit\/bench|dijit\/themes\/noir|dijit\/themes\/themeTest|dijit\/themes\/templateThemeTest/;
+		copyRegExps.exclude = /\/tests\/|\/demos\/|tests\.js|dijit\/bench|dijit\/themes\/noir|dijit\/themes\/themeTest|dijit\/themes\/templateThemeTest|(\.php$)/;
 	}
 
 	logger.info("Copying: " + prefixPath + " to: " + releasePath);
