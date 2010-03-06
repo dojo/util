@@ -89,6 +89,13 @@ dependencies = {
 			dependencies:[
 				"demos.faces.src"
 			]
+		},
+		{
+			// the CSS3 animations demo
+			name: "../demos/css3/src.js",
+			dependencies:[
+				"demos.css3.src"
+			]
 		}
 	],
 	
