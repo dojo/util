@@ -23,7 +23,7 @@ buildUtil.DojoBuildOptions = {
 		helpText: "The build will be stamped with this version string."
 	},
 	"localeList": {
-		defaultValue: "ar,ca,cs,da,de-de,el,en-gb,en-us,es-es,fi-fi,fr-fr,he-il,hu,it-it,ja-jp,ko-kr,nl-nl,no,pl,pt-br,pt-pt,ru,sk,sl,sv,th,tr,zh-tw,zh-cn",
+		defaultValue: "ar,ca,cs,da,de-de,el,en-gb,en-us,es-es,fi-fi,fr-fr,he-il,hu,it-it,ja-jp,ko-kr,nl-nl,nb,pl,pt-br,pt-pt,ru,sk,sl,sv,th,tr,zh-tw,zh-cn",
 		helpText: "The set of locales to use when flattening i18n bundles."
 	},
 	
