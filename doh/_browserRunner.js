@@ -54,6 +54,19 @@ if(window["dojo"]){
 			return str.replace(/&/gm, "&amp;").replace(/</gm, "&lt;").replace(/>/gm, "&gt;").replace(/"/gm, "&quot;"); // string
 		};
 
+		var formatTime = function(n){
+			switch(true){
+				case n<1000: //<1s
+					return n+"ms";
+				case n<60000: //<1m
+					return Math.round(n/100)/10+"s";
+				case n<3600000: //<1h
+					return Math.round(n/6000)/10+"m";
+				default: //>1h
+					return Math.round(n/360000)/10+"h";
+			}
+		};
+		
 		var _logBacklog = [], _loggedMsgLen = 0;
 		var sendToLogPane = function(args, skip){
 			var msg = "";
@@ -202,7 +215,7 @@ if(window["dojo"]){
 					cell = row.insertCell(-1);
 					cell.innerHTML=this._testCount+" tests in "+this._groupCount+" groups /<span class='failure'>"+this._errorCount+"</span> errors, <span class='failure'>"+this._failureCount+"</span> failures";
 					cell.setAttribute('_target',_loggedMsgLen+1);
-					row.insertCell(-1).innerHTML=doh._totalTime+"ms";
+					row.insertCell(-1).innerHTML=formatTime(doh._totalTime);
 				}
 				
 				//This location can do the final performance rendering for the results
@@ -496,7 +509,7 @@ if(window["dojo"]){
 			var gn = getGroupNode(group);
 			if(gn && doh._inGroup == group){
 				doh._totalTime += doh._groupTotalTime;
-				gn.getElementsByTagName("td")[3].innerHTML = doh._groupTotalTime+"ms";
+				gn.getElementsByTagName("td")[3].innerHTML = formatTime(doh._groupTotalTime);
 				gn.getElementsByTagName("td")[2].lastChild.className = "";
 				doh._inGroup = null;
 				//doh._runedSuite++;
@@ -507,7 +520,7 @@ if(window["dojo"]){
 				//byId("progressOuter").style.width = parseInt(this._runedSuite/this._suiteCount*100)+"%";
 			}
 			if(doh._inGroup == group){
-				this.debug("Total time for GROUP \"",group,"\" is ",doh._groupTotalTime,"ms");
+				this.debug("Total time for GROUP \"",group,"\" is ",formatTime(doh._groupTotalTime));
 			}
 		}
 
@@ -559,7 +572,7 @@ if(window["dojo"]){
 			var fn = getFixtureNode(group, fixture);
 			var elapsed = fixture.endTime-fixture.startTime;
 			if(fn){
-				fn.getElementsByTagName("td")[3].innerHTML = elapsed+"ms";
+				fn.getElementsByTagName("td")[3].innerHTML = formatTime(elapsed);
 				fn.className = (success) ? "success" : "failure";
 				fn.getElementsByTagName("td")[2].setAttribute('_target', _loggedMsgLen);
 				if(!success){

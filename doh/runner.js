@@ -1102,13 +1102,13 @@ doh._runRegFixture = function(/*String*/groupName, /*Object*/fixture){
 		}
 
 		var timer = setTimeout(function(){
-			// ret.cancel();
-			// retEnd();
+			fixture.endTime = new Date();
 			ret.errback(new Error("test timeout in "+fixture.name.toString()));
 		}, fixture["timeout"]||1000);
 
 		ret.addBoth(function(arg){
 			clearTimeout(timer);
+			fixture.endTime = new Date();
 			retEnd();
 		});
 		if(ret.fired < 0){
