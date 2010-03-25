@@ -4,7 +4,7 @@
 <xsl:output method="text" indent="yes" saxon:byte-order-mark="yes"/>
 <!-- list the data elements whose spaces should be preserved
    it seems listing only the parent node doesn't work -->
-<xsl:preserve-space elements="month day quarter am pm era pattern dateFormatItem appendItem displayName"/>
+    <xsl:preserve-space elements="month day quarter dayPeriod era pattern dateFormatItem appendItem displayName"/>
 <xsl:strip-space elements="*"/> 
 <xsl:variable name="index" select="number(1)" saxon:assignable="yes"/>
 
@@ -87,7 +87,7 @@
 </xsl:template>
 
 <!-- process months -->
-<xsl:template name="months_days_quarters" match="months | days | quarters">
+    <xsl:template name="months_days_quarters_dayPeriods" match="months | days | quarters | dayPeriods">
     <xsl:param name="name" select="name()"/>
     <xsl:param name="width" select="@type"/>
     <xsl:param name="ctx" select="../@type"/>
@@ -97,10 +97,10 @@
 	<xsl:variable name="item" select="substring-before(name(), 'Width')"/>
 	<!-- insert 'locale' alias information start -->
     <xsl:if test="$fromLocaleAlias">
-        <xsl:if test="name()='months' or name()='days' or name()='quarters'">
+        <xsl:if test="name()='months' or name()='days' or name()='quarters' or name()='dayPeriods'">
                 <xsl:call-template name="insert_alias_info"/>
          </xsl:if>
-        <xsl:if test="name()='monthWidth' or name()='dayWidth' or name()='quarterWidth'">
+        <xsl:if test="name()='monthWidth' or name()='dayWidth' or name()='quarterWidth' or name()='dayPeriodWidth'">
             <!-- e.g.  for <monthContext type="format">
         		<monthWidth type="abbreviated">
         			<alias source="locale" path="../monthWidth[@type='wide']"/>
@@ -138,7 +138,7 @@
             <!-- Handle Alias -->
             <xsl:for-each select="./alias">
                 <xsl:call-template name="alias_template">
-                    <xsl:with-param name="templateToCall">months_days_quarters</xsl:with-param>
+                    <xsl:with-param name="templateToCall">months_days_quarters_dayPeriods</xsl:with-param>
                     <xsl:with-param name="source" select="@source"></xsl:with-param>
                     <xsl:with-param name="xpath" select="@path"></xsl:with-param>
                     <xsl:with-param name="name" select="$name"></xsl:with-param>
@@ -148,33 +148,45 @@
             </xsl:for-each>            
         </xsl:when>
         <xsl:otherwise>
-            <xsl:if test="name()='months' or name()='monthContext'
-                       or name()='days' or name()='dayContext'
-                       or name()='quarters' or name()='quarterContext'">
+            <xsl:if test="name()='months' or name()='monthContext' or name()='days' or name()='dayContext'
+                or name()='quarters' or name()='quarterContext' or name()='dayPeriods' or name()='dayPeriodContext'">
                 <xsl:for-each select="*">
-                    <xsl:call-template name="months_days_quarters"></xsl:call-template>
+                    <xsl:call-template name="months_days_quarters_dayPeriods"></xsl:call-template>
                 </xsl:for-each>
             </xsl:if>
-            <xsl:if test="name()='monthWidth' or name()='dayWidth' or name()='quarterWidth'">
+            <xsl:if test="name()='monthWidth' or name()='dayWidth' or name()='quarterWidth' or name()='dayPeriodWidth' ">
                 <!--xsl:variable name="item" select="substring-before(name(), 'Width')"/-->
                 <xsl:if test="count(*[not(@draft)])>0 or count(*[@draft!='provisional' and @draft!='unconfirmed'])>0">
-                    <xsl:call-template name="insert_comma"/>
+					<xsl:choose>
+						<!-- special format for dayPeriodWidth e.g.'dayPeriods-am-format-wide':"AM"-->
+						<xsl:when test="name()='dayPeriodWidth'">
+					        <xsl:call-template name="apm">
+				                <xsl:with-param name="item" select="$item"></xsl:with-param>
+								<xsl:with-param name="width" select="$width"></xsl:with-param>
+								<xsl:with-param name="ctx" select="$ctx"></xsl:with-param>
+					        </xsl:call-template>				
+						</xsl:when>
+						<!--monthWidth, dayWidth and quarterWidth-->
+						<xsl:otherwise>					
+			                <xsl:call-template name="insert_comma"/>
 	'<xsl:value-of select="$item"/>
-                <xsl:text>s-</xsl:text>
-                <xsl:call-template name="camel_case">
-                    <xsl:with-param name="name"><xsl:value-of select="$ctx"></xsl:value-of></xsl:with-param>
-                </xsl:call-template>
-                <xsl:choose>
-                	<xsl:when test="$width='abbreviated'"><xsl:text>-abbr</xsl:text></xsl:when>
-                	<xsl:otherwise>
-                       <xsl:value-of select="concat('-',$width)"></xsl:value-of>
-                    </xsl:otherwise>
-                </xsl:choose>
-                <xsl:text>':</xsl:text>
-                <!--xsl:call-template name="subSelect"><xsl:with-param name="name" select="./*[name()=$item]"></xsl:with-param></xsl:call-template-->
-                <xsl:call-template name="subSelect_in_place"><xsl:with-param name="name" select="$item"></xsl:with-param></xsl:call-template>
+			                <xsl:text>s-</xsl:text>
+			                <xsl:call-template name="camel_case">
+			                    <xsl:with-param name="name"><xsl:value-of select="$ctx"></xsl:value-of></xsl:with-param>
+			                </xsl:call-template>
+			                <xsl:choose>
+			                	<xsl:when test="$width='abbreviated'"><xsl:text>-abbr</xsl:text></xsl:when>
+			                	<xsl:otherwise>
+			                       <xsl:value-of select="concat('-',$width)"></xsl:value-of>
+			                    </xsl:otherwise>
+			                </xsl:choose>
+			                <xsl:text>':</xsl:text>
+			                <!--xsl:call-template name="subSelect"><xsl:with-param name="name" select="./*[name()=$item]"></xsl:with-param></xsl:call-template-->
+			                <xsl:call-template name="subSelect_in_place"><xsl:with-param name="name" select="$item"></xsl:with-param></xsl:call-template>
+						</xsl:otherwise>
+					</xsl:choose>
                 </xsl:if>               
-                </xsl:if>
+         	</xsl:if>
          </xsl:otherwise>
     </xsl:choose>
 </xsl:template>
@@ -200,38 +212,29 @@
         <xsl:value-of select="$bundle"/><xsl:text>"}</xsl:text>
     </xsl:template>
     
-<!--process am & pm -->
-<xsl:template name="apm" match="am|pm">
-    <!-- will be overridden with 'true' if from 'locale' alias, see 'invoke_template_by_name' -->   
-    <xsl:param name="fromLocaleAlias" select="false()"/>
 	
-    <!-- insert 'locale' alias information start -->
-    <xsl:if test="$fromLocaleAlias">
-        <xsl:call-template name="insert_alias_info"/>
-    </xsl:if>
-    <!-- insert 'locale' alias information end -->
+<!--process am & noon & pm for <dayPeriod> -->
+<xsl:template name="apm">
+	<xsl:param name="item"></xsl:param>
+	<xsl:param name="ctx"></xsl:param>
+	<xsl:param name="width"></xsl:param>
 	
-    <xsl:choose>
-        <xsl:when test="alias">
-            <!-- Handle Alias --> 
-            <xsl:for-each select="alias">
-                <xsl:call-template name="alias_template">
-                    <xsl:with-param name="templateToCall">apm</xsl:with-param>
-                    <xsl:with-param name="source" select="@source"></xsl:with-param>
-                    <xsl:with-param name="xpath" select="@path"></xsl:with-param>
-                </xsl:call-template>
-            </xsl:for-each>            
-        </xsl:when>
-        <xsl:otherwise>
-        <xsl:if test="not(@alt) and not(@draft) or @draft!='provisional' and @draft!='unconfirmed'">
-            <xsl:call-template name="insert_comma"/>
-	'<xsl:value-of select="name()"/>
-            <xsl:text>':"</xsl:text>
-            <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/><xsl:text>"</xsl:text>
-        </xsl:if>
-        </xsl:otherwise>
-    </xsl:choose>
-</xsl:template>
+    <xsl:for-each select="*[not(@alt) and (not(@draft) or @draft!='provisional' and @draft!='unconfirmed')]">
+	    <xsl:call-template name="insert_comma"/>
+	'<xsl:value-of select="$item"/><xsl:text>s-</xsl:text><xsl:value-of select="@type"/><xsl:text>-</xsl:text>
+	    <xsl:call-template name="camel_case">
+	        <xsl:with-param name="name"><xsl:value-of select="$ctx"></xsl:value-of></xsl:with-param>
+	    </xsl:call-template>
+	    <xsl:choose>
+	    	<xsl:when test="$width='abbreviated'"><xsl:text>-abbr</xsl:text></xsl:when>
+	    	<xsl:otherwise>
+	           <xsl:value-of select="concat('-',$width)"></xsl:value-of>
+	        </xsl:otherwise>
+	    </xsl:choose>
+	    <xsl:text>':"</xsl:text><xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/><xsl:text>"</xsl:text>
+    </xsl:for-each>
+ </xsl:template>
+
 
 <!-- process eras -->
 <xsl:template match="eras" name="eras">
@@ -650,18 +653,13 @@
 		 	<xsl:with-param name="fromLocaleAlias" select="$fromLocaleAlias"></xsl:with-param>
 		 </xsl:call-template>
      </xsl:if>
-     <xsl:if test="$templateName='months_days_quarters'">
-         <xsl:call-template name="months_days_quarters">
+     <xsl:if test="$templateName='months_days_quarters_dayPeriods'">
+         <xsl:call-template name="months_days_quarters_dayPeriods">
 		  	  <xsl:with-param name="name" select="$name"></xsl:with-param>
               <xsl:with-param name="width" select="$width"></xsl:with-param>
 			  <xsl:with-param name="ctx" select="$ctx"></xsl:with-param>
              <xsl:with-param name="fromLocaleAlias" select="$fromLocaleAlias"></xsl:with-param>
           </xsl:call-template>
-      </xsl:if>
-     <xsl:if test="$templateName='apm'">
-         <xsl:call-template name="apm">
-		 	<xsl:with-param name="fromLocaleAlias" select="$fromLocaleAlias"></xsl:with-param>
-		 </xsl:call-template>
      </xsl:if>
      <xsl:if test="$templateName='eras'">
          <xsl:call-template name="eras">
