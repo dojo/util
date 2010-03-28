@@ -86,7 +86,7 @@
     </xsl:choose>
 </xsl:template>
 
-<!-- process months -->
+<!-- process months | days | quarters | dayPeriods -->
     <xsl:template name="months_days_quarters_dayPeriods" match="months | days | quarters | dayPeriods">
     <xsl:param name="name" select="name()"/>
     <xsl:param name="width" select="@type"/>
@@ -183,6 +183,22 @@
 			                <xsl:text>':</xsl:text>
 			                <!--xsl:call-template name="subSelect"><xsl:with-param name="name" select="./*[name()=$item]"></xsl:with-param></xsl:call-template-->
 			                <xsl:call-template name="subSelect_in_place"><xsl:with-param name="name" select="$item"></xsl:with-param></xsl:call-template>
+							<!-- for leap month -->
+							<xsl:for-each select="*[@yeartype='leap']">
+	    						<xsl:call-template name="insert_comma"/>
+	'<xsl:value-of select="$item"/><xsl:text>s-</xsl:text>
+	    						<xsl:call-template name="camel_case">
+							        <xsl:with-param name="name"><xsl:value-of select="$ctx"></xsl:value-of></xsl:with-param>
+							    </xsl:call-template>
+							    <xsl:choose>
+							    	<xsl:when test="$width='abbreviated'"><xsl:text>-abbr</xsl:text></xsl:when>
+							    	<xsl:otherwise>
+							           <xsl:value-of select="concat('-',$width)"></xsl:value-of>
+							        </xsl:otherwise>
+							    </xsl:choose>
+								<xsl:text>-</xsl:text><xsl:value-of select="@yeartype"/><xsl:text>':"</xsl:text>
+							    <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/><xsl:text>"</xsl:text>
+							</xsl:for-each>						
 						</xsl:otherwise>
 					</xsl:choose>
                 </xsl:if>               
@@ -221,7 +237,7 @@
 	
     <xsl:for-each select="*[not(@alt) and (not(@draft) or @draft!='provisional' and @draft!='unconfirmed')]">
 	    <xsl:call-template name="insert_comma"/>
-	'<xsl:value-of select="$item"/><xsl:text>s-</xsl:text><xsl:value-of select="@type"/><xsl:text>-</xsl:text>
+	'<xsl:value-of select="$item"/><xsl:text>s-</xsl:text>
 	    <xsl:call-template name="camel_case">
 	        <xsl:with-param name="name"><xsl:value-of select="$ctx"></xsl:value-of></xsl:with-param>
 	    </xsl:call-template>
@@ -231,7 +247,8 @@
 	           <xsl:value-of select="concat('-',$width)"></xsl:value-of>
 	        </xsl:otherwise>
 	    </xsl:choose>
-	    <xsl:text>':"</xsl:text><xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/><xsl:text>"</xsl:text>
+	    <xsl:text>-</xsl:text><xsl:value-of select="@type"/><xsl:text>':"</xsl:text>
+	    <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/><xsl:text>"</xsl:text>
     </xsl:for-each>
  </xsl:template>
 
@@ -561,10 +578,10 @@
 <xsl:template name="subSelect_in_place">
     <xsl:param name="name"></xsl:param>
     <!--xsl:variable name="num" select="count(./$name[not(@draft)])+count(./$name[@draft!='provisional' and @draft!='unconfirmed'])"></xsl:variable-->
-    <xsl:variable name="num" select="count(./*[name()=$name and  (not(@draft) or @draft!='provisional' and @draft!='unconfirmed')])"></xsl:variable>
+    <xsl:variable name="num" select="count(./*[name()=$name and (not(@draft) or @draft!='provisional' and @draft!='unconfirmed') and not(@yeartype)])"></xsl:variable>
     <xsl:text>[</xsl:text>
     <!--xsl:for-each select="$name[not(@draft)] | $name[@draft!='provisional' and @draft!='unconfirmed']"-->
-    <xsl:for-each select="./*[name()=$name and  (not(@draft) or @draft!='provisional' and @draft!='unconfirmed')]">        
+    <xsl:for-each select="./*[name()=$name and (not(@draft) or @draft!='provisional' and @draft!='unconfirmed') and not(@yeartype)]">        
         <xsl:choose>
             <xsl:when test="$name='day'">
                 <!--TODO: too bad that assign name can not be variable -->
@@ -590,11 +607,11 @@
         <!--xsl:variable name="num_preceding_sibling" select="count(preceding-sibling::node()[name()=$name and  (not(@draft))])
             + count(preceding-sibling::node()[name()=$name and @draft!='provisional' and @draft!='unconfirmed'])"></xsl:variable-->
         <xsl:variable name="num_preceding_sibling" 
-         select="count(preceding-sibling::node()[name()=$name and  (not(@draft) or @draft!='provisional' and @draft!='unconfirmed')])"></xsl:variable>
+         select="count(preceding-sibling::node()[name()=$name and (not(@draft) or @draft!='provisional' and @draft!='unconfirmed') and not(@yeartype)])"></xsl:variable>
         
         <xsl:if test=" $num_expect_preceding_sibling > $num_preceding_sibling">
             <xsl:if test="$num_preceding_sibling > 0">
-                <xsl:for-each select="(preceding-sibling::node()[name()=$name and  (not(@draft) or @draft!='provisional' and @draft!='unconfirmed')])[last()]">
+                <xsl:for-each select="(preceding-sibling::node()[name()=$name and (not(@draft) or @draft!='provisional' and @draft!='unconfirmed') and not(@yeartype)])[last()]">
                     <xsl:choose>
                         <xsl:when test="$name='day'">
                             <!--TODO: too bad that assign name can not be variable -->
