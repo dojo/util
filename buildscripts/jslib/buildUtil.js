@@ -1893,6 +1893,9 @@ buildUtil.generateSym = function(/*String*/name){
 	s = "$D" + s;
 	buildUtil.symctr++;
 	var ret;
+	
+	//Make sure name is valid JS
+	name = name.replace(/-/g, "__");
 	if(kwArgs.symbol == "long"){
 		ret = name; // + "_" + s;
 	}else if(kwArgs.symbol == "short"){
