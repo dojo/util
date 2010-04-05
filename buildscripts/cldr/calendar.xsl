@@ -527,14 +527,23 @@
                     </xsl:for-each>
                 </xsl:when>
                 <xsl:otherwise>
-            <xsl:for-each select=".//displayName[not(@draft)] | 
-                .//displayName[@draft!='provisional' and @draft!='unconfirmed']">
-                <xsl:call-template name="insert_comma"/>
+                    <xsl:for-each select=".//displayName[not(@draft)] | 
+                        .//displayName[@draft!='provisional' and @draft!='unconfirmed']">
+                        <xsl:call-template name="insert_comma"/>
 	'field-<xsl:value-of select="$width"></xsl:value-of>
-               <xsl:text>':"</xsl:text>
-               <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/>
-                <xsl:text>"</xsl:text>
-            </xsl:for-each>                    
+                        <xsl:text>':"</xsl:text>
+                        <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/>
+                        <xsl:text>"</xsl:text>
+                    </xsl:for-each>                    
+                    <xsl:for-each select=".//relative">
+                        <xsl:call-template name="insert_comma"/>
+	'field-<xsl:value-of select="$width"></xsl:value-of>
+                        <xsl:text>-relative+</xsl:text>
+                        <xsl:value-of select="@type"/>
+                        <xsl:text>':"</xsl:text>
+                        <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/>
+                        <xsl:text>"</xsl:text>
+                    </xsl:for-each>                    
                 </xsl:otherwise>
             </xsl:choose> 
          </xsl:otherwise>
