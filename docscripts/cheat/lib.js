@@ -55,7 +55,7 @@ dojo.provide("util.docscripts.cheat.lib");
 
 				"Language-Helpers":[
 					"isArray", "isFunction", "isString", "isObject", "isArrayLike", "unique", 
-					"eval", "isAlien", "trim", "Deferred", "_toArray", "replace"
+					"eval", "isAlien", "trim", "Deferred", "_toArray", "replace", "when"
 				],
 
 				"Arrays":[
