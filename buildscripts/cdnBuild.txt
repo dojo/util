@@ -2,7 +2,11 @@ CDN build process
 ===================
 Run the cdnBuild.sh script to generate the CDN distributions for the Google and AOL CDNs. Be sure to:
 - use a pristine svn export of a tag and run cdnBuild.sh from the util/buildscripts directory in that tag.
+  svn export https://svn.dojotoolkit.org/src/tags/release-1.4.3 1.4.3
 - make sure sha1sum is available on the OS, otherwise the signature generation will fail.
+- Apache Ant is needed to run the cldr i18n resources. the cldr build process does not work with 
+  Ant 1.7.0. Ant 1.7.1 and 1.6.5. Download one of those and do this to set the version of Ant to use:
+  export ANT_HOME=/full/path/to/ant-1.7.1
 
 The result will be in the svn exported tag directory's release/VERSION-cdn directory.
 
