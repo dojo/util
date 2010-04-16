@@ -5,12 +5,12 @@ Run the cdnBuild.sh script to generate the CDN distributions for the Google and 
   svn export https://svn.dojotoolkit.org/src/tags/release-1.4.3 1.4.3
 - make sure sha1sum is available on the OS, otherwise the signature generation will fail.
 - Apache Ant is needed to run the cldr i18n resources. the cldr build process does not work with 
-  Ant 1.7.0. Ant 1.7.1 and 1.6.5. Download one of those and do this to set the version of Ant to use:
+  Ant 1.7.0, but does work with Ant 1.7.1 and 1.6.5. Download one of those and do this to set the version of Ant to use:
   export ANT_HOME=/full/path/to/ant-1.7.1
 
 The result will be in the svn exported tag directory's release/VERSION-cdn directory.
 
-After doing the build, place teh VERSION-cdn directory on the dojotoolkit.org site and notify the CDN owners.
+After doing the build, place the VERSION-cdn directory on the dojotoolkit.org site and notify the CDN owners.
 Let the know the .zip file's sha signature is in the sha1.txt file at the top, and ask them to update
 their symlink for the MAJOR.MINOR version number to the latest MAJOR.MINOR.PATCH number.
 
