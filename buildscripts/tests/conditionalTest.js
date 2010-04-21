@@ -1,9 +1,9 @@
 //Test file for the conditional comment inclusion/exclusion code.
 //Run this file from the util/buildscripts/tests directory.
 
-load("../jslib/buildUtil.js");
 load("../jslib/fileUtil.js");
 load("../jslib/logger.js");
+load("../jslib/buildUtil.js");
 
 
 
