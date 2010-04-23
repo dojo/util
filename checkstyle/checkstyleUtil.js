@@ -267,11 +267,33 @@ checkstyleUtil.createSpaceWrappedSearch = function(token, message){
 			before = contents.charAt(idx - 1);
 			after = contents.charAt(idx + tokenLength);
 			if(!comments[idx] && 
-				((before != " " && before != "\t" && (token != "==" || before != "!")) || 
+				((before != " " && before != "\t" 
+					&& (token != "==" || before != "!")
+					&& (token != "=" || 
+						(before != "<" && 
+						 before != ">" && 
+						 before != "=" && 
+						 before != "!" && 
+						 before != "+" && 
+						 before != "-" && 
+						 before != "*" && 
+						 before != "/" && 
+						 before != "&" && 
+						 before != "|" ))) || 
 				(
 					(after != " " && contents.charCodeAt(idx + tokenLength) != 13 
 						&& contents.charCodeAt(idx + tokenLength) != 10)
-				&& 	(token != "==" || after != "=")
+					&& (token != "==" || after != "=")
+					&& (token != "!=" || after != "=")
+					&& (token != "<" || after != "=")
+					&& (token != ">" || after != "=")
+					&& (token != "=" || after != "=")
+					&& (token != "&" || after != "=")
+					&& (token != "|" || after != "=")
+					&& (token != "+" || after != "=")
+					&& (token != "-" || after != "=")
+					&& (token != "*" || after != "=")
+					&& (token != "/" || after != "=")
 				))){
 				checkstyleUtil.addError(message, fileName, contents, idx);
 			}
@@ -451,7 +473,11 @@ checkstyleUtil.rules = {
 	},
 	
 	"spacesAroundEquals": checkstyleUtil.createSpaceWrappedSearch("==", "The equals sign should be preceded and followed by a space"),
+	"spacesAroundNotEquals": checkstyleUtil.createSpaceWrappedSearch("!=", "The != sign should be preceded and followed by a space"),
+	"spacesAroundAssignment": checkstyleUtil.createSpaceWrappedSearch("=", "The = sign should be preceded and followed by a space"),
 	"spacesAroundOr": checkstyleUtil.createSpaceWrappedSearch("||", "The || sign should be preceded and followed by a space"),
+	"spacesAroundLessThan": checkstyleUtil.createSpaceWrappedSearch("<", "The < sign should be preceded and followed by a space"),
+	"spacesAroundGreaterThan": checkstyleUtil.createSpaceWrappedSearch(">", "The > sign should be preceded and followed by a space"),
 	"spacesAroundAnd": checkstyleUtil.createSpaceWrappedSearch("&&", "The && sign should be preceded and followed by a space")
 };
 
@@ -533,7 +559,19 @@ checkstyleUtil.makeSimpleFixes = function(contents){
 	comments = checkstyleUtil.getComments(contents);
 	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "!==", comments);
 	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "<=", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "<", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, ">=", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, ">", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "!=", comments);
+	comments = checkstyleUtil.getComments(contents);
 	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "==", comments);
+	comments = checkstyleUtil.getComments(contents);
+	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "=", comments);
 	comments = checkstyleUtil.getComments(contents);
 	contents = checkstyleUtil.fixSpaceBeforeAndAfter(contents, "||", comments);
 	comments = checkstyleUtil.getComments(contents);
@@ -670,7 +708,21 @@ checkstyleUtil.fixSpaceBeforeAndAfter = function(contents, token, comments){
 			// - char before is not a space or a tab
 			// - token is "==" and the char before is neither "!" or "="
 		
-			if(before != " " && before != "\t" && (token != "==" || (before != "!" && before != "="))){
+			if(before != " " && before != "\t" 
+				&& (token != "==" || (before != "!" && before != "="))
+				&& (token != "=" || 
+						(before != "<" && 
+						 before != ">" && 
+						 before != "=" && 
+						 before != "!" && 
+						 before != "+" && 
+						 before != "-" && 
+						 before != "*" && 
+						 before != "/" && 
+						 before != "&" && 
+						 before != "|" ))
+				){
+				
 				contents = checkstyleUtil.insertChar(contents, " ", idx);
 				idx ++;
 			}
@@ -681,7 +733,19 @@ checkstyleUtil.fixSpaceBeforeAndAfter = function(contents, token, comments){
 			// - char after is not "="
 			if((after != " " && contents.charCodeAt(idx + len) != 13 
 					&& contents.charCodeAt(idx + len) != 10)
-					&& (token != "==" || after != "=")){
+					&& (token != "==" || after != "=")
+					&& (token != "!=" || after != "=")
+					&& (token != "=" || after != "=")
+					&& (token != "<" || after != "=")
+					&& (token != ">" || after != "=")
+					&& (token != "&" || after != "=")
+					&& (token != "|" || after != "=")
+					&& (token != "+" || after != "=")
+					&& (token != "-" || after != "=")
+					&& (token != "*" || after != "=")
+					&& (token != "/" || after != "=")
+					
+					){
 				contents = contents = checkstyleUtil.insertChar(contents, " ", idx + token.length);
 				idx++;
 			}
