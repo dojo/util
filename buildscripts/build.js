@@ -329,7 +329,9 @@ function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kw
 			}
 		}
 
-		buildUtil.addGuardsAndBaseRequires(copiedFiles, needBaseRequires);
+		if(kwArgs.addGuards){
+			buildUtil.addGuardsAndBaseRequires(copiedFiles, needBaseRequires);
+		}
 	}
 }
 //********* End _copyToRelease *********
