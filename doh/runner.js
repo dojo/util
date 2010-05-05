@@ -1447,7 +1447,7 @@ tests = doh;
 	}catch(e){
 		print("\n"+doh._line);
 		print("The Dojo Unit Test Harness, $Rev$");
-		print("Copyright (c) 2009, The Dojo Foundation, All Rights Reserved");
+		print("Copyright (c) 2010, The Dojo Foundation, All Rights Reserved");
 		print(doh._line, "\n");
 
 		try{

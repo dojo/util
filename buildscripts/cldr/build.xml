@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 
 <!--
-	Copyright (c) 2004-2007 The Dojo Foundation, Licensed under the Academic
+	Copyright (c) 2004-2010 The Dojo Foundation, Licensed under the Academic
 	Free License version 2.1 or BSD licenses
 -->
 <project name="dojo" default="cldr" basedir=".">
