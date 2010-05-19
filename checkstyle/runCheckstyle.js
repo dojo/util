@@ -13,6 +13,8 @@ if(arguments[0] == "help"){
 		+ "checkstyle \n\t"
 		+ "To specify a single directory to check in, including all child folders, use:\n\t\t"
 		+ "checkstyle dir={folderName}\n\t"
+		+ "To specify directories to ignore, use:\n\t\t"
+		+ "checkstyle ignoreDirs={folderName1},{folderName2}\n\t"
 		+ "To specify a list of files to process, use the 'files' parameter, passing a list of space separated files, e.g.\n\t\t"
 		+ "checkstyle files=\"dojo/_base/Color.js dojo/back.js\"\n\t"
 		+ "To force the script to fail when a specified file has failed the check, use the 'failOnError' parameter, e.g.\n\t\t"
@@ -38,7 +40,7 @@ if(arguments[0] == "help"){
 //********* Start checkstyle *********
 function checkstyle(){
 	
-	var dirs, i;
+	var dirs, i, ignoreDirs;
 	var reportFile = "./checkstyleData.js";
 
 	
@@ -65,6 +67,11 @@ function checkstyle(){
 	} else{
 		dirs = ["dojo", "dijit", "dojox"];
 	}
+	if(kwArgs.ignoreDirs){
+		ignoreDirs = kwArgs.ignoreDirs.split(",");
+	}else{
+		ignoreDirs = [];
+	}
 	
 	for(i = 0; i < dirs.length; i++){
 		var fileList = fileUtil.getFilteredFileList("../../" + dirs[i], /\.js$/, true);
@@ -72,7 +79,22 @@ function checkstyle(){
 			if(fileList[j].indexOf("/test") < 0
 				&& fileList[j].indexOf("/nls") < 0 
 				&& fileList[j].indexOf("/demos") < 0){
-				checkstyleUtil.applyRules(fileList[j], fileUtil.readFile(fileList[j]));
+				
+				var ignore = false;
+				if(ignoreDirs.length > 0){
+					for(var k = 0; k < ignoreDirs.length; k++){
+						if(fileList[j].indexOf(ignoreDirs[k]) > -1){
+							ignore = true;
+							break;
+						}else{
+							
+						}
+					}
+				}
+				
+				if(!ignore){
+					checkstyleUtil.applyRules(fileList[j], fileUtil.readFile(fileList[j]));
+				}
 			}
 		}
 	}
