@@ -215,7 +215,7 @@ if(window["dojo"]){
 					cell = row.insertCell(-1);
 					cell.innerHTML=this._testCount+" tests in "+this._groupCount+" groups /<span class='failure'>"+this._errorCount+"</span> errors, <span class='failure'>"+this._failureCount+"</span> failures";
 					cell.setAttribute('_target',_loggedMsgLen+1);
-					row.insertCell(-1).innerHTML = formatTime(doh._totalTime);
+					row.insertCell(-1).innerHTML=formatTime(doh._totalTime);
 				}
 				
 				//This location can do the final performance rendering for the results
@@ -520,7 +520,7 @@ if(window["dojo"]){
 				//byId("progressOuter").style.width = parseInt(this._runedSuite/this._suiteCount*100)+"%";
 			}
 			if(doh._inGroup == group){
-				this.debug("Total time for GROUP \"", group, "\" is ", formatTime(doh._groupTotalTime));
+				this.debug("Total time for GROUP \"",group,"\" is ",formatTime(doh._groupTotalTime));
 			}
 		}
 
@@ -564,7 +564,7 @@ if(window["dojo"]){
 					gdiv.setAttribute('title','failed group '+group);
 				}
 			}
-			var tp = parseInt(parseInt(p*10000)/100);
+			var tp=parseInt(p*10000)/100;
 			gdiv.style.width = (tp-doh._currentGlobalProgressBarWidth)+"%";
 			return gdiv._failure;
 		}
@@ -594,8 +594,7 @@ if(window["dojo"]){
 					var pbar = gn.getElementsByTagName("td")[2].lastChild;
 					pbar.className = groupfail?"failure":"success";
 					pbar.style.width = parseInt(p*100)+"%";
-					gn.getElementsByTagName("td")[3].innerHTML = parseInt(parseInt(p*10000)/100)+"%";
-					// gn.getElementsByTagName("td")[3].style.textAlign = "right";
+					gn.getElementsByTagName("td")[3].innerHTML = parseInt(p*10000)/100+"%";
 				}
 			}
 			this._groupTotalTime += elapsed;
