@@ -1,9 +1,7 @@
 /*
-	This is a compiled version of Dojo, built for deployment and not for
-	development. To get an editable version, please visit:
+	This is an optimized version of Dojo, built for deployment and not for
+	development. To get sources and documentation, please visit:
 
 		http://dojotoolkit.org
-
-	for documentation and information on getting the source.
 */
 
