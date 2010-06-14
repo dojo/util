@@ -43,7 +43,7 @@
 				for(var x=0; x<qparts.length; x++){
 					var tp = qparts[x].split("="), name=tp[0], value=tp[1].replace(/[<>"':\(\)]/g, "");	// replace() to avoid XSS attack
 					//Avoid URLs that use the same protocol but on other domains, for security reasons.
-					if (value.indexOf("//") === 0) {
+					if (value.indexOf("//") === 0 || value.indexOf("\\\\") === 0) {
 						throw "Insupported URL";
 					}
 					switch(name){
