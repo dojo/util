@@ -82,6 +82,7 @@ public final class DOHRobot extends Applet{
 	// If this is different from the real one, something's up.
 	private int lastMouseX;
 	private int lastMouseY;
+	public int dir=1;
 
 	// save a pointer to doh.robot for fast access
 	JSObject dohrobot = null;
@@ -493,9 +494,38 @@ public final class DOHRobot extends Applet{
 					return;
 				Thread.yield();
 				// calibrate the mouse wheel now that textbox is focused
-				int dir=1;
+				dir=1;
+				// fixed in 10.6.2 update 1 and 10.5.8 update 6:
+				// http://developer.apple.com/mac/library/releasenotes/CrossPlatform/JavaSnowLeopardUpdate1LeopardUpdate6RN/ResolvedIssues/ResolvedIssues.html
+				// Radar #6193836
 				if(os.indexOf("MAC") != -1){
-					dir=-1;
+					// see if the version is greater than 10.5.8
+					String[] sfixedVersion = "10.5.8".split("\\.");
+					int[] fixedVersion = new int[3];
+					String[] sthisVersion = System.getProperty("os.version").split("\\.");
+					int[] thisVersion = new int[3];
+					for(int i=0; i<3; i++){
+						fixedVersion[i]=Integer.valueOf(sfixedVersion[i]).intValue();
+						thisVersion[i]=Integer.valueOf(sthisVersion[i]).intValue();
+					};
+					// 10.5.8, the fix level, should count as fixed
+					// on the other hand, 10.6.0 and 10.6.1 should not
+					boolean isFixed = !System.getProperty("os.version").equals("10.6.0")&&!System.getProperty("os.version").equals("10.6.1");
+					for(int i=0; i<fixedVersion.length&&isFixed; i++){
+						if(thisVersion[i]>fixedVersion[i]){
+							// definitely newer at this point
+							isFixed = true;
+							break;
+						}else if(thisVersion[i]<fixedVersion[i]){
+							// definitely older
+							isFixed = false;
+							break;
+						}
+						// equal; continue to next dot
+
+					}
+					// flip dir if not fixed
+					dir=isFixed?dir:-dir;
 				}
 				robot.mouseWheel(dir);
 				try{
@@ -1487,11 +1517,6 @@ public final class DOHRobot extends Applet{
 				log("> run MouseWheelThread " + amount);
 				while(!hasFocus()){
 					Thread.sleep(1000);
-				}
-				int dir = 1;
-				if(os.indexOf("MAC") != -1){
-					// yay for Apple
-					dir = -1;
 				}
 				robot.setAutoDelay(Math.max(duration/Math.abs(amount),1));
 				for(int i=0; i<Math.abs(amount); i++){
