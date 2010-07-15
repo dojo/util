@@ -13,7 +13,7 @@
 //
 
 // $Rev: $ 
-$current_version = "1.3.0";
+$current_version = "1.5.0";
 
 header("Content-type: text/xml");
 
