@@ -2,6 +2,13 @@
 // repo for easy debugging. We are not to link to the demos in nightly in a static fashion, but rather use
 // this repo as a testing place for versioned demos to be pushed onto dojotoolkit.org 
 dependencies = {
+	
+	action:"clean,release",
+	optimize:"shrinksafe",
+	cssOptimize:"comments.keepLines",
+	releaseName:"demosite",
+	mini:"false",
+	
 	layers: [
 		// standard:
 		{
