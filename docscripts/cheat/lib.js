@@ -110,7 +110,7 @@ dojo.provide("util.docscripts.cheat.lib");
 				],
 
 				"Styles-CSS":[
-					"style", "addClass", "removeClass", "toggleClass", "hasClass", "getComputedStyle", "boxModel", 
+					"style", "addClass", "removeClass", "toggleClass", "replaceClass", "hasClass", "getComputedStyle", "boxModel", 
 					"show", "hide", "toggle", "hoverClass"
 				],
 
