@@ -13,6 +13,17 @@ buildUtil.DojoBuildOptions = {
 		helpText: "A file path to the the profile file. Use this if your profile is outside of the profiles "
 			+ "directory. Do not specify the \"profile\" build option if you use \"profileFile\"."
 	},
+	"htmlFiles": {
+		defaultValue: "",
+		helpText: "A list of HTML files to generate the profile from. The HTML files will be "
+			+ "scanned for script tags and dojo.require calls to create a set of layers. "
+			+ "If a profile or profileFile is specified, the profile will be written to that destination "
+			+ "and the build will continue."
+	},
+	"htmlDir": {
+		defaultValue: "",
+		helpText: "A directory to use to get a list of HTML files for generating the profile"
+	},
 	"action": {
 		defaultValue: "help",
 		helpText: "The build action(s) to run. Can be a comma-separated list, like action=clean,release. "
@@ -210,11 +221,10 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 	if(!kwArgs["profileFile"] && kwArgs["profile"]){
 		kwArgs.profileFile = "profiles/" + kwArgs.profile + ".profile.js";
 	}
-	
-	if(kwArgs.htmlFile){
-		// we are processing an HTML file, first read it
-		var html = fileUtil.readFile(kwArgs.htmlFile);
-		var layers = [], htmlPrefix = "", prefixes = {dijit: true, dojox: true};
+	function processHtmlFile(htmlFile){
+		var priorLayers = [];
+		
+		var html = fileUtil.readFile(htmlFile);
 		html.replace(/<script [^>]*src=["']([^'"]+)["']/gi, function(t, scriptName){
 			// for each script tag
 			if(scriptName.indexOf("dojo/dojo.js") > -1){
@@ -222,44 +232,75 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 				prefix = scriptName.substring(0, scriptName.indexOf("dojo/dojo.js"));
 			}else{
 				// non-dojo.js script files, add it to our list of layers
-				layers.push(scriptName = scriptName.substring(prefix.length, scriptName.length - 3));
-				if(scriptName.indexOf('/') > -1){
-					prefixes[scriptName.substring(scriptName, scriptName.indexOf('/'))] = true;
-				}
+				addLayer(scriptName = scriptName.substring(prefix.length, scriptName.length - 3).replace(/\//g, '.'));
 			}
 		});
 		html.replace(/dojo\.require\(["']([^'"]+)["']\)/g, function(t, scriptName){
 			// for each dojo.require call add it to the layers as well
-			layers.push(scriptName);
+			addLayer(scriptName);
 		});
+		function addLayer(scriptName){
+			if(layers[scriptName]){
+				// if this module has been added before, find the intersection of dependencies 
+				layers[scriptName] = layers[scriptName].filter(function(scriptName){
+					return priorLayers.indexOf(scriptName) > -1;
+				});
+			}else{
+				layers[scriptName] = priorLayers.concat();
+			}
+			if(scriptName.indexOf('.') > -1){
+				prefixes[scriptName.substring(scriptName, scriptName.indexOf('.'))] = true;
+			}
+			priorLayers.push(scriptName);
+		}
+		return layers;
+	}
+	//Load dependencies object from profile file, if there is one.
+	var dependencies = {};
+	if(kwArgs.htmlDir){
+		kwArgs.htmlFiles = fileUtil.getFilteredFileList(kwArgs.htmlDir, /\.html/, false, false, true);
+	}
+	if(kwArgs.htmlFiles){
+		var layers = {}, prefix = "", prefixes = {dijit: true, dojox: true};
+		print("kwArgs.htmlFiles " + kwArgs.htmlFiles);
+		(kwArgs.htmlFiles instanceof Array ? kwArgs.htmlFiles : kwArgs.htmlFiles.split(',')).forEach(function(file){
+			// process each html file
+			processHtmlFile(file);
+		});
+		
+		
+		// we are rocessing an HTML file, first read it
 		var prefixPaths = [];
 		// normalize the prefixes into the arrays that the build expects
-		for(var prefix in prefixes){
+		for(prefix in prefixes){
 			prefixPaths.push([prefix, "../" + prefix]);
 		}
-		// now create the profile object
-		profileProperties = kwArgs.profileProperties = buildUtil.processProfile({ 
-				layers: layers.map(function(name, i){
-					// for each layer, create a layer object
-					return {
+		var layersArray = [];
+		for(var name in layers){
+			// for each layer, create a layer object
+			layersArray.push({
 						name: "../" + name.replace(/\./g,'/') + ".js", // use filename
 						dependencies: [
 							name.replace(/\//g,'.') // use module name
 						],
 						//use all previous layers as layer dependencies
-						layerDependencies: layers.slice(0, i).map(function(name){
+						layerDependencies: layers[name].map(function(name){
 							return "../" + name.replace(/\./g,'/') + ".js"
 						})
-					};
-				}),
-			
+					});
+		}
+		profileProperties = { 
+				layers: layersArray,
 				prefixes: prefixPaths
-			});
+			};
+		if(kwArgs.profileFile){
+			fileUtil.saveFile(kwArgs.profileFile, "dependencies = " + profileProperties.toSource());
+		}
+		// now create the profile object
+		profileProperties = kwArgs.profileProperties = buildUtil.processProfile(profileProperties);
 		dependencies = profileProperties.dependencies;
 	}
-	//Load dependencies object from profile file, if there is one.
-	var dependencies = {};
-	if(kwArgs["profileFile"]){
+	else if(kwArgs["profileFile"]){
 		profileProperties = buildUtil.evalProfile(kwArgs.profileFile);
 		logger.info(profileProperties.toSource());
 		

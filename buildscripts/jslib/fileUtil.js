@@ -8,7 +8,7 @@ fileUtil.getLineSeparator = function(){
 	return java.lang.System.getProperty("line.separator"); //Java String
 }
 
-fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilters, /*boolean?*/makeUnixPaths, /*boolean?*/startDirIsJavaObject){
+fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilters, /*boolean?*/makeUnixPaths, /*boolean?*/startDirIsJavaObject, /*boolean?*/dontRecurse){
 	//summary: Recurses startDir and finds matches to the files that match regExpFilters.include
 	//and do not match regExpFilters.exclude. Or just one regexp can be passed in for regExpFilters,
 	//and it will be treated as the "include" case.
@@ -48,7 +48,7 @@ fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilt
 				if(ok && !file.getName().match(/^\./)){
 					files.push(filePath);
 				}
-			}else if(file.isDirectory() && !file.getName().match(/^\./)){
+			}else if(file.isDirectory() && !file.getName().match(/^\./) && !dontRecurse){
 				var dirFiles = this.getFilteredFileList(file, regExpFilters, makeUnixPaths, true);
 				files.push.apply(files, dirFiles);
 			}
