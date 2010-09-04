@@ -302,7 +302,7 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 	}
 	else if(kwArgs["profileFile"]){
 		profileProperties = buildUtil.evalProfile(kwArgs.profileFile);
-		logger.info(profileProperties.toSource());
+		//logger.info(profileProperties.toSource());
 		
 		if(profileProperties){
 			kwArgs.profileProperties = profileProperties;
