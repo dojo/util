@@ -707,15 +707,24 @@ doh.isNot = doh.assertNotEqual = function(/*Object*/ notExpected, /*Object*/ act
 	if((notExpected === actual)||(notExpected == actual)){ 
         throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|", hint);
 	}
-	if(	(this._isArray(notExpected) && this._isArray(actual))&&
+	if( (this._isArray(notExpected) && this._isArray(actual))&&
 		(this._arrayEq(notExpected, actual)) ){
 		throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|", hint);
 	}
-	if( ((typeof notExpected == "object")&&((typeof actual == "object")))&&
-		(this._objPropEq(notExpected, actual)) ){
-        throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|", hint);
+	if( ((typeof notExpected == "object")&&((typeof actual == "object"))) ){
+		var isequal = false;
+		try{
+			isequal = this._objPropEq(notExpected, actual);
+		}catch(e){
+			if(!(e instanceof doh._AssertFailure)){
+				throw e; //other exceptions, just throw it
+			}
+		}
+		if(isequal){
+			throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|", hint);
+		}
 	}
-    return true;
+	return true;
 }
 
 doh._arrayEq = function(expected, actual){
