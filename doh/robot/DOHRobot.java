@@ -733,7 +733,7 @@ public final class DOHRobot extends Applet{
 			public Object run(){
 				int x = x1 + docScreenX;
 				int y = y1 + docScreenY;
-				if(x > docScreenXMax || y > docScreenYMax){
+				if(x > docScreenXMax || y > docScreenYMax || x < docScreenX || y < docScreenY){
 					// TODO: try to scroll view
 					log("Request to mouseMove denied");
 					return null;
@@ -862,6 +862,10 @@ public final class DOHRobot extends Applet{
 				case 63272:
 				case 46:
 					keyboardCode = KeyEvent.VK_DELETE;
+					break;
+				case 224:
+				case 91:
+					keyboardCode = KeyEvent.VK_META;
 					break;
 				case 63289:
 				case 144:
