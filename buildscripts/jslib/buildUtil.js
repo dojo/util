@@ -1387,10 +1387,11 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 			//Set up options
 			var options = new jscomp.CompilerOptions();
 			options.prettyPrint = optimizeType.indexOf(".keepLines") !== -1;
-			var FLAG_compilation_level = flags.Flag.value(jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS);
-			FLAG_compilation_level.get().setOptionsForCompilationLevel(options);
-			var FLAG_warning_level = flags.Flag.value(jscomp.WarningLevel.DEFAULT);
-			FLAG_warning_level.get().setOptionsForWarningLevel(options);
+
+			var FLAG_compilation_level = jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS;
+			FLAG_compilation_level.setOptionsForCompilationLevel(options);                  
+			var FLAG_warning_level = jscomp.WarningLevel.DEFAULT;                   
+			FLAG_warning_level.setOptionsForWarningLevel(options);
 
 			//Run the compiler
 			var compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
