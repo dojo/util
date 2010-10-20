@@ -66,14 +66,37 @@
 			document.write("<scr"+"ipt type='text/javascript' djConfig='isDebug: true' src='"+dojoUrl+"'></scr"+"ipt>");
 		</script>
 		<script type="text/javascript">
-			try{
+      if (dojo) {
+        // we know we're in the browser and are going to have to require _browserRunner, DocTest and some kind of testModule
+        // doing so here ensures they will be defined in order without using dojo.addOnLoad to guarantee testModule (and all
+        // modules it includes) is defined after runner, DocTest, without _browserRunner protecting testModule inside a
+        // dojo.addOnLoad function.
 				dojo.require("doh.runner");
-			}catch(e){
+        dojo.require("doh._browserRunner");
+  			dojo.require("dojox.testing.DocTest");
+
+        //protect from defining global variables...
+        dojo.addOnLoad(function() {
+          for (var moduleList= (window.testModule || "dojo.tests.module").split(","), i= 0; i<moduleList.length; i++) {
+            dojo.require(moduleList[i]);
+          }
+          window.testModule= "";
+
+          //we want to ensure that doh.run is the *last* thing run; the design of the v1.5 synch loader makes that hard;
+          //this kludge does it
+          dojo.addOnLoad(function(){
+            setTimeout(function(){
+              dojo.global.doh.run();
+            }, 200);
+          });
+        });
+      } else {
+        //dojo, ergo dojo.require is not available...
 				document.write("<scr"+"ipt type='text/javascript' src='runner.js'></scr"+"ipt>");
-			}
-			if(testUrl.length){
-				document.write("<scr"+"ipt type='text/javascript' src='"+testUrl+".js'></scr"+"ipt>");
-			}
+        if(testUrl.length){
+				  document.write("<scr"+"ipt type='text/javascript' src='"+testUrl+".js'></scr"+"ipt>");
+			  }
+      }
 		</script>
 		<style type="text/css">
 			@import "../../dojo/resources/dojo.css";

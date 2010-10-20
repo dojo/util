@@ -77,6 +77,39 @@ fileUtil.copyDir = function(/*String*/srcDir, /*String*/destDir, /*RegExp*/regEx
 	return copiedFiles.length ? copiedFiles : null; //Array or null
 }
 
+fileUtil.asyncFixEOLRe= new RegExp(fileUtil.getLineSeparator(), "g");
+fileUtil.getAsyncArgs= function(module, deps) {
+  fileUtil.asyncProvideArg= module.replace(/\//g, ".");
+  fileUtil.asyncRequireArgs= [];
+  for (var i= 0; i<deps.length; i++) {
+    fileUtil.asyncRequireArgs.push(deps[i].replace(/\//g, "."));
+  }
+};
+
+fileUtil.transformAsyncModule= function(contents) {
+	var 
+    match,
+    lineSeparator = fileUtil.getLineSeparator();
+  if (contents.substring(0, 13)=="define(\"") {
+    if (contents.substring(13, 18)=="i18n!") {
+      return contents.substring(contents.indexOf("//begin v1.x content")+21, contents.indexOf("//end v1.x content"));
+    } else if ((match= contents.match(/^require\.def\((.+)\,\s+function.+$/m))) {
+      eval("fileUtil.getAsyncArgs(" + match[1] + ")");
+      var prefix= "dojo.provide(\"" + fileUtil.asyncProvideArg + "\");" + lineSeparator;
+      for (var reqs= fileUtil.asyncRequireArgs, i= 0; i<fileUtil.asyncRequireArgs.length; i++) {
+        prefix+= (reqs[i]!="dojo" && reqs[i]!="dijit" && reqs[i].substring(0, 5)!="i18n!") ? "dojo.require(\"" + fileUtil.asyncRequireArgs[i] +  "\");" + lineSeparator : "";
+      }
+      var matchLength= match[0].length+1;
+      var contentsLength= contents.search(/\s*return\s*[_a-zA-Z\.]+\s*;\s*\}\);\s*$/);
+      return prefix + lineSeparator + contents.substring(matchLength, contentsLength);
+    } else {
+      return contents;
+    }
+  } else {
+    return contents;
+  }
+};
+
 fileUtil.copyFile = function(/*String*/srcFileName, /*String*/destFileName, /*boolean?*/onlyCopyNew){
 	//summary: copies srcFileName to destFileName. If onlyCopyNew is set, it only copies the file if
 	//srcFileName is newer than destFileName. Returns a boolean indicating if the copy occurred.
@@ -102,12 +135,16 @@ fileUtil.copyFile = function(/*String*/srcFileName, /*String*/destFileName, /*bo
 		}
 	}
 
-	//Java's version of copy file.
-	var srcChannel = new java.io.FileInputStream(srcFileName).getChannel();
-	var destChannel = new java.io.FileOutputStream(destFileName).getChannel();
-	destChannel.transferFrom(srcChannel, 0, srcChannel.size());
-	srcChannel.close();
-	destChannel.close();
+  if (/.+\.js$/.test(srcFileName)) {
+		fileUtil.saveUtf8File(destFileName, fileUtil.transformAsyncModule(fileUtil.readFile(srcFileName)).replace(fileUtil.asyncFixEOLRe, "\n"));
+  } else {
+ 	  //Java's version of copy file.
+	  var srcChannel = new java.io.FileInputStream(srcFileName).getChannel();
+	  var destChannel = new java.io.FileOutputStream(destFileName).getChannel();
+	  destChannel.transferFrom(srcChannel, 0, srcChannel.size());
+	  srcChannel.close();
+	  destChannel.close();
+  }
 	
 	return true; //Boolean
 }

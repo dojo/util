@@ -1,10 +1,11 @@
-if(window["dojo"]){
-	dojo.provide("doh._browserRunner");
-}
 
 // FIXME: need to add prompting for monkey-do testing
 
 (function(){
+
+//here's the definition of doh/_browserRunner
+
+var d= function(doh) {
 	try{
 		var topdog = (window.parent == window) || !Boolean(window.parent.doh);
 	}catch(e){
@@ -879,5 +880,12 @@ if(window["dojo"]){
 			};
 		}
 	}
+};
 
-})();
+//this is guaranteed in the global scope, not matter what kind of eval is thrown at us
+if (typeof dojo !== "undefined") {
+  define("doh/_browserRunner", ["doh/runner"], function(){d(this.doh);});
+} else {
+  d(this.doh);
+}
+}).call(null);

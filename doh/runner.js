@@ -1,11 +1,8 @@
-// package system gunk.
-try{
-	dojo.provide("doh.runner");
-}catch(e){
-	if(!this["doh"]){
-		doh = {};
-	}
-}
+//guarantee in global scope and scope protection
+(function() {
+
+//here's the definition of doh.runner...which really defines global doh
+var d= function(doh) {
 
 //
 // Utility Functions and Classes
@@ -707,7 +704,7 @@ doh.isNot = doh.assertNotEqual = function(/*Object*/ notExpected, /*Object*/ act
 	if((notExpected === actual)||(notExpected == actual)){ 
         throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|", hint);
 	}
-	if( (this._isArray(notExpected) && this._isArray(actual))&&
+	if(	(this._isArray(notExpected) && this._isArray(actual))&&
 		(this._arrayEq(notExpected, actual)) ){
 		throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|", hint);
 	}
@@ -721,10 +718,10 @@ doh.isNot = doh.assertNotEqual = function(/*Object*/ notExpected, /*Object*/ act
 			}
 		}
 		if(isequal){
-			throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|", hint);
-		}
+        throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|", hint);
 	}
-	return true;
+	}
+    return true;
 }
 
 doh._arrayEq = function(expected, actual){
@@ -1390,11 +1387,9 @@ tests = doh;
 	var x;
 	try{
 		if(typeof dojo != "undefined"){
-			dojo.platformRequire({
-				browser: ["doh._browserRunner"],
-				rhino: ["doh._rhinoRunner"],
-				spidermonkey: ["doh._rhinoRunner"]
-			});
+      //-1
+      // remove the dependency on dojo.platform require
+      dojo.require(dojo.isBrowser ? "doh._browserRunner" : "doh._rhinoRunner");
 			try{
 				var _shouldRequire = dojo.isBrowser ? (dojo.global == dojo.global["parent"] || !Boolean(dojo.global.parent.doh) ) : true;
 			}catch(e){
@@ -1408,13 +1403,6 @@ tests = doh;
 							dojo.forEach(dojo.global.registerModulePath, function(m){
 								dojo.registerModulePath(m[0], m[1]);
 							});
-						}
-						if(dojo.byId("testList")){
-							var _tm = ( (dojo.global.testModule && dojo.global.testModule.length) ? dojo.global.testModule : "dojo.tests.module");
-							dojo.forEach(_tm.split(","), dojo.require, dojo);
-							setTimeout(function(){
-								doh.run();
-							}, 500);
 						}
 					});
 				}else{
@@ -1510,3 +1498,17 @@ tests = doh;
 		doh.run();
 	}
 }).apply(this, typeof arguments != "undefined" ? arguments : [null]);
+
+return doh;
+
+};//end of definition of doh/runner, which really defines global doh
+
+//this is guaranteed in the global scope, not matter what kind of eval is thrown at us
+this["doh"]= this["doh"] || {};
+if (typeof dojo !== "undefined") {
+  define("doh/runner", [], function(){d(doh);});
+} else {
+  d(doh);
+}
+
+}).call(null);
