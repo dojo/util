@@ -90,10 +90,10 @@ fileUtil.transformAsyncModule= function(contents) {
 	var 
     match,
     lineSeparator = fileUtil.getLineSeparator();
-  if (contents.substring(0, 13)=="define(\"") {
-    if (contents.substring(13, 18)=="i18n!") {
+  if (contents.substring(0, 8)=="define(\"") {
+    if (contents.substring(8, 13)=="i18n!") {
       return contents.substring(contents.indexOf("//begin v1.x content")+21, contents.indexOf("//end v1.x content"));
-    } else if ((match= contents.match(/^require\.def\((.+)\,\s+function.+$/m))) {
+    } else if ((match= contents.match(/^define\((.+)\,\s+function.+$/m))) {
       eval("fileUtil.getAsyncArgs(" + match[1] + ")");
       var prefix= "dojo.provide(\"" + fileUtil.asyncProvideArg + "\");" + lineSeparator;
       for (var reqs= fileUtil.asyncRequireArgs, i= 0; i<fileUtil.asyncRequireArgs.length; i++) {
@@ -101,6 +101,10 @@ fileUtil.transformAsyncModule= function(contents) {
       }
       var matchLength= match[0].length+1;
       var contentsLength= contents.search(/\s*return\s*[_a-zA-Z\.]+\s*;\s*\}\);\s*$/);
+      if (contentsLength==-1) {
+        //logger.info("warning: no return for: " + fileUtil.asyncProvideArg);
+        contentsLength= contents.search(/\}\);\s*$/);
+      }
       return prefix + lineSeparator + contents.substring(matchLength, contentsLength);
     } else {
       return contents;
