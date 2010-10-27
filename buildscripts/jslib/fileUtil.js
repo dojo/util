@@ -89,6 +89,7 @@ fileUtil.getAsyncArgs= function(module, deps) {
 fileUtil.transformAsyncModule= function(contents) {
 	var 
     match,
+    bundleMatch,
     lineSeparator = fileUtil.getLineSeparator();
   if (contents.substring(0, 8)=="define(\"") {
     if (contents.substring(8, 13)=="i18n!") {
@@ -97,7 +98,12 @@ fileUtil.transformAsyncModule= function(contents) {
       eval("fileUtil.getAsyncArgs(" + match[1] + ")");
       var prefix= "dojo.provide(\"" + fileUtil.asyncProvideArg + "\");" + lineSeparator;
       for (var reqs= fileUtil.asyncRequireArgs, i= 0; i<fileUtil.asyncRequireArgs.length; i++) {
-        prefix+= (reqs[i]!="dojo" && reqs[i]!="dijit" && reqs[i].substring(0, 5)!="i18n!") ? "dojo.require(\"" + fileUtil.asyncRequireArgs[i] +  "\");" + lineSeparator : "";
+        if (reqs[i].substring(0, 5)=="i18n!") {
+          bundleMatch= reqs[i].match(/i18n\!(.+)\.nls\.(\w+)/);
+          prefix+= "dojo.requireLocalization(\"" + bundleMatch[1].replace(/\//g, ".") + "\", \"" +  bundleMatch[2] +  "\");" + lineSeparator;
+        } else if (reqs[i]!="dojo" && reqs[i]!="dijit") {
+          prefix+= "dojo.require(\"" + fileUtil.asyncRequireArgs[i] +  "\");" + lineSeparator;
+        }
       }
       var matchLength= match[0].length+1;
       var contentsLength= contents.search(/\s*return\s*[_a-zA-Z\.]+\s*;\s*\}\);\s*$/);
