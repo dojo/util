@@ -94,7 +94,7 @@ fileUtil.transformAsyncModule= function(contents) {
   if (contents.substring(0, 8)=="define(\"") {
     if (contents.substring(8, 13)=="i18n!") {
       return contents.substring(contents.indexOf("//begin v1.x content")+21, contents.indexOf("//end v1.x content"));
-    } else if ((match= contents.match(/^define\((.+)\,\s+function.+$/m))) {
+    } else if ((match= contents.match(/^define\(([^\)]+)\,[\s\n]*function.+$/m))) {
       eval("fileUtil.getAsyncArgs(" + match[1] + ")");
       var prefix= "dojo.provide(\"" + fileUtil.asyncProvideArg + "\");" + lineSeparator;
       for (var reqs= fileUtil.asyncRequireArgs, i= 0; i<fileUtil.asyncRequireArgs.length; i++) {
