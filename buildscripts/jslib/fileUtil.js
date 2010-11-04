@@ -107,7 +107,7 @@ fileUtil.transformAsyncModule= function(contents) {
         }
       }
       var matchLength= match[0].length+1;
-      var contentsLength= contents.search(/\s*return\s*[_a-zA-Z\.]+\s*;\s*\}\);\s*$/);
+      var contentsLength= contents.search(/\s*return\s*[_a-zA-Z\.0-9]+\s*;\s*\}\);\s*$/);
       if (contentsLength==-1) {
         //logger.info("warning: no return for: " + fileUtil.asyncProvideArg);
         contentsLength= contents.search(/\}\);\s*$/);
