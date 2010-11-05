@@ -1505,9 +1505,12 @@ return doh;
 
 //this is guaranteed in the global scope, not matter what kind of eval is thrown at us
 this["doh"]= this["doh"] || {};
-if (typeof dojo !== "undefined") {
+if (typeof define !== "undefined") {
   define("doh/runner", [], function(){d(doh);});
 } else {
+  if (typeof dojo !== "undefined") {
+  	dojo.provide("doh.runner");
+  }
   d(doh);
 }
 
