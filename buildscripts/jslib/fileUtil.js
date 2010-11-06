@@ -78,36 +78,60 @@ fileUtil.copyDir = function(/*String*/srcDir, /*String*/destDir, /*RegExp*/regEx
 }
 
 fileUtil.asyncFixEOLRe= new RegExp(fileUtil.getLineSeparator(), "g");
-fileUtil.getAsyncArgs= function(module, deps) {
-  fileUtil.asyncProvideArg= module.replace(/\//g, ".");
-  fileUtil.asyncRequireArgs= [];
-  for (var i= 0; i<deps.length; i++) {
-    fileUtil.asyncRequireArgs.push(deps[i].replace(/\//g, "."));
-  }
-};
 
-fileUtil.transformAsyncModule= function(contents) {
+fileUtil.transformAsyncModule= function(filename, contents) {
 	var 
     match,
     bundleMatch,
-    lineSeparator = fileUtil.getLineSeparator();
-  if (contents.substring(0, 8)=="define(\"") {
-    if (contents.substring(8, 13)=="i18n!") {
-      return contents.substring(contents.indexOf("//begin v1.x content")+21, contents.indexOf("//end v1.x content"));
-    } else if ((match= contents.match(/^define\(([^\)]+)\,[\s\n]*function.+$/m))) {
-      var dojo = {isBrowser:true};
-      eval("fileUtil.getAsyncArgs(" + match[1] + ")");
-      var prefix= "dojo.provide(\"" + fileUtil.asyncProvideArg + "\");" + lineSeparator;
-      for (var reqs= fileUtil.asyncRequireArgs, i= 0; i<fileUtil.asyncRequireArgs.length; i++) {
+    moduleId,
+    requireArgs= [],
+    lineSeparator = fileUtil.getLineSeparator(),
+    dojo = {isBrowser:true},
+    getAsyncArgs= function(moduleId_, deps) {
+      if (!deps) {
+        //no moduleId given
+        deps= moduleId_;
+      } else {
+        moduleId= moduleId_;
+      }
+      for (var i= 0; i<deps.length; i++) {
+        if (deps[i]!="require") {
+          requireArgs.push(deps[i].replace(/\//g, "."));
+        }
+      }
+    };
+
+  // the v1.x content in the i18n bundles is bracketed by "//begin v1.x content" and "//end v1.x content"
+  match= contents.match(/(\/\/begin\sv1\.x\scontent)([\s\S]+)(\/\/end\sv1\.x\scontent)/);
+  if (match) {
+    return match[2];
+  }
+  // must not be an i18n bundle
+
+  match= contents.match(/\/\/\s*AMD\-ID\s*"([^\n"]+)"/i);
+  moduleId= (match && match[1]) || "";
+
+  if (moduleId || contents.substring(0, 8)=="define(\"") {
+    if ((match= contents.match(/^define\(([^\]]+)\]\s*\,[\s\n]*function.+$/m))) {
+      eval("getAsyncArgs(" + match[1] + "])");
+      if (!moduleId) {
+        logger.info("warning: the module " + filename + " looked like an AMD module, but didn't provide a module id");
+        return contents;
+      }
+      var prefix= "dojo.provide(\"" + moduleId.replace(/\//g, ".") + "\");" + lineSeparator;
+      for (var reqs= requireArgs, i= 0; i<requireArgs.length; i++) {
         if (reqs[i].substring(0, 5)=="i18n!") {
           bundleMatch= reqs[i].match(/i18n\!(.+)\.nls\.(\w+)/);
           prefix+= "dojo.requireLocalization(\"" + bundleMatch[1].replace(/\//g, ".") + "\", \"" +  bundleMatch[2] +  "\");" + lineSeparator;
         } else if (reqs[i]!="dojo" && reqs[i]!="dijit") {
-          prefix+= "dojo.require(\"" + fileUtil.asyncRequireArgs[i] +  "\");" + lineSeparator;
+          prefix+= "dojo.require(\"" + requireArgs[i] +  "\");" + lineSeparator;
         }
       }
-      var matchLength= match[0].length+1;
-      var contentsLength= contents.search(/\s*return\s*[_a-zA-Z\.0-9]+\s*;\s*\}\);\s*$/);
+
+      // strip all module return values that end with the comment "// AMD-result"
+      contents= contents.replace( /^\s*return\s+.+\/\/\s*AMD-return((\s.+)|(\s*))$/img , "");
+      var matchLength= match.index + match[0].length+1;
+      var contentsLength= contents.search(/\s*return\s+[_a-zA-Z\.0-9]+\s*;\s*(\/\/.+)?\s*\}\);\s*$/);
       if (contentsLength==-1) {
         //logger.info("warning: no return for: " + fileUtil.asyncProvideArg);
         contentsLength= contents.search(/\}\);\s*$/);
@@ -147,7 +171,7 @@ fileUtil.copyFile = function(/*String*/srcFileName, /*String*/destFileName, /*bo
 	}
 
   if (/.+\.js$/.test(srcFileName)) {
-		fileUtil.saveUtf8File(destFileName, fileUtil.transformAsyncModule(fileUtil.readFile(srcFileName)).replace(fileUtil.asyncFixEOLRe, "\n"));
+		fileUtil.saveUtf8File(destFileName, fileUtil.transformAsyncModule(srcFileName, fileUtil.readFile(srcFileName)).replace(fileUtil.asyncFixEOLRe, "\n"));
   } else {
  	  //Java's version of copy file.
 	  var srcChannel = new java.io.FileInputStream(srcFileName).getChannel();
