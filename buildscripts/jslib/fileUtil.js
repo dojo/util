@@ -123,7 +123,7 @@ fileUtil.transformAsyncModule= function(filename, contents) {
         if (reqs[i].substring(0, 5)=="i18n!") {
           bundleMatch= reqs[i].match(/i18n\!(.+)\.nls\.(\w+)/);
           prefix+= "dojo.requireLocalization(\"" + bundleMatch[1].replace(/\//g, ".") + "\", \"" +  bundleMatch[2] +  "\");" + lineSeparator;
-        } else if (reqs[i]!="dojo" && reqs[i]!="dijit") {
+        } else if (reqs[i]!="dojo" && reqs[i]!="dijit" && reqs[i]!="dojox") {
           prefix+= "dojo.require(\"" + requireArgs[i] +  "\");" + lineSeparator;
         }
       }
