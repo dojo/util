@@ -157,27 +157,31 @@ function _processLocaleAlias(localeAliasPaths/*Array*/, bundle/*JSON Obj*/, nati
 */
 function _updateNoneGregAlias(sourceBundle/*JSON Obj*/, aliasSource/*String*/, targetBundle/*JSON Obj*/, aliasTarget/*String*/, nativeSrcBundle/*JSON Obj*/){
     for (var sKey in sourceBundle) {
-        if (sKey.indexOf(aliasSource) == 0 && !nativeSrcBundle[sKey] && targetBundle[sKey]&&!compare(sourceBundle[sKey],targetBundle[sKey])) {
-            nativeSrcBundle[sKey] = targetBundle[sKey];
-            sourceBundle[sKey] = targetBundle[sKey];
+        var target = targetBundle[sKey],
+	    source = sourceBundle[sKey],
+	    nativeSrc = nativeSrcBundle[sKey];
+
+	if (sKey.indexOf(aliasSource) == 0 && !nativeSrc && target && !compare(source, target)) {
+            nativeSrcBundle[sKey] = target;
+            sourceBundle[sKey] = target;
             updated = true;
-        }
-        else 
-            if (sKey.indexOf(aliasSource) == 0 && nativeSrcBundle[sKey] && dojo.isArray(sourceBundle[sKey]) && dojo.isArray(targetBundle[sKey])) {
-                for (var i = 0; i < sourceBundle[sKey].length; i++) {
-                    if (sourceBundle[sKey][i] == undefined) {
-                        sourceBundle[sKey][i] = targetBundle[sKey][i];
+        } else {
+            if (sKey.indexOf(aliasSource) == 0 && nativeSrc && dojo.isArray(source) && dojo.isArray(target)) {
+                for (var i = 0; i < source.length; i++) {
+                    if (source[i] === undefined) {
+                        source[i] = target[i];
                         updated = true;
                     }
                 }
-                if (sourceBundle[sKey].length < targetBundle[sKey].length) {
-                    sourceBundle[sKey] = sourceBundle[sKey].concat(targetBundle[sKey].slice(sourceBundle[sKey].length));
+                if (source.length < target.length) {
+                    source = sourceBundle[sKey] = source.concat(target.slice(source.length));
                     updated = true;
                 }
                 if (updated) {
-                    nativeSrcBundle[sKey] = sourceBundle[sKey];
+                    nativeSrcBundle[sKey] = source;
                 }
             }
+        }
     }
 }
 function _updateLocaleAlias(sourceBundle/*JSON Obj*/,aliasSource/*String*/, targetBundle/*JSON Obj*/,
