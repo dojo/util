@@ -64,6 +64,7 @@ fileUtil.copyDir = function(/*String*/srcDir, /*String*/destDir, /*RegExp*/regEx
 	//file should be copied. Returns a list file name strings of the destinations that were copied.
 	var fileNames = fileUtil.getFilteredFileList(srcDir, regExpFilter, true);
 	var copiedFiles = [];
+print("copy");
 	
 	for(var i = 0; i < fileNames.length; i++){
 		var srcFileName = fileNames[i];
@@ -110,7 +111,6 @@ fileUtil.transformAsyncModule= function(filename, contents) {
 
   match= contents.match(/\/\/\s*AMD\-ID\s*"([^\n"]+)"/i);
   moduleId= (match && match[1]) || "";
-
   if (moduleId || contents.substring(0, 8)=="define(\"") {
     if ((match= contents.match(/^define\(([^\]]+)\]\s*\,[\s\n]*function.+$/m))) {
       eval("getAsyncArgs(" + match[1] + "])");
@@ -120,7 +120,9 @@ fileUtil.transformAsyncModule= function(filename, contents) {
       }
       var prefix= "dojo.provide(\"" + moduleId.replace(/\//g, ".") + "\");" + lineSeparator;
       for (var reqs= requireArgs, i= 0; i<requireArgs.length; i++) {
-        if (reqs[i].substring(0, 5)=="i18n!") {
+        if (reqs[i].substring(0, 5)=="text!") {
+        	// do nothing
+        } else if (reqs[i].substring(0, 5)=="i18n!") {
           bundleMatch= reqs[i].match(/i18n\!(.+)\.nls\.(\w+)/);
           prefix+= "dojo.requireLocalization(\"" + bundleMatch[1].replace(/\//g, ".") + "\", \"" +  bundleMatch[2] +  "\");" + lineSeparator;
         } else if (reqs[i]!="dojo" && reqs[i]!="dijit" && reqs[i]!="dojox") {
