@@ -884,7 +884,7 @@ var d= function(doh) {
 
 //this is guaranteed in the global scope, not matter what kind of eval is thrown at us
 if (typeof define !== "undefined") {
-  define("doh/_browserRunner", ["doh/runner"], function(){d(this.doh);});
+  define("doh/_browserRunner", ["doh/runner"], function(){return d(this.doh);});
 } else {
   if (typeof dojo !== "undefined") {
   	dojo.provide("doh._browserRunner");
