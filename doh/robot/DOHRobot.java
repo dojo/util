@@ -77,6 +77,7 @@ public final class DOHRobot extends Applet{
 	private int docScreenY = -100;
 	private int docScreenXMax;
 	private int docScreenYMax;
+	private Point margin = null;
 	private boolean mouseSecurity = false;
 
 	// The last reported mouse x,y.
@@ -330,6 +331,10 @@ public final class DOHRobot extends Applet{
 			this.lastMouseY = this.docScreenY = y;
 			this.docScreenXMax = x + w;
 			this.docScreenYMax = y + h;
+			// compute difference between position and browser edge for future reference
+			this.margin = getLocationOnScreen();
+			this.margin.x -= x;
+			this.margin.y -= y;
 			mouseSecurity=true;
 		}
 		log("< setDocumentBounds");
@@ -1144,10 +1149,31 @@ public final class DOHRobot extends Applet{
 	}
 
 	public boolean hasFocus(){
+		// sanity check to make sure the robot isn't clicking outside the window when the browser is minimized for instance
 		try{
-			return ((Boolean) window
+			boolean result= ((Boolean) window
 					.eval("var result=false;if(window.parent.document.hasFocus){result=window.parent.document.hasFocus();}else{result=true;}result;"))
 					.booleanValue();
+			if(!result){
+				// can happen for instance if the browser minimized itself, or if there is another applet on the page.
+				// recompute window,mouse positions to see if it is still safe to continue.
+				log("Document focus lost. Recomputing window position");
+				Point p = getLocationOnScreen();
+				log("Old root: "+docScreenX+" "+docScreenY);
+				docScreenX=p.x-margin.x;
+				docScreenY=p.y-margin.y;
+				log("New root: "+docScreenX+" "+docScreenY);
+				docScreenXMax=docScreenX+((Integer)window.eval("window.parent.document.getElementById('dohrobotview').offsetLeft")).intValue();
+				docScreenYMax=docScreenY+((Integer)window.eval("window.parent.document.getElementById('dohrobotview').offsetTop")).intValue();
+				// bring browser to the front again.
+				// if the window just blurred and moved, key events will again be directed to the window.
+				// if an applet stole focus, focus will still be directed to the applet; the test script will ultimately have to click something to get back to a normal state.
+				window.eval("window.parent.focus();");
+				// recompute mouse position
+				return isSecure(this.key);
+			}else{
+				return result;
+			}
 		}catch(Exception e){
 			// runs even after you close the window!
 			return false;
