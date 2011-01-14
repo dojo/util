@@ -25,7 +25,7 @@ $ajaxy = !empty($_REQUEST['ajaxy']);
 	<html>
 		<head>
 		
-		  <title>API Preview tool | The Dojo Toolkit <title>
+		  <title>API Preview tool | The Dojo Toolkit </title>
 		
 		  <script type="text/javascript" src="../../dojo/dojo.js" djConfig="parseOnLoad:true"></script>
 		
