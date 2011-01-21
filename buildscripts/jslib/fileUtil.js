@@ -64,7 +64,6 @@ fileUtil.copyDir = function(/*String*/srcDir, /*String*/destDir, /*RegExp*/regEx
 	//file should be copied. Returns a list file name strings of the destinations that were copied.
 	var fileNames = fileUtil.getFilteredFileList(srcDir, regExpFilter, true);
 	var copiedFiles = [];
-print("copy");
 	
 	for(var i = 0; i < fileNames.length; i++){
 		var srcFileName = fileNames[i];
