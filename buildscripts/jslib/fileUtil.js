@@ -80,70 +80,70 @@ fileUtil.copyDir = function(/*String*/srcDir, /*String*/destDir, /*RegExp*/regEx
 fileUtil.asyncFixEOLRe= new RegExp(fileUtil.getLineSeparator(), "g");
 
 fileUtil.transformAsyncModule= function(filename, contents) {
-	var 
-    match,
-    bundleMatch,
-    moduleId,
-    requireArgs= [],
-    lineSeparator = fileUtil.getLineSeparator(),
-    dojo = {isBrowser:true},
-    getAsyncArgs= function(moduleId_, deps) {
-      if (!deps) {
-        //no moduleId given
-        deps= moduleId_;
-      } else {
-        moduleId= moduleId_;
-      }
-      for (var i= 0; i<deps.length; i++) {
-        if (deps[i]!="require") {
-          requireArgs.push(deps[i].replace(/\//g, "."));
-        }
-      }
-    };
+	var match,
+		bundleMatch,
+		moduleId,
+		requireArgs = [],
+		lineSeparator = fileUtil.getLineSeparator(),
+		dojo = { isBrowser:true },
+		getAsyncArgs = function(moduleId_, deps){
+			if(!deps){
+				//no moduleId given
+				deps= moduleId_;
+			} else {
+				moduleId= moduleId_;
+			}
+			for (var i = 0; i < deps.length; i++) {
+				if (deps[i]!="require") {
+					requireArgs.push(deps[i].replace(/\//g, "."));
+				}
+			}
+		}
+	;
 
-  // the v1.x content in the i18n bundles is bracketed by "//begin v1.x content" and "//end v1.x content"
-  match= contents.match(/(\/\/begin\sv1\.x\scontent)([\s\S]+)(\/\/end\sv1\.x\scontent)/);
-  if (match) {
-    return match[2];
-  }
-  // must not be an i18n bundle
+	// the v1.x content in the i18n bundles is bracketed by "//begin v1.x content" and "//end v1.x content"
+	match = contents.match(/(\/\/begin\sv1\.x\scontent)([\s\S]+)(\/\/end\sv1\.x\scontent)/);
+	if(match){
+		return match[2];
+	}
+	// must not be an i18n bundle
 
-  match= contents.match(/\/\/\s*AMD\-ID\s*"([^\n"]+)"/i);
-  moduleId= (match && match[1]) || "";
-  if (moduleId || contents.substring(0, 8)=="define(\"") {
-    if ((match= contents.match(/^define\(([^\]]+)\]\s*\,[\s\n]*function.+$/m))) {
-      eval("getAsyncArgs(" + match[1] + "])");
-      if (!moduleId) {
-        logger.info("warning: the module " + filename + " looked like an AMD module, but didn't provide a module id");
-        return contents;
-      }
-      var prefix= "dojo.provide(\"" + moduleId.replace(/\//g, ".") + "\");" + lineSeparator;
-      for (var reqs= requireArgs, i= 0; i<requireArgs.length; i++) {
-        if (reqs[i].substring(0, 5)=="text!") {
-        	// do nothing
-        } else if (reqs[i].substring(0, 5)=="i18n!") {
-          bundleMatch= reqs[i].match(/i18n\!(.+)\.nls\.(\w+)/);
-          prefix+= "dojo.requireLocalization(\"" + bundleMatch[1].replace(/\//g, ".") + "\", \"" +  bundleMatch[2] +  "\");" + lineSeparator;
-        } else if (reqs[i]!="dojo" && reqs[i]!="dijit" && reqs[i]!="dojox") {
-          prefix+= "dojo.require(\"" + requireArgs[i] +  "\");" + lineSeparator;
-        }
-      }
+	match = contents.match(/\/\/\s*AMD\-ID\s*"([^\n"]+)"/i);
+	moduleId = (match && match[1]) || "";
+	if(moduleId || contents.substring(0, 8) == "define(\""){
+		if((match = contents.match(/^define\(([^\]]+)\]\s*\,[\s\n]*function.+$/m))){
+			eval("getAsyncArgs(" + match[1] + "])");
+			if(!moduleId){
+				logger.info("warning: the module " + filename + " looked like an AMD module, but didn't provide a module id");
+				return contents;
+			}
+			var prefix = "dojo.provide(\"" + moduleId.replace(/\//g, ".") + "\");" + lineSeparator;
+			for(var reqs = requireArgs, i = 0; i<requireArgs.length; i++){
+				if(reqs[i].substring(0, 5) == "text!"){
+					// do nothing
+				}else if(reqs[i].substring(0, 5) == "i18n!"){
+					bundleMatch = reqs[i].match(/i18n\!(.+)\.nls\.(\w+)/);
+					prefix += "dojo.requireLocalization(\"" + bundleMatch[1].replace(/\//g, ".") + "\", \"" +  bundleMatch[2] +	 "\");" + lineSeparator;
+				}else if(reqs[i] != "dojo" && reqs[i] != "dijit" && reqs[i] != "dojox"){
+					prefix += "dojo.require(\"" + requireArgs[i] +	"\");" + lineSeparator;
+				}
+			}
 
-      // strip all module return values that end with the comment "// AMD-result"
-      contents= contents.replace( /^\s*return\s+.+\/\/\s*AMD-return((\s.+)|(\s*))$/img , "");
-      var matchLength= match.index + match[0].length+1;
-      var contentsLength= contents.search(/\s*return\s+[_a-zA-Z\.0-9]+\s*;\s*(\/\/.+)?\s*\}\);\s*$/);
-      if (contentsLength==-1) {
-        //logger.info("warning: no return for: " + fileUtil.asyncProvideArg);
-        contentsLength= contents.search(/\}\);\s*$/);
-      }
-      return prefix + lineSeparator + contents.substring(matchLength, contentsLength);
-    } else {
-      return contents;
-    }
-  } else {
-    return contents;
-  }
+			// strip all module return values that end with the comment "// AMD-result"
+			contents = contents.replace( /^\s*return\s+.+\/\/\s*AMD-return((\s.+)|(\s*))$/img , "");
+			var matchLength = match.index + match[0].length + 1;
+			var contentsLength = contents.search(/\s*return\s+[_a-zA-Z\.0-9]+\s*;\s*(\/\/.+)?\s*\}\);\s*$/);
+			if(contentsLength == -1){
+				//logger.info("warning: no return for: " + fileUtil.asyncProvideArg);
+				contentsLength= contents.search(/\}\);\s*$/);
+			}
+			return prefix + lineSeparator + contents.substring(matchLength, contentsLength);
+		} else {
+			return contents;
+		}
+	} else {
+		return contents;
+	}
 };
 
 fileUtil.copyFile = function(/*String*/srcFileName, /*String*/destFileName, /*boolean?*/onlyCopyNew){
@@ -171,16 +171,16 @@ fileUtil.copyFile = function(/*String*/srcFileName, /*String*/destFileName, /*bo
 		}
 	}
 
-  if (/.+\.js$/.test(srcFileName)) {
+	if (/.+\.js$/.test(srcFileName)) {
 		fileUtil.saveUtf8File(destFileName, fileUtil.transformAsyncModule(srcFileName, fileUtil.readFile(srcFileName)).replace(fileUtil.asyncFixEOLRe, "\n"));
-  } else {
- 	  //Java's version of copy file.
-	  var srcChannel = new java.io.FileInputStream(srcFileName).getChannel();
-	  var destChannel = new java.io.FileOutputStream(destFileName).getChannel();
-	  destChannel.transferFrom(srcChannel, 0, srcChannel.size());
-	  srcChannel.close();
-	  destChannel.close();
-  }
+	} else {
+		//Java's version of copy file.
+		var srcChannel = new java.io.FileInputStream(srcFileName).getChannel();
+		var destChannel = new java.io.FileOutputStream(destFileName).getChannel();
+		destChannel.transferFrom(srcChannel, 0, srcChannel.size());
+		srcChannel.close();
+		destChannel.close();
+	}
 	
 	return true; //Boolean
 }
