@@ -1,4 +1,5 @@
 dojo.provide("util.docscripts.cheat.lib");
+dojo.require("util.docscripts.cheat.floatup");
 (function(){
 	
 	var api = util.docscripts.cheat.lib;
@@ -24,7 +25,7 @@ dojo.provide("util.docscripts.cheat.lib");
 			"keys", "NodeList", "fx", "prototype", 
 			
 			// lifecycle stuff to hide
-			"loaded", "unloaded", "loadInit", "windowUnloaded",
+			"loaded", "unloaded", "loadInit", "windowUnloaded", "simulatedLoading", "floatup",
 			"preamble", "WidgetSet", "registry", "inherited", "postscript",
 
 			// dijit.WidgetSet
@@ -234,13 +235,14 @@ dojo.provide("util.docscripts.cheat.lib");
 //				}
 				
 			}
+			// FIXME: unwrap key (refactor all this) so we can link around it to API docs
 			return key + member + "<span class='sig'>" + fn.toString().replace(/function\s+/, "").split(")")[0] + ")" + "</span>";
 		},
 
 		save: function(){
 			dojo.xhrPost({ 
 				url:"cheat.php",
-				content: { body: dojo.body().innerHTML, version: dojo.version.toString() },
+				content: { body: dojo.body().innerHTML },
 				load: function(response){
 					window.location.href = "./cheat.html";
 				},
@@ -252,7 +254,7 @@ dojo.provide("util.docscripts.cheat.lib");
 
 		buildNav: function(){
 
-			dojo.query("#container > fieldset").forEach(function(n){
+			dojo.query("#container fieldset").forEach(function(n){
 
 				var id = n.id;
 				var mySize = dojo.query(n).query("li").length;
@@ -291,17 +293,7 @@ dojo.provide("util.docscripts.cheat.lib");
 		},
 		
 		sortFields: function(id){
-			// stolen from demos/faces/src.js
-			var d = dojo;
-			// don't ever let me see you doing this outside of a demo situation. there has
-			// got to be a better way.
-			id = d.byId(id);
-			d.query("> fieldset", id).sort(function(a,b){
-				var q = "ul > li", al = d.query(q, a).length, bl = d.query(q, b).length;
-				return al > bl ? 0 : al < bl ? 1 : -1;
-			}).forEach(function(n){
-				id.appendChild(n);
-			});
+			dojo.query("#" + id).floatup();
 		},
 		
 		hasTag: function(tag){
