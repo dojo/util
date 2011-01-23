@@ -122,10 +122,16 @@ mv build release-$1
 rm -rf release-$1/$srcName/
 cd release-$1
 
-# md5sum the release files
-for i in *.zip; do md5sum $i > $i.md5; done
-for i in *.gz; do md5sum $i > $i.md5; done
-for i in *.js; do md5sum $i > $i.md5; done
+# md5sum the release files -- OSX doesn't have md5sum, foundation servers don't have md5
+if [ -e `which md5` ]; then
+	md5=`which md5`
+elif [ -e `which md5sum` ]; then
+	ms5=`which md5sum`
+fi
+
+for i in *.zip; do $md5 $i > $i.md5; done
+for i in *.gz; do $md5 $i > $i.md5; done
+for i in *.js; do $md5 $i > $i.md5; done
 
 # pack up the whole thing for easy copying
 cd ..
