@@ -126,7 +126,7 @@ cd release-$1
 if [ -e `which md5` ]; then
 	md5=`which md5`
 elif [ -e `which md5sum` ]; then
-	ms5=`which md5sum`
+	md5=`which md5sum`
 fi
 
 for i in *.zip; do $md5 $i > $i.md5; done
