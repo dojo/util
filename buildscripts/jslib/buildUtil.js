@@ -698,6 +698,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 			djGlobal['djConfig'] = undefined;
 	
 			delete dojo;
+			delete define;
 		}
 	}
 

@@ -118,14 +118,15 @@ fileUtil.transformAsyncModule= function(filename, contents) {
 				return contents;
 			}
 			var prefix = "dojo.provide(\"" + moduleId.replace(/\//g, ".") + "\");" + lineSeparator;
-			for(var reqs = requireArgs, i = 0; i<requireArgs.length; i++){
-				if(reqs[i].substring(0, 5) == "text!"){
+			for(var req, reqs = requireArgs, i = 0; i<reqs.length; i++){
+				req = reqs[i];
+				if(req.substring(0, 5) == "text!"){
 					// do nothing
-				}else if(reqs[i].substring(0, 5) == "i18n!"){
-					bundleMatch = reqs[i].match(/i18n\!(.+)\.nls\.(\w+)/);
-					prefix += "dojo.requireLocalization(\"" + bundleMatch[1].replace(/\//g, ".") + "\", \"" +  bundleMatch[2] +	 "\");" + lineSeparator;
-				}else if(reqs[i] != "dojo" && reqs[i] != "dijit" && reqs[i] != "dojox"){
-					prefix += "dojo.require(\"" + requireArgs[i] +	"\");" + lineSeparator;
+				}else if(req.substring(0, 5) == "i18n!"){
+					bundleMatch = req.match(/i18n\!(.+)\.nls\.(\w+)/);
+					prefix += "dojo.requireLocalization(\"" + bundleMatch[1].replace(/\//g, ".") + "\", \"" +	 bundleMatch[2] +	 "\");" + lineSeparator;
+				}else if(req != "dojo" && req != "dijit" && req != "dojox" && !/^dojo\.lib/.test(req)){
+					prefix += "dojo.require(\"" + req +	"\");" + lineSeparator;
 				}
 			}
 
