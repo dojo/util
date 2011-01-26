@@ -1390,58 +1390,47 @@ tests = doh;
 	var x;
 	try{
 		if(typeof dojo != "undefined"){
-      //-1
-      // remove the dependency on dojo.platform require
-      dojo.require(dojo.isBrowser ? "doh._browserRunner" : "doh._rhinoRunner");
+			dojo.require(dojo.isBrowser ? "doh._browserRunner" : "doh._rhinoRunner");
 			try{
 				var _shouldRequire = dojo.isBrowser ? (dojo.global == dojo.global["parent"] || !Boolean(dojo.global.parent.doh) ) : true;
 			}catch(e){
 				//can't access dojo.global.parent.doh, then we need to do require
 				_shouldRequire = true;
 			}
-			if(_shouldRequire){
-				if(dojo.isBrowser){
-					dojo.addOnLoad(function(){
-						if (dojo.global.registerModulePath){
-							dojo.forEach(dojo.global.registerModulePath, function(m){
-								dojo.registerModulePath(m[0], m[1]);
-							});
-						}
-					});
-				}else{
-					// dojo.require("doh._base");
-				}
+			if(_shouldRequire && dojo.isBrowser){
+				dojo.addOnLoad(function(){
+					if (dojo.global.registerModulePath){
+						dojo.forEach(dojo.global.registerModulePath, function(m){
+							dojo.registerModulePath(m[0], m[1]);
+						});
+					}
+				});
 			}
-		}else{
-			if(typeof load == "function" &&
-				(typeof Packages == "function" || typeof Packages == "object")){
-				throw new Error();
-			}else if(typeof load == "function"){
-				throw new Error();
-			}
+		}else if(typeof load == "function"){
+			throw new Error();
+		}else if(typeof define == "function" && define.vendor!="dojotoolkit.org"){
+			// using a real AMD loader; it will load runnerFile
+		}else if(this["document"]){
+			// if we survived all of that, we're probably in a browser but
+			// don't have Dojo handy and/or are using an AMD loader.
+			// Load _browserRunner.js using a document.write() call.
 
-			if(this["document"]){
-				// if we survived all of that, we're probably in a browser but
-				// don't have Dojo handy. Load _browserRunner.js using a
-				// document.write() call.
-
-				// find runner.js, load _browserRunner relative to it
-				var scripts = document.getElementsByTagName("script"), runnerFile;
-				for(x=0; x<scripts.length; x++){
-					var s = scripts[x].src;
-					if(s){
-						if(!runnerFile && s.substr(s.length - 9) == "runner.js"){
-							runnerFile = s;
-						}else if(s.substr(s.length - 17) == "_browserRunner.js"){
-							runnerFile = null;
-							break;
-						}
+			// find runner.js, load _browserRunner relative to it
+			var scripts = document.getElementsByTagName("script"), runnerFile;
+			for(x=0; x<scripts.length; x++){
+				var s = scripts[x].src;
+				if(s){
+					if(!runnerFile && s.substr(s.length - 9) == "runner.js"){
+						runnerFile = s;
+					}else if(s.substr(s.length - 17) == "_browserRunner.js"){
+						runnerFile = null;
+						break;
 					}
 				}
-				if(runnerFile){
-					document.write("<scri"+"pt src='" + runnerFile.substr(0, runnerFile.length - 9)
-						+ "_browserRunner.js' type='text/javascript'></scr"+"ipt>");
-				}
+			}
+			if(runnerFile){
+				document.write("<scri"+"pt src='" + runnerFile.substr(0, runnerFile.length - 9)
+					+ "_browserRunner.js' type='text/javascript'></scr"+"ipt>");
 			}
 		}
 	}catch(e){
@@ -1460,8 +1449,7 @@ tests = doh;
 					var tp = arguments[x].split("=");
 					if(tp[0] == "dohBase"){
 						dohBase = tp[1];
-						//Convert slashes to unix style and make sure properly
-						//ended.
+						//Convert slashes to unix style and make sure properly ended.
 						dohBase = dohBase.replace(/\\/g, "/");
 						if(dohBase.charAt(dohBase.length - 1) != "/"){
 							dohBase += "/";
@@ -1506,15 +1494,20 @@ return doh;
 
 };//end of definition of doh/runner, which really defines global doh
 
-//this is guaranteed in the global scope, not matter what kind of eval is thrown at us
-this["doh"]= this["doh"] || {};
-if (typeof define !== "undefined") {
-  define("doh/runner", [], function(){return d(doh);});
-} else {
-  if (typeof dojo !== "undefined") {
-  	dojo.provide("doh.runner");
-  }
-  d(doh);
+// this is guaranteed in the global scope, not matter what kind of eval is thrown at us
+// define global doh
+if(typeof doh == "undefined"){
+	doh = {};
+}
+if(typeof define == "undefined" || define.vendor=="dojotoolkit.org"){
+	// using dojo 1.x loader or no dojo on the page
+	if(typeof dojo !== "undefined"){
+		dojo.provide("doh.runner");
+	}
+	d(doh);
+}else{
+	// using an AMD loader
+	doh.runnerFactory= d;
 }
 
 }).call(null);

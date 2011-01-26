@@ -1,4 +1,3 @@
-
 // FIXME: need to add prompting for monkey-do testing
 
 (function(){
@@ -882,13 +881,19 @@ var d= function(doh) {
 	}
 };
 
-//this is guaranteed in the global scope, not matter what kind of eval is thrown at us
-if (typeof define !== "undefined") {
-  define("doh/_browserRunner", ["doh/runner"], function(){return d(this.doh);});
-} else {
-  if (typeof dojo !== "undefined") {
-  	dojo.provide("doh._browserRunner");
-  }
-  d(this.doh);
+// this is guaranteed in the global scope, not matter what kind of eval is thrown at us
+// define global doh
+if(typeof doh == "undefined"){
+	doh = {};
+}
+if (typeof define == "undefined" || define.vendor=="dojotoolkit.org") {
+	// using dojo 1.x loader or no dojo on the page
+	if(typeof dojo !== "undefined"){
+		dojo.provide("doh._browserRunner");
+	}
+	d(doh);
+}else{
+	// using an AMD loader
+	doh.browserRunnerFactory= d;
 }
 }).call(null);
