@@ -4,7 +4,7 @@ dependencies = {
 		{
 			name: "dojo.js",
 			dependencies: [
-				"dijit._Widget",
+				"dijit._WidgetBase",
 				"dijit._base.manager"
 			]
 		},

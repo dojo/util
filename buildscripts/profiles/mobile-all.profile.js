@@ -13,7 +13,7 @@ dependencies = {
 				"dojo._base.event",
 				"dojo._base.connect",
 				"dojo._base.html",
-				"dijit._Widget",
+				"dijit._WidgetBase",
 				"dijit._base.manager",
 				"dijit._base.sniff",
 				"dojox.mobile.parser",
