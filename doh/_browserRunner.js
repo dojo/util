@@ -840,6 +840,7 @@ var d= function(doh) {
 				return tObj;
 			}
 			doh.debug = doh.hitch(_doh, "debug");
+			doh.error = doh.hitch(_doh, "error");
 			doh.registerUrl = doh.hitch(_doh, "registerUrl");
 			doh._testStarted = function(group, fixture){
 				_doh._testStarted(_thisGroup, fixture);
