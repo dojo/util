@@ -15,7 +15,6 @@ dependencies = {
 				"dojo._base.html",
 				"dijit._WidgetBase",
 				"dijit._base.manager",
-				"dijit._base.sniff",
 				"dojox.mobile.parser",
 				"dojox.mobile"
 			]
@@ -23,6 +22,7 @@ dependencies = {
 		{
 			name: "../dojox/mobile/compat.js",
 			dependencies: [
+				"dijit._base.sniff",
 				"dojo._base.fx",
 				"dojox.mobile.compat"
 			]
