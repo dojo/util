@@ -224,7 +224,7 @@ var d= function(doh) {
 				var standby;
 				if(doh.perfTestResults){
 					if(window.dojo){
-						//If we have dojo and here are perf tests results, 
+						//If we have dojo and here are perf tests results,
 						//well, we'll use the dojo charting functions
 						dojo.require("dojox.charting.Chart2D");
 						dojo.require("dojox.charting.DataChart");
@@ -345,7 +345,7 @@ var d= function(doh) {
 					sendToLogPane.call(window, arguments);
 					console.error.apply(console, arguments);
 				};
-			} 
+			}
 			if(console.debug){
 				doh.debug = function(){
 					sendToLogPane.call(window, arguments);
@@ -602,8 +602,8 @@ var d= function(doh) {
 		}
 
 		// FIXME: move implementation to _browserRunner?
-		doh.registerUrl = function(	/*String*/ group, 
-										/*String*/ url, 
+		doh.registerUrl = function(	/*String*/ group,
+										/*String*/ url,
 										/*Integer*/ timeout){
 			var tg = new String(group);
 			this.register(group, {
@@ -635,7 +635,7 @@ var d= function(doh) {
 			});
 		}
 
-		// 
+		//
 		// Utility code for runner.html
 		//
 		// var isSafari = navigator.appVersion.indexOf("Safari") >= 0;
@@ -704,7 +704,7 @@ var d= function(doh) {
 			if(loaded){ return; }
 			loaded = true;
 			groupTemplate = byId("groupTemplate");
-			if(!groupTemplate){ 
+			if(!groupTemplate){
 				// make sure we've got an ammenable DOM structure
 				return;
 			}
@@ -716,7 +716,7 @@ var d= function(doh) {
 			doh._updateTestList();
 		});
 
-		_addOnEvt("load", 
+		_addOnEvt("load",
 			function(){
 				// let robot code run if it gets to this first
 				var __onEnd = doh._onEnd;
@@ -732,7 +732,7 @@ var d= function(doh) {
 						toggleRunning();
 					}
 				}
-				if(!byId("play")){ 
+				if(!byId("play")){
 					// make sure we've got an amenable DOM structure
 					return;
 				}

@@ -22,16 +22,16 @@ dojo.require("util.docscripts.cheat.floatup");
 
 		ignore:[
 			// stuff to ignore:
-			"keys", "NodeList", "fx", "prototype", 
+			"keys", "NodeList", "fx", "prototype",
 			
 			// lifecycle stuff to hide
 			"loaded", "unloaded", "loadInit", "windowUnloaded", "simulatedLoading", "floatup",
 			"preamble", "WidgetSet", "registry", "inherited", "postscript",
 
 			// dijit.WidgetSet
-			"add", "remove", 
+			"add", "remove",
 
-			// 
+			//
 			"dijit", "form", "layout", "lang", "dir", "class",
 			"declaredClass", "wai", "typematic", "popup",
 
@@ -46,7 +46,7 @@ dojo.require("util.docscripts.cheat.floatup");
 		tags: {
 			dojo:{
 				"Effects":[
-					"anim", "animateProperty", "fadeIn", "fadeOut", "animate", "fx.chain", "fx.combine", 
+					"anim", "animateProperty", "fadeIn", "fadeOut", "animate", "fx.chain", "fx.combine",
 					"_Animation", "_Line", "Animation" /* _Animation deprecated in 1.4 */
 				],
 
@@ -55,7 +55,7 @@ dojo.require("util.docscripts.cheat.floatup");
 				],
 
 				"Language-Helpers":[
-					"isArray", "isFunction", "isString", "isObject", "isArrayLike", "unique", 
+					"isArray", "isFunction", "isString", "isObject", "isArrayLike", "unique",
 					"eval", "isAlien", "trim", "Deferred", "_toArray", "replace", "when"
 				],
 
@@ -65,13 +65,13 @@ dojo.require("util.docscripts.cheat.floatup");
 				],
 
 				"Event-System":[
-					"connect", "publish", "subscribe", "pub", "sub", "unsubscribe", "disconnect", 
+					"connect", "publish", "subscribe", "pub", "sub", "unsubscribe", "disconnect",
 					"fixEvent", "stopEvent", "connectPublisher", "isCopyKey", "mouseButtons"
 				],
 
 				"NodeList-Events":[
 					"onmousedown", "onmouseenter", "onmouseleave", "onmousemove", "onmouseover",
-					 "onmouseout", "onblur", 
+					 "onmouseout", "onblur",
 					"onfocus", "onclick", "onchange", "onload", "onmousedown", "onmouseup", "onsubmit",
 					"onerror", "onkeydown", "onkeypress", "onkeyup", "hover"
 				],
@@ -91,7 +91,7 @@ dojo.require("util.docscripts.cheat.floatup");
 				],
 
 				"Document-Lifecycle":[
-					"addOnLoad", "addOnUnload", "addOnWindowUnload","loaded", 
+					"addOnLoad", "addOnUnload", "addOnWindowUnload","loaded",
 					"unloaded", "loadInit",  "windowUnloaded", "ready"
 				],
 
@@ -111,12 +111,12 @@ dojo.require("util.docscripts.cheat.floatup");
 				],
 
 				"Styles-CSS":[
-					"style", "addClass", "removeClass", "toggleClass", "replaceClass", "hasClass", "getComputedStyle", "boxModel", 
+					"style", "addClass", "removeClass", "toggleClass", "replaceClass", "hasClass", "getComputedStyle", "boxModel",
 					"show", "hide", "toggle", "hoverClass"
 				],
 
 				"JSON":[
-					"fromJson", "toJson", "toJsonIndentStr", "formToObject", "queryToObject", "formToQuery", 
+					"fromJson", "toJson", "toJsonIndentStr", "formToObject", "queryToObject", "formToQuery",
 					"formToJson", "objectToQuery", "fieldToObject"
 				],
 
@@ -126,10 +126,10 @@ dojo.require("util.docscripts.cheat.floatup");
 
 				"Advanced-Scope":[
 					"conflict", "withDoc", "withGlobal", "setContext", "doc", "global"
-				], 
+				],
 
 				"Sniffing":[
-					"isBrowser", "isFF", "isKhtml", "isMoz", "isMozilla", "isIE", "isOpera", "isBrowser", 
+					"isBrowser", "isFF", "isKhtml", "isMoz", "isMozilla", "isIE", "isOpera", "isBrowser",
 					"isQuirks", "isWebKit", "isChrome", /* new 1.4 */ "isMac"
 				]
 			},
@@ -174,14 +174,14 @@ dojo.require("util.docscripts.cheat.floatup");
 				"Dijit-Utils":[
 					"getUniqueId", "getDocumentWindow", "getViewport", "scrollIntoView", "BackgroundIframe",
 					"registerIframe", "moveToBookmark", "getBookmark", "isCollapsed", "placementRegistry",
-					"registerWin" 
+					"registerWin"
 				]
-			}	
+			}
 		},
 
 		getTag: function(key, part){
 			part = part || "dojo";
-			if(api.tags[part]){ 
+			if(api.tags[part]){
 				// summary: find the first matching function name in the tagMap
 				for(var i in api.tags[part]){
 					if(dojo.indexOf(api.tags[part][i], key) >= 0){
@@ -193,7 +193,7 @@ dojo.require("util.docscripts.cheat.floatup");
 		},
 
 		getUl: function(tag){
-			// find the UL within a <div> with this tag's id, or make it. 
+			// find the UL within a <div> with this tag's id, or make it.
 			// return the UL node
 			var n = dojo.byId(tag);
 			if(!n){
@@ -206,7 +206,7 @@ dojo.require("util.docscripts.cheat.floatup");
 
 		getSig: function(key, member, fn){
 			// makup up a function signature for this object
-			if(!dojo.isFunction(fn)){ 
+			if(!dojo.isFunction(fn)){
 //				var t = (typeof fn).toLowerCase()
 //				switch(t){
 //					case "boolean" :
@@ -220,18 +220,18 @@ dojo.require("util.docscripts.cheat.floatup");
 //							console.log(i);
 //						}
 //						break;
-//					default: 
+//					default:
 //						console.log(t);
 //						break;
 //				}
-				return key + member; 
+				return key + member;
 			}
 			if(/^_?[A-Z]/.test(member)){
 				key = "<span class='sig'>new</span> " + key;
 
 // FIXME: determine the actual signature for the a declaredclass?
 //				if(fn.prototype._constructor){
-//					console.log(fn.prototype._constructor)	
+//					console.log(fn.prototype._constructor)
 //				}
 				
 			}
@@ -240,7 +240,7 @@ dojo.require("util.docscripts.cheat.floatup");
 		},
 
 		save: function(){
-			dojo.xhrPost({ 
+			dojo.xhrPost({
 				url:"cheat.php",
 				content: { body: dojo.body().innerHTML },
 				load: function(response){
@@ -275,7 +275,7 @@ dojo.require("util.docscripts.cheat.floatup");
 			}else if(dojo.exists(strsomething)){
 				something = dojo.getObject(strsomething);
 			}
-			if(!something){ return; } 
+			if(!something){ return; }
 			
 			var k = api.varmap[strsomething] || (strsomething + ".");
 			for(var i in something){
@@ -300,6 +300,6 @@ dojo.require("util.docscripts.cheat.floatup");
 			return window.location.href.indexOf(tag) >= 0;
 		}
 
-	});	
+	});
 
 })();

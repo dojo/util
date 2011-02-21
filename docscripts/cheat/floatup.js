@@ -34,20 +34,20 @@ dojo.provide("util.docscripts.cheat.floatup");
 				maxHeight = getMax(heights),
 				optimumHeight = Math.max(avgHeight, maxHeight),
 				threshold = 75 // pixels to allow over/under optimum
-			; 
+			;
 
 			function inBounds(val){
 				// returns bool if passed height is within bounds of optimum
 				var upper = optimumHeight + threshold, lower = optimumHeight - threshold;
 				if(val == optimumHeight || (val <= upper && val >= lower)){
 					return true;
-				}else{ 
+				}else{
 					return false;
 				}
 			}
 
 			function getOptimumPositions(data, sizes, cols){
-				// return an Array of Arrays. Each item in the top level array will be an Array 
+				// return an Array of Arrays. Each item in the top level array will be an Array
 				//	of reference to the nodes that needs to be in the corresponding col
 
 				var col = 0;

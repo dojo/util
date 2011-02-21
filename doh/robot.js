@@ -84,7 +84,7 @@ if(!doh.robot["_robotLoaded"]){
 			}catch(e){
 				return null;
 			}
-		}	
+		}
 	},
 	
 	startRobot: function(){

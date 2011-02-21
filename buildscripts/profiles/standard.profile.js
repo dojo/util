@@ -33,7 +33,7 @@ dependencies = {
 				"dojox.gfx"
 			]
 		},
-		// FIXME: 
+		// FIXME:
 		//		we probably need a better structure for this layer and need to
 		//		add some of the most common themes
 		{
@@ -57,7 +57,7 @@ dependencies = {
 				"dojox.dtl.ext-dojo.NodeList"
 			]
 		},
-		{ 
+		{
 			name: "../dojox/mobile.js",
 			dependencies: [
 				"dojox.mobile"

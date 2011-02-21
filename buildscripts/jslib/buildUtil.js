@@ -49,7 +49,7 @@ buildUtil.DojoBuildOptions = {
 	},
 	"loader": {
 		defaultValue: "default",
-		helpText: "The type of dojo loader to use. \"default\" or \"xdomain\" are acceptable values."		
+		helpText: "The type of dojo loader to use. \"default\" or \"xdomain\" are acceptable values."
 	},
 	"internStrings": {
 		defaultValue: true,
@@ -72,7 +72,7 @@ buildUtil.DojoBuildOptions = {
 			+ "to execute the build (remember Java 6):\n"
 			+ "java -classpath ../shrinksafe/js.jar:../closurecompiler/compiler.jar org.mozilla.javascript.tools.shell.Main build.js\n"
 			+ "and place your build arguments on the same line after that text. Change the ../closurecompiler "
-			+ "path to the path where you keep Closure's compiler.jar." 
+			+ "path to the path where you keep Closure's compiler.jar."
 	},
 	"layerOptimize": {
 		defaultValue: "shrinksafe",
@@ -91,20 +91,20 @@ buildUtil.DojoBuildOptions = {
 			+ "to execute the build (remember Java 6):\n"
 			+ "java -classpath ../shrinksafe/js.jar:../closurecompiler/compiler.jar org.mozilla.javascript.tools.shell.Main build.js\n"
 			+ "and place your build arguments on the same line after that text. Change the ../closurecompiler "
-			+ "path to the path where you keep Closure's compiler.jar." 
+			+ "path to the path where you keep Closure's compiler.jar."
 	},
 	"cssOptimize": {
 		defaultValue: "",
 		helpText: "Specifies how to optimize CSS files. If \"comments\" is specified, "
 			+ "then code comments and line returns are stripped, and files referenced via @import "
-			+ "are inlined. If \"comments.keepLines\" "	
+			+ "are inlined. If \"comments.keepLines\" "
 			+ "is specified, then code comments are stripped and @import calls are inlined, but line returns are preserved."
 	},
 
 	"cssImportIgnore": {
 		defaultValue: "",
 		helpText: "If using cssOptimize=\"comments\", then you can force the @import inlining step "
-			+ "to ignore a set of files by using this option. The value of this option should be a comma "	
+			+ "to ignore a set of files by using this option. The value of this option should be a comma "
 			+ "separated list of CSS files names to ignore. The file names should match whatever strings "
 			+ "are used for the @import calls."
 	},
@@ -241,7 +241,7 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 		});
 		function addLayer(scriptName){
 			if(layers[scriptName]){
-				// if this module has been added before, find the intersection of dependencies 
+				// if this module has been added before, find the intersection of dependencies
 				layers[scriptName] = layers[scriptName].filter(function(scriptName){
 					return priorLayers.indexOf(scriptName) > -1;
 				});
@@ -289,7 +289,7 @@ buildUtil.makeBuildOptions = function(/*Array*/scriptArgs){
 						})
 					});
 		}
-		profileProperties = { 
+		profileProperties = {
 				layers: layersArray,
 				prefixes: prefixPaths
 			};
@@ -461,7 +461,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 	var layers = dependencies["layers"];
 	var layerCount = layers.length;
 	
-	//Process dojo layer files 
+	//Process dojo layer files
 	if(layerCount){
 		//Set up a lookup table for the layer URIs based on layer file name.
 		var namedLayerUris = {};
@@ -633,9 +633,9 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 			}
 
 			//Get the final list of dependencies in this layer
-			var depList = buildUtil.determineUriList(layer.dependencies, layerUris, dependencies["filters"]); 
+			var depList = buildUtil.determineUriList(layer.dependencies, layerUris, dependencies["filters"]);
 
-			//If dojo.xd.js, need to put dojo.i18n before the code in dojo._base.browser that does the 
+			//If dojo.xd.js, need to put dojo.i18n before the code in dojo._base.browser that does the
 			//auto dojo.require calls based on dojo.config.require array.
 			//This is a little bit hackish, but it allows dojo.i18n to use any Base methods
 			//in the future.
@@ -689,7 +689,7 @@ buildUtil.getDependencyList = function(/*Object*/dependencies, /*String or Array
 			}
 
 			//Reset for another run through the loop.
-			currentProvideList = []; 
+			currentProvideList = [];
 
 			load = old_load; // restore the original load function
 			dojo["eval"] = dojo._oldEval; // restore the original dojo.eval function
@@ -723,8 +723,8 @@ buildUtil.determineUriList = function(/*Array*/dependencies, /*Array*/layerUris,
 		try{
 			var dep = dependencies[x];
 
-			//Don't process loader_xd.js since it has some regexps 
-			//and mentions of dojo.require/provide, which will cause 
+			//Don't process loader_xd.js since it has some regexps
+			//and mentions of dojo.require/provide, which will cause
 			//havoc in the dojo._loadModule() method.
 			if(dep.indexOf("loader_xd.js") == -1){
 				dojo._loadModule(dep, true);
@@ -752,21 +752,21 @@ buildUtil.determineUriList = function(/*Array*/dependencies, /*Array*/layerUris,
 			//If the uri is already accounted for in another
 			//layer, skip it.
 			if(layerUris){
-				for(i = 0; i < layerUris.length; i++){ 
-					if(curi == layerUris[i]){ 
-						continue uris; 
-					} 
-				} 
-			} 
+				for(i = 0; i < layerUris.length; i++){
+					if(curi == layerUris[i]){
+						continue uris;
+					}
+				}
+			}
 
 			//No filter or layerUri matches, so it is good to keep.
 			depList.push(curi);
 		}
 	}
 	
-	//Clear out the loadedUris for the next run. 
-	dojo._loadedUrls = []; 
-	return depList; 
+	//Clear out the loadedUris for the next run.
+	dojo._loadedUrls = [];
+	return depList;
 }
 
 
@@ -848,7 +848,7 @@ buildUtil.getDojoPrefixPath = function(/*Array*/prefixes){
 
 buildUtil.addPrefixesFromDependencies = function(/*Array*/prefixStore, /*Array*/dependencies){
 	//summary: finds the top level prefixes in the build process that
-	//we need to track for the build process. 
+	//we need to track for the build process.
 	for(var i = 0; i < dependencies.length; i++){
 		var topPrefix = dependencies[i].split(".")[0];
 		if(!prefixStore._entries[topPrefix]){
@@ -910,7 +910,7 @@ buildUtil.createLayerContents = function(
 	//used to remove matching dojo.require statements.
 	//Sort the provide list alphabetically to make it easy to read.
 	//Order of provide statements do not matter.
-	provideList = provideList.sort(); 
+	provideList = provideList.sort();
 	var depRegExpString = "";
 	for(i = 0; i < provideList.length; i++){
 		//Skip keepRequire matches.
@@ -992,11 +992,11 @@ buildUtil.changeVersion = function(/*String*/version, /*String*/fileContents){
 	
 	//Set version number.
 	//First, break apart the version string.
-	var verSegments = version.match(/^(\d*)\.?(\d*)\.?(\d*)\.?(.*)$/); 
-	var majorValue = verSegments[1] || 0; 
-	var minorValue = verSegments[2] || 0; 
-	var patchValue = verSegments[3] || 0; 
-	var flagValue  = verSegments[4] || ""; 
+	var verSegments = version.match(/^(\d*)\.?(\d*)\.?(\d*)\.?(.*)$/);
+	var majorValue = verSegments[1] || 0;
+	var minorValue = verSegments[2] || 0;
+	var patchValue = verSegments[3] || 0;
+	var flagValue  = verSegments[4] || "";
 
 	//Do the final version replacement.
 	fileContents = fileContents.replace(
@@ -1024,7 +1024,7 @@ buildUtil.makeDojoJs = function(/*Object*/dependencyResult, /*String*/version, /
 	//provideList: Array of module resource names (dojo.io)
 	//name: name of the layer file
 	//contents: the file contents for that layer file.
-	return dependencyResult; 
+	return dependencyResult;
 
 	//Return the dependency list, since it is used for other things in the ant file.
 	return {
@@ -1113,7 +1113,7 @@ buildUtil.mapPathToResourceName = function(pathName, prefixes){
 	//Remove file extensions and any front slash.
 	newPathName = newPathName.replace(/^\//, "").replace(/\..*?$/, "");
 	
-	return bestPrefix + "." + newPathName.replace(/\//g, "."); 
+	return bestPrefix + "." + newPathName.replace(/\//g, ".");
 }
 
 buildUtil.mapResourceToPath = function(resourceName, prefixes){
@@ -1237,7 +1237,7 @@ buildUtil.interningRegexpMagic = function(resourceFile, resourceContent, srcRoot
 
 		//logger.trace("Module match: " + parts[6] + " and " + parts[9]);
 		filePath = buildUtil.makeResourceUri(parts[6], parts[9], srcRoot, prefixes);
-		resourceNsName = parts[6] + ':' + parts[9];		
+		resourceNsName = parts[6] + ':' + parts[9];
 
 		if(!filePath || buildUtil.isValueInArray(resourceNsName, skiplist)){
 			logger.trace("    skipping " + filePath);
@@ -1390,8 +1390,8 @@ buildUtil.optimizeJs = function(/*String fileName*/fileName, /*String*/fileConte
 			options.prettyPrint = optimizeType.indexOf(".keepLines") !== -1;
 
 			var FLAG_compilation_level = jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS;
-			FLAG_compilation_level.setOptionsForCompilationLevel(options);                  
-			var FLAG_warning_level = jscomp.WarningLevel.DEFAULT;                   
+			FLAG_compilation_level.setOptionsForCompilationLevel(options);
+			var FLAG_warning_level = jscomp.WarningLevel.DEFAULT;
 			FLAG_warning_level.setOptionsForWarningLevel(options);
 
 			//Run the compiler
@@ -1791,39 +1791,39 @@ buildUtil.baseMappings = {
 	"_destroyElement": "html",
 	"isDescendant": "html",
 	"setSelectable": "html",
-	"place": "html", 
-	"getComputedStyle": "html", 
-	"_toPixelValue": "html", 
+	"place": "html",
+	"getComputedStyle": "html",
+	"_toPixelValue": "html",
 	"_getOpacity": "html",
-	"_setOpacity": "html", 
-	"style": "html", 
-	"_getPadExtents": "html", 
+	"_setOpacity": "html",
+	"style": "html",
+	"_getPadExtents": "html",
 	"_getBorderExtents": "html",
-	"_getPadBorderExtents": "html", 
-	"_getMarginExtents": "html", 
+	"_getPadBorderExtents": "html",
+	"_getMarginExtents": "html",
 	"_getMarginBox": "html",
-	"_getContentBox": "html", 
-	"_getBorderBox": "html", 
-	"_setBox": "html", 
+	"_getContentBox": "html",
+	"_getBorderBox": "html",
+	"_setBox": "html",
 	"_usesBorderBox": "html",
-	"_setContentSize": "html", 
-	"_setMarginBox": "html", 
-	"marginBox": "html", 
+	"_setContentSize": "html",
+	"_setMarginBox": "html",
+	"marginBox": "html",
 	"contentBox": "html",
-	"_docScroll": "html", 
-	"_isBodyLtr": "html", 
+	"_docScroll": "html",
+	"_isBodyLtr": "html",
 	"_getIeDocumentElementOffset": "html",
 	"_fixIeBiDiScrollLeft": "html",
-	"_abs": "html", 
-	"coords": "html", 
-	"hasAttr": "html", 
+	"_abs": "html",
+	"coords": "html",
+	"hasAttr": "html",
 	"attr": "html",
 	"removeAttr": "html",
 	"create": "html",
 	"empty": "html",
 	"_toDom": "html",
-	"hasClass": "html", 
-	"addClass": "html", 
+	"hasClass": "html",
+	"addClass": "html",
 	"removeClass": "html",
 	"toggleClass": "html",
 	
@@ -1832,11 +1832,11 @@ buildUtil.baseMappings = {
 	"_filterQueryResult": "query",
 	"query": "query",
 	
-	"formToObject": "xhr", 
+	"formToObject": "xhr",
 	"objectToQuery": "xhr",
 	"formToQuery": "xhr",
 	"formToJson": "xhr",
-	"queryToObject": "xhr", 
+	"queryToObject": "xhr",
 	"_ioSetArgs": "xhr",
 	"_ioCancelAll": "xhr",
 	"_ioAddQueryToUrl": "xhr",
@@ -2100,7 +2100,7 @@ buildUtil.extractMatchedParens = function(/*RegExp*/ regexp, /*String*/fileConte
 		// Put the master matching string in the results.
 		var startIndex = regexp.lastIndex - matches[0].length;
 		results.push(fileContents.substring(startIndex, parenRe.lastIndex));
-		// add file's fragment from previous console.* match to current match 
+		// add file's fragment from previous console.* match to current match
 		cleanedContent.push(fileContents.substring(previousLastIndex, startIndex));
 		
 		// Account for ending semicolon if desired.
