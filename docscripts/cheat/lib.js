@@ -22,7 +22,7 @@ dojo.require("util.docscripts.cheat.floatup");
 
 		ignore:[
 			// stuff to ignore:
-			"keys", "NodeList", "fx", "prototype",
+			"keys", "NodeList", "fx", "prototype", "lib", /* AMD package module */
 			
 			// lifecycle stuff to hide
 			"loaded", "unloaded", "loadInit", "windowUnloaded", "simulatedLoading", "floatup",
