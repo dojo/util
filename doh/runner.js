@@ -1,5 +1,5 @@
 //guarantee in global scope and scope protection
-(function() {
+(function(/* Array? */scriptArgs) {
 
 //here's the definition of doh.runner...which really defines global doh
 var d= function(doh) {
@@ -1444,9 +1444,10 @@ tests = doh;
 			var testUrl = "";
 			var testModule = "dojo.tests.module";
 			var dohBase = "";
-			for(x=0; x<arguments.length; x++){
-				if(arguments[x].indexOf("=") > 0){
-					var tp = arguments[x].split("=");
+
+			for(x=0; x<scriptArgs.length; x++){
+				if(scriptArgs[x].indexOf("=") > 0){
+					var tp = scriptArgs[x].split("=");
 					if(tp[0] == "dohBase"){
 						dohBase = tp[1];
 						//Convert slashes to unix style and make sure properly ended.
@@ -1488,7 +1489,7 @@ tests = doh;
 
 		doh.run();
 	}
-}).apply(this, typeof arguments != "undefined" ? arguments : [null]);
+}).apply(this, []);
 
 return doh;
 
@@ -1510,4 +1511,4 @@ if(typeof define == "undefined" || define.vendor=="dojotoolkit.org"){
 	doh.runnerFactory= d;
 }
 
-}).call(null);
+}).call(null, typeof arguments=="undefined" ? [] : Array.prototype.slice.call(arguments));
