@@ -31,6 +31,7 @@ $showall = isset($_REQUEST['showall']);
 			<style type="text/css">
 				@import "../../dojo/resources/dojo.css"; 
 				@import "../../dijit/themes/claro/claro.css";
+				@import "../../dijit/themes/claro/document.css";
 				@import "../../dojox/layout/resources/ExpandoPane.css";
 				
 				body, html { width:100%; height:100%; margin:0; padding:0; overflow:hidden; }
@@ -48,12 +49,16 @@ $showall = isset($_REQUEST['showall']);
 			
 			<script type="text/javascript" src="../../dojo/dojo.js" djConfig="parseOnLoad:true"></script>
 			<script type="text/javascript">
+				dojo.require("dojo.data.ItemFileReadStore");
+				dojo.require("dijit.Tree");
 				dojo.require("dijit.layout.BorderContainer");
 				dojo.require("dojox.layout.ExpandoPane");
 				dojo.require("dijit.layout.ContentPane");
 				dojo.require("dijit.layout.TabContainer");
 				dojo.require("dojo.fx.easing");
 
+
+				var fileStore, fileTree;
 				function tgShow(id){
 					var identity = dojo.byId(id);
 					if(identity.className=="sho"){ 
@@ -85,6 +90,40 @@ $showall = isset($_REQUEST['showall']);
 							apipane.selectChild(dij);
 						}
 					});
+
+					//	build the tree
+					fileStore = new dojo.data.ItemFileReadStore({
+						url: "_browse_tree.php"
+					});
+
+					fileTree = new dijit.Tree({
+						store: fileStore,
+						query: { type: "namespace" },
+						onClick: function(item){
+							var type = fileStore.getValue(item, "type");
+							if(type == "file"){
+								//	load it up
+								var apipane = dijit.byId("apiTabs");
+								var ns = fileStore.getValue(item, "ns"),
+									file = fileStore.getValue(item, "full_name"),
+									name = fileStore.getValue(item, "name"),
+									id = ns + "." + file.split("/").join(".");
+								var dij = dijit.byId(id);
+								if(!dij){
+									dij = new dijit.layout.ContentPane({
+										id: id,
+										href: "?ns=" + ns + "&file=" + file + "&showall=&ajaxy=true",
+										title: id,
+										closable: true
+									}).placeAt(apipane);
+								} else {
+									dij.set("href", "?ns=" + ns + "&file=" + file + "&showall=&ajaxy=true&bust=" + (+new Date()));
+								}
+								apipane.selectChild(dij);
+							}
+						}
+					});
+					dijit.byId("fileTreePane").domNode.appendChild(fileTree.domNode);
 				});
 			</script>
 
@@ -96,6 +135,7 @@ $showall = isset($_REQUEST['showall']);
 
 include_once('lib/parser2/dojo2.inc');
 
+//*
 $tree = '';
 // no dojo.require() call made?
 $u = 0; 
@@ -106,6 +146,7 @@ foreach ($files as $set){
 }
 $namespaces = array_keys($data); 
 
+/*
 $trees = array();
 $regexp = "";
 foreach ($data as $ns => $file){
@@ -122,8 +163,9 @@ foreach ($data as $ns => $file){
 	$tree .= "</ul>";
 	$trees[$ns] = $tree;
 }
-
+ */
 unset($files); 
+// */
 
 if(!empty($_REQUEST['ns'])){
 
@@ -263,17 +305,22 @@ if(!empty($_REQUEST['ns'])){
 
 if(!$ajaxy){ ?>
 <div dojoType="dijit.layout.BorderContainer" id="main">
+	<div dojoType="dijit.layout.ContentPane" id="fileTreePane" region="left" style="width: 250px; overflow: auto;" splitter="true"></div>
+<!--
 	<div dojoType="dojox.layout.ExpandoPane" easeOut="dojo.fx.easing.backIn" easeIn="dojo.fx.easing.backOut" title="Namespaces" region="left" style="width:250px" splitter="true">
 		<div dojoType="dijit.layout.TabContainer" id="nstabs" tabPosition="bottom">
-			<?php
+<?php
+	/*
 				foreach($trees as $ns => $list){
 					print "<div attachParent=\"true\" dojoType=\"dijit.layout.ContentPane\" title=\"".$ns."\">";
 					print $list;
 					print "</div>";
 				}
+	*/
 			?>
 		</div>
 	</div>
+-->
 	<div dojoType="dijit.layout.TabContainer" id="apiTabs" region="center">
 		<div dojoType="dijit.layout.ContentPane" id="apiPane" title="Crude API Browser">
 			<div class="pad"><?php echo $print; ?></div>
