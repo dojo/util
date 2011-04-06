@@ -1,8 +1,5 @@
-<html>
-	<!--
-		NOTE: we are INTENTIONALLY in quirks mode. It makes it much easier to
-		get a "full screen" UI w/ straightforward CSS.
-	-->
+<!DOCTYPE html>
+<html style="height:100%;">
 	<!--
 		// TODO: provide a UI for prompted tests
 	-->
@@ -70,11 +67,15 @@
 				dojo.require("doh.runner");
 				dojo.require("doh._browserRunner");
 				dojo.require("dojox.testing.DocTest");
+				dojo.require("dojo.window"); // to size iframe
 				dojo.addOnLoad(function(){
 					for(var moduleList= (window.testModule || "dojo.tests.module").split(","), i= 0; i<moduleList.length; i++){
 						dojo.require(moduleList[i]);
 					}
 					window.testModule= "";
+
+					// fix iframe height
+					dojo.byId('testBody').height=dojo.byId('testBody').parentNode.style.height=dojo.window.getBox().h-80;
 
 					//we want to ensure that doh.run is the *last* thing run
 					dojo.addOnLoad(function(){
@@ -87,7 +88,7 @@
 				// AMD loader
 				(function() {
 					require({baseUrl:"./"});
-					require(["runner.js", "_browserRunner.js"], function(){
+					require(["runner.js", "_browserRunner.js","../../dojox/testing/DocTest.js","../../dojo/window.js"], function(){
 						// runner.js and _browserRunner.js create the global object doh and stuff the factories into it
 						// run the factories to bring doh to life. this is a bit awkward compared to how pure AMD modules
 						// would look, but doh is being asked to operate in many non-AMD environments today and this works.
@@ -98,7 +99,7 @@
 
 						//tell the loader about our new doh module
 						define("doh", [], doh);
-						
+
 						// now load all the testUrls/testModules; test modules don't make much sense since there
 						// is no specific paths/package config at this point to map module ids to URLs; therefore,
 						// we just treat both as if they are URLs.
@@ -107,6 +108,9 @@
 							deps[i]+= (/\.js$/.test(deps[i]) ? "" : ".js");
 						}
 						require(deps);
+
+						// fix iframe height
+						dojo.byId('testBody').height=dojo.byId('testBody').parentNode.style.height=dojo.window.getBox().h-80;
 					});
 				})();
 			}else{
@@ -272,7 +276,7 @@
 			}
 		</style>
 	</head>
-	<body>
+	<body style="height: 100%;">
 		<table id="testLayout" cellpadding="0" cellspacing="0" style="margin: 0;">
 			<tr valign="top" height="40">
 				<td colspan="2" id="logoBar">
@@ -305,7 +309,7 @@
 				</td>
 			</tr>
 			<tr valign="top" style="border: 0; padding: 0; margin: 0;">
-				<td height="100%" style="border: 0; padding: 0; margin: 0;">
+				<td style="border: 0; padding: 0; margin: 0; height:100%;">
 					<div id="testListContainer">
 						<table cellpadding="0" cellspacing="0" border="0"
 							width="100%" id="testList" style="margin: 0;" onclick="doh._jumpToLog(arguments[0]);">
