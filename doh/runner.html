@@ -70,7 +70,7 @@
 				for(var i=0; i<rows.length-1; i++){
 					headerheight+=dojo.position(rows[i]).h;
 				}
-				dojo.byId('testLayout').style.height=dojo.window.getBox().h-headerheight;
+				dojo.byId('testLayout').style.height=(dojo.window.getBox().h-headerheight)+"px";
 			}
 			if(this.dojo){
 				// we're in the browser and are going to have to require _browserRunner, DocTest and some kind of testModule
