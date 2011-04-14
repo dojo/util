@@ -1,12 +1,8 @@
-// FIXME: need to add prompting for monkey-do testing
-
-(function(){
-
-//here's the definition of doh/_browserRunner
-
-var d= function(doh) {
+define(["dojo", "doh/runner"], function(dojo, doh) {
+	doh.isBrowser= true;
+	var topdog;
 	try{
-		var topdog = (window.parent == window) || !Boolean(window.parent.doh);
+		topdog = (window.parent == window) || !Boolean(window.parent.doh);
 	}catch(e){
 		//can't access window.parent.doh, then consider ourselves as topdog
 		topdog=true;
@@ -19,7 +15,7 @@ var d= function(doh) {
 			return document.getElementById(id);
 		};
 
-		var _addOnEvt = function(	type,		// string
+		var _addOnEvt = function( type,		// string
 									refOrName,	// function or string
 									scope){		// object, defaults is window
 
@@ -197,44 +193,33 @@ var d= function(doh) {
 			}
 		})(doh._setupGroupForRun);
 		
-		doh._report = (function(or){
-			//overload _report to insert a tfoot
-			return function(){
-				var tb = byId("testList");
-				if(tb){
-					var tfoots=tb.getElementsByTagName('tfoot');
-					if(tfoots.length){
-						tb.removeChild(tfoots[0]);
-					}
-					var foot = tb.createTFoot();
-					var row = foot.insertRow(-1);
-					row.className = 'inProgress';
-					var cell=row.insertCell(-1);
-					cell.colSpan=2;
-					cell.innerHTML="Result";
-					cell = row.insertCell(-1);
-					cell.innerHTML=this._testCount+" tests in "+this._groupCount+" groups /<span class='failure'>"+this._errorCount+"</span> errors, <span class='failure'>"+this._failureCount+"</span> failures";
-					cell.setAttribute('_target',_loggedMsgLen+1);
-					row.insertCell(-1).innerHTML=formatTime(doh._totalTime);
+		var originalDohReport= doh._report;
+		doh._report = function(){
+			var tb = byId("testList");
+			if(tb){
+				var tfoots=tb.getElementsByTagName('tfoot');
+				if(tfoots.length){
+					tb.removeChild(tfoots[0]);
 				}
-				
-				//This location can do the final performance rendering for the results
-				//of any performance tests.
-				var plotResults = null;
-				var standby;
-				if(doh.perfTestResults){
-					if(window.dojo){
-						//If we have dojo and here are perf tests results,
-						//well, we'll use the dojo charting functions
-						dojo.require("dojox.charting.Chart2D");
-						dojo.require("dojox.charting.DataChart");
-						dojo.require("dojox.charting.plot2d.Scatter");
-						dojo.require("dojox.charting.plot2d.Lines");
-						dojo.require("dojo.data.ItemFileReadStore");
-						plotResults = doh._dojoPlotPerfResults;
-					}else{
-						plotResults = doh._asciiPlotPerfResults;
-					}
+				var foot = tb.createTFoot();
+				var row = foot.insertRow(-1);
+				row.className = 'inProgress';
+				var cell=row.insertCell(-1);
+				cell.colSpan=2;
+				cell.innerHTML="Result";
+				cell = row.insertCell(-1);
+				cell.innerHTML=this._testCount+" tests in "+this._groupCount+" groups /<span class='failure'>"+this._errorCount+"</span> errors, <span class='failure'>"+this._failureCount+"</span> failures";
+				cell.setAttribute('_target',_loggedMsgLen+1);
+				row.insertCell(-1).innerHTML=formatTime(doh._totalTime);
+			}
+			
+			//This location can do the final performance rendering for the results
+			//of any performance tests.
+			var plotResults = null;
+			var standby;
+			if(doh.perfTestResults){
+				require(["dojox/charting/Chart2D", "dojox/charting/DataChart", "dojox/charting/plot2d/Scatter", "dojox/charting/plot2d/Lines", "dojo/data/ItemFileReadStore"], function() {
+					plotResults = doh._dojoPlotPerfResults;
 					try{
 						var g;
 						var pBody = byId("perfTestsBody");
@@ -262,7 +247,7 @@ var d= function(doh) {
 								ind.appendChild(div);
 
 								//Figure out the basic info
-								var results = "<b>TRIAL SIZE: </b>"  + fResults.trials[0].testIterations + " iterations<br>" +
+								var results = "<b>TRIAL SIZE: </b>"	 + fResults.trials[0].testIterations + " iterations<br>" +
 									"<b>NUMBER OF TRIALS: </b>" + fResults.trials.length + "<br>";
 
 								//Figure out the average test pass cost.
@@ -324,10 +309,11 @@ var d= function(doh) {
 					}catch(e){
 						doh.debug(e);
 					}
-				}
-				or.apply(doh,arguments);
+				});
 			}
-		})(doh._report);
+			originalDohReport.apply(doh,arguments);
+		};
+
 		
 		doh.error = undefined;
 		if(this["opera"] && opera.postError){
@@ -372,7 +358,6 @@ var d= function(doh) {
 			}
 		}
 		doh.error = doh.error || doh.debug;
-
 		var loaded = false;
 		var groupTemplate = null;
 		var testTemplate = null;
@@ -599,17 +584,14 @@ var d= function(doh) {
 			}
 			this._groupTotalTime += elapsed;
 			this.debug((success ? "PASSED" : "FAILED"), "test:", fixture.name, elapsed, 'ms');
-		}
+		};
 
-		// FIXME: move implementation to _browserRunner?
-		doh.registerUrl = function(	/*String*/ group,
-										/*String*/ url,
-										/*Integer*/ timeout){
-			var tg = new String(group);
-			this.register(group, {
+		doh._registerUrl = function(group, url, timeout, type){
+			group= group || url;
+			this._registerTest(group, {
 				name: url,
 				setUp: function(){
-					doh.currentGroupName = tg;
+					doh.currentGroupName = group;
 					doh.currentGroup = this;
 					doh.currentUrl = url;
 					this.d = new doh.Deferred();
@@ -632,8 +614,8 @@ var d= function(doh) {
 					// byId("testBody").src = "about:blank";
 					doh.showLogPage();
 				}
-			});
-		}
+			}, type);
+		};
 
 		//
 		// Utility code for runner.html
@@ -810,9 +792,6 @@ var d= function(doh) {
 					chart.setStore(ifs, {name:"*"}, "trials");
 				};
 
-				doh._asciiPlotPerfResults = function(){
-					//TODO:  Implement!
-				};
 			}
 		);
 	}else{
@@ -824,7 +803,7 @@ var d= function(doh) {
 		if(_thisGroup){
 			doh._testRegistered = function(group, tObj){
 				_doh._updateTestList(_thisGroup, tObj);
-			}
+			};
 			doh._onEnd = function(){
 				_doh._errorCount += doh._errorCount;
 				_doh._failureCount += doh._failureCount;
@@ -832,19 +811,16 @@ var d= function(doh) {
 				// should we be really adding raw group counts?
 				//_doh._groupCount += doh._groupCount;
 				_doh.currentTestDeferred.callback(true);
-			}
-			var otr = doh._getTestObj;
-			doh._getTestObj = function(){
-				var tObj = otr.apply(doh, arguments);
-				tObj.name = _thisUrl+"::"+arguments[0]+"::"+tObj.name;
-				return tObj;
-			}
+			};
+			doh._testRegistered = function(group, fixture){
+				fixture.name = _thisUrl+"::"+arguments[0]+"::"+fixture.name;
+			};
 			doh.debug = doh.hitch(_doh, "debug");
 			doh.error = doh.hitch(_doh, "error");
 			doh.registerUrl = doh.hitch(_doh, "registerUrl");
 			doh._testStarted = function(group, fixture){
 				_doh._testStarted(_thisGroup, fixture);
-			}
+			};
 			doh._testFinished = function(g, f, s){
 				_doh._testFinished(_thisGroup, f, s);
 
@@ -868,33 +844,17 @@ var d= function(doh) {
 						doh.debug(e);
 					}
 				}
-			}
+			};
 			doh._groupStarted = function(g){
 				if(!this._setParent){
 					_doh._curTestCount = this._testCount;
 					_doh._curGroupCount = this._groupCount;
 					this._setParent = true;
 				}
-			}
+			};
 			doh._report = function(){
 			};
 		}
 	}
-};
-
-// this is guaranteed in the global scope, not matter what kind of eval is thrown at us
-// define global doh
-if(typeof doh == "undefined"){
-	doh = {};
-}
-if (typeof define == "undefined" || define.vendor=="dojotoolkit.org") {
-	// using dojo 1.x loader or no dojo on the page
-	if(typeof dojo !== "undefined"){
-		dojo.provide("doh._browserRunner");
-	}
-	d(doh);
-}else{
-	// using an AMD loader
-	doh.browserRunnerFactory= d;
-}
-}).call(null);
+	return doh;
+});

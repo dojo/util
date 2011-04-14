@@ -1,13 +1,4 @@
-if(window["dojo"]){
-	dojo.provide("doh.robot");
-	dojo.experimental("doh.robot");
-	dojo.require("doh.runner");
-}else if(!doh["robot"]){
-	doh.robot={};
-}
-
-if(!doh.robot["_robotLoaded"]){
-(function(){
+define(["doh/browserRunner", "require"], function(doh, require){
 
 	// loading state
 	var _robot = null;
@@ -25,7 +16,7 @@ if(!doh.robot["_robotLoaded"]){
 	doh.run = function(){
 		if(!doh.robot._runsemaphore.unlock()){
 			// hijack doh._onEnd to clear the applet
-			// have to do it here because _browserRunner sets it in onload in standalone case
+			// have to do it here because browserRunner sets it in onload in standalone case
 			var __onEnd = doh._onEnd;
 			doh._onEnd = function(){
 				doh.robot.killRobot();
@@ -525,9 +516,8 @@ if(!doh.robot["_robotLoaded"]){
 	// if loaded with dojo, there might not be a runner.js!
 	if(!iframesrc && window["dojo"]){
 		// if user set document.domain to something else, send it to the Robot too
-		iframesrc = dojo.moduleUrl("util", "doh/")+"Robot.html?domain="+escape(document.domain);
+		iframesrc = require.nameToUrl("./Robot.html") + "?domain=" + escape(document.domain);
 	}
 	document.writeln('<div id="dohrobotview" style="border:0px none; margin:0px; padding:0px; position:absolute; bottom:0px; right:0px; width:1px; height:1px; overflow:hidden; visibility:hidden; background-color:red;"></div>'+
 		'<iframe application="true" style="border:0px none; z-index:32767; padding:0px; margin:0px; position:absolute; left:0px; top:0px; height:42px; width:200px; overflow:hidden; background-color:transparent;" tabIndex="-1" src="'+iframesrc+'" ALLOWTRANSPARENCY="true"></iframe>');
-})();
-}
+});
