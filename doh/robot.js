@@ -1,4 +1,4 @@
-define(["doh/browserRunner", "require"], function(doh, require){
+define(["doh/_browserRunner", "require"], function(doh, require){
 
 	// loading state
 	var _robot = null;
