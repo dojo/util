@@ -1,8 +1,5 @@
-<html>
-	<!--
-		NOTE: we are INTENTIONALLY in quirks mode. It makes it much easier to
-		get a "full screen" UI w/ straightforward CSS.
-	-->
+<!DOCTYPE html>
+<html style="height:100%;">
 	<head>
 		<title>The Dojo Unit Test Harness, $Rev$</title>
 
@@ -29,6 +26,18 @@
 		</script>
 
 		<script type="text/javascript">
+			function fixHeight(){
+				// IE9 doesn't give test iframe height because no nodes have an explicit pixel height!
+				// Give outer table a pixel height.
+				if(dojo.isIE){
+					var headerHeight=0;
+					var rows=dojo.query('#testLayout > tbody > tr');
+					for(var i=0; i<rows.length-1; i++){
+						headerHeight+=dojo.position(rows[i]).h;
+					}
+					dojo.byId('testLayout').style.height=(dojo.window.getBox().h-headerHeight)+"px";
+				}
+			}
 			(function(){
 				var
 					boot= 
@@ -128,26 +137,27 @@
 				// use require to configure the boot(s) so that third-party loaders (e.g., requirejs) can be used
 				// note: this does not prevent one of the injected boots from overriding
 				require= {
-				 deps:["doh"],
-				 ready:function(){
-					 var doh= require("doh");
-					 doh.breakOnError= breakOnError;
-					 require(test);
-					 require.ready(doh, "run");
-				 }
-			 };
-			 async && (require.async= 1);
+					deps:["dojo/window","doh"],
+					ready:function(){
+						fixHeight();
+						var doh= require("doh");
+						doh.breakOnError= breakOnError;
+						require(test);
+						require.ready(doh, "run");
+					}
+				};
+				async && (require.async= 1);
 
-			 // now script inject any boots
-			 for(var e, i= 0; i<boot.length; i++) {
-				 if(boot[i]){
-					 e= document.createElement("script");
-					 e.type= "text/javascript";
-					 e.src= boot[i];
-					 e.charset= "utf-8";
-					 document.getElementsByTagName("head")[0].appendChild(e);
-				 }
-			 }
+				// now script inject any boots
+				for(var e, i= 0; i<boot.length; i++) {
+					if(boot[i]){
+						e= document.createElement("script");
+						e.type= "text/javascript";
+						e.src= boot[i];
+						e.charset= "utf-8";
+						document.getElementsByTagName("head")[0].appendChild(e);
+					}
+				}
 			})()
 		</script>
 	
@@ -307,7 +317,7 @@
 			}
 		</style>
 	</head>
-	<body>
+	<body style="height: 100%;">
 		<table id="testLayout" cellpadding="0" cellspacing="0" style="margin: 0;">
 			<tr valign="top" height="40">
 				<td colspan="2" id="logoBar">
@@ -340,7 +350,7 @@
 				</td>
 			</tr>
 			<tr valign="top" style="border: 0; padding: 0; margin: 0;">
-				<td height="100%" style="border: 0; padding: 0; margin: 0;">
+				<td style="border: 0; padding: 0; margin: 0; height:100%;">
 					<div id="testListContainer">
 						<table cellpadding="0" cellspacing="0" border="0"
 							width="100%" id="testList" style="margin: 0;" onclick="doh._jumpToLog(arguments[0]);">
@@ -374,8 +384,8 @@
 						</table>
 					</div>
 				</td>
-				<td>
-					<div style="position: relative; width: 99%; height: 100%; top: 0px; left: 0px;">
+				<td style="height: 100%;">
+					<div style="position: relative; width: 100%; height: 100%; top: 0px; left: 0px;">
 						<div class="tabBody"
 							style="z-index: 1;">
 							<pre id="logBody"></pre>
