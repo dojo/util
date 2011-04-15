@@ -329,27 +329,23 @@ define(["dojo", "doh/runner"], function(dojo, doh) {
 			if(console.error){
 				doh.error = function(){
 					sendToLogPane.call(window, arguments);
-					console.error.apply(console, arguments);
+					console.error(Array.prototype.join.call(arguments, " "))
 				};
 			}
 			if(console.debug){
 				doh.debug = function(){
 					sendToLogPane.call(window, arguments);
-					console.debug.apply(console, arguments);
+					console.debug(Array.prototype.join.call(arguments, " "))
 				};
 			}else if(console.info){
 				doh.debug = function(){
 					sendToLogPane.call(window, arguments);
-					console.info.apply(console, arguments);
+					console.info(Array.prototype.join.call(arguments, " "))
 				};
 			}else{
 				doh.debug = function(){
-					var msg = "";
-					for(var x=0; x<arguments.length; x++){
-						msg += " "+arguments[x];
-					}
-					sendToLogPane([msg]);
-					console.log("DEBUG:"+msg);
+					sendToLogPane.call(window, arguments);
+					console.log("DEBUG:"+ Array.prototype.join.call(arguments, " "));
 				};
 			}
 		}else{
