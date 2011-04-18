@@ -27,7 +27,7 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 			buildLayers:"",
 			query:"default",
 			replaceLoaderConfig:1,
-	
+
 			// the following configuration variables are deprecated and have no effect
 			//log:0,
 			//loader:0,
@@ -46,15 +46,18 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 			packages:[],
 
 			staticHasFeatures: {
-				'dojo-boot':0/*, //**
+				'dojo-boot':0,
+				'host-browser':1
+/*
+				'dojo-boot':0,
 				'dojo-debug-messages':0,
 				'dojo-guarantee-console':0,
 				'dojo-load-firebug-console':0,
 				'dojo-loader':1,
 				'dojo-register-openAjax':0,
 				'dojo-sniff':1,
-				'dojo-test-sniff':1,//**
-				'dojo-test-xd':1,//**
+				'dojo-test-sniff':1,
+				'dojo-test-xd':1,
 				'dojo-v1x-i18n-Api':1,
 				'dom':1,
 				'host-browser':1,
@@ -68,14 +71,15 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 				'loader-pageLoadApi':1,
 				'loader-priority-readyApi':1,
 				'loader-provides-xhr':1,
-				'loader-publish-privates':1, // TODO: change to 
+				'loader-publish-privates':1, // TODO: change to
 				'loader-requirejsApi':0,
 				'loader-sniff':0,
 				'loader-timeoutApi':1,
-				'loader-traceApi':1,//**
+				'loader-traceApi':1,
 				'loader-undefApi':0,
 				"loader-XhrApi":1,
-				"loader-getTextApi":1*/
+				"loader-getTextApi":1
+*/
 			},
 
 			bootConfig: {
@@ -97,23 +101,23 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 			// process a v1.6- profile
 			//
 			// The v1.6- has the following relative path behavior:
-			//	
+			//
 			//	 * the util/buildscripts directory is assumed to be the cwd upon build program startup
-			//	 * the dojo directory as specified in profile dependencies.prefixes (if relative) is 
+			//	 * the dojo directory as specified in profile dependencies.prefixes (if relative) is
 			//		 assumed to be relative to util/buildscripts
 			//	 * similarly the releaseDir directory (if relative) is assumed to be relative to util/buildscripts
 			//	 * all other relative paths are relative to the dojo directory (in spite of what some docs say)
 			//	 * all non-specified paths for top-level modules are assummed to be siblings of dojo.
 			//		 For example, myTopModule.mySubModule is assumed to reside at dojo/../myTopModule/mySubModule.js
-			// 
+			//
 			// This has the net effect of causing all relative paths to be relative to the current working directory
 			// and further forcing the build program to be executed from util/buildscripts. Neither of these requirements
 			// may be convenient. The behavior is probably consequent to rhino's *brain dead* design that does not
 			// report the full path of the script being executed. In order to help, the following v1.7+ options are available:
-			// 
+			//
 			//	 -buildPath path/to/util/buildscripts/build
 			//	 -baseUrl		path/to/use/instead/of/path/to/util/buildscripts
-			// 
+			//
 			// This doesn't eliminiate the strange behavior of releaseDir. Users who find releaseDir inconvenient should
 			// use destBasePath.
 
@@ -126,7 +130,7 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 			for (p in defaultBuildProps) {
 				result[p]= defaultBuildProps[p];
 			}
-		
+
 			// find all the top-level modules by traversing each layer's dependencies
 			var topLevelMids= {dojo:1};
 			layers.forEach(function(layer){
@@ -170,11 +174,11 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 			}
 
 			// resolve all the layer names into module names;
-			var 
+			var
 				filenameToMid= function(filename) {
 					for (topLevelMid in prefixMap) {
 						if (filename.indexOf(prefixMap[topLevelMid])==0) {
-							var 
+							var
 								mid= filename.substring(prefixMap[topLevelMid].length),
 								match= mid.match(/(.+)\.js$/);
 							if (match) {
@@ -197,11 +201,11 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 
 			var fixedLayers= {};
 			layers.forEach(function(layer) {
-				var 
+				var
 					mid= layerNameToLayerMid[layer.name],
 					result= {
 						include:(layer.dependencies || []).map(function(item) { return item.replace(/\./g, "/"); }),
-						exclude:(layer.layerDependencies || []).map(function(item) { 
+						exclude:(layer.layerDependencies || []).map(function(item) {
 							var mid= layerNameToLayerMid[item];
 							if (!mid) {
 								bc.logError("unable to resolve layer dependency (" + item + ") in layer (" + layer.name + ")");
@@ -236,7 +240,7 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 					releaseName= releaseName.match(/[^\/]+/)[0];
 				}
 				var releaseDir= (profile.releaseDir || result.releaseDir).replace(/\\/g, "/");
-				
+
 				profile.destBasePath= computePath(catPath(releaseDir, releaseName), profile.basePath);
 			}
 

@@ -1,33 +1,33 @@
-// 
+//
 // The Dojo Build System
-// 
+//
 // This is application is implemented as an AMD package intended to be loaded and executed by dojo. It is known to work correctly
 // with node.js (fast!) and rhino (slow!). The program may be started from a command prompt as follows:
-// 
+//
 // node.js:
 //	 >node path/to/dojotoolkit/dojo/dojo.js load=build <arguments>
-// 
+//
 // rhino:
 //	 >java -jar path/to/js.jar path/to/dojotoolkit/dojo/dojo.js baseUrl=path/to/dojotoolkit/dojo load=build <arguments>
-//	
+//
 //	 * notice that, owing to the defective design of rhino, it is impossible for a script to know the location from
 //		 which it was executed; therefore, the baseUrl must be provided.
-// 
+//
 // util/buildscripts/bng:
 //	 TODOC
-// 
+//
 // The application proceeds as follows:
-// 
+//
 // 1. Process the command line and then process the build control script(s)/profile as specified by the command line.
 // 2. Discover all resources as instructed by the build control script
-// 3. Move the resources through an ordered set of gates. Zero to many synchronous and/or asynchronous transforms may be applied to various 
+// 3. Move the resources through an ordered set of gates. Zero to many synchronous and/or asynchronous transforms may be applied to various
 //		resources as specified by the build control script. Different resources can be subject to different transforms. Resources are allowed
 //		to move through gates without stopping until a "synchronized" gate is encountered. All transforms must complete for the previous gate before
 //		any transform is allowed on the synchronized gate.
 // 4. After the last gate has been completed, print a done message and terminate.
-// 
+//
 // See also:
-// 
+//
 // project home: http://bdframework.org/bdBuild/index
 // fossil: http://bdframework.org/bdBuild/repo
 // github: https://github.com/altoviso/bdBuild
@@ -42,9 +42,9 @@ define(["require", "dojo/has"], function(require, has) {
 			return require.nodeRequire("child_process").spawn;
 		});
 		define("process", [], function(){ return process; });
-		define("commandLineArgs", function() { 
+		define("commandLineArgs", function() {
 			//arg[0] is node; argv[1] is dojo.js; therefore, start with argv[2]
-			return process.argv.slice(2); 
+			return process.argv.slice(2);
 		});
 		define("exec", function() {
 			//TODO
@@ -55,8 +55,11 @@ define(["require", "dojo/has"], function(require, has) {
 		console.log("running under rhino");
 		define("fs", ["build/rhino/fs"], function(fs){ return fs; });
 		define("process", ["build/rhino/process"], function(process){ return process; });
+		define("spawn", [], function() {
+			// TODO
+			return 0;
+		});
 		define("commandLineArgs", [], function() {
-print(require.commandLineArgs.toString());
 			var result= [];
 			require.commandLineArgs.forEach(function(item) {
 				var parts= item.split("=");
@@ -64,7 +67,6 @@ print(require.commandLineArgs.toString());
 					result.push(item);
 				}
 			});
-print(result.toString());
 			return result;
 		});
 		define("exec", function() {
@@ -75,7 +77,7 @@ print(result.toString());
 		return 0;
 	}
 
-	this.require.scopeify= function(moduleList) {		 
+	this.require.scopeify= function(moduleList) {
 		for (var p, mid, module, text= "", contextRequire= this, args= moduleList.split(","), i= 0; i<args.length;) {
 			mid= args[i++].match(/\S+/)[0];
 			module= contextRequire(mid);
@@ -93,15 +95,15 @@ print(result.toString());
 			transforms= bc.transforms,
 			transformJobs= bc.transformJobs,
 			transformJobsLength= transformJobs.length,
-	
+
 			// all discovered resources
 			resources= [],
-	
+
 			reportError= function(resource, err) {
 				bc.logError("error while transforming resource: " + resource.src + "\ntransform: " + resource.jobPos + "\n" + err);
 				resource.error= true;
 			},
-	
+
 			returnFromAsyncProc= function(resource, err) {
 				bc.waiting--;
 				if (err) {
@@ -110,7 +112,7 @@ print(result.toString());
 				}
 				advance(resource, true);
 			},
-	
+
 			advance= function(resource, continuingSameGate) {
 				if (resource.error) {
 					return;
@@ -119,7 +121,7 @@ print(result.toString());
 					// first time trying to advance through the current gate
 					bc.waiting++;
 				}
-					
+
 				// apply all transforms with a gateId <= the current gate for resource that have not yet been applied
 				var err, nextJobPos, candidate;
 				while (1) {
@@ -128,13 +130,13 @@ print(result.toString());
 					// candidate (if any) is a [transformProc, gateId] pair
 					if (candidate && candidate[1]<=bc.currentGate) {
 						resource.jobPos++;
-						bc.waiting++;		 
+						bc.waiting++;
 						err= candidate[0](resource, returnFromAsyncProc);
 						if (err===returnFromAsyncProc) {
 							// the transform proc must call returnFromAsyncProc when complete
 							return;
 						}
-						bc.waiting--;			
+						bc.waiting--;
 						if (err) {
 							// notice we reportError can decide to continue or panic
 							reportError(resource, err);
@@ -147,11 +149,11 @@ print(result.toString());
 						break;
 					}
 				}
-	
+
 				// got through the gate; advise passGate which will decrement the lock we set at top of this function
 				passGate();
 			},
-	
+
 			advanceGate= function(currentGate, log) {
 				while (1) {
 					bc.currentGate= ++currentGate;
@@ -162,12 +164,12 @@ print(result.toString());
 					}
 				}
 			},
-	
+
 			passGate= function() {
 				if (--bc.waiting) {
 					return;
 				} //	else all processes have passed through bc.currentGate
-	
+
 				// hold then next gate until all resources have been advised
 				advanceGate(bc.currentGate, true);
 				if (bc.currentGate!=bc.gates.length-1) {
@@ -182,7 +184,7 @@ print(result.toString());
 					// that's all, folks...
 				}
 			};
-	
+
 		bc.start= function(resource) {
 			// check for collisions
 			var
@@ -201,7 +203,7 @@ print(result.toString());
 			// remember the resources in the global maps
 			bc.resources[resource.src]= resource;
 			bc.resourcesByDest[resource.dest]= resource;
-	
+
 			// find the transformJob and start it...
 			for (var i= 0; i<transformJobsLength; i++) {
 				if (transformJobs[i][0](resource, bc)) {
@@ -214,13 +216,13 @@ print(result.toString());
 					return;
 				}
 			}
-			bc.logWarn("Resource (" + resource.srcName + ") was discovered, but there is no transform job specified.");		 
+			bc.logWarn("Resource (" + resource.srcName + ") was discovered, but there is no transform job specified.");
 		};
-	
+
 		if (!bc.errorCount && !bc.check) {
 			var
-				transformNames= [], 
-				pluginNames= [], 
+				transformNames= [],
+				pluginNames= [],
 				deps= [];
 			bc.discoveryProcs.forEach(function(mid) { deps.push(mid); });
 			for (var p in bc.transforms) {
@@ -236,7 +238,7 @@ print(result.toString());
 			require(deps, function() {
 				// pull out the discovery procedures
 				for (var discoveryProcs= [], argsPos= 0; argsPos<bc.discoveryProcs.length; discoveryProcs.push(arguments[argsPos++]));
-				
+
 				// replace the transformIds in the transformJobs with the actual transform procs; similarly for plugins
 				for (var id, proc, i=0; i<transformNames.length;) {
 					id= transformNames[i++];
@@ -255,7 +257,7 @@ print(result.toString());
 				for (i=0; i<pluginNames.length;) {
 					bc.plugins[bc.getSrcModuleInfo(pluginNames[i++]).pqn]= arguments[argsPos++];
 				}
-	
+
 				// start the transform engine: initialize bc.currentGate and bc.waiting, then discover and start each resource.
 				// Hold the gate to "parse" at least until discovery procs return.
 				// note: discovery procs will call bc.start with each discovered resource, which will call advance, which will
