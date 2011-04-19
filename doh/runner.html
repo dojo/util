@@ -26,24 +26,14 @@
 		</script>
 
 		<script type="text/javascript">
-			function fixHeight(){
-				// IE9 doesn't give test iframe height because no nodes have an explicit pixel height!
-				// Give outer table a pixel height.
-				if(dojo.isIE){
-					var headerHeight=0;
-					var rows=dojo.query('#testLayout > tbody > tr');
-					for(var i=0; i<rows.length-1; i++){
-						headerHeight+=dojo.position(rows[i]).h;
-					}
-					dojo.byId('testLayout').style.height=(dojo.window.getBox().h-headerHeight)+"px";
-				}
-			}
 			(function(){
 				var
-					boot= 
+					boot=
 						// zero to many scripts to load a configuration and/or loader.
 						// i.e. path-to-util/doh/runner.html?boots=path-to/config.js,path-to/require.js
 						["../../dojo/dojo.js"],
+
+					standardDojoBoot= boot,
 			
 					test= 
 						// zero to many AMD modules and/or URLs to load; provided by csv URL query parameter="test"
@@ -134,19 +124,33 @@
 					}
 				}
 
+				function fixHeight(dojo){
+					// IE9 doesn't give test iframe height because no nodes have an explicit pixel height!
+					// Give outer table a pixel height.
+					if(dojo.isIE){
+						var headerHeight=0;
+						var rows=dojo.query('#testLayout > tbody > tr');
+						for(var i=0; i<rows.length-1; i++){
+							headerHeight+=dojo.position(rows[i]).h;
+						}
+						dojo.byId('testLayout').style.height=(dojo.window.getBox().h-headerHeight)+"px";
+					}
+				}
+
 				// use require to configure the boot(s) so that third-party loaders (e.g., requirejs) can be used
-				// note: this does not prevent one of the injected boots from overriding
+				// note: one of the injected boots can override this config
 				require= {
-					deps:["dojo/window","doh"],
+					deps:["dojo", "dojo/window","doh"],
 					ready:function(){
-						fixHeight();
+						fixHeight(require("dojo"));
 						var doh= require("doh");
 						doh.breakOnError= breakOnError;
 						require(test);
 						require.ready(doh, "run");
-					}
+					},
+					async:async,
+					isDebug:1
 				};
-				async && (require.async= 1);
 
 				// now script inject any boots
 				for(var e, i= 0; i<boot.length; i++) {

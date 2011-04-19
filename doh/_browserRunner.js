@@ -1,4 +1,4 @@
-define(["dojo", "doh/runner"], function(dojo, doh) {
+define(["dojo", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh) {
 	doh.isBrowser= true;
 	var topdog;
 	try{
@@ -62,7 +62,7 @@ define(["dojo", "doh/runner"], function(dojo, doh) {
 					return Math.round(n/360000)/10+"h";
 			}
 		};
-		
+
 		var _logBacklog = [], _loggedMsgLen = 0;
 		var sendToLogPane = function(args, skip){
 			var msg = "";
@@ -102,10 +102,10 @@ define(["dojo", "doh/runner"], function(dojo, doh) {
 			}
 			return n;
 		}
-		
+
 		doh._jumpToLog = function(e){
 			//console.log(e);
-			
+
 			var node = findTarget(e?e.target:window.event.srcElement);
 			if(!node){
 				return;
@@ -192,7 +192,7 @@ define(["dojo", "doh/runner"], function(dojo, doh) {
 				os.apply(doh,arguments);
 			}
 		})(doh._setupGroupForRun);
-		
+
 		var originalDohReport= doh._report;
 		doh._report = function(){
 			var tb = byId("testList");
@@ -212,7 +212,7 @@ define(["dojo", "doh/runner"], function(dojo, doh) {
 				cell.setAttribute('_target',_loggedMsgLen+1);
 				row.insertCell(-1).innerHTML=formatTime(doh._totalTime);
 			}
-			
+
 			//This location can do the final performance rendering for the results
 			//of any performance tests.
 			var plotResults = null;
@@ -314,7 +314,7 @@ define(["dojo", "doh/runner"], function(dojo, doh) {
 			originalDohReport.apply(doh,arguments);
 		};
 
-		
+
 		doh.error = undefined;
 		if(this["opera"] && opera.postError){
 			doh.debug = function(){
@@ -530,7 +530,7 @@ define(["dojo", "doh/runner"], function(dojo, doh) {
 
 		doh._updateGlobalProgressBar = function(p,success,group){
 			var outerContainer=byId("progressOuter");
-					
+
 			var gdiv=outerContainer.childNodes[doh._runedSuite-1];
 			if(!gdiv){
 				gdiv=document.createElement('div');
@@ -571,7 +571,7 @@ define(["dojo", "doh/runner"], function(dojo, doh) {
 				if(gn && doh._curTestCount){
 					var p = doh._runed/doh._curTestCount;
 					var groupfail = this._updateGlobalProgressBar((doh._runedSuite+p-1)/doh._groupCount,success,group);
-					
+
 					var pbar = gn.getElementsByTagName("td")[2].lastChild;
 					pbar.className = groupfail?"failure":"success";
 					pbar.style.width = parseInt(p*100)+"%";

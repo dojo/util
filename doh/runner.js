@@ -1,4 +1,4 @@
-define("doh/runner", ["dojo", "dojox/math/stats", "dojo/_firebug/firebug"], function(dojo, stats) {
+define("doh/runner", ["dojo", "dojox/math/stats"], function(dojo, stats) {
 var doh= dojo.mixin({}, dojo, stats);
 
 // intentionally define global tests and global doh symbols
@@ -119,7 +119,7 @@ doh.extend(doh.Deferred, {
 			this.results[0].cancel();
 		}
 	},
-			
+
 	_pause: function(){
 		this.paused++;
 	},
@@ -291,12 +291,12 @@ doh.registerTestType("perf", function(group, tObj){
 			doh.perfTestResults[group][tObj.name] = {};
 		}
 		tObj.results = doh.perfTestResults[group][tObj.name];
-		
+
 		//If it's not set, then set the trial duration; default to 100ms.
 		if(!("trialDuration" in tObj)){
 			tObj.trialDuration = 100;
 		}
-		
+
 		//If it's not set, then set the delay between trial runs to 100ms
 		//default to 100ms to allow for GC and to make IE happy.
 		if(!("trialDelay" in tObj)){
@@ -314,7 +314,7 @@ doh.registerTestType("perf", function(group, tObj){
 //
 // Test Registration
 //
-var 
+var
 	createFixture= function(group, test, type){
 		// test is a function, string, or fixture object
 		var tObj = test;
@@ -346,18 +346,18 @@ var
 		if(!tObj.runTest){
 			return 0;
 		}
-	
+
 		// if the test is designated as a particular type, do type-specific initialization
 		var testType= doh._testTypes[type] || doh._testTypes[tObj.testType];
 		if(testType){
 			testType(group, tObj);
 		}
-	
+
 		// add the test to this group
 		doh._groups[group].push(tObj);
 		doh._testCount++;
 		doh._testRegistered(group, tObj);
-	
+
 		return tObj;
 	},
 
@@ -431,7 +431,7 @@ doh._registerTest = function(group, test, type){
 	if(!test){
 		return groupObj;
 	}
-	
+
 	// create the test fixture
 	var tObj;
 	if(dojo.isFunction(test) || dojo.isString(test) || "runTest" in test){
@@ -457,7 +457,7 @@ doh._registerTest = function(group, test, type){
 				// should be an object
 				theTest.name= theTest.name || testName;
 				tObj = createFixture(group, theTest, type);
-			}				 
+			}
 			if(!tObj){
 				this.debug("ERROR:");
 				this.debug("\tillegal test is test hash; more information follows...");
@@ -527,20 +527,20 @@ doh.register = function(a1, a2, a3, a4){
 	// groupId: String?
 	//		The name of the group, optionally with an AMD module identifier prefix and/or
 	//		test type suffix. The value character set for group names and AMD module indentifiers
-	//		is given by [A-Za-z0-9_/.-]. If provided, prefix and suffix are denoted by "!". If 
-	//		provided, type must be a valid test type. 
+	//		is given by [A-Za-z0-9_/.-]. If provided, prefix and suffix are denoted by "!". If
+	//		provided, type must be a valid test type.
 	// testOrUrl: Array||Function||Object||String||falsy
 	//		When a function, implied a function that defines a single test. DOH passes the
 	//		DOH object to the function as the sole argument when the test is executed. When
-	//		a string, implies the definition of a single test given by `new Function("t", testOrUrl)`. 
-	//		When an object that contains the method `runTest` (which *must* be a function), 
-	//		implies a single test given by the value of the property `runTest`. In this case, 
+	//		a string, implies the definition of a single test given by `new Function("t", testOrUrl)`.
+	//		When an object that contains the method `runTest` (which *must* be a function),
+	//		implies a single test given by the value of the property `runTest`. In this case,
 	//		the object may also contain the methods `setup` and `tearDown`, and, if provided, these
 	//		will be invoked on either side of the test function. Otherwise when an object (that is,
 	//		an object that does not contain the method `runTest`), then a hash from test name to
 	//		test function (either a function or string as described above); any names that begin
-	//		with "_" are ignored. When an array, the array must exclusively contain functions, 
-	//		strings, and/or objects as described above and each item is added to the group as 
+	//		with "_" are ignored. When an array, the array must exclusively contain functions,
+	//		strings, and/or objects as described above and each item is added to the group as
 	//		per the items semantics.
 	// timeoutOrSetUp: integer||Function?
 	//		If tests is a URL, then must be an integer giving the number milliseconds to wait for the test
@@ -553,7 +553,7 @@ doh.register = function(a1, a2, a3, a4){
 	//	 point the group is renamed to the title of the document. For non-URL tests, if groupId is
 	//	 not provided, then tests are added to the group "ungrouped"; otherwise if the given groupId does not
 	//	 exist, it is created; otherwise, tests are added to the already-existing group.
-	// 
+	//
 	//	 groupIds may contain embedded AMD module identifiers as prefixes and/or test types as suffixes. Prefixes
 	//	 and suffixes are denoted by a "!". For example
 	// example:
@@ -561,19 +561,19 @@ doh.register = function(a1, a2, a3, a4){
 	// | `"myTest/MyGroup!perf"`										 // group with test type
 	// | `"path/to/amd/module!myTest/MyGroup"`			 // group with AMD module identifier
 	// | `"path/to/amd/module!myTest/MyGroup!perf"`	 // group with both AMD module identifier and test type
-	// 
+	//
 	//	 Groups associated with AMD module identifiers may be unloaded/reloaded if using an AMD loader with
 	//	 reload support (dojo's AMD loader includes such support). If no AMD module identifier is given,
 	//	 the loader supports reloading, and the user demands a reload, then the groupId will be used
 	//	 as the AMD module identifier.
-	// 
+	//
 	//	 For URL tests, the groupId is changed to the document title (if any) upon document arrival. The
 	//	 title may include a test type suffix denoted with a "!" as described above.
-	// 
+	//
 	//	 For URL tests, if timeout is a number, then sets the timeout for loading
 	//	 the particular URL; otherwise, timeout is set to DOH.iframeTimeout.
-	// 
-	//	 For non-URL tests, if setUp and/or tearDown are provided, then any previous setUp and/or 
+	//
+	//	 For non-URL tests, if setUp and/or tearDown are provided, then any previous setUp and/or
 	//	 tearDown functions for the group are replaced as given. You may affect just setUp and/or tearDown
 	//	 for a group and not provide/add any tests by providing falsy for the test argument.
 	// example:
@@ -583,40 +583,40 @@ doh.register = function(a1, a2, a3, a4){
 	// |		 // t will be set to DOH when the test is executed by DOH
 	// |		 // etc.
 	// |	 },
-	// | 
+	// |
 	// |	 t2= {
 	// |		 // this is a test fixture and may be passed as a test
-	// | 
+	// |
 	// |		 // runTest is always required...
 	// |		 runTest:function(t){
 	// |			 //the test...
 	// |		 },
-	// | 
+	// |
 	// |		 // name is optional, but recommended...
 	// |		 name:"myTest",
-	// | 
+	// |
 	// |		 // preamble is optional...
 	// |		 setUp:function(){
 	// |			 // will be executed by DOH prior to executing the test
 	// |		 },
-	// |	
+	// |
 	// |		 // postscript is optional...
 	// |		 tearDown:function(){ //op
 	// |			 // will be executed by DOH after executing the test
 	// |		 }
 	// |	 }
-	// |		 
+	// |
 	// |	 t3= [
 	// |		 // this is a vector of tests...
 	// |		 t1, t2
 	// |	 ],
-	// | 
+	// |
 	// |	 t4= {
 	// |		 // this is a map from test name to test or test fixture
 	// |		 t5:function(t){
 	// |			 //etc.
 	// |		 },
-	// | 
+	// |
 	// |		 t6:{
 	// |			 runTest:function(t){
 	// |				//etc.
@@ -624,35 +624,35 @@ doh.register = function(a1, a2, a3, a4){
 	// |			 // name will be automatically added as "t6"
 	// |		 }
 	// |	 },
-	// | 
+	// |
 	// |	 aSetup:function(){
 	// |		 // etc.
 	// |	 },
-	// | 
+	// |
 	// |	 aTearDown:function(){
 	// |		 // etc.
 	// |	 };
 	// | // (test); note, can't provide setup/tearDown without a group
 	// | doh.register(t1);
-	// | 
+	// |
 	// | // (group, test, setUp, tearDown) test and/or setUp and/or tearDown can be missing
 	// | doh.register("myGroup", 0, aSetUp, aTearDown);
 	// | doh.register("myGroup", t1, aSetUp, aTearDown);
 	// | doh.register("myGroup", t1, aSetUp);
 	// | doh.register("myGroup", t1, 0, aTearDown);
 	// | doh.register("myGroup", t1);
-	// | 
+	// |
 	// | // various kinds of test arguments are allowed
 	// | doh.register("myGroup", t2);
 	// | doh.register("myGroup", t3);
 	// | doh.register("myGroup", t4);
-	// | 
+	// |
 	// | // add a perf test
 	// | doh.register("myGroup!perf", t1);
-	// | 
+	// |
 	// | // add a perf test with an AMD module identifier
 	// | doh.register("path/to/my/module!myGroup!perf", t1);
-	// 
+	//
 	//	 doh.register also supports Dojo, v1.6- signature (group, test, type), although this signature is deprecated.
 	}
 	=====*/
@@ -1033,7 +1033,7 @@ doh._runPerfFixture = function(/*String*/groupName, /*Object*/fixture){
 			def.errback(new Error("test timeout in "+fixture.name.toString()));
 		}, to);
 	}
-	
+
 	//Set up the end calls to the test into the deferred we'll return.
 	def.addBoth(function(arg){
 		if(timer){
@@ -1359,7 +1359,7 @@ doh.runGroup = function(/*String*/ groupName, /*Integer*/ idx){
 	// means we need to pickle off enough state to pick up where we left off.
 
 	// FIXME: need to make fixture execution async!!
- 
+
 	idx= idx || 0;
 	var tg = this._groups[groupName];
 	if(tg.skip === true){ return; }
