@@ -64,6 +64,10 @@
 						// version 1.7+ dojo bootstrap/loader operating in async mode
 						false,
 
+					sandbox = 
+						// boolean; use a loader configuration that sandboxes the dojo and dojox objects used by doh
+						false,
+
 					trim= function(text){
 						if(text instanceof Array){
 							for (var result= [], i= 0; i<text.length; i++) {
@@ -117,6 +121,10 @@
 								breakOnError= true;
 								break;
 
+							case "sandbox":
+								sandbox= true;
+								break;
+
 							case "async":
 								async= true;
 								break;
@@ -137,20 +145,82 @@
 					}
 				}
 
-				// use require to configure the boot(s) so that third-party loaders (e.g., requirejs) can be used
-				// note: one of the injected boots can override this config
-				require= {
-					deps:["dojo", "dojo/window","doh"],
-					ready:function(){
-						fixHeight(require("dojo"));
-						var doh= require("doh");
-						doh.breakOnError= breakOnError;
-						require(test);
-						require.ready(doh, "run");
-					},
-					async:async,
-					isDebug:1
-				};
+				var config;
+				if(sandbox){
+					// configure the loader assuming the dojo loader; of course the injected boot(s) can override this config
+					config= {
+						// this config uses the dojo loader's scoping features to sandbox the version of dojo used by doh
+						packages:[{
+							name:'doh',
+							location:'../util/doh',
+							lib:'.',
+							// here's the magic...everytime doh asks for a "dojo" module, it gets mapped to a "dohDojo"
+							// module; same goes for dojox/dohDojox since doh uses dojox
+							packageMap:{dojo:"dohDojo", dojox:"dohDojox"} 
+						},{
+							// now define the dohDojo package...
+							name:'dohDojo',
+							location:'../dojo',
+							lib:'.'
+						},{
+							// and the dohDojox package...
+							name:'dohDojox',
+							location:'../dojox',
+							lib:'.',
+							// and dojox uses dojo...that is, dohDojox...which must be mapped to dohDojo in the context of dohDojox
+							packageMap:{dojo:"dohDojo"} 
+						}],
+						
+						// next, we need to preposition a special configuration for dohDojo
+						cache:{
+							"dohDojo*_base/config":function(){
+								define([], {
+									// this configuration keeps dojo, dijit, and dojox out of the global space
+									scopeMap:[["dojo", "dohDojo"], ["dijit", "dohDijit"], ["dojox", "dohDojox"]],
+									isDebug:true,
+									noGlobals:true
+								});
+							}
+						},
+	
+						// control the loader; don't boot global dojo, doh will ask for dojo itself
+						has:{
+							"dojo-sniff":0,
+							"dojo-loader":1,
+							"dojo-boot":0,
+							"dojo-test-sniff":1
+						},
+	
+						// no sniffing; therefore, set the baseUrl
+						baseUrl:"../../dojo",
+	
+						deps:["dohDojo/window","doh"],
+	
+						ready:function(){
+							fixHeight(require("dohDojo"));
+							var doh= require("doh");
+							doh.breakOnError= breakOnError;
+							require(test);
+							require.ready(doh, "run");
+						},
+	
+						async:async,
+					};
+				}else{
+					config= {
+						deps:["dojo", "dojo/window","doh"],
+						ready:function(){
+							fixHeight(require("dojo"));
+							var doh= require("doh");
+							doh.breakOnError= breakOnError;
+							require(test);
+							require.ready(doh, "run");
+						},
+						async:async,
+						isDebug:1
+					};
+				}
+				require= config;
 
 				// now script inject any boots
 				for(var e, i= 0; i<boot.length; i++) {
