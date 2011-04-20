@@ -38,17 +38,55 @@ define(["require", "dojo/has"], function(require, has) {
 	if (has("host-node")) {
 		console.log("running under node.js");
 		define("fs", [], require.nodeRequire("fs"));
-		define("spawn", [], function() {
-			return require.nodeRequire("child_process").spawn;
-		});
 		define("process", [], function(){ return process; });
 		define("commandLineArgs", function() {
 			//arg[0] is node; argv[1] is dojo.js; therefore, start with argv[2]
 			return process.argv.slice(2);
 		});
-		define("exec", function() {
-			//TODO
+		var spawn= require.nodeRequire("child_process").spawn;
+		define("spawn", [], function() {
+			return spawn;
 		});
+
+
+		define("exec", function() {
+			var
+				count= 0,
+				max= 100,
+				queue= [],
+				runQ= function(){
+					if(queue.length){
+						(queue.shift())();
+					}else{
+						count--;
+					}
+				};
+
+			return function() {
+				// signature is (command, arg1, ..., argn, callback)
+				for(var command= arguments[0], args= [], i= 1; i<arguments.length-1; i++){
+					args.push(arguments[i]);
+				}
+				var callback= arguments[i];
+
+				if(count<max){
+					count++;
+					spawn(command, args).on("exit", function(code){
+						runQ();
+						callback(code);
+					});
+				}else{
+					queue.push(function(){
+						spawn(command, args).on("exit", function(code){
+							runQ();
+							callback(code);
+						});
+					});
+				}
+			};
+		});
+
+
 		// helps during dev...
 		debug= require.debug;
 	} else if (has("host-rhino")) {
@@ -70,7 +108,14 @@ define(["require", "dojo/has"], function(require, has) {
 			return result;
 		});
 		define("exec", function() {
-			return runCommand;
+			return function() {
+				// signature is (command, arg1, ..., argn, callback)
+				for(var args= [], i= 0; i<arguments.length-1; i++){
+					args.push(arguments[i]);
+				}
+				var callback= arguments[i];
+				callback(runCommand.apply(this, args));
+			};
 		});
 	} else {
 		console.log("unknown environment; terminating.");
