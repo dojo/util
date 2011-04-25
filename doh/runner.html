@@ -194,26 +194,29 @@
 						// no sniffing; therefore, set the baseUrl
 						baseUrl:"../../dojo",
 	
-						deps:["dohDojo/window","doh"],
-	
-						ready:function(){
-							fixHeight(require("dohDojo"));
-							var doh= require("doh");
-							doh.breakOnError= breakOnError;
-							require(test);
-							require.ready(doh, "run");
+						deps:["dohDojo", "doh", "dohDojo/window"],
+
+						callback:function(dohDojo, doh){
+							require.ready(function(){
+								fixHeight(dohDojo);
+								doh.breakOnError= breakOnError;
+								require(test);
+								require.ready(doh, "run");
+							});
 						},
-	
+
 						async:async
 					};
 				}else{
 					config= {
 						deps:["dojo", "doh", "dojo/window"],
 						callback:function(dojo, doh){
-							fixHeight(dojo);
-							doh.breakOnError= breakOnError;
-							require(test);
-							require.ready(doh, "run");
+							require.ready(function(){
+								fixHeight(dojo);
+								doh.breakOnError= breakOnError;
+								require(test);
+								require.ready(doh, "run");
+							});
 						},
 						async:async,
 						isDebug:1
