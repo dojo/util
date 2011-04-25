@@ -208,10 +208,9 @@
 					};
 				}else{
 					config= {
-						deps:["dojo", "dojo/window","doh"],
-						ready:function(){
-							fixHeight(require("dojo"));
-							var doh= require("doh");
+						deps:["dojo", "doh", "dojo/window"],
+						callback:function(dojo, doh){
+							fixHeight(dojo);
 							doh.breakOnError= breakOnError;
 							require(test);
 							require.ready(doh, "run");
