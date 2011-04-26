@@ -276,11 +276,9 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 					"loader-errorApi":1,
 					"loader-publish-privates":1,
 					"loader-getTextApi":1,
-					"loader-overrideApi":1,
 					"loader-configApi":1,
 					"dojo-sniff":1,
-					"dojo-loader":1,
-					"dojo-test-xd":1,
+					"dojo-sync-loader":1,
 					"dojo-test-sniff":1
 				}
 			};
