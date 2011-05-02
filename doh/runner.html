@@ -141,7 +141,14 @@
 						for(var i=0; i<rows.length-1; i++){
 							headerHeight+=dojo.position(rows[i]).h;
 						}
-						dojo.byId('testLayout').style.height=(dojo.window.getBox().h-headerHeight)+"px";
+						try{
+							// we subtract the headerHeight from the window height because the table row containing the tests is height:100% so they will stretch the table to the intended height.
+							dojo.byId('testLayout').style.height=(dojo.window.getBox().h-headerHeight)+"px";
+						}catch(e){
+							// An obscure race condition when you load the runner in IE from the command line causes the window reported height to be 0.
+							// Try to recover after the window finishes rendering.
+							setTimeout(function(){ fixHeight(dojo); },0);
+						}
 					}
 				}
 
