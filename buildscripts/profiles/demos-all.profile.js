@@ -97,6 +97,12 @@ dependencies = {
 				"demos.faces.src"
 			]
 		},
+        {
+        name: "../demos/mobileMvc/src.js",
+			dependencies:[
+				"demos.mobileMvc.src"
+			]
+		},		
 		{
 			// the CSS3 animations demo
 			name: "../demos/css3/src.js",
