@@ -53,6 +53,11 @@
 						// for URL query parameter="paths"; each path item has the form <from-path>,<to-path>
 						// i.e. path-to-util/doh/runner.html?paths=my/from/path,my/to/path;my/from/path2,my/to/path2
 						{},
+						
+					dohPlugins = 
+						// Semicolon separated list of files to load before the tests.
+						// Idea is to override aspects of DOH for reporting purposes.
+						"",
 
 					breakOnError = 
 						// boolean; instructs doh to call the debugger upon a test failures; this can be helpful when
@@ -127,6 +132,9 @@
 
 							case "async":
 								async= true;
+								break;
+							case "dohPlugins":
+								dohPlugins=value.split(";");
 								break;
 						}
 					}
@@ -229,6 +237,15 @@
 						isDebug:1
 					};
 				}
+				
+				// load all of the dohPlugins
+				if(dohPlugins){
+					var i=0;
+					for(i=0; i<dohPlugins.length; i++){
+						config.deps.push(dohPlugins[i]);
+					}
+				}
+				
 				require= config;
 
 				// now script inject any boots
