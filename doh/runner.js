@@ -1262,10 +1262,10 @@ doh._runRegFixture = function(/*String*/groupName, /*Object*/fixture){
 
 			if(fixture["tearDown"]){ fixture.tearDown(doh); }
 			tg.inFlight--;
+			doh._testFinished(groupName, fixture, ret.results[0]);
 			if((!tg.inFlight)&&(tg.iterated)){
 				doh._groupFinished(groupName, !tg.failures);
 			}
-			doh._testFinished(groupName, fixture, ret.results[0]);
 			if(doh._paused){
 				doh.run();
 			}
