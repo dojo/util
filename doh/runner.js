@@ -787,7 +787,7 @@ doh.registerTests = function(/*String*/ group, /*Array*/ testArr, /*String*/ typ
 doh.registerUrl = function(/*String*/ group, /*String*/ url, /*Integer*/ timeout, /*String*/ type){
 	// summary:
 	//		Deprecated.	 Use doh.register(group/type, url, timeout) instead
-	doh.register(group + (type ? "!" + type : ""), url+"", timeout);
+	doh.register(group + (type ? "!" + type : ""), url+"", timeout || 10000);
 };
 
 //
