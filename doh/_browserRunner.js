@@ -797,9 +797,6 @@ define(["dojo", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh) {
 		var _thisGroup = _doh.currentGroupName;
 		var _thisUrl = _doh.currentUrl;
 		if(_thisGroup){
-			doh._testRegistered = function(group, tObj){
-				_doh._updateTestList(_thisGroup, tObj);
-			};
 			doh._onEnd = function(){
 				_doh._errorCount += doh._errorCount;
 				_doh._failureCount += doh._failureCount;
@@ -810,6 +807,7 @@ define(["dojo", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh) {
 			};
 			doh._testRegistered = function(group, fixture){
 				fixture.name = _thisUrl+"::"+arguments[0]+"::"+fixture.name;
+				_doh._updateTestList(_thisGroup, fixture);
 			};
 			doh.debug = doh.hitch(_doh, "debug");
 			doh.error = doh.hitch(_doh, "error");
