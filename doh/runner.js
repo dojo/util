@@ -513,13 +513,103 @@ doh._registerTestAndCheck= function(groupId, test, type, testArgPosition, args, 
 	}
 };
 
-doh._registerUrl = function(/*String*/ group, /*String*/ url, /*Integer*/ timeout, /*String*/ type){
+doh._registerUrl = function(/*String*/ group, /*String*/ url, /*Integer*/ timeout, /*String*/ type, /*object*/ dohArgs){
 	// slot to be filled in
 	this.debug("ERROR:");
 	this.debug("\tNO registerUrl() METHOD AVAILABLE.");
 };
 
-doh.register = function(a1, a2, a3, a4){
+var typeSigs= (function(){
+	// Generate machinery to decode the many register signatures; these are the possible signatures.
+
+	var sigs= [
+		// note: to===timeout, up===setUp, down===tearDown
+
+		// 1 arg
+		"test", function(args, a1){doh._registerTestAndCheck("ungrouped", a1, 0, 0, args, 0, 0);},
+		"url", function(args, a1){doh._registerUrl("ungrouped", a1);},
+
+		// 2 args
+		"group-test", function(args, a1, a2){doh._registerTestAndCheck(a1, a2, 0, 0, args, 0, 0);},
+		"test-type", function(args, a1, a2){doh._registerTestAndCheck("ungrouped", a1, a2, 1, args, 0, 0);},
+		"test-up", function(args, a1, a2){doh._registerTestAndCheck("ungrouped", a1, 0, 0, args, a2, 0);},
+		"group-url", function(args, a1, a2){doh._registerUrl(a1, a2);},
+		"url-to", function(args, a1, a2){doh._registerUrl("ungrouped", a1, a2);},
+		"url-type", function(args, a1, a2){doh._registerUrl("ungrouped", a1, undefined, a2);},
+		"url-args", function(args, a1, a2){doh._registerUrl("ungrouped", a1, undefined, 0, a2);},
+
+		// 3 args
+		"group-test-type", function(args, a1, a2, a3){doh._registerTestAndCheck(a1, a2, a3, 2, args, 0, 0);},
+		"group-test-up", function(args, a1, a2, a3){doh._registerTestAndCheck(a1, a2, 0, 2, args, a3, 0);},
+		"test-type-up", function(args, a1, a2, a3){doh._registerTestAndCheck("ungrouped", a1, a2, 0, args, a3, 0);},
+		"test-up-down", function(args, a1, a2, a3){doh._registerTestAndCheck("ungrouped", a1, 0, 0, args, a2, a3);},
+		"group-url-to", function(args, a1, a2, a3){doh._registerUrl(a1, a2, a3);},
+		"group-url-type", function(args, a1, a2, a3){doh._registerUrl(a1, a2, undefined, a3);},
+		"group-url-args", function(args, a1, a2, a3){doh._registerUrl(a1, a2, undefined, 0, a3);},
+		"url-to-type", function(args, a1, a2, a3){doh._registerUrl("ungrouped", a1, a2, a3);},
+		"url-to-args", function(args, a1, a2, a3){doh._registerUrl("ungrouped", a1, a2, 0, a3);},
+		"url-type-args", function(args, a1, a2, a3){doh._registerUrl("ungrouped", a1, undefined, a2, a3);},
+
+		// 4 args
+		"group-test-type-up", function(args, a1, a2, a3, a4){doh._registerTestAndCheck(a1, a2, a3, 2, args, a3, 0);},
+		"group-test-up-down", function(args, a1, a2, a3, a4){doh._registerTestAndCheck(a1, a2, 0, 2, args, a3, a4);},
+		"test-type-up-down", function(args, a1, a2, a3, a4){doh._registerTestAndCheck("ungrouped", a1, 2, 0, args, a3, a4);},
+		"group-url-to-type", function(args, a1, a2, a3, a4){doh._registerUrl(a1, a2, a3, a4);},
+		"group-url-to-args", function(args, a1, a2, a3, a4){doh._registerUrl(a1, a2, a3, 0, a4);},
+		"group-url-type-args", function(args, a1, a2, a3, a4){doh._registerUrl(a1, a2, undefined, a3, a4);},
+		"url-to-type-args", function(args, a1, a2, a3, a4){doh._registerUrl("ungrouped", a1, a2, a3, a4);},
+
+		// 5 args
+		"group-test-type-up-down", function(args, a1, a2, a3, a4, a5){doh._registerTestAndCheck(a1, a2, a3, 2, args, a4, a5);},
+		"group-url-to-type-args", function(args, a1, a2, a3, a4){doh._registerUrl(a1, a2, a3, a4, a5);}
+	];
+
+	// type-ids
+	// a - array
+	// st - string, possible type
+	// sf - string, possible function
+	// s - string not a type or function
+	// o - object
+	// f - function
+	// n - number
+    // see getTypeId inside doh.register
+	var argTypes= {
+		group:"st.sf.s",
+		test:"a.sf.o.f",
+		type:"st",
+		up:"f",
+		down:"f",
+		url:"s",
+		to:"n",
+		args:"o"
+	};
+	for(var p in argTypes){
+		argTypes[p]= argTypes[p].split(".");
+	};
+
+	function generateTypeSignature(sig, pattern, dest, func){
+		for(var nextPattern, reducedSig= sig.slice(1), typeList= argTypes[sig[0]], i= 0; i<typeList.length; i++){
+			nextPattern=  pattern + (pattern ? "-" : "") + typeList[i];
+			if(reducedSig.length){
+				generateTypeSignature(reducedSig, nextPattern, dest, func);
+			}else{
+				dest.push(nextPattern, func);
+			}
+		}
+	}
+
+	var typeSigs= [];
+	for(var sig, func, dest, i= 0; i<sigs.length; i++){
+		sig= sigs[i++].split("-");
+		func= sigs[i];
+		dest= typeSigs[sig.length-1] || (typeSigs[sig.length-1]= []);
+		generateTypeSignature(sig, "", dest, func);
+	}
+	return typeSigs;
+})();
+
+
+doh.register = function(a1, a2, a3, a4, a5){
 	/*=====
 	doh.register = function(groupId, testOrTests, timeoutOrSetUp, tearDown){
 	// summary:
@@ -557,9 +647,9 @@ doh.register = function(a1, a2, a3, a4){
 	//	 groupIds may contain embedded AMD module identifiers as prefixes and/or test types as suffixes. Prefixes
 	//	 and suffixes are denoted by a "!". For example
 	// example:
-	// | `"myTest/MyGroup"`													 // just a group, group ids need not include a slash
-	// | `"myTest/MyGroup!perf"`										 // group with test type
-	// | `"path/to/amd/module!myTest/MyGroup"`			 // group with AMD module identifier
+	// | `"myTest/MyGroup"`							 // just a group, group ids need not include a slash
+	// | `"myTest/MyGroup!perf"`					 // group with test type
+	// | `"path/to/amd/module!myTest/MyGroup"`		 // group with AMD module identifier
 	// | `"path/to/amd/module!myTest/MyGroup!perf"`	 // group with both AMD module identifier and test type
 	//
 	//	 Groups associated with AMD module identifiers may be unloaded/reloaded if using an AMD loader with
@@ -656,73 +746,43 @@ doh.register = function(a1, a2, a3, a4){
 	//	 doh.register also supports Dojo, v1.6- signature (group, test, type), although this signature is deprecated.
 	}
 	=====*/
-	function isString(a){
-		return typeof a=="string";
-	}
 
-	function isNumber(a){
-		return typeof a=="number";
-	}
-
-	function isType(a){
-		return typeof a=="string" && (a in doh._testTypes);
-	}
-
-	var arity= arguments.length;
-	if(arity==1){
-		// the deprecated algorithm from 1.6-
-		if(/\(/.test(a1)) {
-			// assume if the string contains a left paren, its probably a function call, not a url; therefore...
-			// ("ungrouped", test)
-			doh._registerTestAndCheck("upgrouped", a1, 0, 0, arguments, 0, 0);
+	function getTypeId(a){
+		if(a instanceof Array){
+			return "a";
+		}else if(typeof a == "function"){
+			return "f";
+		}else if(typeof a == "number"){
+			return "n";
+		}else if(typeof a == "string"){
+			if(a in doh._testTypes){
+				return "st";
+			}else if(/\(/.test(a)){
+				return "sf";
+			}else{
+				return "s";
+			}
 		}else{
-			// (url)
-			this._registerUrl(0, a1);
+			return "o";
 		}
-		return;
 	}
 
-	if(arity==2) {
-		if(!isString(a1)){
-			// ("ungrouped", test, [setup])
-			doh._registerTestAndCheck("upgrouped", a1, 0, 0, arguments, a2, 0);
-		}else if(isString(a2)){
-			if(/\(/.test(a1)) {
-				// assume if the string contains a left paren, its probably a function call, not a url; therefore...
-				// ("ungrouped", test)
-				doh._registerTestAndCheck("upgrouped", a1, 0, 0, arguments, 0, 0);
-			}else{
-				// (url)
-				this._registerUrl(0, a1);
-			}
-		}else if(isNumber(a2)){
-			// (url, timeout, [type])
-			this._registerUrl(0, a1, a2, 0);
-		}else {
-			doh._registerTestAndCheck(a1, a2, 0, 1, arguments, 0, 0);
-		}
-		return;
+	var
+		arity= arguments.length,
+		search= typeSigs[arity-1],
+		sig= [],
+		i;
+	for(i= 0; i<arity; i++){
+		sig.push(getTypeId(arguments[i]));
 	}
-
-	if(arity==3){
-		if(isNumber(a3)){
-			// (group, url, timeout)
-			this._registerUrl(a1, a2, a3);
-		}else if(isType(a3)){
-			// (v1.6-, deprecated)
-			if(/^url\:/.test(a2)) {
-				// (group, url, type)
-				this._registerUrl(a1, a2, undefined, a3);
-			}else{
-				// (group, test, type)
-				doh._registerTestAndCheck(a1, a2, a3, 2, arguments);
-			}
+	sig= sig.join("-");
+	for(i= 0; i<search.length; i+= 2){
+		if(search[i]==sig){
+			search[i+1](arguments, a1, a2, a3, a4, a5);
+			return;
 		}
-		return;
 	}
-
-	// (group, test, [setup], [tearDown])
-	doh._registerTestAndCheck(a1, a2, 0, 2, arguments, a3, a4);
+	illegalRegister(arguments);
 };
 
 doh.registerDocTests = function(module){
@@ -784,10 +844,10 @@ doh.registerTests = function(/*String*/ group, /*Array*/ testArr, /*String*/ typ
 	doh.register(group + (type ? "!" + type : ""), testArr);
 }
 
-doh.registerUrl = function(/*String*/ group, /*String*/ url, /*Integer*/ timeout, /*String*/ type){
+doh.registerUrl = function(/*String*/ group, /*String*/ url, /*Integer*/ timeout, /*String*/ type, /*Object*/ args){
 	// summary:
 	//		Deprecated.	 Use doh.register(group/type, url, timeout) instead
-	doh.register(group + (type ? "!" + type : ""), url+"", timeout || 10000);
+	doh.register(group + (type ? "!" + type : ""), url+"", timeout || 10000, args || {});
 };
 
 //

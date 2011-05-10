@@ -582,7 +582,7 @@ define(["dojo", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh) {
 			this.debug((success ? "PASSED" : "FAILED"), "test:", fixture.name, elapsed, 'ms');
 		};
 
-		doh._registerUrl = function(group, url, timeout, type){
+		doh._registerUrl = function(group, url, timeout, type, dohArgs){
 			group= group || url;
 			this._registerTest(group, {
 				name: url,
@@ -590,6 +590,7 @@ define(["dojo", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh) {
 					doh.currentGroupName = group;
 					doh.currentGroup = this;
 					doh.currentUrl = url;
+					doh.dohArgs = dohArgs;
 					this.d = new doh.Deferred();
 					doh.currentTestDeferred = this.d;
 					doh.showTestPage();
