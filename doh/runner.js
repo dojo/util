@@ -829,7 +829,10 @@ doh.registerTest = function(/*String*/ group, /*Array||Function||Object*/ test, 
 doh.registerGroup = function(/*String*/ group, /*Array||Function||Object*/ tests, /*Function*/ setUp, /*Function*/ tearDown, /*String*/ type){
 	// summary:
 	//		Deprecated.	 Use doh.register(group/type, tests, setUp, tearDown) instead
-	doh.register(group + (type ? "!" + type : ""), tests, setUp, tearDown);
+	var args= [(group ? group : "") + (type ? "!" + type : ""), tests];
+	setUp && args.push(setUp);
+	tearDown && args.push(tearDown);
+	doh.register.apply(doh, args);
 }
 
 doh.registerTestNs = function(/*String*/ group, /*Object*/ ns){
