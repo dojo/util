@@ -26,7 +26,11 @@ define(["./buildControl", "./fileUtils", "fs", "./stringify"], function(bc, file
 
 		getFilterFunction= function(item, startAt) {
 			// item is a vector of regexs or "!" starting at startAt
-			// if "!", then the next satisfying the next regex says the filter is *not* passed
+			// if "!", then satisfying the next regex says the filter is *not* passed
+
+			if(typeof item=="string"){
+				return new Function("name", item);
+			}
 
 			var result= item.slice(startAt || 0);
 			if (!result.length) {
@@ -45,7 +49,7 @@ define(["./buildControl", "./fileUtils", "fs", "./stringify"], function(bc, file
 					notExpr= false;
 				}
 			}
-		
+
 			var length= not.length;
 			if (nots) {
 				return function(filename) {
@@ -139,59 +143,49 @@ define(["./buildControl", "./fileUtils", "fs", "./stringify"], function(bc, file
 		},
 
 		processPackage= function(pack, destPack) {
-			// find the package lib tree root in trees; trees may hold a parent directory
-			for (var libPath= compactPath(catPath(pack.location, pack.lib)), libTreeItem= 0, trees= pack.trees || [], i= 0; !libTreeItem && i<trees.length; i++) {
-				// remember..."packages/myPack/lib" has indexOf 0 in "packages/myPack/libfoo", but is not a parent of it
-				if (libPath.indexOf(trees[i][0])==0 && (libPath.length==trees[i][0].length || libPath.charAt(libPath.length)=="/")) {
-					libTreeItem= trees[i];
+			// treeItem is the package location tree; it may give explicit exclude instructions
+			var treeItem;
+			for (var trees= pack.trees || [], i= 0; i<trees.length; i++) {
+				if (trees[i][0]==pack.location) {
+					treeItem= trees[i];
+					break;
 				}
 			}
-			// three possibilities: 1-trees holds libPath, exactly; 2-parent of libPath in trees; trees doesn't hold libPath at all
-			var destPath= compactPath(catPath(destPack.location, destPack.lib));
-			if (libTreeItem[0]==libPath && libTreeItem[1]==destPath) {
-				// case 1					
-			} else if (libTreeItem) {
-				// case 2
-				// use the excludes provided by item in trees; don't kill the item in trees
-				libTreeItem= [libPath, destPath].concat(libTreeItem.slice(2));
-			} else {
-				// case 3
-				// create a tree item; don't traverse into hidden, backdup files (e.g., .svn, .git, etc.)
-				libTreeItem= [libPath, destPath, "*/.*", "*~"];
+			if (!treeItem) {
+				// create a tree item; don't traverse into hidden, backup, etc. files (e.g., .svn, .git, etc.)
+				treeItem= [pack.location, destPack.location, "*/.*", "*~"];
 			}
-			// libTreeItem says how to discover all modules in this package
+
 			var filenames= [];
-			readTree(libTreeItem, function(filename){ filenames.push(filename); });
+			readTree(treeItem, function(filename){ filenames.push(filename); });
 
 			// next, sift filenames to find AMD modules
-			var 
+			var
 				maybeAmdModules= {},
 				notModules= {},
-				libPathLength= libPath.length + 1,
+				locationPathLength= pack.location.length + 1,
 				packName= pack.name,
 				prefix= packName ? packName + "/" : "",
 				mainModuleInfo= packName && bc.getSrcModuleInfo(packName, 0),
 				mainModuleFilename= packName && mainModuleInfo.url;
 			filenames.forEach(function(filename) {
 				// strip the package location path and the .js suffix (iff any) to get the mid
-				var 
+				var
 					maybeModule= /\.js$/.test(filename),
-					mid= prefix + filename.substring(libPathLength, maybeModule ? filename.length-3 : filename.length),
+					mid= prefix + filename.substring(locationPathLength, maybeModule ? filename.length-3 : filename.length),
 					moduleInfo= maybeModule && bc.getSrcModuleInfo(mid);
 				if (!maybeModule) {
 					notModules[mid]= filename;
 				} else if (filename==mainModuleFilename) {
 					maybeAmdModules[packName]= mainModuleInfo;
-				} else if (moduleInfo.url==filename) {
-					maybeAmdModules[mid]= moduleInfo;
 				} else {
-					notModules[mid]= filename;
+					maybeAmdModules[mid]= moduleInfo;
 				}
 			});
 
 			// add modules as per explicit pack.modules vector; this is a way to add modules that map strangely
 			// (for example "myPackage/foo" maps to the file "myPackage/bar"); recall, packageInfo.modules has two forms:
-			// 
+			//
 			//	 modules: {
 			//		 "foo":1,
 			//		 "foo":"path/to/foo/filename.js"
@@ -207,7 +201,7 @@ define(["./buildControl", "./fileUtils", "fs", "./stringify"], function(bc, file
 				delete notModules[fullMid];
 			};
 
-			var 
+			var
 				tagResource= getResourceTagFunction(pack.resourceTags),
 				startResource= function(resource) {
 					resource.tag= {};
@@ -217,27 +211,26 @@ define(["./buildControl", "./fileUtils", "fs", "./stringify"], function(bc, file
 
 			// start all the package modules; each property holds a module info object
 			for (var p in maybeAmdModules) {
-				var 
-					moduleInfo= maybeAmdModules[p],
-					resource= {
-						src:moduleInfo.url,
-						dest:bc.getDestModuleInfo(moduleInfo.path).url,
-						pid:moduleInfo.pid,
-						mid:moduleInfo.mid,
-						pqn:moduleInfo.pqn,
-						pack:pack,
-						path:moduleInfo.path,
-						deps:[]
-					};
+				moduleInfo= maybeAmdModules[p];
+				var resource= {
+					src:moduleInfo.url,
+					dest:bc.getDestModuleInfo(moduleInfo.path).url,
+					pid:moduleInfo.pid,
+					mid:moduleInfo.mid,
+					pqn:moduleInfo.pqn,
+					pack:pack,
+					path:moduleInfo.path,
+					deps:[]
+				};
 				startResource(resource);
 			}
 
 			// start all the "notModules"
 			var prefixLength= prefix.length;
 			for (p in notModules) {
-				var resource= {
+				resource= {
 					src:notModules[p],
-					dest:catPath(destPath, p.substring(prefixLength))
+					dest:catPath(destPack.location, p.substring(prefixLength))
 				};
 				startResource(resource);
 			}
@@ -257,11 +250,8 @@ define(["./buildControl", "./fileUtils", "fs", "./stringify"], function(bc, file
 			// discover all the package modules; discover the default package last since it may overlap
 			// into other packages and we want modules in those other packages to be discovered as members
 			// of those other packages; not as a module in the default package
-			for (var p in bc.packages) if (p!="*") {
+			for (var p in bc.packages) {
 				processPackage(bc.packages[p], bc.destPackages[p]);
-			}
-			if (bc.packages["*"]) {
-				processPackage(bc.packages["*"], bc.destPackages["*"]);
 			}
 		};
 
@@ -269,7 +259,7 @@ define(["./buildControl", "./fileUtils", "fs", "./stringify"], function(bc, file
 		///
 		// build/discover
 		discoverPackages();
-	
+
 		// discover all trees, dirs, and files
 		for (var i= 0; i<treesDirsFiles.length; i++) {
 			var set= treesDirsFiles[i];
@@ -281,7 +271,7 @@ define(["./buildControl", "./fileUtils", "fs", "./stringify"], function(bc, file
 		// advise all modules that are to be written as a layer
 		// advise the loader of boot layers
 		for (var mid in bc.layers) {
-			var 
+			var
 				resource= bc.amdResources[bc.getSrcModuleInfo(mid).pqn],
 				layer= bc.layers[mid];
 			if (!resource) {

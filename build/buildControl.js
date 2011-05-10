@@ -1,7 +1,7 @@
 define([
 	"require",
-	"./argv", 
-	"fs", 
+	"./argv",
+	"fs",
 	"./fileUtils",
 	"./buildControlDefault",
 	"./v1xProfiles",
@@ -10,7 +10,7 @@ define([
 	//
 	// Process the arguments given on the command line to build up a build control object that is used to instruct and control
 	// the build process.
-	// 
+	//
 	// This modules is a bit tedious. Is methodically goes through each option set, cleaning and conditioning user input making it
 	// easy to use for the remainder of the program. Readers are advised to tackle it top-to-bottom. There is no magic...just
 	// a whole bunch of imperative programming.
@@ -35,6 +35,10 @@ define([
 			return result;
 		},
 
+		slashTerminate= function(path){
+			return path + /\/$/.test(path) ? "" : "/";
+		},
+
 		isEmpty= function(it) {
 			for (var p in it) return false;
 			return true;
@@ -48,27 +52,26 @@ define([
 		},
 
 		mixPackage= function(packageInfo) {
-			// the default package is stored at "*"
-			var name= packageInfo.name || "*";
-			// notice that we only overwrite package properties that are given
+			var name= packageInfo.name;
 			bc.packageMap[name]= mix(bc.packageMap[name], packageInfo);
 		},
-	
+
 		// mix a build control object into the global build control object
 		mixBuildControlObject= function(src) {
 			// the build control properties...
 			//	 paths, pluginProcs, transforms, staticHasFeatures
 			// ...are mixed one level deep; packages and packagePaths require special handling; all others are over-written
+			// FIXME: the only way to modify the transformJobs vector is to create a whole new vector?
 			for (var p in src) {
 				if (!/(paths)|(pluginProcs)|(transforms)|(staticHasFeatures)|(packages)|(packagePaths)/.test(p)) {
 					bc[p]= src[p];
 				}
 			}
-			// the one-level-deep mixers 
+			// the one-level-deep mixers
 			["paths","pluginProcs","transforms","staticHasFeatures"].forEach(function(p) {
 				bc[p]= mix(bc[p], src[p]);
 			});
-	
+
 			// packagePaths and packages require special processing to get their contents into packageMap; do that first...
 			// process packagePaths before packages before packageMap since packagePaths is less specific than
 			// packages is less specific than packageMap. Notice that attempts to edit an already-existing package
@@ -91,6 +94,7 @@ define([
 		};
 
 	// for each build control object or v1.6- profile in args, mix into bc in the order they appeared on the command line
+	// FIXME: rename "buildControlScript et al to profile...keep the peace
 	args.buildControlScripts.forEach(function(item) {
 		if (item instanceof Array) {
 			switch (item[0]) {
@@ -106,7 +110,7 @@ define([
 
 				case "htmlFiles":
 					processHtmlFiles(item[1].split(","));
-					break;				
+					break;
 				case "profile":
 					item= processProfileFile(require.baseUrl + "../util/buildscripts/profiles/" + item[1] + ".profile.js");
 					break;
@@ -133,7 +137,6 @@ define([
 	//
 
 	bc.basePath= computePath(bc.basePath, process.cwd());
-	bc.pagePath= computePath(bc.pagePath || bc.basePath, bc.basePath);
 	bc.destBasePath= computePath(bc.destBasePath || (bc.basePath + (bc.basePathSuffix || "-build")), bc.basePath);
 	bc.destPackageBasePath= computePath(bc.destPackageBasePath || "./packages", bc.destBasePath);
 
@@ -167,19 +170,10 @@ define([
 
 	// clean up bc.packageMap and bc.paths so they can be used just as in bdLoad
 	(function() {
-		// if there is at least one package and the default package was not explicitly given provide it
-		if (!isEmpty(bc.packageMap) && !bc.noDefaultPackage && !bc.packageMap["*"]) {
-			bc.packageMap["*"]= {name:"", lib:"", main:"", location:""};
-		}
-		if (bc.packageMap["*"]) {
-			// overridable defaults for lib, location, destLib destLocation
-			// name, main, destName, destMain are unconditionally ""
-			bc.packageMap["*"]= mix(mix({lib:".", location:bc.basePath, destLib:".", destLocation:bc.destBasePath}, bc.packageMap["*"]), {name:"", main:"", destName:"", destMain:""});
-		}
 		// so far, we've been using bc.packageMap to accumulate package info as it is provided by packagePaths and/or packages
 		// in zero to many build control scripts. This routine moves each package config into bc.packages which is a map
-		// from package name to package config (this is different from the array the user uses to pass package config info). Along 
-		// the way, each package config object is cleaned up and all default values are calculated. Finally, the bdLoad-required 
+		// from package name to package config (this is different from the array the user uses to pass package config info). Along
+		// the way, each package config object is cleaned up and all default values are calculated. Finally, the bdLoad-required
 		// global packageMap (a map from package name to package name) is computed.
 		bc.packages= bc.packageMap;
 		bc.destPackages= {};
@@ -187,39 +181,47 @@ define([
 		bc.destPackageMap= {};
 		for (var packageName in bc.packages) {
 			var pack= bc.packages[packageName];
-			// build up info to tell all about a package; all properties semantically identical to definitions used by bdLoad
-			// note: pack.name=="" for default package
-			pack.lib= isString(pack.lib) ? pack.lib : "lib";
-			pack.main= isString(pack.main) ? pack.main : "main";
-			pack.location= computePath(pack.location || (pack.name ? "./" + pack.name : bc.basePath), bc.basePath);
-			pack.packageMap= pack.packageMap || 0;
-			pack.mapProg= require.computeMapProg(pack.packageMap);
-			pack.pathTransforms= pack.pathTransforms || [];
-	
-			// dest says where to output the compiled code stack
-			var destPack= bc.destPackages[pack.name || "*"]= {
-				name:pack.destName || pack.name,
-				lib:pack.destLib || pack.lib,
-				main:pack.destMain || pack.main,
-				location:computePath(pack.destLocation || ("./" + (pack.destName || pack.name)), bc.destPackageBasePath),
-				packageMap:pack.destPackageMap || pack.packageMap,
-				mapProg:require.computeMapProg(pack.destPackageMap),
-				pathTransforms:pack.destPathTransforms || pack.pathTransforms
-			};
 
 			var packageJson= readJson(catPath(pack.location, "package.json"));
 			if (packageJson) {
+				// it's never rational to override the package.json lib and main advice if it exists
+				if(packageJson.directories && packageJson.directories.lib){
+					pack.lib= packageJson.directories.lib;
+				}
+				if(packageJson.main){
+					pack.main= packageJson.main;
+				}
+
+				// otoh, the dojoBuild config in package.json is considered a default that may be overridden
 				var dojoBuild= packageJson.dojoBuild || {};
 				for (var p in dojoBuild) {
 					if (!(p in pack)) {
 						pack[p]= dojoBuild[p];
 					}
 				}
-			}	 
-	
+			}
+
+			// build up info to tell all about a package; all properties semantically identical to definitions used by bdLoad
+			// note: pack.name=="" for default package
+			pack.lib= slashTerminate(isString(pack.lib) ? pack.lib : "lib");
+			pack.main= isString(pack.main) ? pack.main : "main";
+			pack.location= computePath(pack.location || (pack.name ? "./" + pack.name : bc.basePath), bc.basePath);
+			pack.packageMap= pack.packageMap || 0;
+			pack.mapProg= require.computeMapProg(pack.packageMap);
+
+			// dest says where to output the compiled code stack
+			var destPack= bc.destPackages[pack.name]= {
+				name:pack.destName || pack.name,
+				lib:slashTerminate(pack.destLib || pack.lib),
+				main:pack.destMain || pack.main,
+				location:computePath(pack.destLocation || ("./" + (pack.destName || pack.name)), bc.destPackageBasePath),
+				packageMap:pack.destPackageMap || pack.packageMap,
+				mapProg:require.computeMapProg(pack.destPackageMap)
+			};
+
 			if (!pack.trees) {
-				// copy the lib directory; don't copy any hidden directorys (e.g., .git, .svn) or temp files
-				pack.trees= [[compactPath(catPath(pack.location, pack.lib)), compactPath(catPath(destPack.location, destPack.lib)), "/\\.", "\\.\\*~"]];
+				// copy the package tree; don't copy any hidden directorys (e.g., .git, .svn) or temp files
+				pack.trees= [[pack.location, destPack.location, "/\\.", "\\.\\*~"]];
 			} // else the user has provided explicit copy instructions
 
 			// filenames, dirs, trees just like global, except relative to the pack.(src|dest)Location
@@ -245,11 +247,7 @@ define([
 		// add some methods to bc to help with resolving AMD module info
 		bc.srcModules= {};
 		bc.getSrcModuleInfo= function(mid, referenceModule) {
-			var result= require.getModuleInfo(mid, referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", bc.pagePath, bc.packageMapProg, bc.pathsMapProg, bc.pathTransforms, true);
-			if (result.pid=="") {
-				result.pack= bc.packages["*"];
-			}
-			return result;
+			return require.getModuleInfo(mid, referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", bc.packageMapProg, bc.pathsMapProg, true);
 		};
 
 		bc.nameToUrl= function(name, ext, referenceModule) {
@@ -262,16 +260,12 @@ define([
 				url= moduleInfo.url;
 			// recall, getModuleInfo always returns a url with a ".js" suffix; therefore, we've got to trim it
 			return url.substring(0, url.length-3) + (ext ? ext : (match ? match[2] : ""));
-		},			
+		},
 
 		bc.destModules= {};
 		bc.getDestModuleInfo= function(mid, referenceModule) {
 			// note: bd.destPagePath should never be required; but it's included for completeness and up to the user to provide it if some transform does decide to use it
-			var result= require.getModuleInfo(mid, referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", bc.destPagePath, bc.destPackageMapProg, bc.destPathsMapProg, bc.destPathTransforms, true);
-			if (result.pid=="") {
-				result.pack= bc.packages["*"];
-			}
-			return result;
+			return require.getModuleInfo(mid, referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", bc.destPackageMapProg, bc.destPathsMapProg, true);
 		};
 	})();
 
@@ -313,7 +307,7 @@ define([
 return;
 
 		// don't dump out private properties used by build--they'll just generate questions
-		var 
+		var
 			dump= {},
 			internalProps= {
 				buildControlScripts:1,
@@ -346,7 +340,7 @@ return;
 		}
 		var packages= dump.packages= [];
 		for (p in bc.packages) {
-			var 
+			var
 				pack= bc.packages[p],
 				destPack= bc.destPackages[p];
 			packages.push({

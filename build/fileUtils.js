@@ -1,5 +1,5 @@
 define(["fs", "./buildControlBase"], function(fs, bc) {
-	var 
+	var
 		getFilename= function(filename) {
 			if (/\//.test(filename)) {
 				return filename.match(/^.*\/([^\/]+)$/)[1];
@@ -29,7 +29,7 @@ define(["fs", "./buildControlBase"], function(fs, bc) {
 			path= path.replace(/\\/g, "/");
 
 			// remove any trailing "/" to be less sensitive to careless user input
-			// but remember "/" is not a trailing slash--it's the root 
+			// but remember "/" is not a trailing slash--it's the root
 			if (path.length>1 && path.charAt(path.length-1)=="/") {
 				path= path.substring(0, path.length-1);
 			}
@@ -49,17 +49,27 @@ define(["fs", "./buildControlBase"], function(fs, bc) {
 			}
 		},
 
-		compactPath= function(path) {
-			while(/\/\.\//.test(path)) path= path.replace(/\/\.\//, "/");
-			path= path.replace(/(.*)\/\.$/, "$1");
-			while(/[^\/\.][^\/\.]?[^\/]*\/\.\./.test(path)) path= path.replace(/[^\/\.][^\/\.]?[^\/]*\/\.\.\/?/, "");
-			return path.charAt(path.length-1)=="/" ? path.substring(0, path.length-1) : path;
+
+		compactPath = function(path){
+			var
+				result= [],
+				segment, lastSegment;
+		    path= path.split("/");
+			while(path.length){
+				segment= path.shift();
+				if(segment==".." && result.length && lastSegment!=".."){
+					result.pop();
+				}else if(segment!="."){
+					result.push(lastSegment= segment);
+				} // else ignore "."
+			}
+			return result.join("/");
 		},
 
-		isAbsolutePath= function(path) { 
-			return path && path.length && path.charAt(0)=="/"; 
-		}, 
-		
+		isAbsolutePath= function(path) {
+			return path && path.length && path.charAt(0)=="/";
+		},
+
 		getAbsolutePath= function(src, base) {
 			src= cleanupPath(src);
 			if (src.charAt(0)!="/") {
@@ -106,7 +116,7 @@ define(["fs", "./buildControlBase"], function(fs, bc) {
 		checkedDirectories= {},
 
 		clearCheckedDirectoriesCache= function() {
-			checkedDirectories= {}; 
+			checkedDirectories= {};
 		},
 
 		ensureDirectory= function(path) {
@@ -122,7 +132,7 @@ define(["fs", "./buildControlBase"], function(fs, bc) {
 				checkedDirectories[path]= 1;
 			}
 		},
-				
+
 		ensureDirectoryByFilename= function(filename) {
 			ensureDirectory(getFilepath(filename));
 		},

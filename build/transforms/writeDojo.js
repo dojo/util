@@ -1,21 +1,21 @@
 ///
 // \amd-mid build/lib/transforms/writeBdLoad
-// 
+//
 // A function to write the bdLoad resource.
-// 
+//
 // The function writes the results of transforming the loader source. has.js is integrated as follows:
 //	 * if bc.has=="*build", then build/has/bdBuildHas is provided to the loader boot; otherwise...
 //	 * if bc.has.getText exists and is a function, then the result of that function is provided to the loader boot; otherwise...
 //	 * build/has/naiveHas is provided to the loader boot bc.loader.boots
-// 
+//
 // Other transforms may request a bootstrap be written for them that includes the loader and loader config. They
 // may execute such a request by pushing a function into bc.loader.boots. The function must return a [filename, text]
 // pair that indicates the bootstrap text to append to the loader and the destination to write the result.
 define([
 	"../buildControl",
-	"../fileUtils", 
-	"fs", 
-	"../stringify", 
+	"../fileUtils",
+	"fs",
+	"../stringify",
 	"./writeAmd",
 	"spawn"
 ], function(bc, fileUtils, fs, stringify, writeAmd, spawn) {
@@ -36,7 +36,7 @@ define([
 				if (path.indexOf(basePath + "/")==0) {
 					return "." + path.substring(basePath.length);
 				}
-				var 
+				var
 					parts= basePath.split("/"),
 					prefix= "";
 				for (var i= parts.length-1; i>=0; i--) {
@@ -50,7 +50,7 @@ define([
 			},
 
 			getPackage= function(name) {
-				// the purpose of this somewhat verbose routine is to write a minimal package object for each 
+				// the purpose of this somewhat verbose routine is to write a minimal package object for each
 				// package, yet allow client code to pass extra (i.e., outside the scope of CJS specs) config
 				//	information within the package object
 				var
@@ -75,7 +75,6 @@ define([
 				if (result.lib=="lib") delete result.lib;
 				if (result.main=="main") delete result.main;
 				if (!result.packageMap.length) delete result.packageMap;
-				if (!result.pathTransforms.length) delete result.pathTransforms;
 				return result;
 			},
 
@@ -86,9 +85,7 @@ define([
 					config.baseUrl= bc.baseUrl;
 				}
 				for (var p in bc.packages) {
-					if (p!="*") {
-						config.packages.push(getPackage(p));
-					}
+					config.packages.push(getPackage(p));
 				}
 				var result= stringify(config);
 				if (result.unsolved) {
@@ -96,11 +93,11 @@ define([
 				}
 				return result;
 			},
-		
+
 			waitCount= 0,
 
 			errors= [],
-	 
+
 			onCompressComplete= function(err) {
 				if (err) {
 					errors.push(err);
@@ -143,7 +140,7 @@ define([
 			var
 				configText= "(" + getUserConfig() + ", " + getDefaultConfig() + ");",
 				layerText= writeAmd.getLayerText(0, bc.dojoLayer.include, bc.dojoLayer.exclude);
-			doWrite(resource, 
+			doWrite(resource,
 				resource.getText() + configText + layerText +
 					"require({\n" +
 					"	 deps:['dojo'].concat(require.deps || []),\n" +

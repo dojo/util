@@ -82,7 +82,7 @@ define(["./buildControlBase"], function(bc) {
 					}
 					return false;
 				},
-				["read", "dojoPragmas", "hasFindAll", "hasFixup", "depsScan", "writeAmd", "hasReport"]
+				["read", "dojoPragmas", "hasFindAll", "hasFixup", "depsScan", "writeAmd", "hasReport", "depsDump"]
 			],[
 				// nls resources
 				function(resource) {

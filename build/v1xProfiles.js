@@ -114,7 +114,7 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 			// report the full path of the script being executed. In order to help, the following v1.7+ options are available:
 			//
 			//	 -buildPath path/to/util/buildscripts/build
-			//	 -baseUrl		path/to/use/instead/of/path/to/util/buildscripts
+			//	 -baseUrl	path/to/use/instead/of/path/to/util/buildscripts
 			//
 			// This doesn't eliminiate the strange behavior of releaseDir. Users who find releaseDir inconvenient should
 			// use destBasePath.
@@ -167,7 +167,8 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 				packages.push({
 					name:mid,
 					location:prefixMap[mid],
-					lib:"."
+					lib:".",
+					main:mid
 				});
 			}
 
@@ -254,7 +255,7 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 
 			// TODOC: we now take care of the console without shrink safe
 			// TODO/TODOC: burn in dojoConfig, djConfig
-			// TODOTODOC: dojoConfig, djConfig should be able to be objects (string restrinction lifted)
+			// TODO/TODOC: dojoConfig, djConfig should be able to be objects (string restrinction lifted)
 			// TODOC: action is assumed to be build, no more clean, help if you want it explicitly
 
 			bc.defaultConfig= {
@@ -282,11 +283,10 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 			};
 
 			if (result.copyTests) {
-				result.trees= [[dojoPath + "/../util/doh", "./util/doh"]];
 				bc.defaultConfig.packages= [{
 					name:'doh',
 					location:'../util/doh',
-					lib:'.'
+					lib:'./'
 				}];
 			}
 			return result;

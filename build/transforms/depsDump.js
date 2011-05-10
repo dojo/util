@@ -7,7 +7,10 @@ define(["../buildControl", "../stringify"], function(bc, stringify) {
 			resource, p;
 		for (p in bc.resources) {
 			resource= bc.resources[p];
-			if (resource.deps && !resource.test && !/\/nls\//.test(resource.src)) {
+			if (resource.deps && !resource.test && !/\/nls\//.test(resource.src) && resource.pqn!="dojo*_base" && resource.pqn!="dojo*_base/browser" && (resource.pqn=="dojo*main" || /_base/.test(resource.pqn))) {
+				resource.deps.forEach(function(module){
+					console.log('"' + resource.path + '" -> "' + module.path + '";');
+				});
 				resource.uid= i;
 				midToId[bc.resources[p].path]= i;
 				modules.push(resource);
@@ -18,7 +21,7 @@ define(["../buildControl", "../stringify"], function(bc, stringify) {
 			return module.deps.map(function(item){ return item.uid; });
 		});
 
-		var 
+		var
 			idTree= {},
 			getItem= function(parts, bag) {
 				var part= parts.shift();
@@ -35,8 +38,10 @@ define(["../buildControl", "../stringify"], function(bc, stringify) {
 			var parts= item.path.split("/");
 			getItem(parts, idTree)["*"]= i;
 		});
+//console.log(stringify(depsTree));
+//console.log(stringify(idTree));
 
-		// depsTree and idTree now hold all the info need to pass to the client to do 100% client-side 
+		// depsTree and idTree now hold all the info need to pass to the client to do 100% client-side
 		// deps tracing
 	};
 });

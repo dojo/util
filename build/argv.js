@@ -6,13 +6,12 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 	//
 	//	 buildControlScripts: a vector of build objects, ordered as provided on the command line
 	//	 basePath:
-	//	 pagePath:
 	//	 destBasePath:
 	//	 destPackageBasePath:
 	//	 check:
 	//
 	// Design of relative paths:
-	// 
+	//
 	//	 * All relative source paths and relative bc.destBasePath are relative to bc.basePath
 	//	 * All relative destination paths are relative to bc.destBasePath
 	//	 * Relative bd.basePath found in a build control script is relative to the directory that contains the script
@@ -20,7 +19,7 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 	//
 	// For each build control script that is compiled, if bc.basePath is undefined, it is set to the directory that
 	// contains the script. Notice that this feature can be disabled by setting e.g., "basePath==0" in any build control script.
-	
+
 	eval(require.scopeify("./fileUtils"));
 	var
 		// used to build up the result
@@ -30,7 +29,7 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 		},
 
 		buildControlScripts= result.buildControlScripts,
-	
+
 		cwd= process.cwd(),
 
 		printVersion= 0,
@@ -45,12 +44,12 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 			}
 			errorCount++;
 		},
-	
+
 		illegalArgumentValue= function(argumentName, position) {
 			console.log("illegal argument value for " + argumentName + " (argument " + position + ").");
 			errorCount++;
 		},
-	
+
 		loadBuildInfo= function(
 			filename,
 			scriptType
@@ -58,11 +57,11 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 			///
 			// Load, evaluate and return the result of the contents of the file given by
 			// filename in a scope type given by scriptType as follows:
-			// 
+			//
 			// When scriptType is falsy, contents of filename should be a Javascript object.
 			// `code
 			// (<contents>)
-			// 
+			//
 			// When scriptType is "loader", contents of filename should be an application of require to a configuration object.
 			// `code
 			// (function() {
@@ -70,12 +69,12 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 			//	 <contents>
 			//	 return result;
 			// })();
-			// 
+			//
 			// When scriptType is "require", contents of filename should include the variable "require" which should hold the
 			// build contorl object:
 			// `code
 			// <contents>; require;
-			//		 
+			//
 			// If result contains the property basePath and/or build.basePath, then these are normalized with respect to the
 			// path given by filename.
 
@@ -130,7 +129,7 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 			}
 			return 0;
 		};
-	
+
 	//arg[0] is node; argv[1] is the buildControlScripts program; therefore, start with argv[2]
 	for (var arg, i= 0, end= argv.length; i<end;) {
 		arg= argv[i++];
@@ -143,7 +142,7 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 					illegalArgumentValue("build", i);
 				}
 				break;
-	
+
 			case "-r":
 			case "--require":
 				if (i<end) {
@@ -152,7 +151,7 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 					illegalArgumentValue("require", i);
 				}
 				break;
-	
+
 			case "-l":
 			case "--loader":
 				if (i<end) {
@@ -161,25 +160,25 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 					illegalArgumentValue("loader", i);
 				}
 				break;
-	
+
 			case "--check":
 				// read, process, and send the configuration to the console and then exit
 				result.check= true;
 				break;
-	
+
 			case "--help":
 				// read, process, and send the configuration to the console and then exit
 				printHelp= true;
 				console.log(help);
 				break;
-	
+
 			case "-v":
 			case "--version":
 				// read, process, and send the configuration to the console and then exit
 				printVersion= true;
 				console.log("v" + result.version);
 				break;
-	
+
 			case "--unit-test":
 				// special hook for testing
 				if (i<end) {
@@ -188,7 +187,7 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 					illegalArgumentValue("unit-test", i);
 				}
 				break;
-	
+
 			case "--unit-test-param":
 				// special hook for testing
 				if (i<end) {
@@ -198,7 +197,7 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 					illegalArgumentValue("unit-test", i);
 				}
 				break;
-	
+
 			default:
 				var match= arg.match(/^\-\-?(.*)/);
 				if (match && i<end) {
@@ -223,7 +222,7 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 		//just asked for either help or version or both; don't do more work or reporting
 		process.exit(0);
 	}
-	
+
 	if (false && !errorCount && !buildControlScripts.length) {
 		try {
 			console.log("no build control script was given; trying to read config.js in the current working directory");

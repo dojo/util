@@ -4,11 +4,11 @@ define(["../buildControl"], function(bc) {
 			aggregateDeps= [],
 
 			define= function(mid, dependencies, factory) {
-				var 
+				var
 					arity= arguments.length,
 					args= 0,
 					defaultDeps= ["require", "exports", "module"];
-		
+
 				// TODO: add the factory scan?
 				if (0) {
 					if (arity==1) {
@@ -42,7 +42,7 @@ define(["../buildControl"], function(bc) {
 
 
 			dojoProvideList= [],
- 
+
 			dojo= {
 				require: function(a, b) {
 					aggregateDeps.push(a.replace(/\./g, "/"));
@@ -74,7 +74,7 @@ define(["../buildControl"], function(bc) {
 			) {
 				var match= mid.match(/^([^\!]+)\!(.+)$/);
 				if (match) {
-					var 
+					var
 						pluginId= bc.getSrcModuleInfo(match[1], referenceModule).pqn,
 						pluginProc= bc.plugins[pluginId];
 					return pluginProc ? pluginProc.start(match[2], referenceModule, bc) : 0;
@@ -82,6 +82,11 @@ define(["../buildControl"], function(bc) {
 					var
 						moduleInfo= bc.getSrcModuleInfo(mid, referenceModule),
 						module= moduleInfo && bc.amdResources[moduleInfo.pqn];
+if (!module){
+console.log(referenceModule && referenceModule.path + "+" + mid + "=" + moduleInfo.pqn + ":" + moduleInfo.url);
+console.log(referenceModule);
+console.log(module);
+}
 					return module;
 				}
 			},
@@ -101,32 +106,32 @@ define(["../buildControl"], function(bc) {
 			processWithRegExs= function() {
 				// do it the hard (unreliable) way; first try to find "dojo.provide" et al since those names are less likely
 				// to be overloaded than "define" and "require"
-	
+
 				// TODO: the naive regex process that's used below may fail to properly recognize the semnatics of the code.
-				// There is no way around this other than a proper tokenizer and parser. Note however, this kind of process 
+				// There is no way around this other than a proper tokenizer and parser. Note however, this kind of process
 				// has been in use with the v1.6- build system for a long time.
 				// TODO: provide a way to let the build user provide an execution environment for applications like dojo.requireIf
-				var 
+				var
 					// strip comments...string and regexs in the code may cause this to fail badly
 					contents= resource.text.replace(/(\/\*([\s\S]*?)\*\/|\/\/(.*)$)/mg , ""),
-	
+
 					// look for dojo.require et al; notice that only expressions *without* parentheses are understood
 					dojoExp= /dojo\.(require|platformRequire|provide|requireLocalization|requireAfterIf|requireIf)\s*\(([\w\W]+?)\)/mg,
-	
+
 					// string-comma-string (with optional whitespace
 					requireLocalizationFixup= /^\s*['"][^'"]+['"]\s*,\s*['"][^'"]+['"]/,
-	
+
 					// look for define applications with an optional string first arg and an array second arg;
 					// notice the regex stops after the second arg
 					defineExp= /(^|\s)define\s*\(\s*(["'][^'"]+['"]\s*,\s*)?\[[\w\W]*?\]/g,
-	
+
 					// look for require applications with an array for the first arg;
 					// notice the regex stops after the first arg
 					requireExp= /(^|\s)require\s*\(\s*\[[\w\W]*?\]/g,
 
 					dojoV1xLoaderModule= 0,
 					result;
-	
+
 					// look for dojo loader applications
 					while((result= dojoExp.exec(contents)) != null) {
 						// fix up requireLocalization a bit
@@ -158,7 +163,7 @@ define(["../buildControl"], function(bc) {
 							}
 						});
 					}
-	
+
 					if (!dojoV1xLoaderModule) {
 						// look for AMD define
 						while((result= defineExp.exec(contents)) != null) {
@@ -182,7 +187,7 @@ define(["../buildControl"], function(bc) {
 						}
 					}
 			};
-	
+
 		// scan the resource for dependencies
 		if (resource.tag.amd || /\/\/>>\s*pure-amd/.test(resource.text)) {
 			processPureAmdModule();
