@@ -1,22 +1,22 @@
 define(["../buildControl", "../fileUtils", "fs"], function(bc, fileUtils, fs) {
 	var
 		computeLayerContents= function(
-			layerModule, 
-			include, 
+			layerModule,
+			include,
 			exclude
 		) {
 			// add property layerSet (a set of pqn) to layerModule that...
-			// 
+			//
 			//	 * includes dependency tree of layerModule
 			//	 * includes all modules in layerInclude and their dependency trees
 			//	 * excludes all modules in layerExclude and their dependency trees
 			//	 * excludes layerModule itself
-			// 
+			//
 			// note: layerSet is built exactly as given above, so included modules that are later excluded
 			// are *not* in result layerSet
 			var
 				includeSet= {},
-				visited, 
+				visited,
 				includePhase,
 				traverse= function(module) {
 					var pqn= module.pqn;
@@ -36,9 +36,9 @@ define(["../buildControl", "../fileUtils", "fs"], function(bc, fileUtils, fs) {
 			visited= {};
 			includePhase= true;
 			if (layerModule) {
-				traverse(layerModule);		 
+				traverse(layerModule);
 			}
-			include.forEach(function(mid) { 
+			include.forEach(function(mid) {
 				var module= bc.amdResources[bc.getSrcModuleInfo(mid).pqn];
 				if (!module) {
 					bc.logError("failed to find module (" + mid + ") while computing layer include contents");
@@ -49,7 +49,7 @@ define(["../buildControl", "../fileUtils", "fs"], function(bc, fileUtils, fs) {
 
 			visited= {};
 			includePhase= false;
-			exclude.forEach(function(mid) { 
+			exclude.forEach(function(mid) {
 				var module= bc.amdResources[bc.getSrcModuleInfo(mid).pqn];
 				if (!module) {
 					bc.logError("failed to find module (" + mid + ") while computing layer exclude contents");
@@ -63,9 +63,20 @@ define(["../buildControl", "../fileUtils", "fs"], function(bc, fileUtils, fs) {
 			return includeSet;
 		},
 
+		insertAbsMid = function(
+			text,
+			resource
+		){
+			if(!resource.mid){
+				return text;
+			}
+			var mid= (resource.pid ? resource.pid + "/" :  "") + resource.mid;
+			return text.replace(/(define\s*\(\s*)(\[[^\]]*\]\s*,\s*function)/, "$1\"" + mid + "\", $2");
+		},
+
 		getLayerText= function(
-			resource, 
-			include, 
+			resource,
+			include,
 			exclude
 		) {
 			var
@@ -85,9 +96,15 @@ define(["../buildControl", "../fileUtils", "fs"], function(bc, fileUtils, fs) {
 
 		write= function(resource, callback) {
 			fileUtils.ensureDirectoryByFilename(resource.dest);
-			var text= resource.layer ? 
-				getLayerText(resource, resource.layer.include, resource.layer.exclude) : 
-				resource.getText();
+			var text;
+			if(resource.layer){
+				text= getLayerText(resource, resource.layer.include, resource.layer.exclude);
+			}else{
+				text= resource.getText();
+				if(resource.tag.amd && (1 || bc.insertAbsMids)){
+					text= insertAbsMid(text, resource);
+				}
+			}
 			fs.writeFile(resource.dest, text, resource.encoding, function(err) {
 				callback(resource, err);
 			});
@@ -98,4 +115,3 @@ define(["../buildControl", "../fileUtils", "fs"], function(bc, fileUtils, fs) {
 		return write;
 });
 
- 

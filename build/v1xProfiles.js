@@ -270,7 +270,8 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 					"dojo-trace-api":1,
 					"dojo-log-api":1,
 					"dojo-loader-catches":1,
-					"dojo-domloaded-api":1,
+					"dojo-dom-ready-api":1,
+					"dojo-dom-ready-plugin":1,
 					"dojo-ready-api":1,
 					"dojo-error-api":1,
 					"dojo-publish-privates":1,
@@ -303,7 +304,24 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 
 			// how about calling it a profile (instead of v1.6- dependencies)...
 			var profile= (function(__text){
-				var dependencies= {};
+				var
+					// the logger is currently depricated; stub it out so profiles to cause exceptions on undefined
+					// TODO: should we bring this back?
+					noop = function(){},
+					logger = {
+						TRACE: 0,
+						INFO: 1,
+						WARN: 2,
+						ERROR: 3,
+						level: 0,
+						logPrefix: "",
+						trace:noop,
+						info:noop,
+						warn:noop,
+						error:noop,
+						_print:noop
+					},
+					dependencies= {};
 				eval(__text);
 				return dependencies;
 			})(text);

@@ -82,11 +82,6 @@ define(["../buildControl"], function(bc) {
 					var
 						moduleInfo= bc.getSrcModuleInfo(mid, referenceModule),
 						module= moduleInfo && bc.amdResources[moduleInfo.pqn];
-if (!module){
-console.log(referenceModule && referenceModule.path + "+" + mid + "=" + moduleInfo.pqn + ":" + moduleInfo.url);
-console.log(referenceModule);
-console.log(module);
-}
 					return module;
 				}
 			},

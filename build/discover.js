@@ -288,5 +288,22 @@ define(["./buildControl", "./fileUtils", "fs", "./stringify"], function(bc, file
 				}
 			}
 		}
+
+		var destDirList= [];
+		for (var p in destDirs) {
+			destDirList.push(p);
+		}
+		destDirList.sort();
+		var
+			current= destDirList[0],
+			deleteList= [current];
+		for (var i= 1; i<destDirList.lenght; i++){
+			if(destDirList[i].indexOf(current)!=0){
+				current= destDirList[i];
+				deleteList.push(current);
+			};
+		}
+		// TODO: add code to delete the trees in deleteList.
+
 	};
 });
