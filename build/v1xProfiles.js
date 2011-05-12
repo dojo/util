@@ -1,4 +1,4 @@
-define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require, bc, fs, fileUtils) {
+define(["require", "./buildControlBase", "fs", "./fileUtils", "process"], function(require, bc, fs, fileUtils, process) {
 	eval(require.scopeify("fs, ./fileUtils"));
 	var
 		defaultBuildProps= {
@@ -7,7 +7,6 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 			profileFile:"",
 			htmlFiles:"",
 			htmlDir:"",
-			action:"help",
 			version:"0.0.0.dev",
 			localeList:"ar,ca,cs,da,de-de,el,en-gb,en-us,es-es,fi-fi,fr-fr,he-il,hu,it-it,ja-jp,ko-kr,nl-nl,nb,pl,pt-br,pt-pt,ru,sk,sl,sv,th,tr,zh-tw,zh-cn",
 			releaseName:"dojo",
@@ -95,7 +94,7 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 			}
 		},
 
-		processProfile= function(profile) {
+		processProfile= function(profile, args) {
 			// process a v1.6- profile
 			//
 			// The v1.6- has the following relative path behavior:
@@ -225,8 +224,11 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 			});
 			result.layers= fixedLayers;
 
-			if (typeof profile.basePath=="undefined") {
+			if (profile.basePath===undefined) {
 				profile.basePath= compactPath(catPath(require.baseUrl, "../util/buildscripts"));
+				if(!/\/util\/buildscripts/.test(profile.basePath)){
+					bc.logWarn("did not specify profile.basePath yet running build with the current working directory different than util/buildscripts");
+				}
 			}
 
 			if (profile.destBasePath) {
@@ -234,12 +236,9 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 					bc.logWarn("destBasePath given; ignoring releaseDir and releaseName");
 				}
 			} else {
-				var releaseName= profile.releaseName;
-				if (releaseName) {
-					releaseName= releaseName.match(/[^\/]+/)[0];
-				}
-				var releaseDir= (profile.releaseDir || result.releaseDir).replace(/\\/g, "/");
-
+				var
+					releaseName= (profile.releaseName || args.releaseName || result.releaseName).replace(/\\/g, "/"),
+					releaseDir= (profile.releaseDir || args.releaseDir || result.releaseDir).replace(/\\/g, "/");
 				profile.destBasePath= computePath(catPath(releaseDir, releaseName), profile.basePath);
 			}
 
@@ -293,7 +292,7 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 			return result;
 		},
 
-		processProfileFile= function(filename){
+		processProfileFile= function(filename, args){
 			var text= readFileSync(filename, "utf8");
 
 			//Remove the call to getDependencyList.js because it is not supported anymore.
@@ -325,7 +324,7 @@ define(["require", "./buildControlBase", "fs", "./fileUtils"], function(require,
 				eval(__text);
 				return dependencies;
 			})(text);
-			return processProfile(profile);
+			return processProfile(profile, args);
 		},
 
 		processHtmlFile= function(filename){

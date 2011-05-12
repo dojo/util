@@ -274,9 +274,7 @@ define(["./buildControl", "./fileUtils", "fs", "./stringify"], function(bc, file
 			var
 				resource= bc.amdResources[bc.getSrcModuleInfo(mid).pqn],
 				layer= bc.layers[mid];
-			if (!resource) {
-				bc.logError("unable to find the resource for layer (" + mid + ")");
-			} else {
+			if (resource) {
 				resource.layer= layer;
 				if (layer.boot) {
 					if (bc.loader) {
@@ -286,7 +284,7 @@ define(["./buildControl", "./fileUtils", "fs", "./stringify"], function(bc, file
 						bc.logError("unable to find loader for boot layer (" + mid + ")");
 					}
 				}
-			}
+			} // else the layer will be written during the writeDojo transform
 		}
 
 		var destDirList= [];

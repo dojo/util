@@ -166,6 +166,16 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 				result.check= true;
 				break;
 
+			case "--clean":
+				// read, process, and send the configuration to the console and then exit
+				result.clean= true;
+				break;
+
+			case "--release":
+				// read, process, and send the configuration to the console and then exit
+				result.release= true;
+				break;
+
 			case "--help":
 				// read, process, and send the configuration to the console and then exit
 				printHelp= true;
@@ -199,9 +209,15 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 				break;
 
 			default:
-				var match= arg.match(/^\-\-?(.*)/);
+				// possible formats
+				//
+				//   -flag value
+				//   --flag value
+				//   flag=value
+
+				var match= arg.match(/^\-\-?(.+)/);
 				if (match && i<end) {
-					// the form "-<flag> <value>"; *must* provide a value
+					// the form "-[-]<flag> <value>"; *must* provide a value
 					result[match[1]]= argv[i++];
 				} else {
 					var parts= arg.split("=");
@@ -218,7 +234,7 @@ define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringi
 		}
 	}
 
-	if ((printHelp || printVersion && argv.length==3) || (printHelp && printVersion && argv.length==4)) {
+	if (((printHelp || printVersion) && argv.length==3) || (printHelp && printVersion && argv.length==4)) {
 		//just asked for either help or version or both; don't do more work or reporting
 		process.exit(0);
 	}

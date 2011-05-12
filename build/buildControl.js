@@ -6,7 +6,9 @@ define([
 	"./buildControlDefault",
 	"./v1xProfiles",
 	"./stringify",
-	"process"], function(require, args, fs, fileUtils, bc, v1xProfiles, stringify, process) {
+	"process",
+	"exec",
+	"dojo/text!./help.txt"], function(require, args, fs, fileUtils, bc, v1xProfiles, stringify, process, exec, helpText) {
 	//
 	// Process the arguments given on the command line to build up a build control object that is used to instruct and control
 	// the build process.
@@ -93,6 +95,11 @@ define([
 			});
 		};
 
+	if(!args.buildControlScripts.length){
+		bc.logError("no profile or build control script provided; use the option --help for help");
+		process.exit(0);
+	}
+
 	// for each build control object or v1.6- profile in args, mix into bc in the order they appeared on the command line
 	// FIXME: rename "buildControlScript et al to profile...keep the peace
 	args.buildControlScripts.forEach(function(item) {
@@ -112,10 +119,10 @@ define([
 					processHtmlFiles(item[1].split(","));
 					break;
 				case "profile":
-					item= processProfileFile(require.baseUrl + "../util/buildscripts/profiles/" + item[1] + ".profile.js");
+					item= processProfileFile(require.baseUrl + "../util/buildscripts/profiles/" + item[1] + ".profile.js", args);
 					break;
 				case "profileFile":
-					item= processProfileFile(item[1]);
+					item= processProfileFile(item[1], args);
 					break;
 			}
 		}
@@ -301,11 +308,36 @@ define([
 	for (p in bc.staticHasFeatures) if (bc.staticHasFeatures[p]==-1) deleteStaticHasFlagSet.push(p);
 	deleteStaticHasFlagSet.forEach(function(flag){delete bc.staticHasFeatures[flag];});
 
+	if(bc.action){
+		bc.action.split(/\W|\s/).forEach(function(action){
+			action= action.match(/\s*(\S+)\s*/)[1];
+			switch(action){
+				case "check":
+					bc.check= true;
+					break;
+				case "clean":
+					bc.clean= true;
+					break;
+				case "release":
+					bc.release= true;
+					break;
+				default:
+					bc.logError("Unknown action (" + action + ") provided");
+					process.exit(0);
+
+			}
+		});
+	}
+
+	if(!bc.check && !bc.clean && !bc.release){
+		bc.logError("nothing to do; you must explicitly instruct the application to do something; use the option --help for help");
+		process.exit(0);
+	}
+
 	// dump bc (if requested) before changing gateNames to gateIds below
 	if (bc.check) (function() {
 		bc.logInfo(stringify(bc) + "\n");
-return;
-
+if(0){
 		// don't dump out private properties used by build--they'll just generate questions
 		var
 			dump= {},
@@ -349,7 +381,9 @@ return;
 			});
 		}
 		bc.logInfo(stringify(dump) + "\n");
+}
 	})();
+
 
 	// clean up the gates and transforms
 	(function() {

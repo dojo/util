@@ -67,25 +67,33 @@ define(["require", "dojo/has"], function(require, has) {
 				for(var command= arguments[0], args= [], i= 1; i<arguments.length-1; i++){
 					args.push(arguments[i]);
 				}
-				var callback= arguments[i];
+				var
+					callback= arguments[i],
+					exec= function(){
+						var
+							text= "",
+							process= spawn(command, args);
+						process.on("exit", function(code){
+							runQ();
+							callback && callback(code, text);
+						});
+						process.stdout.on("data", function(data){
+							text+= data;
+						});
+						process.stderr.on("data", function(data){
+							text+= data;
+						});
+					};
+
 
 				if(count<max){
 					count++;
-					spawn(command, args).on("exit", function(code){
-						runQ();
-						callback(code);
-					});
+					exec();
 				}else{
-					queue.push(function(){
-						spawn(command, args).on("exit", function(code){
-							runQ();
-							callback(code);
-						});
-					});
+					queue.push(exec);
 				}
 			};
 		});
-
 
 		// helps during dev...
 		debug= require.debug;
@@ -135,7 +143,7 @@ define(["require", "dojo/has"], function(require, has) {
 	};
 
 	// run the build program
-	require(["./buildControl"], function(bc) {
+	require(["./buildControl", "exec"], function(bc, exec) {
 		var
 			transforms= bc.transforms,
 			transformJobs= bc.transformJobs,
@@ -264,7 +272,7 @@ define(["require", "dojo/has"], function(require, has) {
 			bc.logWarn("Resource (" + resource.srcName + ") was discovered, but there is no transform job specified.");
 		};
 
-		if (!bc.errorCount && !bc.check) {
+		function doBuild(){
 			var
 				transformNames= [],
 				pluginNames= [],
@@ -321,6 +329,32 @@ define(["require", "dojo/has"], function(require, has) {
 				// release the gate lock set above
 				passGate();
 			});
+		}
+
+		if(!bc.errorCount){
+			if(bc.clean){
+				var
+					isWindows= false,
+					command, flags;
+				if(isWindows){
+					// TODO
+				}else{
+					// TODO: remove the echo so that the directory will be removed
+					command= "rm";
+					command= "echo";
+					flags= "-Rf";
+				}
+				exec(command, flags, bc.destBasePath, function(code, text){
+					if(code){
+						text && bc.logError(text);
+						bc.logError("failed to delete old tree;  command was \"" + command + " " + flags + " " + bc.destBasePath + "\"");
+					}else if(bc.release){
+						doBuild();
+					}
+				});
+			}else{
+				doBuild();
+			}
 		}
 	});
 });

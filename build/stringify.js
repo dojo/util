@@ -35,7 +35,7 @@ var
 			//	 * turn CR-LF or LF-CR into simple LF
 			//	 * turn lone CR into LF
 			//	 * then split on LF
-			// 
+			//
 			// This should be platform-independent
 			return text.replace(/(\r\n)|(\n\r)/g, "\n").replace(/\r/, "\n").split("\n");
 		},
@@ -50,19 +50,19 @@ var
 		}
 		var temp, space, p, i;
 		switch (typeof it) {
-			case "undefined": 
+			case "undefined":
 				text+= "undefined";
 				break;
 
-			case "boolean": 
+			case "boolean":
 				text+= (it ? "true" : "false");
 				break;
 
-			case "number": 
+			case "number":
 				text+= it.toString();
 				break;
 
-			case "string": 
+			case "string":
 				text+= dojo.toJson(it);
 				break;
 
@@ -117,7 +117,7 @@ var
 			case "function":
 				space= indent(level);
 				// the V8 engine seems to strip the leading space from the first line of the function?!?
-				var 
+				var
 					functionText= split(it.toString()),
 					firstLine= functionText.shift(),
 					minSpaces= Number.MAX_VALUE;
@@ -146,5 +146,5 @@ var
 stringify.setIndentFactor= setIndentFactor;
 stringify.split= split;
 return stringify;
-	
+
 });

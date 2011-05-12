@@ -11,7 +11,7 @@ define([], function() {
 		statSync: function(filename) {
 			return new java.io.File(filename);
 		},
-		
+
 		mkdirSync: function(filename) {
 			var dir= new java.io.File(filename);
 			if (!dir.exists()) {
@@ -25,7 +25,7 @@ define([], function() {
 			// java returns the complete path with each filename in listFiles; node returns just the filename
 			// the item+"" is necessary because item is a java object that doesn't have the substring method
 			var l= path.length + 1;
-			return (new java.io.File(path)).listFiles().map(function(item){ return (item+"").substring(l); });			
+			return (new java.io.File(path)).listFiles().map(function(item){ return (item+"").substring(l); });
 		},
 
 		readFile: function(filename, encoding, cb) {
@@ -40,7 +40,7 @@ define([], function() {
 				cb= encoding;
 				encoding= 0;
 			}
-			var 
+			var
 				outFile = new java.io.File(filename),
 				outWriter;
 			if(encoding){
@@ -48,7 +48,7 @@ define([], function() {
 			}else{
 				outWriter = new java.io.OutputStreamWriter(new java.io.FileOutputStream(outFile));
 			}
-		
+
 			var os = new java.io.BufferedWriter(outWriter);
 			try{
 				os.write(contents);
@@ -59,5 +59,6 @@ define([], function() {
 				cb(0);
 			};
 		}
+
 	};
 });

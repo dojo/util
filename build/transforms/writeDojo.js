@@ -124,14 +124,26 @@ define([
 				}
 			},
 
-			doWrite= function(resource, text) {
-				var destFilename= resource.dest;
+			doWrite= function(filename, text) {
 				if (bc.layerOptimize && 0) {
-					destFilename+= ".uncompressed.js";
+					filename+= ".uncompressed.js";
 				}
-				fileUtils.ensureDirectoryByFilename(destFilename);
+				fileUtils.ensureDirectoryByFilename(filename);
 				waitCount++;
-				fs.writeFile(destFilename, text, "utf8", onWriteComplete);
+				fs.writeFile(filename, text, "utf8", onWriteComplete);
+			},
+
+			writeNonmoduleLayers= function(){
+				// write any layers that are not also an existing module
+				for (var mid in bc.layers) {
+					var
+						moduleInfo= bc.getSrcModuleInfo(mid),
+						resource= bc.amdResources[moduleInfo.pqn],
+						layer= bc.layers[mid];
+					if (!resource && !layer.boot) {
+						doWrite(bc.getDestModuleInfo(moduleInfo.path).url, writeAmd.getLayerText(0, layer.include, layer.exclude));
+					}
+				}
 			};
 
 		// the writeDojo transform...
@@ -140,7 +152,7 @@ define([
 			var
 				configText= "(" + getUserConfig() + ", " + getDefaultConfig() + ");",
 				layerText= writeAmd.getLayerText(0, bc.dojoLayer.include, bc.dojoLayer.exclude);
-			doWrite(resource,
+			doWrite(resource.dest,
 				resource.getText() + configText + layerText +
 					"require({\n" +
 					"	 deps:['dojo'].concat(require.deps || []),\n" +
@@ -151,8 +163,10 @@ define([
 			//write any bootstraps; boots is a map from dest filename to boot layer
 			resource.boots.forEach(function(item) {
 				// each item is a map of include, exclude, boot, bootText
-				doWrite(item.boot, loaderText + writeAmd.getLayerText(0, item.include, item.exclude) + item.bootText);
+				doWrite(item.boot.dest, loaderText + writeAmd.getLayerText(0, item.include, item.exclude) + item.bootText);
 			});
+
+			writeNonmoduleLayers();
 		} catch (e) {
 			if (waitCount) {
 				// can't return the error since there are async processes already going
