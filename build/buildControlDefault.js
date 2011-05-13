@@ -93,7 +93,7 @@ define(["./buildControlBase"], function(bc) {
 					}
 					return false;
 				},
-				["read", "write"]
+				["read", "dojoPragmas", "hasFindAll", "hasFixup", "depsScan", "writeAmd"]
 			],[
 				// a test
 				function(resource, bc) {
@@ -105,9 +105,9 @@ define(["./buildControlBase"], function(bc) {
 				// ...or...
 				// marked as a package module
 				// ...or...
-				// not dojo/dojo.js, not package has module, not nls bundle, not test, not build control script, not profile script but still a Javascript resource...
+				// not dojo/dojo.js (filtered above), not package has module (filtered above), not nls bundle (filtered above), not test, not build control script, not profile script but still a Javascript resource...
 				function(resource) {
-					if ((typeof resource.tag=="undefined" || resource.tag.amd) || resource.pqn || (/\.js$/.test(resource.src) && !/\.bcs\./.test(resource.src) && !/\.profile\./.test(resource.src))) {
+					if (resource.tag.amd || resource.pqn || (/\.js$/.test(resource.src) && !/\.bcs\./.test(resource.src) && !/\.profile\./.test(resource.src))) {
 						bc.amdResources[resource.pqn]= resource;
 						return true;
 					}

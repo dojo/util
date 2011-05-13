@@ -225,6 +225,11 @@ define([
 				packageMap:pack.destPackageMap || pack.packageMap,
 				mapProg:require.computeMapProg(pack.destPackageMap)
 			};
+			delete pack.destname;
+			delete pack.destLib;
+			delete pack.destMain;
+			delete pack.destLocation;
+			delete pack.destPackageMap;
 
 			if (!pack.trees) {
 				// copy the package tree; don't copy any hidden directorys (e.g., .git, .svn) or temp files

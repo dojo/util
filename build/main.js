@@ -223,7 +223,7 @@ define(["require", "dojo/has"], function(require, has) {
 					return;
 				} //	else all processes have passed through bc.currentGate
 
-				// hold then next gate until all resources have been advised
+				// hold the next gate until all resources have been advised
 				advanceGate(bc.currentGate, true);
 				if (bc.currentGate!=bc.gates.length-1) {
 					bc.waiting++;
@@ -352,7 +352,7 @@ define(["require", "dojo/has"], function(require, has) {
 						doBuild();
 					}
 				});
-			}else{
+			}else if(bc.release){
 				doBuild();
 			}
 		}

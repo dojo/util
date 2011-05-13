@@ -80,6 +80,32 @@ define(["require", "./buildControlBase", "fs", "./fileUtils", "process"], functi
 			},
 
 			bootConfig: {
+				hasCache:{
+					"host-browser":1,
+					"dom":1,
+					"dojo-amd-factory-scan":1,
+					"dojo-loader":1,
+					"dojo-has-api":1,
+					"dojo-xhr-factory":1,
+					"dojo-inject-api":1,
+					"dojo-timeout-api":1,
+					"dojo-trace-api":1,
+					"dojo-log-api":1,
+					"dojo-loader-catches":0,
+					"dojo-dom-ready-api":1,
+					"dojo-dom-ready-plugin":1,
+					"dojo-ready-api":1,
+					"dojo-error-api":1,
+					"dojo-publish-privates":1,
+					"dojo-gettext-api":1,
+					"dojo-config-api":1,
+					"dojo-sniff":1,
+					"config-tlmSiblingOfDojo":1,
+					"dojo-sync-loader":1,
+					"dojo-test-sniff":1,
+					"dojo-xdomain-test-api":1
+				},
+
 				packages: [{
 					// note: like v1.6-, this bootstrap computes baseUrl to be the dojo directory
 					name:'dojo',
@@ -151,6 +177,7 @@ define(["require", "./buildControlBase", "fs", "./fileUtils", "process"], functi
 			}
 			var dojoPath= prefixMap.dojo= compactPath(prefixMap.dojo);
 
+
 			// make sure we have a prefix for each top-level module
 			// normalize dojo out of the non-dojo prefixes
 			for(var mid in topLevelMids){
@@ -168,6 +195,16 @@ define(["require", "./buildControlBase", "fs", "./fileUtils", "process"], functi
 					location:prefixMap[mid],
 					lib:".",
 					main:mid
+				});
+			}
+
+			// if copyTests, then add the prefix for doh
+			if(result.copyTests){
+				packages.push({
+					name:"doh",
+					location:dojoPath + "/../util/doh",
+					lib:".",
+					destLocation:"util/doh"
 				});
 			}
 
@@ -282,13 +319,6 @@ define(["require", "./buildControlBase", "fs", "./fileUtils", "process"], functi
 				}
 			};
 
-			if (result.copyTests) {
-				bc.defaultConfig.packages= [{
-					name:'doh',
-					location:'../util/doh',
-					lib:'./'
-				}];
-			}
 			return result;
 		},
 

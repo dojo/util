@@ -17,8 +17,9 @@ define([
 	"fs",
 	"../stringify",
 	"./writeAmd",
-	"spawn"
-], function(bc, fileUtils, fs, stringify, writeAmd, spawn) {
+	"spawn",
+	"dojo/text!./dojoBoot.js"
+], function(bc, fileUtils, fs, stringify, writeAmd, spawn, dojoBootText) {
 	return function(resource, callback) {
 		var
 			getUserConfig= function() {
@@ -153,11 +154,7 @@ define([
 				configText= "(" + getUserConfig() + ", " + getDefaultConfig() + ");",
 				layerText= writeAmd.getLayerText(0, bc.dojoLayer.include, bc.dojoLayer.exclude);
 			doWrite(resource.dest,
-				resource.getText() + configText + layerText +
-					"require({\n" +
-					"	 deps:['dojo'].concat(require.deps || []),\n" +
-					"	 callback:require.callback\n" +
-					"});\n"
+				resource.getText() + configText + layerText + (bc.dojoBootText || dojoBootText)
 			);
 
 			//write any bootstraps; boots is a map from dest filename to boot layer

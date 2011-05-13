@@ -91,13 +91,15 @@ define(["../buildControl", "../fileUtils", "fs"], function(bc, fileUtils, fs) {
 					cache.push("'" + p + "':function(){\n" + module.getText() + "\n}");
 				}
 			}
-			return "require({cache:{\n" + cache.join(",\n") + "}});\n" + pluginLayerText + "\n" + (resource ?	 resource.getText() : "");
+			return "require({cache:{\n" + cache.join(",\n") + "}});\n" + pluginLayerText + "\n" + (resource ? resource.getText() : "");
 		},
 
 		write= function(resource, callback) {
 			fileUtils.ensureDirectoryByFilename(resource.dest);
 			var text;
-			if(resource.layer){
+			if(resource.tag.syncNls){
+				text= resource.getText();
+			}else if(resource.layer){
 				text= getLayerText(resource, resource.layer.include, resource.layer.exclude);
 			}else{
 				text= resource.getText();

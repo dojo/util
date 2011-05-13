@@ -1,9 +1,14 @@
 define(["../buildControl"], function(bc) {
 	return function(resource) {
 		var
+			deps,
+
 			aggregateDeps= [],
 
+			defineApplied= 0,
+
 			define= function(mid, dependencies, factory) {
+				defineApplied= 1;
 				var
 					arity= arguments.length,
 					args= 0,
@@ -23,8 +28,8 @@ define(["../buildControl"], function(bc) {
 				}
 				if (!args) {
 					args= arity==1 ? [0, defaultDeps, mid] :
-													 (arity==2 ? (mid instanceof Array ? [0, mid, dependencies] : [mid, defaultDeps, dependencies]) :
-																																												[mid, dependencies, factory]);
+						(arity==2 ? (mid instanceof Array ? [0, mid, dependencies] : [mid, defaultDeps, dependencies]) :
+							[mid, dependencies, factory]);
 				}
 
 				deps= args[1];
@@ -98,13 +103,38 @@ define(["../buildControl"], function(bc) {
 				}
 			},
 
+			isObject= function(it){
+				return typeof it=="object" && !(it instanceof Array) && it!==null;
+			},
+
+			amdBundle= {},
+
+			syncBundle= {},
+
+			evalNlsResource= function(text){
+				try{
+					var f= new Function("define", resource.text);
+					f(define);
+					if(defineApplied){
+						return amdBundle;
+					}
+				}catch(e){
+				}
+				try{
+					var result= eval(text);
+					return isObject(result) ? syncBundle : 0;
+				}catch(e){
+				}
+				return 0;
+			},
+
 			processWithRegExs= function() {
 				// do it the hard (unreliable) way; first try to find "dojo.provide" et al since those names are less likely
 				// to be overloaded than "define" and "require"
 
 				// TODO: the naive regex process that's used below may fail to properly recognize the semnatics of the code.
 				// There is no way around this other than a proper tokenizer and parser. Note however, this kind of process
-				// has been in use with the v1.6- build system for a long time.
+				// has been in use with the v1.x build system for a long time.
 				// TODO: provide a way to let the build user provide an execution environment for applications like dojo.requireIf
 				var
 					// strip comments...string and regexs in the code may cause this to fail badly
@@ -113,7 +143,7 @@ define(["../buildControl"], function(bc) {
 					// look for dojo.require et al; notice that only expressions *without* parentheses are understood
 					dojoExp= /dojo\.(require|platformRequire|provide|requireLocalization|requireAfterIf|requireIf)\s*\(([\w\W]+?)\)/mg,
 
-					// string-comma-string (with optional whitespace
+					// string-comma-string with optional whitespace
 					requireLocalizationFixup= /^\s*['"][^'"]+['"]\s*,\s*['"][^'"]+['"]/,
 
 					// look for define applications with an optional string first arg and an array second arg;
@@ -139,6 +169,7 @@ define(["../buildControl"], function(bc) {
 						try {
 							if (result) {
 								dojoV1xLoaderModule= 1;
+								resource.tag.synModule= 1;
 								var f= new Function("dojo", result);
 								f(dojo);
 							}
@@ -159,7 +190,22 @@ define(["../buildControl"], function(bc) {
 						});
 					}
 
-					if (!dojoV1xLoaderModule) {
+					if(dojoV1xLoaderModule){
+						var getText= resource.getText;
+						resource.getText= function(){
+							var deps= this.deps.map(function(dep){
+								return "\"" + dep.path + "\"";
+							}).join(",");
+							// TODO: fix this for rescoping
+							var
+								scopeArgs= "dojo, dijit, dojox",
+								mid= "\"" + this.path.replace(/\//g, ".") + "\"";
+							return "define(" +
+								(bc.writeAbsMids ? mid + "," : "") +
+								"[" + deps + "], function(" + scopeArgs + "){\ndojo.getObject(" + mid + ", 1);\n" +
+								getText.call(this) + "\n});\n";
+						};
+					}else{
 						// look for AMD define
 						while((result= defineExp.exec(contents)) != null) {
 							try {
@@ -184,14 +230,55 @@ define(["../buildControl"], function(bc) {
 			};
 
 		// scan the resource for dependencies
-		if (resource.tag.amd || /\/\/>>\s*pure-amd/.test(resource.text)) {
+		if(resource.tag.nls){
+			// either a v1.x sync bundle or an AMD bundle
+			var nlsResult= evalNlsResource(resource.text);
+			if(nlsResult===syncBundle){
+				resource.tag.syncNls= 1;
+				var
+					match= resource.pqn.match(/(^.*\/nls\/)(([a-zA-Z\-]+)\/)?([^\/]+)$/),
+					prefix= match[1],
+					locale= match[3],
+					bundle= match[4];
+				if(locale){
+					var
+						rootPqn= prefix + bundle,
+						rootBundle= bc.amdResources[rootPqn];
+					if(rootBundle){
+						var localizedSet= rootBundle.localizedSet || (rootBundle.localizedSet= {});
+						localizedSet[locale]= 1;
+					}else{
+						bc.logWarn("module (" + resource.src + ") appeared to be a pre-AMD style (synchronous) i18n bundle, but there was no root bundle found.");
+					}
+				}
+
+				var getText= resource.getText;
+				resource.getText= function(){
+					var text= getText.call(this);
+					if(this.localizedSet){
+						// this is the root bundle
+						var availableLocales= [];
+						for(var p in this.localizedSet){
+							availableLocales.push("\"" + p + "\":1");
+						}
+						return "define({root:\n" + text + ",\n" + availableLocales.join(",\n") + "\n});\n";
+					}else{
+						return "define(" + text + ");";
+					}
+				};
+			}else if(nlsResult===amdBundle){
+				processPureAmdModule();
+			}else{
+				bc.logWarn("module (" + resource.src + ") appeared to be an i18n bundle, but was not; it will be copied but otherwise ignored.");
+			}
+		}else if(resource.tag.amd || /\/\/>>\s*pure-amd/.test(resource.text)) {
 			processPureAmdModule();
-		} else {
+		}else{
 			processWithRegExs();
 		}
 
 		// resolve the dependencies into modules
-		var deps= resource.deps;
+		deps= resource.deps;
 		aggregateDeps.forEach(function(dep) {
 			if (!(/(require)|(export)|(module)/.test(dep))) {
 				try {
