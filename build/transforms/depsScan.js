@@ -193,17 +193,30 @@ define(["../buildControl"], function(bc) {
 					if(dojoV1xLoaderModule){
 						var getText= resource.getText;
 						resource.getText= function(){
-							var deps= this.deps.map(function(dep){
-								return "\"" + dep.path + "\"";
-							}).join(",");
-							// TODO: fix this for rescoping
 							var
+								depsSet= {},
+								deps= ["\"dojo\"", "\"dijit\"", "\"dojox\""].concat(this.deps.map(function(dep){
+									depsSet[dep.path.replace(/\//g, ".")]= 1;
+									return "\"" + dep.path + "\"";
+								})).join(","),
+
+								// TODO: fix this for rescoping
 								scopeArgs= "dojo, dijit, dojox",
-								mid= "\"" + this.path.replace(/\//g, ".") + "\"";
+
+								mid= "\"" + this.path + "\"",
+
+								text= getText.call(this).replace(/dojo\.((require)|(provide))\s*\(\s*['"]([^'"]+)['"]\s*\)\s*;?\s*/g, function(match, unused, require, provide, id){
+									if(provide || id in depsSet){
+										return "/* builder delete begin\n" + match + "\n builder delete end */\n";
+									}else{
+										return match;
+									}
+								});
+
 							return "define(" +
 								(bc.writeAbsMids ? mid + "," : "") +
-								"[" + deps + "], function(" + scopeArgs + "){\ndojo.getObject(" + mid + ", 1);\n" +
-								getText.call(this) + "\n});\n";
+								"[" + deps + "], function(" + scopeArgs + "){\ndojo.getObject(" + mid.replace(/\//g, ".") + ", 1);\n" +
+								text + "\n});\nrequire([" + mid + "]);\n";
 						};
 					}else{
 						// look for AMD define

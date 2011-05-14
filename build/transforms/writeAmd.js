@@ -103,7 +103,7 @@ define(["../buildControl", "../fileUtils", "fs"], function(bc, fileUtils, fs) {
 				text= getLayerText(resource, resource.layer.include, resource.layer.exclude);
 			}else{
 				text= resource.getText();
-				if(resource.tag.amd && (1 || bc.insertAbsMids)){
+				if(resource.tag.amd && bc.insertAbsMids){
 					text= insertAbsMid(text, resource);
 				}
 			}

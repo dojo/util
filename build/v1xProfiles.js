@@ -193,8 +193,7 @@ define(["require", "./buildControlBase", "fs", "./fileUtils", "process"], functi
 				packages.push({
 					name:mid,
 					location:prefixMap[mid],
-					lib:".",
-					main:mid
+					lib:"."
 				});
 			}
 
