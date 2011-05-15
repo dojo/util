@@ -17,7 +17,7 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 			cssOptimize:"",
 			cssImportIgnore:"",
 			stripConsole:1,
-			copyTests:1,
+			copyTests:false,
 			mini:true,
 			xdDojoPath:"",
 			symbol:"",
@@ -197,15 +197,15 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 				});
 			}
 
-			// if copyTests, then add the prefix for doh
-			if(result.copyTests){
-				packages.push({
+			// remember the doh package info (this is done here to get the location
+			// this will be added to packages in buildControl after the command line
+			// switches are processed (remember, they're not processed here
+			result.dohPackageInfo= {
 					name:"doh",
 					location:dojoPath + "/../util/doh",
 					lib:".",
 					destLocation:"util/doh"
-				});
-			}
+			};
 
 			// resolve all the layer names into module names;
 			var

@@ -174,6 +174,16 @@ define([
 		bc.replacements= cleanSet;
 	})();
 
+
+	// if copyTests, then add the prefix for doh
+	if(bc.mini){
+		bc.copyTests= false;
+	}
+	if(bc.copyTests && !bc.packageMap.doh){
+		bc.packageMap.doh= bc.dohPackageInfo;
+	}
+
+
 	// clean up bc.packageMap and bc.paths so they can be used just as in bdLoad
 	(function() {
 		// so far, we've been using bc.packageMap to accumulate package info as it is provided by packagePaths and/or packages

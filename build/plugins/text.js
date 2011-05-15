@@ -29,7 +29,8 @@ define(["dojo/json"], function(json) {
 				filetype:filetype,
 				pqn:path+filetype,
 				deps:[],
-				getPluginLayerText:getPluginLayerText
+				getPluginLayerText:getPluginLayerText,
+				internStrings:getPluginLayerText
 			};
 		},
 
@@ -53,7 +54,9 @@ define(["dojo/json"], function(json) {
 			if (!textResource) {
 				throw new Error("text resource (" + url + ") missing");
 			}
-
+			if(bc.internStrings){
+				textResource.tag.noWrite= 1;
+			}
 			return [textPlugin, makePluginPseudoModule(textResource, moduleInfo.path, filetype)];
 		};
 

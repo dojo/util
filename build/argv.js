@@ -1,4 +1,4 @@
-define(["require", "./fs", "./fileUtils", "./process", "commandLineArgs", "./stringify", "dojo/text!./help.txt"], function(require, fs, fileUtils, process, argv, stringify, help) {
+define(["require", "dojo", "./fs", "./fileUtils", "./process", "commandLineArgs", "./stringify", "dojo/text!./help.txt"], function(require, dojo, fs, fileUtils, process, argv, stringify, help) {
 	///
 	// AMD-ID build/argv
 	//
@@ -49,6 +49,21 @@ define(["require", "./fs", "./fileUtils", "./process", "commandLineArgs", "./str
 			console.log("illegal argument value for " + argumentName + " (argument " + position + ").");
 			errorCount++;
 		},
+
+		evalScriptArg=
+			function(arg){
+				if(arg=="true"){
+					return true;
+				}else if(arg=="false"){
+					return false;
+				}else if(arg=="null"){
+					return null;
+				}else if(isNaN(arg)){
+					return dojo.fromJson("{\"result\":\"" + arg + "\"}").result;
+				}else{
+					return Number(arg);
+				}
+			},
 
 		loadBuildInfo= function(
 			filename,
@@ -225,7 +240,7 @@ define(["require", "./fs", "./fileUtils", "./process", "commandLineArgs", "./str
 						if (/htmlFiles|htmlDir|profile|profileFile/.test(parts[0])) {
 							buildControlScripts.push(parts);
 						} else {
-							result[parts[0]]= parts[1];
+							result[parts[0]]= evalScriptArg(parts[1]);
 						}
 					} else {
 						illegalArgumentValue(arg, i);

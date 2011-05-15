@@ -86,7 +86,7 @@ define(["./buildControlBase"], function(bc) {
 			],[
 				// nls resources
 				function(resource) {
-					if (/\/nls\//.test(resource.pqn) ||	 /\/nls\//.test(resource.src)) {
+					if (/\/nls\//.test(resource.pqn) ||	/\/nls\/.+\.js$/.test(resource.src)) {
 						resource.tag.nls= 1;
 						bc.amdResources[resource.pqn]= resource;
 						return true;
@@ -97,7 +97,7 @@ define(["./buildControlBase"], function(bc) {
 			],[
 				// a test
 				function(resource, bc) {
-					return resource.tag.test;
+					return bc.copyTests && resource.tag.test;
 				},
 				["read", "write"]
 			],[
@@ -127,9 +127,9 @@ define(["./buildControlBase"], function(bc) {
 				},
 				["read", "compactCss", "writeCss"]
 			],[
-				// just copy everything else...
+				// just copy everything else except tests which were copied above iff desired...
 				function(resource) {
-					return true;
+					return !resource.tag.test;
 				},
 				["copy"]
 			]

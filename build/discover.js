@@ -16,6 +16,15 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify"], function(bc, fi
 		compactPath= fileUtils.compactPath,
 
 		start= function(resource) {
+			// this algorithm, along with the whole idea of copyTests and mini, is very loose and prone to unintended side-effects
+			// TODO: reconsider copyTests and mini
+			if(!bc.copyTests && /\/tests\//.test(resource.src)){
+				return;
+			}
+			if(bc.mini && /\/demos\/|tests\.js|dijit\/bench|dijit\/themes\/themeTest|(\.php$)/.test(resource.src)){
+				return;
+			}
+
 			if (!resource.tag) {
 				resource.tag= {};
 			}

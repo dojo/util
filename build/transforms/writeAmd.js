@@ -94,6 +94,18 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 			return "require({cache:{\n" + cache.join(",\n") + "}});\n" + pluginLayerText + "\n" + (resource ? resource.getText() : "");
 		},
 
+		getStrings= function(
+			resource
+		){
+			var result= "";
+			resource.deps.forEach(function(dep){
+				if(dep.internStrings){
+					result+= dep.internStrings();
+				}
+			});
+			return result;
+		},
+
 		write= function(resource, callback) {
 			fileUtils.ensureDirectoryByFilename(resource.dest);
 			var text;
@@ -102,7 +114,7 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 			}else if(resource.layer){
 				text= getLayerText(resource, resource.layer.include, resource.layer.exclude);
 			}else{
-				text= resource.getText();
+				text= (bc.internStrings ? getStrings(resource) : "") + resource.getText();
 				if(resource.tag.amd && bc.insertAbsMids){
 					text= insertAbsMid(text, resource);
 				}
