@@ -7,5 +7,3 @@ define(["../buildControl", "../fileUtils", "fs", "../replace"], function(bc, fil
 		return callback;
 	};
 });
-
- 

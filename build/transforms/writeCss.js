@@ -1,16 +1,16 @@
 ///
 // \amd-mid build/transforms/writeCssResources
-// 
+//
 // A function to compact CSS resources.
-// 
-// 
+//
+//
 define(["../buildControl", "../fileUtils", "fs"], function(bc, fileUtils, fs) {
 	return function(resource, callback) {
 		var
 			waitCount= 0,
-	
+
 			errors= [],
-	 
+
 			onWriteComplete= function(err) {
 				if (err) {
 					errors.push(err);
@@ -19,7 +19,7 @@ define(["../buildControl", "../fileUtils", "fs"], function(bc, fileUtils, fs) {
 					callback(resource, errors.length && errors);
 				}
 			},
-	
+
 			doWrite= function(filename, text, encoding) {
 				fileUtils.ensureDirectoryByFilename(filename);
 				waitCount++;
@@ -28,7 +28,7 @@ define(["../buildControl", "../fileUtils", "fs"], function(bc, fileUtils, fs) {
 			},
 
 			wroteExterns= 0;
-	
+
 		try {
 			doWrite(resource.dest, resource.text);
 			if (resource.compactDest!=resource.dest) {
@@ -43,9 +43,9 @@ define(["../buildControl", "../fileUtils", "fs"], function(bc, fileUtils, fs) {
 			// bc.destDirToExternSet is a map from dest directory name to resourceSet;
 			// resourceSet is a map from src filename (complete with path) to dest filename (name only)
 			// bc.destDirToExternSet[dir][src]= dest implies copy filename src to dir + "/" + dest
-			var 
+			var
 				destDirToExternSet= bc.destDirToExternSet,
-				dir, resourceSet, src;		
+				dir, resourceSet, src;
 			for (dir in destDirToExternSet) {
 				resourceSet= destDirToExternSet[dir];
 				for (src in resourceSet) {
