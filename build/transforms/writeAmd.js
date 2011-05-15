@@ -1,4 +1,4 @@
-define(["../buildControl", "../fileUtils", "fs"], function(bc, fileUtils, fs) {
+define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs) {
 	var
 		computeLayerContents= function(
 			layerModule,

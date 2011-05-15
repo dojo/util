@@ -1,8 +1,8 @@
-define(["../buildControl", "../fileUtils", "fs", "../replace"], function(bc, fileUtils, fs, replace) {
+define(["../buildControl", "../fileUtils", "../fs", "../replace"], function(bc, fileUtils, fs, replace) {
 	var
 		getFiletype= fileUtils.getFiletype,
 
-		encodingMap= 
+		encodingMap=
 			// map from file type to encoding
 			(bc.transformConfig.read && bc.transformConfig.read.encoding) || {
 				css:"utf8",
@@ -22,7 +22,7 @@ define(["../buildControl", "../fileUtils", "fs", "../replace"], function(bc, fil
 				png:undefined,
 				jpg:undefined
 			};
-		
+
 	return function(resource, callback) {
 		resource.getText= function() {
 			if (!this.replacementsApplied) {
@@ -34,7 +34,7 @@ define(["../buildControl", "../fileUtils", "fs", "../replace"], function(bc, fil
 			return this.text;
 		};
 
-		var 
+		var
 			filetype= getFiletype(resource.src, 1),
 			// the expression is a little odd since undefined is a legitimate encodingMap value
 			encoding= resource.encoding || (!(filetype in encodingMap) && "utf8") || encodingMap[filetype];

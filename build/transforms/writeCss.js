@@ -4,7 +4,7 @@
 // A function to compact CSS resources.
 //
 //
-define(["../buildControl", "../fileUtils", "fs"], function(bc, fileUtils, fs) {
+define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs) {
 	return function(resource, callback) {
 		var
 			waitCount= 0,

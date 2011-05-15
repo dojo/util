@@ -14,12 +14,12 @@
 define([
 	"../buildControl",
 	"../fileUtils",
-	"fs",
+	"../fs",
 	"../stringify",
 	"./writeAmd",
-	"spawn",
+	"../process",
 	"dojo/text!./dojoBoot.js"
-], function(bc, fileUtils, fs, stringify, writeAmd, spawn, dojoBootText) {
+], function(bc, fileUtils, fs, stringify, writeAmd, process, dojoBootText) {
 	return function(resource, callback) {
 		var
 			getUserConfig= function() {
@@ -113,7 +113,7 @@ define([
 					errors.push(err);
 				}
 				if (!err && bc.layerOptimize && 0) {
-					var proc= spawn("java", ["-jar", "/home/rcgill/dev/ccompiler/compiler.jar", "--compilation_level", "SIMPLE_OPTIMIZATIONS", "--js", resource.dest+".uncompressed.js", "--js_output_file", resource.dest]).on("exit", onCompressComplete);
+					var proc= process.spawn("java", ["-jar", "/home/rcgill/dev/ccompiler/compiler.jar", "--compilation_level", "SIMPLE_OPTIMIZATIONS", "--js", resource.dest+".uncompressed.js", "--js_output_file", resource.dest]).on("exit", onCompressComplete);
 					proc.stdout.on('data', function (data) {
 						console.log(data.toString("ascii"));
 					});

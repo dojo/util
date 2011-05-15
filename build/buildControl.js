@@ -1,14 +1,13 @@
 define([
 	"require",
 	"./argv",
-	"fs",
+	"./fs",
 	"./fileUtils",
 	"./buildControlDefault",
 	"./v1xProfiles",
 	"./stringify",
-	"process",
-	"exec",
-	"dojo/text!./help.txt"], function(require, args, fs, fileUtils, bc, v1xProfiles, stringify, process, exec, helpText) {
+	"./process",
+	"dojo/text!./help.txt"], function(require, args, fs, fileUtils, bc, v1xProfiles, stringify, process, helpText) {
 	//
 	// Process the arguments given on the command line to build up a build control object that is used to instruct and control
 	// the build process.
@@ -18,7 +17,7 @@ define([
 	// a whole bunch of imperative programming.
 	//
 
-	eval(require.scopeify("fs, ./fileUtils, ./v1xProfiles"));
+	eval(require.scopeify("./fs, ./fileUtils, ./v1xProfiles"));
 	var
 		isString= function(it) {
 			return typeof it === "string";

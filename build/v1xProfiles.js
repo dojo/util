@@ -1,5 +1,5 @@
-define(["require", "./buildControlBase", "fs", "./fileUtils", "process"], function(require, bc, fs, fileUtils, process) {
-	eval(require.scopeify("fs, ./fileUtils"));
+define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], function(require, bc, fs, fileUtils, process) {
+	eval(require.scopeify("./fs, ./fileUtils"));
 	var
 		defaultBuildProps= {
 			// v1.6- default values

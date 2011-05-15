@@ -1,4 +1,4 @@
-define(["fs"], function(fs) {
+define(["./fs"], function(fs) {
 	var cached= {};
 
 	return function(contents, replacement) {
@@ -16,7 +16,7 @@ define(["fs"], function(fs) {
 		// at this point, encoding has been determined and replacement is a vector of [search, replacement, type] triples
 
 		replacement.forEach(function(item) {
-			var 
+			var
 				searchText= item[0],
 				replacementText= item[1],
 				type= item[2];
@@ -31,7 +31,7 @@ define(["fs"], function(fs) {
 				contents= searchText(contents);
 			} else {
 				// replace all occurences of searchText with replacementText
-				var 
+				var
 					searchTextLength= searchText.length,
 					replacementTextLength= replacementText.length,
 					start= contents.indexOf(searchText);
@@ -45,4 +45,3 @@ define(["fs"], function(fs) {
 	};
 });
 
- 

@@ -1,4 +1,4 @@
-define(["fs", "./buildControlBase"], function(fs, bc) {
+define(["./fs", "./buildControlBase"], function(fs, bc) {
 	var
 		getFilename= function(filename) {
 			if (/\//.test(filename)) {

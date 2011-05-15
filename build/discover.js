@@ -1,4 +1,4 @@
-define(["./buildControl", "./fileUtils", "fs", "./stringify"], function(bc, fileUtils, fs, stringify) {
+define(["./buildControl", "./fileUtils", "./fs", "./stringify"], function(bc, fileUtils, fs, stringify) {
 	// find all files as given by files, dirs, trees, and packages
 	var
 		files=

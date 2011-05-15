@@ -37,74 +37,15 @@ define(["require", "dojo/has"], function(require, has) {
 	// host-dependent environment initialization
 	if (has("host-node")) {
 		console.log("running under node.js");
-		define("fs", [], require.nodeRequire("fs"));
-		define("process", [], function(){ return process; });
 		define("commandLineArgs", function() {
 			//arg[0] is node; argv[1] is dojo.js; therefore, start with argv[2]
 			return process.argv.slice(2);
-		});
-		var spawn= require.nodeRequire("child_process").spawn;
-		define("spawn", [], function() {
-			return spawn;
-		});
-
-
-		define("exec", function() {
-			var
-				count= 0,
-				max= 100,
-				queue= [],
-				runQ= function(){
-					if(queue.length){
-						(queue.shift())();
-					}else{
-						count--;
-					}
-				};
-
-			return function() {
-				// signature is (command, arg1, ..., argn, callback)
-				for(var command= arguments[0], args= [], i= 1; i<arguments.length-1; i++){
-					args.push(arguments[i]);
-				}
-				var
-					callback= arguments[i],
-					exec= function(){
-						var
-							text= "",
-							process= spawn(command, args);
-						process.on("exit", function(code){
-							runQ();
-							callback && callback(code, text);
-						});
-						process.stdout.on("data", function(data){
-							text+= data;
-						});
-						process.stderr.on("data", function(data){
-							text+= data;
-						});
-					};
-
-
-				if(count<max){
-					count++;
-					exec();
-				}else{
-					queue.push(exec);
-				}
-			};
 		});
 
 		// helps during dev...
 		debug= require.debug;
 	} else if (has("host-rhino")) {
 		console.log("running under rhino");
-		define("fs", ["build/rhino/fs"], function(fs){ return fs; });
-		define("process", ["build/rhino/process"], function(process){ return process; });
-		define("spawn", [], function() {
-			// TODO
-			return 0;
-		});
 		define("commandLineArgs", [], function() {
 			var result= [];
 			require.commandLineArgs.forEach(function(item) {
@@ -114,16 +55,6 @@ define(["require", "dojo/has"], function(require, has) {
 				}
 			});
 			return result;
-		});
-		define("exec", function() {
-			return function() {
-				// signature is (command, arg1, ..., argn, callback)
-				for(var args= [], i= 0; i<arguments.length-1; i++){
-					args.push(arguments[i]);
-				}
-				var callback= arguments[i];
-				callback(runCommand.apply(this, args));
-			};
 		});
 	} else {
 		console.log("unknown environment; terminating.");
@@ -143,7 +74,7 @@ define(["require", "dojo/has"], function(require, has) {
 	};
 
 	// run the build program
-	require(["./buildControl", "exec"], function(bc, exec) {
+	require(["./buildControl", "./process"], function(bc, process) {
 		var
 			transforms= bc.transforms,
 			transformJobs= bc.transformJobs,
@@ -289,6 +220,7 @@ define(["require", "dojo/has"], function(require, has) {
 			}
 			bc.plugins= {};
 			require(deps, function() {
+try{
 				// pull out the discovery procedures
 				for (var discoveryProcs= [], argsPos= 0; argsPos<bc.discoveryProcs.length; discoveryProcs.push(arguments[argsPos++]));
 
@@ -328,6 +260,9 @@ define(["require", "dojo/has"], function(require, has) {
 				}
 				// release the gate lock set above
 				passGate();
+}catch(e){
+debug(e);
+}
 			});
 		}
 
@@ -344,7 +279,7 @@ define(["require", "dojo/has"], function(require, has) {
 					command= "echo";
 					flags= "-Rf";
 				}
-				exec(command, flags, bc.destBasePath, function(code, text){
+				process.exec(command, flags, bc.destBasePath, function(code, text){
 					if(code){
 						text && bc.logError(text);
 						bc.logError("failed to delete old tree;  command was \"" + command + " " + flags + " " + bc.destBasePath + "\"");

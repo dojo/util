@@ -1,4 +1,4 @@
-define(["require", "fs", "./fileUtils", "process", "commandLineArgs", "./stringify", "dojo/text!./help.txt"], function(require, fs, fileUtils, process, argv, stringify, help) {
+define(["require", "./fs", "./fileUtils", "./process", "commandLineArgs", "./stringify", "dojo/text!./help.txt"], function(require, fs, fileUtils, process, argv, stringify, help) {
 	///
 	// AMD-ID build/argv
 	//
