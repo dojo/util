@@ -118,9 +118,15 @@ define([
 					processHtmlFiles(item[1].split(","));
 					break;
 				case "profile":
-					item= processProfileFile(require.baseUrl + "../util/buildscripts/profiles/" + item[1] + ".profile.js", args);
+					// more relaxed than v1.6-; if it looks like a file, assume the profileFile behavior; this makes profileFile redundant
+					if(/\//.test(item[1])){
+						item= processProfileFile(item[1], args);
+					}else{
+						item= processProfileFile(require.baseUrl + "../util/buildscripts/profiles/" + item[1] + ".profile.js", args);
+					}
 					break;
 				case "profileFile":
+					bc.logInfo("the \"profileFile\" switch has been deprecated\n\"profile\" can now be used with either profile names (pointing to profiles in the util/buildscripts/profile directory) or filenames (pointing explicitly to the file given)");
 					item= processProfileFile(item[1], args);
 					break;
 			}
