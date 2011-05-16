@@ -311,10 +311,7 @@ define([
 				layer.exclude= layer.exclude || [];
 				layer.include= layer.include || [];
 			}
-// boot is now just boolean to say "prefix with the loader"
-//			if (layer.boot) {
-//				layer.boot= computePath(layer.boot, bc.destBasePath);
-//			};
+			// boot is just boolean to say "prefix with the loader"
 			fixedLayers[mid]= layer;
 		}
 		bc.layers= fixedLayers;
@@ -360,7 +357,6 @@ define([
 		// doing a complete build; therefore, autoclean unless told otherwise
 		bc.clean= true;
 	}
-
 
 	// understand stripConsole from dojo 1.3 and before
 	var stripConsole= bc.stripConsole;

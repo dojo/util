@@ -112,13 +112,8 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 					location:'.',
 					lib:'.'
 				}]
-			},
-
-			dojoLayer: {
-				include:["dojo"],
-				exclude:[]
 			}
-		},
+		};
 
 		processProfile= function(profile, args) {
 			// process a v1.6- profile
@@ -233,7 +228,7 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 			});
 
 
-			var fixedLayers= {};
+			var fixedLayers= {"dojo/dojo": {include:["dojo"], exclude:[]}};
 			layers.forEach(function(layer) {
 				var
 					mid= layerNameToLayerMid[layer.name],
@@ -247,7 +242,11 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 							return mid;
 						})
 					};
-				if (mid!="dojo") {
+				if(mid=="dojo/dojo"){
+					if(!layer.customBase){
+						result.include.push("dojo");
+					}
+				}else{
 					result.exclude.push("dojo");
 				}
 				if (layer.discard) {
@@ -262,6 +261,7 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 				fixedLayers[mid]= result;
 			});
 			result.layers= fixedLayers;
+
 
 			if (profile.basePath===undefined) {
 				profile.basePath= compactPath(catPath(require.baseUrl, "../util/buildscripts"));

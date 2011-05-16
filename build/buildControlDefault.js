@@ -68,8 +68,8 @@ define(["./buildControlBase"], function(bc) {
 				function(resource, bc) {
 					if (resource.pqn=="dojo*dojo") {
 						bc.loader= resource;
-						resource.layer= bc.dojoLayer;
 						resource.boots= [];
+						bc.amdResources[resource.pqn]= resource;
 						return true;
 					}
 					return false;

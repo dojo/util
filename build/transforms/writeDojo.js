@@ -119,7 +119,7 @@ define([
 			// the default application to the loader constructor is replaced with purpose-build user and default config values
 			var
 				configText= "(" + getUserConfig() + ", " + getDefaultConfig() + ");",
-				layerText= resource.layerText= writeAmd.getLayerText(0, bc.dojoLayer.include, bc.dojoLayer.exclude),
+				layerText= resource.layerText= writeAmd.getLayerText(0, resource.layer.include, resource.layer.exclude),
 				dojoLayerText= resource.layerText= resource.getText() + configText + layerText + (bc.dojoBootText || dojoBootText);
 			doWrite(writeAmd.getDestFilename(resource), dojoLayerText);
 			//write any bootstraps; boots is a vector of resources that have been marked as bootable by the discovery process
