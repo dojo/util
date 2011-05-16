@@ -1,0 +1,233 @@
+define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has"], function(bc, process, fs, fileUtils, has) {
+
+	// default to a no-op
+	var compile= function(){};
+
+	if(has("host-rhino") && (bc.optimize || bc.layerOptimize)){
+		function sscompile(text, dest, optimizeSwitch, copyright){
+			// decode the optimize switch
+			var
+				options= optimizeSwitch.split("."),
+				comments= 0,
+				keepLines= 0,
+				strip= null;
+			while(options.length){
+				switch(options.pop()){
+				case "normal":
+					strip= "normal";
+					break;
+				case "warn":
+					strip= "warn";
+					break;
+				case "all":
+					strip= "all";
+					break;
+				case "keeplines":
+					keepLines= 1;
+					break;
+				case "comments":
+					comments= 1;
+					break;
+				}
+			}
+
+			//Use rhino to help do minifying/compressing.
+			var context = Packages.org.mozilla.javascript.Context.enter();
+			try{
+				// Use the interpreter for interactive input (copied this from Main rhino class).
+				context.setOptimizationLevel(-1);
+
+				if(comments){
+					//Strip comments
+					var script = context.compileString(text, dest, 1, null);
+					text = new String(context.decompileScript(script, 0));
+
+					//Replace the spaces with tabs.
+					//Ideally do this in the pretty printer rhino code.
+					text = text.replace(/    /g, "\t");
+				}else{
+					//Apply compression using custom compression call in Dojo-modified rhino.
+					text = new String(Packages.org.dojotoolkit.shrinksafe.Compressor.compressScript(text, 0, 1, strip));
+					if(!keepLines){
+						text = text.replace(/[\r\n]/g, "");
+					}
+				}
+			}finally{
+				Packages.org.mozilla.javascript.Context.exit();
+			}
+			return copyright + text;
+		}
+
+		var JSSourceFilefromCode, closurefromCode, jscomp= 0;
+		function ccompile(text, dest, optimizeSwitch, copyright){
+			if(!jscomp){
+				// don't do this unless demanded...it may not be available
+				JSSourceFilefromCode=java.lang.Class.forName('com.google.javascript.jscomp.JSSourceFile').getMethod('fromCode',[java.lang.String,java.lang.String]);
+				closurefromCode = function(filename,content){
+					return JSSourceFilefromCode.invoke(null,[filename,content]);
+				};
+				jscomp = com.google.javascript.jscomp;
+			}
+			//Fake extern
+			var externSourceFile = closurefromCode("fakeextern.js", " ");
+
+			//Set up source input
+			var jsSourceFile = closurefromCode(String(dest), String(text));
+
+			//Set up options
+			var options = new jscomp.CompilerOptions();
+			options.prettyPrint = optimizeSwitch.indexOf(".keepLines") !== -1;
+
+			var FLAG_compilation_level = jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS;
+			FLAG_compilation_level.setOptionsForCompilationLevel(options);
+			var FLAG_warning_level = jscomp.WarningLevel.DEFAULT;
+			FLAG_warning_level.setOptionsForWarningLevel(options);
+
+			//Run the compiler
+			var compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
+			var result = compiler.compile(externSourceFile, jsSourceFile, options);
+			return copyright + compiler.toSource();
+		}
+
+		compile= function(resource, text, optimizeSwitch, callback){
+			bc.logInfo("optimizing " + resource.dest);
+			var result;
+			if(/closure/.test(optimizeSwitch)){
+				result= ccompile(stripConsoleRe ? text.replace(stripConsoleRe, "0 && $&") : text, resource.dest, optimizeSwitch, "");
+			}else{
+				result= sscompile(text, resource.dest, optimizeSwitch, "");
+			}
+			fs.writeFile(resource.dest, result, resource.encoding, function(err){
+				if(err){
+					bc.logError("failed to write optimized file (" + result.dest + ")");
+				}
+				callback(resource, err);
+			});
+			return callback;
+		};
+	}
+
+	if(has("host-node") && (bc.optimize || bc.layerOptimize)){
+		// start up a few processes to compensate for the miserably slow closure compiler
+		var
+			processesStarted= 0,
+			totalClosureOutput= "",
+			nextProcId= 0,
+			sendJob= function(src, dest, optimizeSwitch, copyright){
+				processes[nextProcId++].write(src, dest, optimizeSwitch, copyright);
+				nextProcId= nextProcId % bc.maxOptimizationProcesses;
+			},
+			tempFileDirs= {},
+			doneRe= /^Done\s\(compile\stime.+$/m;
+		for(var processes= [], i= 0; i<bc.maxOptimizationProcesses; i++) {(function(){
+			var
+				runner= require.nodeRequire("child_process").spawn("java", ["-cp", "../closureCompiler/compiler.jar:../shrinksafe/js.jar:../shrinksafe/shrinksafe.jar", "org.mozilla.javascript.tools.shell.Main", "../build/optimizeRunner.js"]),
+				proc= {
+					runner:runner,
+					results:"",
+					tempResults:"",
+					sent:[],
+					write:function(src, dest, optimizeSwitch, copyright){
+						proc.sent.push(dest);
+						runner.stdin.write(src + "\n" + dest + "\n" + optimizeSwitch + "\n" + copyright + "\n");
+					}
+				};
+			processesStarted++; // matches *3*
+			runner.stdout.on("data", function(data){
+				proc.tempResults+= data;
+				var match, message, chunkLength;
+				while((match= proc.tempResults.match(doneRe))){
+					message= match[0];
+					bc.logInfo(proc.sent.shift() + ":" + message);
+					chunkLength= match.index + message.length;
+					proc.results= proc.tempResults.substring(0, chunkLength);
+					proc.tempResults= proc.tempResults.substring(chunkLength);
+				}
+			}),
+			runner.stderr.on("data", function(data){
+				proc.results+= data;
+			});
+			runner.on("exit", function(code){
+				// TODO: figure out how to stop closure compiler from emmitting this drivel
+				totalClosureOutput+= proc.results.
+					replace(/\n[^\n]+com.google.javascript.jscomp.PhaseOptimizer[^\n]+\n[^\n]+/g, "").
+					replace(/\n[^\n]+com.google.javascript.jscomp.Compiler[^\n]+\n[^\n]+/g, "");
+				if(bc.showClosureOutput){
+					//bc.logInfo(totalClosureOutput);
+				}else{
+					//bc.messages.push(totalClosureOutput);
+				}
+				processesStarted--; // matches *3*
+				if(!processesStarted){
+/*
+					 for(var p in tempFileDirs){
+						 bc.waiting++;  // matched with *2*
+						 var command= has("is-windows") ? "del" : "rm";
+						 process.exec(command, p + "/*consoleStripped*", function(code, text){
+							 if(code){
+								 text && bc.logError(text);
+								 bc.logError("failed to delete temporary files");
+							 }
+							 bc.passGate(); // matched with *2*
+						 });
+
+					}
+*/
+					bc.passGate(); // matched with *1*
+				}
+			});
+			processes.push(proc);
+		})();}
+
+		bc.gateListeners.push(function(gate){
+			if(gate=="cleanup"){
+				// going through the cleanup gate signals that all optimizations have been started;
+				// we now signal the runner there are no more files and wait for the runner to stop
+				bc.logInfo("waiting for the optimizer runner to finish...");
+				bc.waiting++;  // matched with *1*
+				processes.forEach(function(proc){
+					proc.write(".\n");
+				});
+			}
+		});
+
+		var stripConsoleRe= 0;
+		if(bc.stripConsole){
+			var consoleMethods= "assert|count|debug|dir|dirxml|group|groupEnd|info|profile|profileEnd|time|timeEnd|trace|log";
+			if(bc.stripConsole=="warn"){
+				consoleMethods+= "|warn";
+			}else if(bc.stripConsole=="all"){
+				consoleMethods+= "|warn|error";
+			}
+			stripConsoleRe= new RegExp("console\\.(" + consoleMethods + ")\\s*\\(", "g");
+		}
+
+		compile= function(resource, text, optimizeSwitch, callback){
+			if(stripConsoleRe && /closure/.test(optimizeSwitch)){
+				var tempFilename= resource.dest + ".consoleStripped.js";
+				text= text.replace(stripConsoleRe, "0 && $&");
+				tempFileDirs[fileUtils.getFilepath(tempFilename)]= 1;
+				fs.writeFile(tempFilename, text, resource.encoding, function(err){
+					if(!err){
+						sendJob(tempFilename, resource.dest, optimizeSwitch, "");
+					}
+					callback(resource, err);
+				});
+				return callback;
+			}else{
+				sendJob(resource.dest + ".uncompressed.js", resource.dest, optimizeSwitch, "");
+				return 0;
+			}
+		};
+	}
+
+	return function(resource, callback) {
+		if(bc.optimize && !resource.layerText){
+			return compile(resource, resource.getText(), bc.optimize, callback);
+		}else if(bc.layerOptimize && resource.layerText){
+			return compile(resource, resource.layerText, bc.layerOptimize, callback);
+		}else{
+			return 0;
+		}
+	};
+});

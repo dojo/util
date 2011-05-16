@@ -79,9 +79,13 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 			include,
 			exclude
 		) {
+
 			var
 				cache= [],
 				pluginLayerText= "",
+				//moduleSet= computeLayerContents(resource, include, exclude);
+				moduleSet;
+
 				moduleSet= computeLayerContents(resource, include, exclude);
 			for (var p in moduleSet) {
 				var module= moduleSet[p];
@@ -106,25 +110,39 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 			return result;
 		},
 
+		getDestFilename= function(resource){
+			if((resource.layer && bc.layerOptimize) || (!resource.layer && bc.optimize)){
+				return resource.dest + ".uncompressed.js";
+			}else{
+				return resource.dest;
+			}
+		},
+
 		write= function(resource, callback) {
 			fileUtils.ensureDirectoryByFilename(resource.dest);
 			var text;
 			if(resource.tag.syncNls){
 				text= resource.getText();
 			}else if(resource.layer){
-				text= getLayerText(resource, resource.layer.include, resource.layer.exclude);
+				if(resource.layer.boot){
+					// recall resource.layer.boot layers are written by the writeDojo transform
+					return 0;
+				}
+				text= resource.layerText= getLayerText(resource, resource.layer.include, resource.layer.exclude);
 			}else{
 				text= (bc.internStrings ? getStrings(resource) : "") + resource.getText();
 				if(resource.tag.amd && bc.insertAbsMids){
 					text= insertAbsMid(text, resource);
 				}
+				resource.text= text;
 			}
-			fs.writeFile(resource.dest, text, resource.encoding, function(err) {
+			fs.writeFile(getDestFilename(resource), text, resource.encoding, function(err) {
 				callback(resource, err);
 			});
 			return callback;
 		};
 		write.getLayerText= getLayerText;
+		write.getDestFilename= getDestFilename;
 
 		return write;
 });

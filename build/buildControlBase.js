@@ -16,6 +16,9 @@ define(["dojo", "./stringify"], function(dojo, stringify) {
 		warnCount:0,
 		messages:[],
 
+		closureCompilerPath:"../closureCompiler/compiler.jar",
+		maxOptimizationProcesses:5,
+
 		writeln:function(text) {
 			bc.messages.push(text);
 			console.log(text);
@@ -38,10 +41,12 @@ define(["dojo", "./stringify"], function(dojo, stringify) {
 		},
 
 		logWarn: function() {
+			bc.warnCount++;
 			bc.log("WARN: ", arguments);
 		},
 
 		logError: function() {
+			bc.errorCount++;
 			bc.log("ERROR: ", arguments);
 		}
 	};

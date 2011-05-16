@@ -248,7 +248,7 @@ define([
 
 			if (!pack.trees) {
 				// copy the package tree; don't copy any hidden directorys (e.g., .git, .svn) or temp files
-				pack.trees= [[pack.location, destPack.location, "/\\.", "\\.\\*~"]];
+				pack.trees= [[pack.location, destPack.location, "/\\.", "~$"]];
 			} // else the user has provided explicit copy instructions
 
 			// filenames, dirs, trees just like global, except relative to the pack.(src|dest)Location
@@ -325,7 +325,7 @@ define([
 	// for the static has flags, -1 means its not static; this gives a way of combining several static has flag sets
 	// and still allows later sets to delete flags set in earlier sets
 	var deleteStaticHasFlagSet= [];
-	for (p in bc.staticHasFeatures) if (bc.staticHasFeatures[p]==-1) deleteStaticHasFlagSet.push(p);
+	for (var p in bc.staticHasFeatures) if (bc.staticHasFeatures[p]==-1) deleteStaticHasFlagSet.push(p);
 	deleteStaticHasFlagSet.forEach(function(flag){delete bc.staticHasFeatures[flag];});
 
 	if(bc.action){
@@ -352,6 +352,50 @@ define([
 	if(!bc.check && !bc.clean && !bc.release){
 		bc.logError("nothing to do; you must explicitly instruct the application to do something; use the option --help for help");
 		process.exit(0);
+	}
+
+	if(bc.clean!==undefined && !bc.clean){
+		// user said do NOT clean; honor that
+	}else if(bc.release && !bc.buildLayers){
+		// doing a complete build; therefore, autoclean unless told otherwise
+		bc.clean= true;
+	}
+
+
+	// understand stripConsole from dojo 1.3 and before
+	var stripConsole= bc.stripConsole;
+	if (!stripConsole || stripConsole=="none") {
+		stripConsole= false;
+	} else if (stripConsole == "normal,warn") {
+		bc.logWarn("stripConsole value \"normal,warn\" replaced with \"warn\".  Please update your build scripts.");
+		stripConsole = "warn";
+	} else if (stripConsole == "normal,error") {
+		bc.logWarn("stripConsole value \"normal,error\" replaced with \"all\".  Please update your build scripts.");
+		stripConsole = "all";
+	} else if (!/normal|warn|all|none/.test(stripConsole)){
+		bc.logError("invalid stripConsole value: " + stripConsole);
+	}
+	bc.stripConsole= stripConsole;
+
+	if(bc.optimize){
+		bc.optimize= bc.optimize.toLowerCase();
+		if(!/^(comments|shrinksafe(\.keeplines)?|closure(\.keeplines)?)$/.test(bc.optimize)){
+			bc.logError("unrecognized optimize switch (" + bc.optimize + ") must be one of 'comments', 'shrinksafe', 'shrinksafe.keeplines', 'closure'; use the option --help for help");
+		}else{
+			if(/shrinksafe/.test(bc.optimize) && stripConsole){
+				bc.optimize+= "." + stripConsole;
+			}
+		}
+	}
+	if(bc.layerOptimize){
+		bc.layerOptimize= bc.layerOptimize.toLowerCase();
+		if(!/^(comments|shrinksafe(\.keeplines)?|closure(\.keeplines)?)$/.test(bc.layerOptimize)){
+			bc.logError("unrecognized layerOptimize switch (" + bc.layerOptimize + ") must be one of 'comments', 'shrinksafe', 'shrinksafe.keeplines', 'closure'; use the option --help for help");
+		}else{
+			if(/shrinksafe/.test(bc.layerOptimize) && stripConsole){
+				bc.layerOptimize+= "." + stripConsole;
+			}
+		}
 	}
 
 	// dump bc (if requested) before changing gateNames to gateIds below

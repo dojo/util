@@ -9,7 +9,7 @@ define(["../buildControl", "../stringify"], function(bc, stringify) {
 			resource= bc.resources[p];
 			if (resource.deps && !resource.test && !/\/nls\//.test(resource.src) && resource.pqn!="dojo*_base" && resource.pqn!="dojo*_base/browser" && (resource.pqn=="dojo*main" || /_base/.test(resource.pqn))) {
 				resource.deps.forEach(function(module){
-					console.log('"' + resource.path + '" -> "' + module.path + '";');
+					//console.log('"' + resource.path + '" -> "' + module.path + '";');
 				});
 				resource.uid= i;
 				midToId[bc.resources[p].path]= i;

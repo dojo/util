@@ -1,7 +1,7 @@
 define([], function(){
 	var
 		count= 0,
-		max= 20,
+		max= 10,
 		queue= [];
 	return {
 		release: function(){

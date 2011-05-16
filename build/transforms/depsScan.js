@@ -136,6 +136,7 @@ define(["../buildControl"], function(bc) {
 				// There is no way around this other than a proper tokenizer and parser. Note however, this kind of process
 				// has been in use with the v1.x build system for a long time.
 				// TODO: provide a way to let the build user provide an execution environment for applications like dojo.requireIf
+				// TODO: add scanning for dojo.cache for intern strings support of old-style modules
 				var
 					// strip comments...string and regexs in the code may cause this to fail badly
 					contents= resource.text.replace(/(\/\*([\s\S]*?)\*\/|\/\/(.*)$)/mg , ""),
@@ -193,30 +194,33 @@ define(["../buildControl"], function(bc) {
 					if(dojoV1xLoaderModule){
 						var getText= resource.getText;
 						resource.getText= function(){
-							var
-								depsSet= {},
-								deps= ["\"dojo\"", "\"dijit\"", "\"dojox\""].concat(this.deps.map(function(dep){
-									depsSet[dep.path.replace(/\//g, ".")]= 1;
-									return "\"" + dep.path + "\"";
-								})).join(","),
+							if (!this.replacementsApplied) {
+								this.replacementsApplied= true;
+								var
+									depsSet= {},
+									deps= ["\"dojo\"", "\"dijit\"", "\"dojox\""].concat(this.deps.map(function(dep){
+										depsSet[dep.path.replace(/\//g, ".")]= 1;
+										return "\"" + dep.path + "\"";
+									})).join(","),
 
-								// TODO: fix this for rescoping
-								scopeArgs= "dojo, dijit, dojox",
+									// TODO: fix this for rescoping
+									scopeArgs= "dojo, dijit, dojox",
 
-								mid= "\"" + this.path + "\"",
+									mid= "\"" + this.path + "\"",
 
-								text= getText.call(this).replace(/dojo\.((require)|(provide))\s*\(\s*['"]([^'"]+)['"]\s*\)\s*;?\s*/g, function(match, unused, require, provide, id){
-									if(provide || id in depsSet){
-										return "/* builder delete begin\n" + match + "\n builder delete end */\n";
-									}else{
-										return match;
-									}
-								});
-
-							return "define(" +
-								(bc.writeAbsMids ? mid + "," : "") +
-								"[" + deps + "], function(" + scopeArgs + "){\ndojo.getObject(" + mid.replace(/\//g, ".") + ", 1);\n" +
-								text + "\n});\nrequire([" + mid + "]);\n";
+									text= getText.call(this).replace(/dojo\.((require)|(provide))\s*\(\s*['"]([^'"]+)['"]\s*\)\s*;?\s*/g, function(match, unused, require, provide, id){
+										if(provide || id in depsSet){
+											return "/* builder delete begin\n" + match + "\n builder delete end */\n";
+										}else{
+											return match;
+										}
+									});
+								this.text= "define(" +
+									(bc.writeAbsMids ? mid + "," : "") +
+									"[" + deps + "], function(" + scopeArgs + "){\ndojo.getObject(" + mid.replace(/\//g, ".") + ", 1);\n" +
+									text + "\n});\nrequire([" + mid + "]);\n";
+							}
+							return this.text;
 						};
 					}else{
 						// look for AMD define
@@ -268,6 +272,13 @@ define(["../buildControl"], function(bc) {
 				var getText= resource.getText;
 				resource.getText= function(){
 					var text= getText.call(this);
+
+					// this is frome the old builder...
+					// If this is an nls bundle, make sure it does not end in a ; Otherwise, bad things happen.
+					if(text.match(/\/nls\//)){
+						text = text.replace(/;\s*$/, "");
+					}
+
 					if(this.localizedSet){
 						// this is the root bundle
 						var availableLocales= [];

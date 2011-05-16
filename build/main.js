@@ -42,8 +42,11 @@ define(["require", "dojo/has"], function(require, has) {
 			return process.argv.slice(2);
 		});
 
-		// helps during dev...
+		// helps during dev or heavily async node...
 		debug= require.debug;
+
+		// TODO: make this real
+		has.add("is-windows", 0);
 	} else if (has("host-rhino")) {
 		console.log("running under rhino");
 		define("commandLineArgs", [], function() {
@@ -56,6 +59,8 @@ define(["require", "dojo/has"], function(require, has) {
 			});
 			return result;
 		});
+		// TODO: make this real
+		has.add("is-windows", /indows/.test(environment["os.name"]));
 	} else {
 		console.log("unknown environment; terminating.");
 		return 0;
@@ -76,6 +81,8 @@ define(["require", "dojo/has"], function(require, has) {
 	// run the build program
 	require(["./buildControl", "./process"], function(bc, process) {
 		var
+			gateListeners= bc.gateListeners= [],
+
 			transforms= bc.transforms,
 			transformJobs= bc.transformJobs,
 			transformJobsLength= transformJobs.length,
@@ -138,10 +145,13 @@ define(["require", "dojo/has"], function(require, has) {
 				passGate();
 			},
 
-			advanceGate= function(currentGate, log) {
+			advanceGate= function(currentGate) {
 				while (1) {
 					bc.currentGate= ++currentGate;
-					log && bc.logInfo(bc.gates[bc.currentGate][2] + "...");
+					bc.logInfo("starting " + bc.gates[bc.currentGate][2] + "...");
+					gateListeners.forEach(function(listener){
+						listener(bc.gates[bc.currentGate][1]);
+					});
 					if (currentGate==bc.gates.length-1 || bc.gates[currentGate+1][0]) {
 						// if we've either advanced to the last gate or the next gate is a synchronized gate, then hold at the current gate
 						return;
@@ -149,21 +159,23 @@ define(["require", "dojo/has"], function(require, has) {
 				}
 			},
 
-			passGate= function() {
+			passGate= bc.passGate= function() {
 				if (--bc.waiting) {
 					return;
 				} //	else all processes have passed through bc.currentGate
 
 				// hold the next gate until all resources have been advised
-				advanceGate(bc.currentGate, true);
+				advanceGate(bc.currentGate);
 				if (bc.currentGate!=bc.gates.length-1) {
 					bc.waiting++;
 					resources.forEach(function(resource){ advance(resource, 0); });
 					// release the hold placed above
 					passGate();
-				} else if (bc.errorCount) {
-					bc.logInfo("Errors detected, stopped build before completing.");
 				} else {
+					if (!resources.length) {
+						bc.logWarn("failed to discover any resources to transform. Nothing to do; terminating application");
+					}
+					bc.logInfo("Errors: " + bc.errorCount + ", Warnings: " + bc.warnCount);
 					bc.logInfo("Total build time: " + ((new Date()).getTime() - bc.startTimestamp.getTime()) / 1000 + " seconds");
 					// that's all, folks...
 				}
@@ -200,7 +212,7 @@ define(["require", "dojo/has"], function(require, has) {
 					return;
 				}
 			}
-			bc.logWarn("Resource (" + resource.srcName + ") was discovered, but there is no transform job specified.");
+			bc.logWarn("Resource (" + resource.src + ") was discovered, but there is no transform job specified.");
 		};
 
 		function doBuild(){
@@ -220,7 +232,6 @@ define(["require", "dojo/has"], function(require, has) {
 			}
 			bc.plugins= {};
 			require(deps, function() {
-try{
 				// pull out the discovery procedures
 				for (var discoveryProcs= [], argsPos= 0; argsPos<bc.discoveryProcs.length; discoveryProcs.push(arguments[argsPos++]));
 
@@ -244,52 +255,18 @@ try{
 				}
 
 				// start the transform engine: initialize bc.currentGate and bc.waiting, then discover and start each resource.
-				// Hold the gate to "parse" at least until discovery procs return.
 				// note: discovery procs will call bc.start with each discovered resource, which will call advance, which will
 				// enter each resource in a race to the next gate, which will result in many bc.waiting incs/decs
-				bc.waiting= 1;
+				bc.waiting= 1;  // matches *1*
 				bc.logInfo("discovering resources...");
-				advanceGate(-1, false);
+				advanceGate(-1);
 				discoveryProcs.forEach(function(proc) { proc(); });
-				if (!resources.length) {
-					bc.logWarn("failed to discover any resources to transform. Nothing to do; terminating application");
-					process.exit(0);
-				}
-				for (i= 0; i<=bc.currentGate; i++) {
-					bc.logInfo(bc.gates[i][2] + "...");
-				}
-				// release the gate lock set above
-				passGate();
-}catch(e){
-debug(e);
-}
+				passGate();  // matched *1*
 			});
 		}
 
-		if(!bc.errorCount){
-			if(bc.clean){
-				var
-					isWindows= false,
-					command, flags;
-				if(isWindows){
-					// TODO
-				}else{
-					// TODO: remove the echo so that the directory will be removed
-					command= "rm";
-					command= "echo";
-					flags= "-Rf";
-				}
-				process.exec(command, flags, bc.destBasePath, function(code, text){
-					if(code){
-						text && bc.logError(text);
-						bc.logError("failed to delete old tree;  command was \"" + command + " " + flags + " " + bc.destBasePath + "\"");
-					}else if(bc.release){
-						doBuild();
-					}
-				});
-			}else if(bc.release){
-				doBuild();
-			}
+		if(!bc.errorCount && !bc.check){
+			doBuild();
 		}
 	});
 });

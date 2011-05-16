@@ -1,4 +1,4 @@
-define(["./buildControl", "./fileUtils", "./fs", "./stringify"], function(bc, fileUtils, fs, stringify) {
+define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./process"], function(bc, fileUtils, fs, stringify, has, process) {
 	// find all files as given by files, dirs, trees, and packages
 	var
 		files=
@@ -16,14 +16,6 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify"], function(bc, fi
 		compactPath= fileUtils.compactPath,
 
 		start= function(resource) {
-			// this algorithm, along with the whole idea of copyTests and mini, is very loose and prone to unintended side-effects
-			// TODO: reconsider copyTests and mini
-			if(!bc.copyTests && /\/tests\//.test(resource.src)){
-				return;
-			}
-			if(bc.mini && /\/demos\/|tests\.js|dijit\/bench|dijit\/themes\/themeTest|(\.php$)/.test(resource.src)){
-				return;
-			}
 
 			if (!resource.tag) {
 				resource.tag= {};
@@ -162,7 +154,7 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify"], function(bc, fi
 			}
 			if (!treeItem) {
 				// create a tree item; don't traverse into hidden, backup, etc. files (e.g., .svn, .git, etc.)
-				treeItem= [pack.location, destPack.location, "*/.*", "*~"];
+				treeItem= [pack.location, destPack.location, "*/\\.*", "~$"];
 			}
 
 			var filenames= [];
@@ -213,6 +205,16 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify"], function(bc, fi
 			var
 				tagResource= getResourceTagFunction(pack.resourceTags),
 				startResource= function(resource) {
+					// this algorithm, along with the whole idea of copyTests and mini, is very loose and prone to unintended side-effects
+					// TODO: reconsider copyTests and mini
+					var filterOn= resource.src.substring(pack.location.length);
+					if(!bc.copyTests && /\/tests\//.test(filterOn)){
+						return;
+					}
+					if(bc.mini && /\/demos\/|tests\.js|dijit\/bench|dijit\/themes\/themeTest|(\.php$)/.test(filterOn)){
+						return;
+					}
+
 					resource.tag= {};
 					tagResource(resource);
 					start(resource);
@@ -262,11 +264,49 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify"], function(bc, fi
 			for (var p in bc.packages) {
 				processPackage(bc.packages[p], bc.destPackages[p]);
 			}
+		},
+
+		clean= function(){
+			var destDirList= [];
+			for (var p in destDirs) {
+				destDirList.push(p);
+			}
+			destDirList.sort();
+			for (var current= destDirList[0], deleteList= [current], i= 1; i<destDirList.length; i++){
+				if(destDirList[i].indexOf(current)!=0){
+					current= destDirList[i];
+					deleteList.push(current);
+				};
+			}
+			bc.deleteList= deleteList;
+/*
+			deleteList.forEach(function(dir){
+				bc.waiting++; // matches *2*
+				var
+					cb= function(code, text){
+						if(code){
+							text && bc.logError(text);
+							bc.logError("failed to delete old tree;  command was \"" + command + " " + flags + " " + bc.destBasePath + "\"");
+						}
+						bc.passGate(); // matches *2*
+					},
+				    args;
+				if(has("is-windows")){
+					args= ["rd", "/S", "/Q", dir.replace(/\//g, "\\"), cb];
+				}else{
+					args= ["rm", "-Rf", dir, cb];
+				}
+				process.exec.apply(null, args);
+			});
+*/
 		};
 
 	return function() {
 		///
 		// build/discover
+
+		bc.waiting++; // matches *1*
+
 		discoverPackages();
 
 		// discover all trees, dirs, and files
@@ -281,36 +321,44 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify"], function(bc, fi
 		// advise the loader of boot layers
 		for (var mid in bc.layers) {
 			var
-				resource= bc.amdResources[bc.getSrcModuleInfo(mid).pqn],
-				layer= bc.layers[mid];
-			if (resource) {
-				resource.layer= layer;
-				if (layer.boot) {
-					if (bc.loader) {
-						layer.include.unshift(mid);
-						bc.loader.boots.push(layer);
-					} else {
-						bc.logError("unable to find loader for boot layer (" + mid + ")");
-					}
+				layer= bc.layers[mid],
+				moduleInfo= bc.getSrcModuleInfo(mid),
+				pqn= moduleInfo.pqn,
+				resource= bc.amdResources[pqn];
+			if (!resource) {
+				// this is a synthetic layer (just a set of real modules aggregated but doesn't exist in the source)
+				resource= {
+					tag:{synthetic:1, amd:1},
+					src:moduleInfo.url,
+					dest:bc.getDestModuleInfo(moduleInfo.path).url,
+					pid:moduleInfo.pid,
+					mid:moduleInfo.mid,
+					pqn:moduleInfo.pqn,
+					pack:moduleInfo.pack,
+					path:moduleInfo.path,
+					deps:[],
+					text:"define([], 1);\n",
+					getText:function(){
+						return this.text;
+					},
+					encoding:"utf8"
+				};
+				start(resource);
+			}
+			resource.layer= layer;
+			if (layer.boot) {
+				if (bc.loader) {
+					bc.loader.boots.push(resource);
+				} else {
+					bc.logError("unable to find loader for boot layer (" + mid + ")");
 				}
-			} // else the layer will be written during the writeDojo transform
+			}
 		}
 
-		var destDirList= [];
-		for (var p in destDirs) {
-			destDirList.push(p);
+		if(bc.clean){
+			clean();
 		}
-		destDirList.sort();
-		var
-			current= destDirList[0],
-			deleteList= [current];
-		for (var i= 1; i<destDirList.lenght; i++){
-			if(destDirList[i].indexOf(current)!=0){
-				current= destDirList[i];
-				deleteList.push(current);
-			};
-		}
-		// TODO: add code to delete the trees in deleteList.
 
+		bc.passGate(); // matches *1*
 	};
 });

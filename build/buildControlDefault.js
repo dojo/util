@@ -16,7 +16,7 @@ define(["./buildControlBase"], function(bc) {
 		},
 
 		buildFlags:{
-			stripConsole:1,
+			stripConsole:"error",
 			optimizeHas:1
 		},
 
@@ -39,27 +39,28 @@ define(["./buildControlBase"], function(bc) {
 			[1, "optimize", "executing global optimizations"],
 			[1, "write", "writing resources"],
 			[1, "cleanup", "cleaning up"],
-			[1, "report", "done"]
+			[1, "report", "reporting"]
 		],
 
 		transformConfig: {},
 
 		transforms:{
-			trace:       ["build/transforms/trace", "read"],
-			read:        ["build/transforms/read", "read"],
-			copy:        ["build/transforms/copy", "copy"],
-			dojoPragmas: ["build/transforms/dojoPragmas", "read"],
-			depsScan:    ["build/transforms/depsScan", "ast"],
-			hasFixup:    ["build/transforms/hasFixup", "ast"],
-			write:       ["build/transforms/write", "write"],
-			writeAmd:    ["build/transforms/writeAmd", "write"],
-			copy:        ["build/transforms/copy", "write"],
-			writeDojo:   ["build/transforms/writeDojo", "write"],
-			compactCss:  ["build/transforms/compactCss", "optimize"],
-			writeCss:    ["build/transforms/writeCss", "write"],
-			hasFindAll:  ["build/transforms/hasFindAll", "read"],
-			hasReport:   ["build/transforms/hasReport", "cleanup"],
-			depsDump:    ["build/transforms/depsDump", "cleanup"]
+			trace:          ["build/transforms/trace", "read"],
+			read:           ["build/transforms/read", "read"],
+			copy:           ["build/transforms/copy", "copy"],
+			dojoPragmas:    ["build/transforms/dojoPragmas", "read"],
+			depsScan:       ["build/transforms/depsScan", "ast"],
+			hasFixup:       ["build/transforms/hasFixup", "ast"],
+			write:          ["build/transforms/write", "write"],
+			writeAmd:       ["build/transforms/writeAmd", "write"],
+			writeOptimized: ["build/transforms/writeOptimized", "write"],
+			copy:           ["build/transforms/copy", "write"],
+			writeDojo:      ["build/transforms/writeDojo", "write"],
+			compactCss:     ["build/transforms/compactCss", "optimize"],
+			writeCss:       ["build/transforms/writeCss", "write"],
+			hasFindAll:     ["build/transforms/hasFindAll", "read"],
+			hasReport:      ["build/transforms/hasReport", "cleanup"],
+			depsDump:       ["build/transforms/depsDump", "cleanup"]
 		},
 
 		transformJobs:[[
@@ -67,12 +68,13 @@ define(["./buildControlBase"], function(bc) {
 				function(resource, bc) {
 					if (resource.pqn=="dojo*dojo") {
 						bc.loader= resource;
+						resource.layer= bc.dojoLayer;
 						resource.boots= [];
 						return true;
 					}
 					return false;
 				},
-				["read", "dojoPragmas", "hasFindAll", "hasFixup", "writeDojo"]
+				["read", "dojoPragmas", "hasFindAll", "hasFixup", "writeDojo", "writeOptimized"]
 			],[
 				// package has module
 				function(resource) {
@@ -82,7 +84,7 @@ define(["./buildControlBase"], function(bc) {
 					}
 					return false;
 				},
-				["read", "dojoPragmas", "hasFindAll", "hasFixup", "depsScan", "writeAmd", "hasReport", "depsDump"]
+				["read", "dojoPragmas", "hasFindAll", "hasFixup", "depsScan", "writeAmd", "writeOptimized", "hasReport", "depsDump"]
 			],[
 				// nls resources
 				function(resource) {
@@ -101,6 +103,17 @@ define(["./buildControlBase"], function(bc) {
 				},
 				["read", "write"]
 			],[
+				// synthetic AMD modules (used to create layers on-the-fly
+				function(resource) {
+					if (resource.tag.synthetic && resource.tag.amd){
+						bc.amdResources[resource.pqn]= resource;
+						return true;
+					}
+					return false;
+				},
+				// just like regular AMD modules (the next transform job), but without a bunch of unneeded transforms
+				["depsScan", "writeAmd", "writeOptimized"]
+			],[
 				// already marked as an amd resource
 				// ...or...
 				// marked as a package module
@@ -113,9 +126,9 @@ define(["./buildControlBase"], function(bc) {
 					}
 					return false;
 				},
-				["read", "dojoPragmas", "hasFindAll", "hasFixup", "depsScan", "writeAmd"]
+				["read", "dojoPragmas", "hasFindAll", "hasFixup", "depsScan", "writeAmd", "writeOptimized"]
 			],[
-				// html file; may need access to it for template interning; therefore, can't use copy transform
+				// html file; may need access contents for template interning; therefore, can't use copy transform
 				function(resource, bc) {
 					return /\.(html|htm)$/.test(resource.src);
 				},

@@ -16,7 +16,7 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 			layerOptimize:"shrinksafe",
 			cssOptimize:"",
 			cssImportIgnore:"",
-			stripConsole:1,
+			stripConsole:"normal",
 			copyTests:false,
 			mini:true,
 			xdDojoPath:"",
@@ -252,6 +252,9 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 				}
 				if (layer.discard) {
 					result.discard= true;
+				}
+				if(layer.boot){
+					result.boot= true;
 				}
 				if (layer.copyright) {
 					result.copyright= layer.copyright;

@@ -95,11 +95,11 @@ define([
 				return result;
 			},
 
-			waitCount= 0,
+			waitCount= 1, // matches *1*
 
 			errors= [],
 
-			onCompressComplete= function(err) {
+			onWriteComplete= function(err) {
 				if (err) {
 					errors.push(err);
 				}
@@ -108,43 +108,10 @@ define([
 				}
 			},
 
-			onWriteComplete= function(err) {
-				if (err) {
-					errors.push(err);
-				}
-				if (!err && bc.layerOptimize && 0) {
-					var proc= process.spawn("java", ["-jar", "/home/rcgill/dev/ccompiler/compiler.jar", "--compilation_level", "SIMPLE_OPTIMIZATIONS", "--js", resource.dest+".uncompressed.js", "--js_output_file", resource.dest]).on("exit", onCompressComplete);
-					proc.stdout.on('data', function (data) {
-						console.log(data.toString("ascii"));
-					});
-					proc.stderr.on('data', function (data) {
-						console.log(data.toString("ascii"));
-					});
-				} else if (--waitCount==0) {
-					callback(resource, errors.length && errors);
-				}
-			},
-
 			doWrite= function(filename, text) {
-				if (bc.layerOptimize && 0) {
-					filename+= ".uncompressed.js";
-				}
 				fileUtils.ensureDirectoryByFilename(filename);
 				waitCount++;
 				fs.writeFile(filename, text, "utf8", onWriteComplete);
-			},
-
-			writeNonmoduleLayers= function(){
-				// write any layers that are not also an existing module
-				for (var mid in bc.layers) {
-					var
-						moduleInfo= bc.getSrcModuleInfo(mid),
-						resource= bc.amdResources[moduleInfo.pqn],
-						layer= bc.layers[mid];
-					if (!resource && !layer.boot) {
-						doWrite(bc.getDestModuleInfo(moduleInfo.path).url, writeAmd.getLayerText(0, layer.include, layer.exclude));
-					}
-				}
 			};
 
 		// the writeDojo transform...
@@ -152,18 +119,18 @@ define([
 			// the default application to the loader constructor is replaced with purpose-build user and default config values
 			var
 				configText= "(" + getUserConfig() + ", " + getDefaultConfig() + ");",
-				layerText= writeAmd.getLayerText(0, bc.dojoLayer.include, bc.dojoLayer.exclude);
-			doWrite(resource.dest,
-				resource.getText() + configText + layerText + (bc.dojoBootText || dojoBootText)
-			);
+				layerText= resource.layerText= writeAmd.getLayerText(0, bc.dojoLayer.include, bc.dojoLayer.exclude),
+				dojoLayerText= resource.layerText= resource.getText() + configText + layerText + (bc.dojoBootText || dojoBootText);
+			doWrite(writeAmd.getDestFilename(resource), dojoLayerText);
+			//write any bootstraps; boots is a vector of resources that have been marked as bootable by the discovery process
 
-			//write any bootstraps; boots is a map from dest filename to boot layer
 			resource.boots.forEach(function(item) {
-				// each item is a map of include, exclude, boot, bootText
-				doWrite(item.boot.dest, loaderText + writeAmd.getLayerText(0, item.include, item.exclude) + item.bootText);
+				// each item is a hash of include, exclude, boot, bootText
+				item.layerText= dojoLayerText + writeAmd.getLayerText(item, item.layer.include, item.layer.exclude) + (item.bootText || "");
+				doWrite(writeAmd.getDestFilename(item), item.layerText);
 			});
 
-			writeNonmoduleLayers();
+			onWriteComplete(0); // matches *1*
 		} catch (e) {
 			if (waitCount) {
 				// can't return the error since there are async processes already going
