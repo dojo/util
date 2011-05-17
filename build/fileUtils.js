@@ -51,6 +51,8 @@ define(["./fs", "./buildControlBase"], function(fs, bc) {
 
 
 		compactPath = function(path){
+			path= path.replace(/\\/g, "/");
+			
 			var
 				result= [],
 				segment, lastSegment;
@@ -67,7 +69,7 @@ define(["./fs", "./buildControlBase"], function(fs, bc) {
 		},
 
 		isAbsolutePath= function(path) {
-			return path && path.length && path.charAt(0)=="/";
+			return path && path.length && (fs.isAbsolute(path) ) ;
 		},
 
 		getAbsolutePath= function(src, base) {

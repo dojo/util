@@ -11,7 +11,9 @@ define([], function() {
 		statSync: function(filename) {
 			return new java.io.File(filename);
 		},
-
+		isAbsolute: function(filename) {
+			return new java.io.File(filename).isAbsolute();
+		},
 		mkdirSync: function(filename) {
 			var dir= new java.io.File(filename);
 			if (!dir.exists()) {
