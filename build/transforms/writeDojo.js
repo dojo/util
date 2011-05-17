@@ -102,6 +102,28 @@ define([
 				return result;
 			},
 
+			stampVersion= function(text){
+				//summary: Changes the version number for dojo. Input should be the fileContents
+				//of a file that contains the version number.
+				version= bc.version;
+				if(version){
+					//First, break apart the version string.
+					var verSegments = version.match(/^(\d*)\.?(\d*)\.?(\d*)\.?(.*)$/);
+					var majorValue = verSegments[1] || 0;
+					var minorValue = verSegments[2] || 0;
+					var patchValue = verSegments[3] || 0;
+					var flagValue  = verSegments[4] || "";
+
+					//Do the final version replacement.
+					return text.replace(
+							/major:\s*\d*,\s*minor:\s*\d*,\s*patch:\s*\d*,\s*flag:\s*".*?"\s*,/g,
+						"major: " + majorValue + ", minor: " + minorValue + ", patch: " + patchValue + ", flag: \"" + flagValue + "\","
+					);
+				}else{
+					return text;
+				}
+			},
+
 			waitCount= 1, // matches *1*
 
 			errors= [],
@@ -123,18 +145,24 @@ define([
 
 		// the writeDojo transform...
 		try {
+			// all layer modules compute moduleSet, which may be used for reporting
+			resource.moduleSet= writeAmd.computeLayerContents(0, resource.layer.include, resource.layer.exclude);
 
-			// the default application to the loader constructor is replaced with purpose-build user and default config values
 			var
+				// the default application to the loader constructor is replaced with purpose-build user and default config values
 				configText= "(" + getUserConfig() + ", " + getDefaultConfig() + ");",
-				layerText= resource.layerText= writeAmd.getLayerText(resource, resource.layer.include, resource.layer.exclude),
-				dojoLayerText= resource.layerText= resource.getText() + configText + layerText + (bc.dojoBootText || dojoBootText);
-			doWrite(writeAmd.getDestFilename(resource), resource.layer.copyright + dojoLayerText);
-			//write any bootstraps; boots is a vector of resources that have been marked as bootable by the discovery process
 
+				// the construction of the layer is slightly different than standard, so don't pass a module to getLayerText
+				layerText= writeAmd.getLayerText(0, resource.layer.include, resource.layer.exclude);
+
+			// assemble and write the dojo layer
+			resource.layerText= resource.getText() + configText + stampVersion(layerText) + (bc.dojoBootText || dojoBootText);
+			doWrite(writeAmd.getDestFilename(resource), resource.layer.copyright + resource.layerText);
+
+			//write any bootstraps; boots is a vector of resources that have been marked as bootable by the discovery process
 			resource.boots.forEach(function(item) {
 				// each item is a hash of include, exclude, boot, bootText
-				item.layerText= dojoLayerText + writeAmd.getLayerText(item, item.layer.include, item.layer.exclude) + (item.bootText || "");
+				item.layerText= resource.layerText + writeAmd.getLayerText(item, item.layer.include, item.layer.exclude) + (item.bootText || "");
 				doWrite(writeAmd.getDestFilename(item), resource.layer.copyright + item.layerText);
 			});
 
