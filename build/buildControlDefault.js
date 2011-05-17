@@ -69,6 +69,9 @@ define(["./buildControlBase"], function(bc) {
 					if (resource.pqn=="dojo*dojo") {
 						bc.loader= resource;
 						resource.boots= [];
+						// the loader is treated as an AMD module when creating the "dojo" layer, but and AMD dependency scan won't
+						// work because it's not an AMD module; therefore, initialize deps here and make sure not to do the depsScan transform
+						resource.deps= [];
 						bc.amdResources[resource.pqn]= resource;
 						return true;
 					}

@@ -18,6 +18,9 @@ define(["dojo", "./stringify"], function(dojo, stringify) {
 
 		closureCompilerPath:"../closureCompiler/compiler.jar",
 		maxOptimizationProcesses:5,
+		buildReportDir:".",
+		buildReportFilename:"build-report.txt",
+		optimizerOutput:"",
 
 		writeln:function(text) {
 			bc.messages.push(text);

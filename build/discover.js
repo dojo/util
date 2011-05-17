@@ -16,7 +16,6 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./p
 		compactPath= fileUtils.compactPath,
 
 		start= function(resource) {
-
 			if (!resource.tag) {
 				resource.tag= {};
 			}

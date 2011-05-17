@@ -312,10 +312,10 @@ define(["../buildControl"], function(bc) {
 					} else if (module) {
 						deps.push(module);
 					} else {
-						bc.logError("failed to resolve dependency (" + dep + ") for module (" + resource.src + ")");
+						bc.logWarn("failed to resolve dependency (" + dep + ") for module (" + resource.src + ")");
 					}
 				} catch (e) {
-					bc.logError("failed to resolve dependency (" + dep + ") for module (" + resource.src + ")", e);
+					bc.logWarn("failed to resolve dependency (" + dep + ") for module (" + resource.src + ")", e);
 				}
 			}
 		});

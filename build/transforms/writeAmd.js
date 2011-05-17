@@ -83,9 +83,6 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 			var
 				cache= [],
 				pluginLayerText= "",
-				//moduleSet= computeLayerContents(resource, include, exclude);
-				moduleSet;
-
 				moduleSet= computeLayerContents(resource, include, exclude);
 			for (var p in moduleSet) {
 				var module= moduleSet[p];
@@ -95,6 +92,7 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 					cache.push("'" + p + "':function(){\n" + module.getText() + "\n}");
 				}
 			}
+			resource.moduleSet= moduleSet;
 			return "require({cache:{\n" + cache.join(",\n") + "}});\n" + pluginLayerText + "\n" + (resource ? resource.getText() : "");
 		},
 
@@ -120,7 +118,7 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 
 		write= function(resource, callback) {
 			fileUtils.ensureDirectoryByFilename(resource.dest);
-			var text;
+			var text, copyright= "";
 			if(resource.tag.syncNls){
 				text= resource.getText();
 			}else if(resource.layer){
@@ -129,20 +127,23 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 					return 0;
 				}
 				text= resource.layerText= getLayerText(resource, resource.layer.include, resource.layer.exclude);
+				copyright= resource.layer.copyright;
 			}else{
 				text= (bc.internStrings ? getStrings(resource) : "") + resource.getText();
 				if(resource.tag.amd && bc.insertAbsMids){
 					text= insertAbsMid(text, resource);
 				}
 				resource.text= text;
+				copyright= resource.pack.copyright;
 			}
-			fs.writeFile(getDestFilename(resource), text, resource.encoding, function(err) {
+			fs.writeFile(getDestFilename(resource), copyright + text, resource.encoding, function(err) {
 				callback(resource, err);
 			});
 			return callback;
 		};
 		write.getLayerText= getLayerText;
 		write.getDestFilename= getDestFilename;
+		write.computeLayerContents= computeLayerContents;
 
 		return write;
 });

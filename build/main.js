@@ -164,9 +164,9 @@ define(["require", "dojo/has"], function(require, has) {
 					return;
 				} //	else all processes have passed through bc.currentGate
 
-				// hold the next gate until all resources have been advised
-				advanceGate(bc.currentGate);
-				if (bc.currentGate!=bc.gates.length-1) {
+				if (bc.currentGate<bc.gates.length-1) {
+					advanceGate(bc.currentGate);
+					// hold the next gate until all resources have been advised
 					bc.waiting++;
 					resources.forEach(function(resource){ advance(resource, 0); });
 					// release the hold placed above

@@ -1,4 +1,10 @@
-define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], function(require, bc, fs, fileUtils, process) {
+define([
+	"require",
+	"./buildControlBase",
+	"./fs", "./fileUtils",
+	"./process",
+	"dojo/text!./copyright.txt",
+	"dojo/text!./buildNotice.txt"], function(require, bc, fs, fileUtils, process, defaultCopyright, defaultBuildNotice) {
 	eval(require.scopeify("./fs, ./fileUtils"));
 	var
 		defaultBuildProps= {
@@ -113,25 +119,25 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 					lib:'.'
 				}]
 			}
-		};
+		},
 
 		processProfile= function(profile, args) {
 			// process a v1.6- profile
 			//
-			// The v1.6- has the following relative path behavior:
+			// v1.6- has the following relative path behavior:
 			//
 			//	 * the util/buildscripts directory is assumed to be the cwd upon build program startup
 			//	 * the dojo directory as specified in profile dependencies.prefixes (if relative) is
-			//		 assumed to be relative to util/buildscripts
+			//     assumed to be relative to util/buildscripts
 			//	 * similarly the releaseDir directory (if relative) is assumed to be relative to util/buildscripts
 			//	 * all other relative paths are relative to the dojo directory (in spite of what some docs say)
 			//	 * all non-specified paths for top-level modules are assummed to be siblings of dojo.
-			//		 For example, myTopModule.mySubModule is assumed to reside at dojo/../myTopModule/mySubModule.js
+			//     For example, myTopModule.mySubModule is assumed to reside at dojo/../myTopModule/mySubModule.js
 			//
-			// This has the net effect of causing all relative paths to be relative to the current working directory
-			// and further forcing the build program to be executed from util/buildscripts. Neither of these requirements
-			// may be convenient. The behavior is probably consequent to rhino's *brain dead* design that does not
-			// report the full path of the script being executed. In order to help, the following v1.7+ options are available:
+			// This has the net effect of forcing the assumption that build program is be executed from util/buildscripts.
+			// when relative paths are used; this may be convenient. The behavior is probably consequent to rhino's design
+			// that does not report the full path of the script being executed. In order to help, the following v1.7+
+			// options are available:
 			//
 			//	 -buildPath path/to/util/buildscripts/build
 			//	 -baseUrl	path/to/use/instead/of/path/to/util/buildscripts
@@ -143,7 +149,12 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 				p,
 				result= {},
 				layers= profile.layers || [],
-				prefixes= profile.prefixes || [];
+				prefixes= profile.prefixes || [],
+				copyright= profile.copyright!==undefined ? profile.copyright : defaultCopyright,
+				buildNotice= profile.buildNotice!==undefined ? profile.buildNotice : defaultBuildNotice,
+				getTopLevelModule= function(mid){
+					return mid.split(".")[0];
+				};
 
 			for (p in defaultBuildProps) {
 				result[p]= defaultBuildProps[p];
@@ -154,15 +165,16 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 			layers.forEach(function(layer){
 				(layer.dependencies || []).forEach(function(mid) {
 					// pair a [mid, path], mid, a dotted module id, path relative to dojo directory
-					topLevelMids[mid.split(".")[0]]= 1;
+					topLevelMids[getTopLevelModule(mid)]= 1;
 				});
 			});
 
 			// convert the prefix vector to a map; make sure all the prefixes are in the top-level map
-			var prefixMap= {};
+			var prefixMap= {}, copyrightMap= {};
 			prefixes.forEach(function(pair){
 				topLevelMids[pair[0]]= 1;
 				prefixMap[pair[0]]= pair[1];
+				copyrightMap[pair[0]]= pair[2];
 			});
 
 			// make sure we have a dojo prefix; memorize it
@@ -171,7 +183,6 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 				prefixMap.dojo= "../../dojo";
 			}
 			var dojoPath= prefixMap.dojo= compactPath(prefixMap.dojo);
-
 
 			// make sure we have a prefix for each top-level module
 			// normalize dojo out of the non-dojo prefixes
@@ -188,7 +199,8 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 				packages.push({
 					name:mid,
 					location:prefixMap[mid],
-					lib:"."
+					lib:".",
+					copyright:copyrightMap[mid]!==undefined ? copyrightMap[mid] : defaultCopyright
 				});
 			}
 
@@ -205,7 +217,7 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 			// resolve all the layer names into module names;
 			var
 				filenameToMid= function(filename) {
-					for (topLevelMid in prefixMap) {
+					for (var topLevelMid in prefixMap) {
 						if (filename.indexOf(prefixMap[topLevelMid])==0) {
 							var
 								mid= filename.substring(prefixMap[topLevelMid].length),
@@ -227,12 +239,25 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 				layerNameToLayerMid[layer.name]= mid;
 			});
 
-
-			var fixedLayers= {"dojo/dojo": {include:["dojo"], exclude:[]}};
+			var
+				getLayerCopyrightMessage= function(explicit, mid){
+					// this is a bit obnoxious as a default, but it's the v1.6- behavior
+					// TODO: consider changing
+					if(explicit!==undefined){
+						return explicit;
+					}
+					if(copyrightMap[getTopLevelModule(mid)]!==undefined){
+						return copyrightMap[getTopLevelModule(mid)];
+					}else{
+						return defaultCopyright + defaultBuildNotice;
+					}
+				},
+				fixedLayers= {"dojo/dojo": {copyright:defaultCopyright + defaultBuildNotice, include:["dojo"], exclude:[]}};
 			layers.forEach(function(layer) {
 				var
 					mid= layerNameToLayerMid[layer.name],
 					result= {
+						copyright:getLayerCopyrightMessage(layer.copyright, mid),
 						include:(layer.dependencies || []).map(function(item) { return item.replace(/\./g, "/"); }),
 						exclude:(layer.layerDependencies || []).map(function(item) {
 							var mid= layerNameToLayerMid[item];
@@ -261,7 +286,6 @@ define(["require", "./buildControlBase", "./fs", "./fileUtils", "./process"], fu
 				fixedLayers[mid]= result;
 			});
 			result.layers= fixedLayers;
-
 
 			if (profile.basePath===undefined) {
 				profile.basePath= compactPath(catPath(require.baseUrl, "../util/buildscripts"));

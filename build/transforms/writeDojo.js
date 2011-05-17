@@ -53,7 +53,7 @@ define([
 			getPackage= function(name) {
 				// the purpose of this somewhat verbose routine is to write a minimal package object for each
 				// package, yet allow client code to pass extra (i.e., outside the scope of CJS specs) config
-				//	information within the package object
+				// information within the package object
 				var
 					 srcPack= bc.packages[name],
 					 destPack= bc.destPackages[name],
@@ -61,6 +61,7 @@ define([
 					 p;
 				for (p in srcPack) result[p]= srcPack[p];
 				for (p in destPack) result[p]= destPack[p];
+
 				// everything relative to the dojo dir
 				// TODO: making everything relative to dojo needs to be optional
 				if (name=="dojo") {
@@ -68,14 +69,20 @@ define([
 				} else {
 					result.location= computeLocation(bc.destPackageBasePath + "/dojo", destPack.location);
 				}
+
+				// delete the build garbage in the package object; no need for this in deployed code
 				delete result.mapProg;
 				delete result.trees;
 				delete result.dirs;
 				delete result.files;
 				delete result.resourceTags;
+				delete result.copyright;
+
+				// delete values that === default values
 				if (result.lib=="lib") delete result.lib;
 				if (result.main=="main") delete result.main;
 				if (!result.packageMap.length) delete result.packageMap;
+
 				return result;
 			},
 
@@ -116,18 +123,19 @@ define([
 
 		// the writeDojo transform...
 		try {
+
 			// the default application to the loader constructor is replaced with purpose-build user and default config values
 			var
 				configText= "(" + getUserConfig() + ", " + getDefaultConfig() + ");",
-				layerText= resource.layerText= writeAmd.getLayerText(0, resource.layer.include, resource.layer.exclude),
+				layerText= resource.layerText= writeAmd.getLayerText(resource, resource.layer.include, resource.layer.exclude),
 				dojoLayerText= resource.layerText= resource.getText() + configText + layerText + (bc.dojoBootText || dojoBootText);
-			doWrite(writeAmd.getDestFilename(resource), dojoLayerText);
+			doWrite(writeAmd.getDestFilename(resource), resource.layer.copyright + dojoLayerText);
 			//write any bootstraps; boots is a vector of resources that have been marked as bootable by the discovery process
 
 			resource.boots.forEach(function(item) {
 				// each item is a hash of include, exclude, boot, bootText
 				item.layerText= dojoLayerText + writeAmd.getLayerText(item, item.layer.include, item.layer.exclude) + (item.bootText || "");
-				doWrite(writeAmd.getDestFilename(item), item.layerText);
+				doWrite(writeAmd.getDestFilename(item), resource.layer.copyright + item.layerText);
 			});
 
 			onWriteComplete(0); // matches *1*

@@ -112,17 +112,21 @@ function ccompile(src, dest, optimizeSwitch, copyright){
 
 var
 	console= new java.io.BufferedReader(new java.io.InputStreamReader(java.lang.System["in"])),
+	readLine= function(){
+		// the + "" convert to a Javascript string
+		return console.readLine() + "";
+	},
 	src, dest, optimizeSwitch, copyright;
 
 while(1){
 	// the + "" convert to a Javascript string
-	src= console.readLine() + "";
+	src= readLine();
 	if(src=="."){
 		break;
 	}
-	dest= console.readLine() + "";
-	optimizeSwitch= console.readLine() + "";
-	copyright= console.readLine() + "";
+	dest= readLine();
+	optimizeSwitch= readLine();
+	copyright= eval(readLine());
 	print(dest + ":");
 	var start= (new Date()).getTime();
 	if(/closure/.test(optimizeSwitch)){
