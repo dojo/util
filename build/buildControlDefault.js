@@ -57,6 +57,7 @@ define(["./buildControlBase"], function(bc) {
 			copy:           ["build/transforms/copy", "write"],
 			writeDojo:      ["build/transforms/writeDojo", "write"],
 			compactCss:     ["build/transforms/compactCss", "optimize"],
+			optimizeCss:     ["build/transforms/optimizeCss", "optimize"],
 			writeCss:       ["build/transforms/writeCss", "write"],
 			hasFindAll:     ["build/transforms/hasFindAll", "read"],
 			hasReport:      ["build/transforms/hasReport", "cleanup"],
@@ -147,9 +148,9 @@ define(["./buildControlBase"], function(bc) {
 			],[
 				// css that are designated to compact
 				function(resource, bc) {
-					return bc.compactCssSet[resource.src];
+					return /\.css$/.test(resource.src);
 				},
-				["read", "compactCss", "writeCss"]
+				["read", "optimizeCss", "write"]
 			],[
 				// just copy everything else except tests which were copied above iff desired...
 				function(resource) {
