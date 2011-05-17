@@ -306,6 +306,14 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./p
 
 		bc.waiting++; // matches *1*
 
+		// start the synthetic report resource
+		start({
+			tag:{report:1},
+			src:"*report",
+			dest:"*report",
+			reports:[]
+		});
+
 		discoverPackages();
 
 		// discover all trees, dirs, and files

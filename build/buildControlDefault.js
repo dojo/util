@@ -60,10 +60,18 @@ define(["./buildControlBase"], function(bc) {
 			writeCss:       ["build/transforms/writeCss", "write"],
 			hasFindAll:     ["build/transforms/hasFindAll", "read"],
 			hasReport:      ["build/transforms/hasReport", "cleanup"],
-			depsDump:       ["build/transforms/depsDump", "cleanup"]
+			depsDump:       ["build/transforms/depsDump", "cleanup"],
+			dojoReport:     ["build/transforms/dojoReport", "report"],
+			report:         ["build/transforms/report", "report"]
 		},
 
 		transformJobs:[[
+				// the synthetic report module
+				function(resource) {
+					return resource.tag.report;
+				},
+				["dojoReport", "report"]
+			],[
 				// dojo.js, the loader
 				function(resource, bc) {
 					if (resource.pqn=="dojo*dojo") {
