@@ -108,7 +108,7 @@ define([
 				version= bc.version;
 				if(version){
 					//First, break apart the version string.
-					var verSegments = version.match(/^(\d*)\.?(\d*)\.?(\d*)\.?(.*)$/);
+					var verSegments = (version+"").match(/^(\d*)\.?(\d*)\.?(\d*)\.?(.*)$/);
 					var majorValue = verSegments[1] || 0;
 					var minorValue = verSegments[2] || 0;
 					var patchValue = verSegments[3] || 0;
