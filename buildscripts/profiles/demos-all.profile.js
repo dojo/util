@@ -104,6 +104,36 @@ dependencies = {
 			]
 		},		
 		{
+			name: "../demos/mobileGauges/src.js",
+			dependencies:[
+				"demos.mobileGauges.src"
+			]
+		},
+		{
+			name: "../demos/mobileCharting/src.js",
+			dependencies:[
+				"demos.mobileCharting.src"
+			]
+		},
+		{
+			name: "../demos/mobileGeoCharting/src.js",
+			dependencies:[
+				"demos.mobileGeoCharting.src"
+			]
+		},
+		{
+			name: "../demos/mobileOpenLayers/src.js",
+			dependencies:[
+				"demos.mobileOpenLayers.src"
+			]
+		},
+		{
+			name: "../demos/mobileGallery/src.js",
+			dependencies:[
+				"demos.mobileGallery.src"
+			]
+		},
+		{
 			// the CSS3 animations demo
 			name: "../demos/css3/src.js",
 			dependencies:[
