@@ -3,8 +3,9 @@ define([
 	"./buildControlBase",
 	"./fs", "./fileUtils",
 	"./process",
+	"dojo",
 	"dojo/text!./copyright.txt",
-	"dojo/text!./buildNotice.txt"], function(require, bc, fs, fileUtils, process, defaultCopyright, defaultBuildNotice) {
+	"dojo/text!./buildNotice.txt"], function(require, bc, fs, fileUtils, process, dojo, defaultCopyright, defaultBuildNotice) {
 	eval(require.scopeify("./fs, ./fileUtils"));
 	var
 		defaultBuildProps= {
@@ -178,10 +179,19 @@ define([
 			});
 
 			// make sure we have a dojo prefix; memorize it
+			var activeDojoPath= fileUtils.computePath(require.nameToUrl("dojo/package.json").match(/(.+)\/package\.json$/)[1], process.cwd());
 			if(!prefixMap.dojo) {
-				// best guess is relative cwd assumed to be util/buildscripts
-				prefixMap.dojo= "../../dojo";
+				// use the loader to find the real dojo path
+				prefixMap.dojo= activeDojoPath;
+			}else{
+				if (profile.basePath===undefined && compactPath(catPath(activeDojoPath, "../util/buildscripts"))!=process.cwd()){
+					bc.logWarn("did not specify profile.basePath, yet did specify a relative dojo path and running build with the current working directory different than util/buildscripts");
+				}
+				if(compactPath(catPath(prefixMap.dojo, process.cwd()))!=activeDojoPath){
+					bc.logWarn("dojo path specified in profile is different than the dojo being used for the build program");
+				}
 			}
+
 			var dojoPath= prefixMap.dojo= compactPath(prefixMap.dojo);
 
 			// make sure we have a prefix for each top-level module
@@ -287,13 +297,6 @@ define([
 			});
 			result.layers= fixedLayers;
 
-			if (profile.basePath===undefined) {
-				profile.basePath= compactPath(catPath(require.baseUrl, "../util/buildscripts"));
-				if(!/\/util\/buildscripts/.test(profile.basePath)){
-					bc.logWarn("did not specify profile.basePath yet running build with the current working directory different than util/buildscripts");
-				}
-			}
-
 			if (profile.destBasePath) {
 				if (profile.releaseDir || profile.releaseName) {
 					bc.logWarn("destBasePath given; ignoring releaseDir and releaseName");
@@ -383,13 +386,79 @@ define([
 			return processProfile(profile, args);
 		},
 
-		processHtmlFile= function(filename){
-			// TODO
+		processHtmlFiles= function(files){
+			bc.logInfo("html files: " + files.join(", "));
+			var
+				layers = {},
+				prefix = "",
+				prefixes = {dijit: true, dojox: true};
+			files.forEach(function(htmlFile){
+				var
+					priorLayers = [],
+					addLayer = function(scriptName){
+						if(layers[scriptName]){
+						// if this module has been added before, find the intersection of dependencies
+							layers[scriptName] = layers[scriptName].filter(function(scriptName){
+								return priorLayers.indexOf(scriptName) > -1;
+							});
+						}else{
+							layers[scriptName] = priorLayers.concat();
+						}
+						if(scriptName.indexOf('.') > -1){
+							prefixes[scriptName.substring(scriptName, scriptName.indexOf('.'))] = true;
+						}
+						priorLayers.push(scriptName);
+					};
+
+				var html = fs.readFileSync(htmlFile);
+				html.replace(/<script [^>]*src=["']([^'"]+)["']/gi, function(t, scriptName){
+					// for each script tag
+					if(scriptName.indexOf("dojo/dojo.js") > -1){
+						// use dojo.js to determine the prefix for our namespaces
+						prefix = scriptName.substring(0, scriptName.indexOf("dojo/dojo.js"));
+					}else{
+						// non-dojo.js script files, add it to our list of layers
+						addLayer(scriptName = scriptName.substring(prefix.length, scriptName.length - 3).replace(/\//g, '.'));
+					}
+				});
+				html.replace(/dojo\.require\(["']([^'"]+)["']\)/g, function(t, scriptName){
+					// for each dojo.require call add it to the layers as well
+					addLayer(scriptName);
+				});
+			});
+
+			var prefixPaths = [];
+			// normalize the prefixes into the arrays that the build expects
+			for(prefix in prefixes){
+				prefixPaths.push([prefix, "../" + prefix]);
+			}
+			var layersArray = [];
+			for(var name in layers){
+				// for each layer, create a layer object
+				layersArray.push({
+					name: "../" + name.replace(/\./g,'/') + ".js", // use filename
+					dependencies: [
+						name.replace(/\//g,'.') // use module name
+					],
+					//use all previous layers as layer dependencies
+					layerDependencies: layers[name].map(function(name){
+						return "../" + name.replace(/\./g,'/') + ".js";
+					})
+				});
+			}
+			var profileProperties = {
+				layers: layersArray,
+				prefixes: prefixPaths
+			};
+			if(bc.profileFile){
+				fs.writeFileSync(bc.profileFile, "dependencies = " + dojo.toJson(profileProperties), "utf8");
+			}
+			processProfile(profileProperties);
 		};
 
 	return {
 		processProfile:processProfile,
 		processProfileFile:processProfileFile,
-		processHtmlFile:processHtmlFile
+		processHtmlFile:processHtmlFiles
 	};
 });

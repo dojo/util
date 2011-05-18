@@ -16,7 +16,6 @@ define([
 	// easy to use for the remainder of the program. Readers are advised to tackle it top-to-bottom. There is no magic...just
 	// a whole bunch of imperative programming.
 	//
-
 	eval(require.scopeify("./fs, ./fileUtils, ./v1xProfiles"));
 	var
 		isString= function(it) {
@@ -107,7 +106,7 @@ define([
 				case "htmlDir":
 					var htmlFiles= [];
 					fs.readdirSync(item[1]).forEach(function(filename){
-						if(/\.html/.test(filename)){
+						if(/\.html$/.test(filename)){
 							htmlFiles.push(filename);
 						}
 					});
@@ -147,7 +146,6 @@ define([
 	//
 	// at this point the raw build control object has been fully initialized; clean it up and look for errors...
 	//
-
 	bc.basePath= computePath(bc.basePath, process.cwd());
 	bc.destBasePath= computePath(bc.destBasePath || (bc.basePath + (bc.basePathSuffix || "-build")), bc.basePath);
 	bc.destPackageBasePath= computePath(bc.destPackageBasePath || "./packages", bc.destBasePath);
@@ -280,13 +278,13 @@ define([
 		bc.nameToUrl= function(name, ext, referenceModule) {
 			// slightly different algorithm depending upon whether or not name contains
 			// a filetype. This is a requirejs artifact which we don't like.
-			// note: this is only needed to find source modules, never dest modules
 			var
-				match= name.match(/(.+)(\.[^\/]+)$/),
-				moduleInfo= bc.getSrcModuleInfo(match && match[1] || name, referenceModule),
+				match = !ext && name.match(/(.+)(\.[^\/]+?)$/),
+				moduleInfo = bc.getSrcModuleInfo((match && match[1]) || name, referenceModule, packs, modules, req.baseUrl, packageMapProg, pathsMapProg),
 				url= moduleInfo.url;
-			// recall, getModuleInfo always returns a url with a ".js" suffix; therefore, we've got to trim it
-			return url.substring(0, url.length-3) + (ext ? ext : (match ? match[2] : ""));
+			// recall, getModuleInfo always returns a url with a ".js" suffix iff pid; therefore, we've got to trim it
+			url= moduleInfo.pid ? url.substring(0, url.length - 3) : url;
+			return url + (ext ? ext : (match ? match[2] : ""));
 		},
 
 		bc.destModules= {};

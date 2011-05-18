@@ -1,10 +1,10 @@
 define(["../fileHandleThrottle"], function(fht) {
 	var fs= require.nodeRequire("fs");
-	var path = require.nodeRequire("path");
 	return {
 		statSync:fs.statSync,
 		mkdirSync:fs.mkdirSync,
 		readFileSync:fs.readFileSync,
+		writeFileSync:fs.writeFileSync,
 		readdirSync:fs.readdirSync,
 
 		readFile: function(filename, encoding, cb) {
@@ -15,11 +15,7 @@ define(["../fileHandleThrottle"], function(fht) {
 				});
 			});
 		},
-		isAbsolute: function(filename) {
-			var fileToCheck = fs.realpathSync(filename);
-			var normalizedPath = path.normalize (filename);
-			return (fileToCheck == normalizedPath);
-		},
+
 		writeFile: function(filename, contents, encoding, cb) {
 			fht.enqueue(function(){
 				fs.writeFile(filename, contents, encoding, function(code){
@@ -28,6 +24,5 @@ define(["../fileHandleThrottle"], function(fht) {
 				});
 			});
 		}
-
 	};
 });

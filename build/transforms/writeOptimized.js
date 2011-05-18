@@ -119,10 +119,13 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 				nextProcId= nextProcId % bc.maxOptimizationProcesses;
 			},
 			tempFileDirs= {},
-			doneRe= /^Done\s\(compile\stime.+$/m;
+			doneRe= new RegExp("^Done\\s\\(compile\\stime.+$", "m"),
+			optimizerRunner= require.nameToUrl("build/optimizeRunner.js"),
+			buildRoot= optimizerRunner.match(/(.+)\/build\/optimizeRunner\.js$/)[1],
+			javaClasses= fileUtils.catPath(buildRoot, "closureCompiler/compiler.jar") + ":" + fileUtils.catPath(buildRoot, "shrinksafe/js.jar") + ":" + fileUtils.catPath(buildRoot, "shrinksafe/shrinksafe.jar");
 		for(var processes= [], i= 0; i<bc.maxOptimizationProcesses; i++) {(function(){
 			var
-				runner= require.nodeRequire("child_process").spawn("java", ["-cp", "../closureCompiler/compiler.jar:../shrinksafe/js.jar:../shrinksafe/shrinksafe.jar", "org.mozilla.javascript.tools.shell.Main", "../build/optimizeRunner.js"]),
+				runner= require.nodeRequire("child_process").spawn("java", ["-cp", javaClasses, "org.mozilla.javascript.tools.shell.Main", optimizerRunner]),
 				proc= {
 					runner:runner,
 					results:"",
@@ -166,20 +169,21 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 					if(1 || bc.showOptimizerOutput){
 						bc.logInfo(totalOptimizerOutput);
 					}
-/*
-					 for(var p in tempFileDirs){
-						 bc.waiting++;  // matched with *2*
-						 var command= has("is-windows") ? "del" : "rm";
-						 process.exec(command, p + "/*consoleStripped*", function(code, text){
-							 if(code){
-								 text && bc.logError(text);
-								 bc.logError("failed to delete temporary files");
-							 }
-							 bc.passGate(); // matched with *2*
-						 });
-
+					/*
+					for(var p in tempFileDirs){
+						bc.waiting++;  // matched with *2*
+						var
+							cb= function(code, text){
+								bc.passGate(); // matched with *2*
+							},
+							filename= p + "/*consoleStripped*",
+							errorMessage= "failed to delete temporary files (" + filename + ")",
+							args= has("is-windows") ?
+								["cmd", "/c", "del", fileUtils.normalize(filename), errorMessage, bc, cb] :
+								["rm", filename, errorMessage, bc, cb];
+						process.exec.apply(args);
 					}
-*/
+					*/
 					bc.passGate(); // matched with *1*
 				}
 			});

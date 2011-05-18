@@ -278,26 +278,21 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./p
 				};
 			}
 			bc.deleteList= deleteList;
-/*
+
+			/*
 			deleteList.forEach(function(dir){
 				bc.waiting++; // matches *2*
 				var
-					cb= function(code, text){
-						if(code){
-							text && bc.logError(text);
-							bc.logError("failed to delete old tree;  command was \"" + command + " " + flags + " " + bc.destBasePath + "\"");
-						}
-						bc.passGate(); // matches *2*
-					},
-				    args;
-				if(has("is-windows")){
-					args= ["rd", "/S", "/Q", dir.replace(/\//g, "\\"), cb];
-				}else{
-					args= ["rm", "-Rf", dir, cb];
-				}
-				process.exec.apply(null, args);
+					 cb= function(code, text){
+						 bc.passGate(); // matched with *2*
+					 },
+					 errorMessage= "failed to delete old tree (" + dir + ")",
+					 args= has("is-windows") ?
+						 ["cmd", "/c", "rd", "/S", "/Q", fileUtils.normalize(dir), errorMessage, bc, cb] :
+						 ["rm", "-Rf", dir, errorMessage, bc, cb];
+				process.exec.apply(args);
 			});
-*/
+			*/
 		};
 
 	return function() {

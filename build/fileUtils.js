@@ -1,4 +1,4 @@
-define(["./fs", "./buildControlBase"], function(fs, bc) {
+define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 	var
 		getFilename= function(filename) {
 			if (/\//.test(filename)) {
@@ -52,7 +52,7 @@ define(["./fs", "./buildControlBase"], function(fs, bc) {
 
 		compactPath = function(path){
 			path= path.replace(/\\/g, "/");
-			
+
 			var
 				result= [],
 				segment, lastSegment;
@@ -68,8 +68,18 @@ define(["./fs", "./buildControlBase"], function(fs, bc) {
 			return result.join("/");
 		},
 
+		isAbsolutePathRe= has("is-windows") ?
+			// for windows, starts with "\\" or a drive designator (anything other than "/" or "\" followed by a ":")
+			/^((\\\\)|([^\/\\]+\:))/ :
+			// for unix, starts with "/"
+			/^\//,
+
 		isAbsolutePath= function(path) {
-			return path && path.length && (fs.isAbsolute(path) ) ;
+			return path && path.length && isAbsolutePathRe.test(path);
+		},
+
+		normalize= function(filename){
+			return has("is-windows") ? filename.replace(/\//g, "\\") : filename;
 		},
 
 		getAbsolutePath= function(src, base) {
@@ -152,12 +162,15 @@ define(["./fs", "./buildControlBase"], function(fs, bc) {
 		};
 
 
+
+
 	return {
 		getFilename:getFilename,
 		getFilepath:getFilepath,
 		getFiletype:getFiletype,
 		cleanupPath:cleanupPath,
 		isAbsolutePath:isAbsolutePath,
+		normalize:normalize,
 		getAbsolutePath:getAbsolutePath,
 		catPath:catPath,
 		compactPath:compactPath,

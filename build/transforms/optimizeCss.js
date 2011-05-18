@@ -87,7 +87,7 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 			return;
 		}
 
-		bc.logInfo("Optimizing CSS file: " + resource.src);
+		//bc.logInfo("Optimizing CSS file: " + resource.src);
 		var text = flattenCss(resource.src, resource.text, cssImportIgnore);
 
 		//Do comment removal.
