@@ -15,11 +15,11 @@
 //
 define(["dojo/json"], function(json) {
 	var
-		// note: we use * in the pattern since it is guaranteed not to be in any real path or filetype
-		cacheTemplate= 'require(["dojo/text"], function(text) {text.cache("*1", "*2", "*3", *4);});\n\n',
+		// note: we use *x in the pattern since it is guaranteed not to be in any real path or filetype
+		cacheTemplate= 'define("*text/*1", *2);\n\n',
 
 		getPluginLayerText= function() {
-			return cacheTemplate.replace("*1", this.pqn).replace("*2", this.path).replace("*3", this.filetype).replace("*4", json.stringify(this.module.text));
+			return cacheTemplate.replace("*1", this.pqn).replace("*2", json.stringify(this.module.text));
 		},
 
 		makePluginPseudoModule= function(module, path, filetype) {
