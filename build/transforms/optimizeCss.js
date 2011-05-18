@@ -50,7 +50,7 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 				importFileName = checkSlashes(importFileName);
 
 				var
-					fullImportFileName = fileUtils.computePath(importFileName, referencePath),
+					fullImportFileName = importFileName.charAt(0) == "/" ? importFileName : fileUtils.compactPath(fileUtils.catPath(referencePath, importFileName)),
 					importPath= fileUtils.getFilepath(importFileName),
 					importModule= bc.resources[fullImportFileName],
 					importContents = importModule && importModule.text;
@@ -71,7 +71,7 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 					var colonIndex = fixedUrlMatch.indexOf(":");
 					if(fixedUrlMatch.charAt(0) != "/" && (colonIndex == -1 || colonIndex > fixedUrlMatch.indexOf("/"))){
 						//It is a relative URL, tack on the path prefix
-						urlMatch = importPath + fixedUrlMatch;
+						urlMatch =  fileUtils.compactPath(fileUtils.catPath(importPath, fixedUrlMatch));
 					}else{
 						bc.logWarn("Non-relative URL (" + urlMatch + ") skipped in " + importFileName);
 					}

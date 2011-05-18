@@ -109,7 +109,7 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 		},
 
 		getDestFilename= function(resource){
-			if((resource.layer && bc.layerOptimize) || (!resource.layer && bc.optimize)){
+			if(!resource.tag.syncNls && !resource.tag.nls && ((resource.layer && bc.layerOptimize) || (!resource.layer && bc.optimize))){
 				return resource.dest + ".uncompressed.js";
 			}else{
 				return resource.dest;
