@@ -184,10 +184,10 @@ define([
 				// use the loader to find the real dojo path
 				prefixMap.dojo= activeDojoPath;
 			}else{
-				if (profile.basePath===undefined && compactPath(catPath(activeDojoPath, "../util/buildscripts"))!=process.cwd()){
+				if (profile.basePath===undefined && /^\./.test(prefixMap.dojo) && compactPath(catPath(activeDojoPath, "../util/buildscripts"))!=process.cwd()){
 					bc.logWarn("did not specify profile.basePath, yet did specify a relative dojo path and running build with the current working directory different than util/buildscripts");
 				}
-				if(compactPath(catPath(prefixMap.dojo, process.cwd()))!=activeDojoPath){
+				if(computePath(prefixMap.dojo, profile.basePath || process.cwd())!=activeDojoPath){
 					bc.logWarn("dojo path specified in profile is different than the dojo being used for the build program");
 				}
 			}

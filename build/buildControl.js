@@ -204,19 +204,23 @@ define([
 
 			var packageJson= readJson(catPath(pack.location, "package.json"));
 			if (packageJson) {
-				// it's never rational to override the package.json lib and main advice if it exists
-				if(packageJson.directories && packageJson.directories.lib){
-					pack.lib= packageJson.directories.lib;
-				}
-				if(packageJson.main){
-					pack.main= packageJson.main;
-				}
+				if(isEmpty(packageJson)){
+					bc.logWarn("the package.json file for package " + packageName + " was missing or empty");
+				}else{
+					// it's never rational to override the package.json lib and main advice if it exists
+					if(packageJson.directories && packageJson.directories.lib){
+						pack.lib= packageJson.directories.lib;
+					}
+					if(packageJson.main){
+						pack.main= packageJson.main;
+					}
 
-				// otoh, the dojoBuild config in package.json is considered a default that may be overridden
-				var dojoBuild= packageJson.dojoBuild || {};
-				for (var p in dojoBuild) {
-					if (!(p in pack)) {
-						pack[p]= dojoBuild[p];
+					// otoh, the dojoBuild config in package.json is considered a default that may be overridden
+					var dojoBuild= packageJson.dojoBuild || {};
+					for (var p in dojoBuild) {
+						if (!(p in pack)) {
+							pack[p]= dojoBuild[p];
+						}
 					}
 				}
 			}
