@@ -127,14 +127,14 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 					return 0;
 				}
 				text= resource.layerText= getLayerText(resource, resource.layer.include, resource.layer.exclude);
-				copyright= resource.layer.copyright;
+				copyright= resource.layer.copyright || "";
 			}else{
 				text= (bc.internStrings ? getStrings(resource) : "") + resource.getText();
 				if(resource.tag.amd && bc.insertAbsMids){
 					text= insertAbsMid(text, resource);
 				}
 				resource.text= text;
-				copyright= resource.pack.copyright;
+				copyright= resource.pack.copyright || "";
 			}
 			fs.writeFile(getDestFilename(resource), copyright + text, resource.encoding, function(err) {
 				callback(resource, err);
