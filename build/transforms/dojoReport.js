@@ -1,10 +1,13 @@
-define(["../buildControl"], function(bc) {
+define(["../buildControl", "../version"], function(bc, version) {
 	return function(resource, callback) {
 		resource.reports.push({
 			dir:".",
 			filename:"build-report.txt",
 			content: function(){
 				var result= "";
+
+				result+= "build started: " + bc.startTimestamp + "\n";
+				result+= "build application version: " + version + "\n";
 
 				result+= "Messages:\n";
 				result+= bc.messages.join("\n") + "\n\n";
@@ -25,6 +28,7 @@ define(["../buildControl"], function(bc) {
 				result+= "Optimizer Messages:\n";
 				result+= bc.optimizerOutput;
 
+				result+= "build finished: " + new Date() + "\n";
 				return result;
 			}
 		});

@@ -79,7 +79,6 @@ define([
 				delete result.copyright;
 
 				// delete values that === default values
-				if (result.lib=="lib") delete result.lib;
 				if (result.main=="main") delete result.main;
 				if (!result.packageMap.length) delete result.packageMap;
 

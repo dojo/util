@@ -1,4 +1,6 @@
-define(["require", "dojo", "./fs", "./fileUtils", "./process", "commandLineArgs", "./stringify", "dojo/text!./help.txt"], function(require, dojo, fs, fileUtils, process, argv, stringify, help) {
+define(
+	["require", "dojo", "./fs", "./fileUtils", "./process", "commandLineArgs", "./stringify", "./version", "dojo/text!./help.txt"],
+	function(require, dojo, fs, fileUtils, process, argv, stringify, version, help) {
 	///
 	// AMD-ID build/argv
 	//
@@ -24,7 +26,6 @@ define(["require", "dojo", "./fs", "./fileUtils", "./process", "commandLineArgs"
 	var
 		// used to build up the result
 		result= {
-			version:"1.0.0-beta",
 			buildControlScripts:[]
 		},
 
@@ -201,7 +202,7 @@ define(["require", "dojo", "./fs", "./fileUtils", "./process", "commandLineArgs"
 			case "--version":
 				// read, process, and send the configuration to the console and then exit
 				printVersion= true;
-				console.log("v" + result.version);
+				console.log(version+"");
 				break;
 
 			case "--unit-test":

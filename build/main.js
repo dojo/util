@@ -34,6 +34,7 @@
 // docs: http://bdframework.org/bdBuild/docs
 
 define(["require", "dojo/has"], function(require, has) {
+
 	// host-dependent environment initialization
 	if (has("host-node")) {
 		debug= require.debug;
@@ -78,6 +79,7 @@ define(["require", "dojo/has"], function(require, has) {
 		}
 		return text;
 	};
+
 	// run the build program
 	require(["./buildControl", "./process"], function(bc, process) {
 		var

@@ -208,9 +208,6 @@ define([
 					bc.logWarn("the package.json file for package " + packageName + " was missing or empty");
 				}else{
 					// it's never rational to override the package.json lib and main advice if it exists
-					if(packageJson.directories && packageJson.directories.lib){
-						pack.lib= packageJson.directories.lib;
-					}
 					if(packageJson.main){
 						pack.main= packageJson.main;
 					}
@@ -227,7 +224,6 @@ define([
 
 			// build up info to tell all about a package; all properties semantically identical to definitions used by bdLoad
 			// note: pack.name=="" for default package
-			pack.lib= slashTerminate(isString(pack.lib) ? pack.lib : "lib");
 			pack.main= isString(pack.main) ? pack.main : "main";
 			pack.location= computePath(pack.location || (pack.name ? "./" + pack.name : bc.basePath), bc.basePath);
 			pack.packageMap= pack.packageMap || 0;
@@ -236,14 +232,12 @@ define([
 			// dest says where to output the compiled code stack
 			var destPack= bc.destPackages[pack.name]= {
 				name:pack.destName || pack.name,
-				lib:slashTerminate(pack.destLib || pack.lib),
 				main:pack.destMain || pack.main,
 				location:computePath(pack.destLocation || ("./" + (pack.destName || pack.name)), bc.destPackageBasePath),
 				packageMap:pack.destPackageMap || pack.packageMap,
 				mapProg:require.computeMapProg(pack.destPackageMap)
 			};
 			delete pack.destname;
-			delete pack.destLib;
 			delete pack.destMain;
 			delete pack.destLocation;
 			delete pack.destPackageMap;
@@ -438,8 +432,8 @@ if(0){
 				pack= bc.packages[p],
 				destPack= bc.destPackages[p];
 			packages.push({
-				name:pack.name, lib:pack.lib, main:pack.main, location:pack.location, modules:pack.modules||{}, trees:pack.trees,
-				destName:destPack.name, destLib:destPack.lib, destMain:destPack.main, destLocation:destPack.location
+				name:pack.name, main:pack.main, location:pack.location, modules:pack.modules||{}, trees:pack.trees,
+				destName:destPack.name, destMain:destPack.main, destLocation:destPack.location
 			});
 		}
 		bc.logInfo(stringify(dump) + "\n");

@@ -116,8 +116,7 @@ define([
 				packages: [{
 					// note: like v1.6-, this bootstrap computes baseUrl to be the dojo directory
 					name:'dojo',
-					location:'.',
-					lib:'.'
+					location:'.'
 				}]
 			}
 		},
@@ -209,7 +208,6 @@ define([
 				packages.push({
 					name:mid,
 					location:prefixMap[mid],
-					lib:".",
 					copyright:copyrightMap[mid]!==undefined ? copyrightMap[mid] : defaultCopyright
 				});
 			}
@@ -218,10 +216,9 @@ define([
 			// this will be added to packages in buildControl after the command line
 			// switches are processed (remember, they're not processed here
 			result.dohPackageInfo= {
-					name:"doh",
-					location:dojoPath + "/../util/doh",
-					lib:".",
-					destLocation:"util/doh"
+				name:"doh",
+				location:dojoPath + "/../util/doh",
+				destLocation:"util/doh"
 			};
 
 			// resolve all the layer names into module names;
@@ -347,7 +344,6 @@ define([
 					"dojo-test-sniff":1
 				}
 			};
-
 			return result;
 		},
 
