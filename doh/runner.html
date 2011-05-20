@@ -168,20 +168,17 @@
 						packages:[{
 							name:'doh',
 							location:'../util/doh',
-							lib:'.',
 							// here's the magic...everytime doh asks for a "dojo" module, it gets mapped to a "dohDojo"
 							// module; same goes for dojox/dohDojox since doh uses dojox
 							packageMap:{dojo:"dohDojo", dojox:"dohDojox"} 
 						},{
 							// now define the dohDojo package...
 							name:'dohDojo',
-							location:'../dojo',
-							lib:'.'
+							location:'../dojo'
 						},{
 							// and the dohDojox package...
 							name:'dohDojox',
 							location:'../dojox',
-							lib:'.',
 							// and dojox uses dojo...that is, dohDojox...which must be mapped to dohDojo in the context of dohDojox
 							packageMap:{dojo:"dohDojo"} 
 						}],
