@@ -91,6 +91,7 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 
 		compile= function(resource, text, copyright, optimizeSwitch, callback){
 			bc.logInfo("optimizing " + resource.dest);
+			copyright= copyright || "";
 			var result;
 			if(/closure/.test(optimizeSwitch)){
 				result= ccompile(stripConsoleRe ? text.replace(stripConsoleRe, "0 && $&") : text, resource.dest, optimizeSwitch, copyright);
@@ -214,6 +215,7 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 		}
 
 		compile= function(resource, text, copyright, optimizeSwitch, callback){
+			copyright= copyright || "";
 			if(stripConsoleRe && /closure/.test(optimizeSwitch)){
 				var tempFilename= resource.dest + ".consoleStripped.js";
 				text= text.replace(stripConsoleRe, "0 && $&");
