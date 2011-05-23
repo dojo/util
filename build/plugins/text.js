@@ -16,7 +16,7 @@
 define(["dojo/json"], function(json) {
 	var
 		// note: we use *x in the pattern since it is guaranteed not to be in any real path or filetype
-		cacheTemplate= 'define("*text/*1", *2);\n\n',
+		cacheTemplate= 'define("*text/*1", [], *2);\n\n',
 
 		getPluginLayerText= function() {
 			return cacheTemplate.replace("*1", this.pqn).replace("*2", json.stringify(this.module.text));
