@@ -156,7 +156,7 @@ define(["../buildControl"], function(bc) {
 					requireExp= /(^|\s)require\s*\(\s*\[[\w\W]*?\]/g,
 
 					dojoV1xLoaderModule= 0,
-					result;
+					result, f;
 
 					// look for dojo loader applications
 					while((result= dojoExp.exec(contents)) != null) {
@@ -171,7 +171,7 @@ define(["../buildControl"], function(bc) {
 							if (result) {
 								dojoV1xLoaderModule= 1;
 								resource.tag.synModule= 1;
-								var f= new Function("dojo", result);
+								f= new Function("dojo", result);
 								f(dojo);
 							}
 						} catch (e) {
@@ -227,7 +227,7 @@ define(["../buildControl"], function(bc) {
 						while((result= defineExp.exec(contents)) != null) {
 							try {
 								result= result[0] + ")";
-								var f= new Function("define",result);
+								f= new Function("define",result);
 								f(define, require);
 							} catch (e) {
 								bc.logWarn("unable to evaluate AMD define function in " + resource.src + "; ignored function call; error and function text follows...", e, result);
@@ -237,7 +237,7 @@ define(["../buildControl"], function(bc) {
 						while((result= requireExp.exec(contents)) != null) {
 							try {
 								result= result[0] + ")";
-								var f= new Function("require", result);
+								f= new Function("require", result);
 								f(define, require);
 							} catch (e) {
 								bc.logWarn("unable to evaluate AMD require function in " + resource.src + "; ignored function call; error and function text follows...", e, result);
@@ -304,7 +304,7 @@ define(["../buildControl"], function(bc) {
 		// resolve the dependencies into modules
 		deps= resource.deps;
 		aggregateDeps.forEach(function(dep) {
-			if (!(/(require)|(export)|(module)/.test(dep))) {
+			if (!(/^(require|exports|module)$/.test(dep))) {
 				try {
 					var module= getAmdModule(dep, resource);
 					if (module instanceof Array) {
