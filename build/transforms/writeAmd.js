@@ -71,7 +71,7 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 				return text;
 			}
 			var mid= (resource.pid ? resource.pid + "/" :  "") + resource.mid;
-			return text.replace(/(define\s*\(\s*)(\[[^\]]*\]\s*,\s*function)/, "$1\"" + mid + "\", $2");
+			return text.replace(/(define\s*\(\s*)(.+)/, "$1\"" + mid + "\", $2");
 		},
 
 		getLayerText= function(
@@ -93,7 +93,14 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 				}
 			}
 			resource.moduleSet= moduleSet;
-			return "require({cache:{\n" + cache.join(",\n") + "}});\n" + pluginLayerText + "\n" + (resource ? resource.getText() : "");
+			var text= "";
+			if(resource){
+				text= resource.getText();
+				if(resource.tag.amd && bc.insertAbsMids){
+					text= insertAbsMid(text, resource);
+				}
+			}
+			return "require({cache:{\n" + cache.join(",\n") + "}});\n" + pluginLayerText + "\n" + text;
 		},
 
 		getStrings= function(

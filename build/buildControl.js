@@ -225,6 +225,10 @@ define([
 			// build up info to tell all about a package; all properties semantically identical to definitions used by bdLoad
 			// note: pack.name=="" for default package
 			pack.main= isString(pack.main) ? pack.main : "main";
+			if(!pack.main.indexOf("./")){
+				pack.main = pack.main.substring(2);
+			}
+
 			pack.location= computePath(pack.location || (pack.name ? "./" + pack.name : bc.basePath), bc.basePath);
 			pack.packageMap= pack.packageMap || 0;
 			pack.mapProg= require.computeMapProg(pack.packageMap);
