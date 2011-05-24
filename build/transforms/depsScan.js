@@ -45,7 +45,6 @@ define(["../buildControl"], function(bc) {
 				}
 			},
 
-
 			dojoProvideList= [],
 
 			dojo= {
@@ -77,7 +76,7 @@ define(["../buildControl"], function(bc) {
 				mid,
 				referenceModule
 			) {
-				var match= mid.match(/^([^\!]+)\!(.+)$/);
+				var match= mid.match(/^([^\!]+)\!(.*)$/);
 				if (match) {
 					var
 						pluginId= bc.getSrcModuleInfo(match[1], referenceModule).pqn,
@@ -147,103 +146,108 @@ define(["../buildControl"], function(bc) {
 					// string-comma-string with optional whitespace
 					requireLocalizationFixup= /^\s*['"][^'"]+['"]\s*,\s*['"][^'"]+['"]/,
 
-					// look for define applications with an optional string first arg and an array second arg;
-					// notice the regex stops after the second arg
-					defineExp= /(^|\s)define\s*\(\s*(["'][^'"]+['"]\s*,\s*)?\[[\w\W]*?\]/g,
-
-					// look for require applications with an array for the first arg;
-					// notice the regex stops after the first arg
-					requireExp= /(^|\s)require\s*\(\s*\[[\w\W]*?\]/g,
-
 					dojoV1xLoaderModule= 0,
 					result, f;
 
-					// look for dojo loader applications
-					while((result= dojoExp.exec(contents)) != null) {
-						// fix up requireLocalization a bit
-						if (result[1]=="requireLocalization") {
-							var fixup= result[2].match(requireLocalizationFixup);
-							result= fixup ? "dojo.requireLocalization(" + fixup[0] + ")" : 0;
-						} else {
-							result= result[0];
+				// look for dojo loader applications
+				while((result= dojoExp.exec(contents)) != null) {
+					// fix up requireLocalization a bit
+					if (result[1]=="requireLocalization") {
+						var fixup= result[2].match(requireLocalizationFixup);
+						result= fixup ? "dojo.requireLocalization(" + fixup[0] + ")" : 0;
+					} else {
+						result= result[0];
+					}
+					try {
+						if (result) {
+							dojoV1xLoaderModule= 1;
+							resource.tag.synModule= 1;
+							f= new Function("dojo", result);
+							f(dojo);
 						}
+					} catch (e) {
+						bc.logWarn("unable to evaluate dojo loader function in " + resource.src + "; ignored function call; error and function text follows...", e, result);
+					}
+				}
+
+				// check for multiple or irrational dojo.provides
+				if (dojoProvideList.length) {
+					if (dojoProvideList.length>1) {
+						bc.logWarn("multiple dojo.provides given in a single resource (" + resource.src + ")");
+					}
+					dojoProvideList.forEach(function(item) {
+						if (item.replace(/\./g, "/")!=resource.path) {
+							bc.logWarn("dojo.provide module identifier (" + item + ") does not match resource location (" + resource.path + ")");
+						}
+					});
+				}
+
+				if(dojoV1xLoaderModule){
+					var getText= resource.getText;
+					resource.getText= function(){
+						if (!this.replacementsApplied) {
+							this.replacementsApplied= true;
+							var
+								depsSet= {},
+								deps= ["\"dojo\"", "\"dijit\"", "\"dojox\""].concat(this.deps.map(function(dep){
+									depsSet[dep.path.replace(/\//g, ".")]= 1;
+									return "\"" + dep.path + "\"";
+								})).join(","),
+
+								// TODO: fix this for rescoping
+								scopeArgs= "dojo, dijit, dojox",
+
+								mid= "\"" + this.path + "\"",
+
+								text= getText.call(this).replace(/dojo\.((require)|(provide))\s*\(\s*['"]([^'"]+)['"]\s*\)\s*;?\s*/g, function(match, unused, require, provide, id){
+									if(provide || id in depsSet){
+										return "/* builder delete begin\n" + match + "\n builder delete end */\n";
+									}else{
+										return match;
+									}
+								});
+							this.text= "define(" +
+								(bc.writeAbsMids ? mid + "," : "") +
+								"[" + deps + "], function(" + scopeArgs + "){\ndojo.getObject(" + mid.replace(/\//g, ".") + ", 1);\n" +
+								text + "\n});\nrequire([" + mid + "]);\n";
+						}
+						return this.text;
+					};
+				}else{
+					// look for AMD define
+					var
+						// look for define applications with an optional string first arg and an array second arg;
+						// notice the regex stops after the second arg
+						defineExp= /(^|\s*)define\s*\(\s*(["'][^'"]+['"]\s*,\s*)?\[[^\]]*?\]\s*,/g,
+
+						// look for require applications with an array for the first arg;
+						// notice the regex stops after the first arg
+						requireExp= /(^|\s)require\s*\(\s*\[[^\]]*?\]/g,
+
+						foundDefine = 0;
+					while((result= defineExp.exec(contents)) != null) {
 						try {
-							if (result) {
-								dojoV1xLoaderModule= 1;
-								resource.tag.synModule= 1;
-								f= new Function("dojo", result);
-								f(dojo);
-							}
+							foundDefine = 1;
+							result= result[0] + "{})";
+							f= new Function("define", result);
+							f(define);
 						} catch (e) {
-							bc.logWarn("unable to evaluate dojo loader function in " + resource.src + "; ignored function call; error and function text follows...", e, result);
+							bc.logWarn("unable to evaluate AMD define function in " + resource.src + "; ignored function call; error and function text follows...", e, result);
 						}
 					}
-
-					// check for multiple or irrational dojo.provides
-					if (dojoProvideList.length) {
-						if (dojoProvideList.length>1) {
-							bc.logWarn("multiple dojo.provides given in a single resource (" + resource.src + ")");
-						}
-						dojoProvideList.forEach(function(item) {
-							if (item.replace(/\./g, "/")!=resource.path) {
-								bc.logWarn("dojo.provide module identifier (" + item + ") does not match resource location (" + resource.path + ")");
-							}
-						});
-					}
-
-					if(dojoV1xLoaderModule){
-						var getText= resource.getText;
-						resource.getText= function(){
-							if (!this.replacementsApplied) {
-								this.replacementsApplied= true;
-								var
-									depsSet= {},
-									deps= ["\"dojo\"", "\"dijit\"", "\"dojox\""].concat(this.deps.map(function(dep){
-										depsSet[dep.path.replace(/\//g, ".")]= 1;
-										return "\"" + dep.path + "\"";
-									})).join(","),
-
-									// TODO: fix this for rescoping
-									scopeArgs= "dojo, dijit, dojox",
-
-									mid= "\"" + this.path + "\"",
-
-									text= getText.call(this).replace(/dojo\.((require)|(provide))\s*\(\s*['"]([^'"]+)['"]\s*\)\s*;?\s*/g, function(match, unused, require, provide, id){
-										if(provide || id in depsSet){
-											return "/* builder delete begin\n" + match + "\n builder delete end */\n";
-										}else{
-											return match;
-										}
-									});
-								this.text= "define(" +
-									(bc.writeAbsMids ? mid + "," : "") +
-									"[" + deps + "], function(" + scopeArgs + "){\ndojo.getObject(" + mid.replace(/\//g, ".") + ", 1);\n" +
-									text + "\n});\nrequire([" + mid + "]);\n";
-							}
-							return this.text;
-						};
-					}else{
-						// look for AMD define
-						while((result= defineExp.exec(contents)) != null) {
-							try {
-								result= result[0] + ")";
-								f= new Function("define",result);
-								f(define, require);
-							} catch (e) {
-								bc.logWarn("unable to evaluate AMD define function in " + resource.src + "; ignored function call; error and function text follows...", e, result);
-							}
-						}
-						// look for AMD require
+					// look for AMD require, iff no define since a require inside a define should not be processed
+					if(!foundDefine){
 						while((result= requireExp.exec(contents)) != null) {
 							try {
 								result= result[0] + ")";
 								f= new Function("require", result);
-								f(define, require);
+								f(require);
 							} catch (e) {
 								bc.logWarn("unable to evaluate AMD require function in " + resource.src + "; ignored function call; error and function text follows...", e, result);
 							}
 						}
 					}
+				}
 			};
 
 		// scan the resource for dependencies
@@ -319,5 +323,6 @@ define(["../buildControl"], function(bc) {
 				}
 			}
 		});
+
 	};
 });
