@@ -177,8 +177,9 @@ define([
 				copyrightMap[pair[0]]= pair[2];
 			});
 
-			// make sure we have a dojo prefix; memorize it
-			var activeDojoPath= fileUtils.computePath(require.nameToUrl("dojo/package.json").match(/(.+)\/package\.json$/)[1], process.cwd());
+			// make sure we have a dojo prefix; memorize it;
+			// notice we're using the dojo being used to run the build program; this seems weak, but the only alternative is to quit
+			var activeDojoPath= fileUtils.computePath(require.toUrl("dojo/package.json").match(/(.+)\/package\.json$/)[1], process.cwd());
 			if(!prefixMap.dojo) {
 				// use the loader to find the real dojo path
 				prefixMap.dojo= activeDojoPath;
@@ -308,7 +309,7 @@ define([
 			for (p in profile) {
 				// the conditional is to keep v1.6- compat
 				// TODO: recognition of "false" should be deprecated
-				if (/loader|xdScopeArgs|xdDojoScopeName|expandProvide|removeDefaultNameSpaces|addGuards/.test(p)) {
+				if (/log|loader|xdScopeArgs|xdDojoScopeName|expandProvide|removeDefaultNameSpaces|addGuards/.test(p)) {
 					profile[p]= "deprecated; value(" + profile[p] + ") ignored";
 				}
 				result[p=="layers" ? "rawLayers" : p]= profile[p]=="false" ? false : profile[p];
@@ -361,7 +362,9 @@ define([
 				var
 					// the logger is currently depricated; stub it out so profiles to cause exceptions on undefined
 					// TODO: should we bring this back?
-					noop = function(){},
+					warn = function(){
+						bc.logWarn("logger function call ignored; logger is deprecated");
+					},
 					logger = {
 						TRACE: 0,
 						INFO: 1,
@@ -369,11 +372,11 @@ define([
 						ERROR: 3,
 						level: 0,
 						logPrefix: "",
-						trace:noop,
-						info:noop,
-						warn:noop,
-						error:noop,
-						_print:noop
+						trace:warn,
+						info:warn,
+						warn:warn,
+						error:warn,
+						_print:warn
 					},
 					dependencies= {};
 				eval(__text);

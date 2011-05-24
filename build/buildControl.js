@@ -273,18 +273,6 @@ define([
 			return require.getModuleInfo(mid, referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", bc.packageMapProg, bc.pathsMapProg, true);
 		};
 
-		bc.nameToUrl= function(name, ext, referenceModule) {
-			// slightly different algorithm depending upon whether or not name contains
-			// a filetype. This is a requirejs artifact which we don't like.
-			var
-				match = !ext && name.match(/(.+)(\.[^\/]+?)$/),
-				moduleInfo = bc.getSrcModuleInfo((match && match[1]) || name, referenceModule, packs, modules, req.baseUrl, packageMapProg, pathsMapProg),
-				url= moduleInfo.url;
-			// recall, getModuleInfo always returns a url with a ".js" suffix iff pid; therefore, we've got to trim it
-			url= moduleInfo.pid ? url.substring(0, url.length - 3) : url;
-			return url + (ext ? ext : (match ? match[2] : ""));
-		},
-
 		bc.destModules= {};
 		bc.getDestModuleInfo= function(mid, referenceModule) {
 			// note: bd.destPagePath should never be required; but it's included for completeness and up to the user to provide it if some transform does decide to use it
@@ -411,7 +399,6 @@ if(0){
 				logError:1,
 				logWarn:1,
 				messages:1,
-				nameToUrl:1,
 				packageMap:1,
 				packageMapProg:1,
 				packages:1,

@@ -50,7 +50,7 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 	// prime the event pump for fast browsers like Google Chrome - it's so fast, it doesn't stop to listen for keypresses!
 	_spaceReceived: false,
 	_primePump: false,
-	
+
 	_killApplet: function(){}, // overridden by Robot.html
 
 	killRobot: function(){
@@ -77,7 +77,7 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 			}
 		}
 	},
-	
+
 	startRobot: function(){
 		//startRobot should be called to initialize the robot (after the java applet is loaded).
 		//one good place to do this is in a dojo.addOnLoad handler. This function will be called
@@ -478,7 +478,7 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 			_robot.wheelMouse(isSecure(), Number(wheelAmt), Number(0), Number(duration||0));
 		},delay,duration);
 	},
-	
+
 	setClipboard: function(/*String*/data,/*String, optional*/format){
 		// summary:
 		//		Set clipboard content.
@@ -516,7 +516,7 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 	// if loaded with dojo, there might not be a runner.js!
 	if(!iframesrc && window["dojo"]){
 		// if user set document.domain to something else, send it to the Robot too
-		iframesrc = require.nameToUrl("./Robot.html") + "?domain=" + escape(document.domain);
+		iframesrc = require.toUrl("./Robot.html") + "?domain=" + escape(document.domain);
 	}
 	document.writeln('<div id="dohrobotview" style="border:0px none; margin:0px; padding:0px; position:absolute; bottom:0px; right:0px; width:1px; height:1px; overflow:hidden; visibility:hidden; background-color:red;"></div>'+
 		'<iframe application="true" style="border:0px none; z-index:32767; padding:0px; margin:0px; position:absolute; left:0px; top:0px; height:42px; width:200px; overflow:hidden; background-color:transparent;" tabIndex="-1" src="'+iframesrc+'" ALLOWTRANSPARENCY="true"></iframe>');

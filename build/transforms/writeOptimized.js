@@ -121,7 +121,7 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 			},
 			tempFileDirs= {},
 			doneRe= new RegExp("^Done\\s\\(compile\\stime.+$", "m"),
-			optimizerRunner= require.nameToUrl("build/optimizeRunner.js"),
+			optimizerRunner= require.toUrl("build/optimizeRunner.js"),
 			buildRoot= optimizerRunner.match(/(.+)\/build\/optimizeRunner\.js$/)[1],
 			javaClasses= fileUtils.catPath(buildRoot, "closureCompiler/compiler.jar") + ":" + fileUtils.catPath(buildRoot, "shrinksafe/js.jar") + ":" + fileUtils.catPath(buildRoot, "shrinksafe/shrinksafe.jar");
 		for(var processes= [], i= 0; i<bc.maxOptimizationProcesses; i++) {(function(){
