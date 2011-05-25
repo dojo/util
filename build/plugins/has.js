@@ -46,7 +46,7 @@ define(["dojo/regexp"], function(dojoRegExp) {
 							}
 						}
 						// a module
-						return term;
+						return term===undefined ? "" : term;
 					}
 				},
 
@@ -56,14 +56,19 @@ define(["dojo/regexp"], function(dojoRegExp) {
 			if(resolvedId===undefined){
 				bc.logInfo("module identifier (" + id + ") could not be resolved during build-time");
 				return getHasPluginDependency();
-			}else if(!resolvedId){
+			}
+
+			var regex= new RegExp("((dojo\\/)|([./]+))has\\!" + dojoRegExp.escapeString(id));
+			if(!resolvedId){
+				// replace the unneeded module with a module that's guaranteed available
+				// this keeps the module order, and therefore, argument order to the factory correct
+				referenceModule.text= referenceModule.text.replace(regex, "require");
 				return [];
 			}else{
 				var
 					moduleInfo= bc.getSrcModuleInfo(resolvedId, referenceModule),
 					module= bc.amdResources[moduleInfo.pqn];
 				if(module){
-					var regex= new RegExp("(dojo\\/)|([./]+)has\\!" + dojoRegExp.escapeString(id), "g");
 					referenceModule.text= referenceModule.text.replace(regex, resolvedId);
 					return [module];
 				}else{
