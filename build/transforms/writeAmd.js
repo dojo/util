@@ -1,5 +1,9 @@
 define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs) {
 	var
+		computingLayers
+			// the set of layers being computed; use this to detect circular layer dependencies
+			= {},
+
 		computeLayerContents= function(
 			layerModule,
 			include,
@@ -14,6 +18,12 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 			//
 			// note: layerSet is built exactly as given above, so included modules that are later excluded
 			// are *not* in result layerSet
+			if(layerModule && computingLayers[layerModule.pqn]){
+				bc.logError("cycle detected in layer dependencies with respect to layer " + layerModule.pqn);
+				return {};
+			}
+			computingLayers[layerModule.pqn]= 1;
+
 			var
 				includeSet= {},
 				visited,
@@ -30,7 +40,19 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 					} else {
 						delete includeSet[pqn];
 					}
-					for (var deps= module.deps, i= 0; deps && i<deps.length; traverse(deps[i++]));
+					if(module!==layerModule && module.layer){
+						var layerModuleSet= module.moduleSet || computeLayerContents(module, module.layer.include, module.layer.exclude);
+						for(var p in layerModuleSet){
+							if (includePhase) {
+								includeSet[p]= layerModuleSet[p];
+							} else {
+								delete includeSet[p];
+							}
+						}
+					}else{
+						for (var deps= module.deps, i= 0; deps && i<deps.length; traverse(deps[i++])){
+						}
+					}
 				};
 
 			visited= {};
@@ -57,8 +79,10 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 					traverse(module);
 				}
 			});
-			if (layerModule) {
-				delete includeSet[layerModule.pqn];
+
+			if(layerModule){
+				layerModule.moduleSet= includeSet;
+				delete computingLayers[layerModule.pqn];
 			}
 			return includeSet;
 		},
@@ -79,20 +103,20 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 			include,
 			exclude
 		) {
-
 			var
 				cache= [],
 				pluginLayerText= "",
 				moduleSet= computeLayerContents(resource, include, exclude);
-			for (var p in moduleSet) {
+			for (var p in moduleSet) if(!resource || p!=resource.pqn){
 				var module= moduleSet[p];
 				if (module.getPluginLayerText) {
 					pluginLayerText+= module.getPluginLayerText();
-				} else {
+				} else if(module.getText){
 					cache.push("'" + p + "':function(){\n" + module.getText() + "\n}");
+				} else {
+					bc.logError("failed to include module (" + module.src + ") in layer " + resource.src);
 				}
 			}
-			resource.moduleSet= moduleSet;
 			var text= "";
 			if(resource){
 				text= resource.getText();
@@ -129,7 +153,7 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 			if(resource.tag.syncNls){
 				text= resource.getText();
 			}else if(resource.layer){
-				if(resource.layer.boot){
+				if(resource.layer.boot || resource.layer.discard){
 					// recall resource.layer.boot layers are written by the writeDojo transform
 					return 0;
 				}
