@@ -86,7 +86,7 @@ define([
 			},
 
 			getDefaultConfig= function() {
-				var config= bc.defaultConfig || {hasCache:[]};
+				var config= bc.defaultConfig || {hasCache:{}};
 				config.packages= config.packages || [];
 				if (bc.baseUrl) {
 					config.baseUrl= bc.baseUrl;

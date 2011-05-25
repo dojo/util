@@ -8,6 +8,13 @@ define([
 	"dojo/text!./buildNotice.txt"], function(require, bc, fs, fileUtils, process, dojo, defaultCopyright, defaultBuildNotice) {
 	eval(require.scopeify("./fs, ./fileUtils"));
 	var
+		mix= function(dest, src) {
+			dest= dest || {};
+			src= src || {};
+			for (var p in src) dest[p]= src[p];
+			return dest;
+		},
+
 		defaultBuildProps= {
 			// v1.6- default values
 			profile:"base",
@@ -49,75 +56,43 @@ define([
 			noDefaultPackage:1,
 			destPackageBasePath:".",
 
-			packages:[],
-
 			staticHasFeatures: {
-				'dojo-boot':0,
-				'host-browser':1
-/*
-				'dojo-boot':0,
-				'dojo-debug-messages':0,
-				'dojo-guarantee-console':0,
-				'dojo-load-firebug-console':0,
-				'dojo-loader':1,
-				'dojo-register-openAjax':0,
-				'dojo-sniff':1,
-				'dojo-test-sniff':1,
-				'dojo-test-xd':1,
-				'dojo-v1x-i18n-Api':1,
-				'dom':1,
 				'host-browser':1,
-				'host-node':0,
-				'host-rhino':0,
-				"dojo-has-api":1,
-				'dojo-loader-catches':1,
-				'dojo-error-api':1,
+				'dom':1,
+				'dojo-auto-init':0,
+				'dojo-combo-api':1,
+				'dojo-config-addOnLoad':1,
+				'dojo-config-api':1,
+				'dojo-config-require':1,
+				'dojo-debug-messages':0,
+				'dojo-dom-ready-api':1,
+				'dojo-dom-ready-plugin':1,
+				'dojo-error-api':0,
+				'dojo-firebug':0,
+				'dojo-gettext-api':1,
+				'dojo-guarantee-console':1,
+				'dojo-has-api':1,
 				'dojo-inject-api':1,
-				'dojo-pageload-api':1,
+				'dojo-loader':1,
+				'dojo-loader-catches':0,
+				'dojo-log-api':1,
+				'dojo-publish-privates':1,
 				'dojo-ready-api':1,
-				'dojo-xhr-factory':1,
-				'dojo-publish-privates':1, // TODO: change to
-				'dojo-requirejs-api':0,
-				'dojo-sniff':0,
-				'dojo-timeoutApi':1,
-				'dojo-trace-api':1,
+				'dojo-requirejs-api':1,
+				'dojo-sniff':1,
+				'dojo-sync-loader':1,
+				'dojo-test-sniff':1,
+				'dojo-timeout-api':1,
+				'dojo-trace-api':0,
 				'dojo-undef-api':0,
-				"dojo-gettext-api":1
-*/
+				'dojo-v1x-i18n-Api':1,
+				'dojo-xdomain-test-api':1,
+				'dojo-xhr-factory':1
 			},
 
-			bootConfig: {
-				hasCache:{
-					"host-browser":1,
-					"dom":1,
-					"dojo-amd-factory-scan":1,
-					"dojo-loader":1,
-					"dojo-has-api":1,
-					"dojo-xhr-factory":1,
-					"dojo-inject-api":1,
-					"dojo-timeout-api":1,
-					"dojo-trace-api":1,
-					"dojo-log-api":1,
-					"dojo-loader-catches":0,
-					"dojo-dom-ready-api":1,
-					"dojo-dom-ready-plugin":1,
-					"dojo-ready-api":1,
-					"dojo-error-api":1,
-					"dojo-publish-privates":1,
-					"dojo-gettext-api":1,
-					"dojo-config-api":1,
-					"dojo-sniff":1,
-					"config-tlmSiblingOfDojo":1,
-					"dojo-sync-loader":1,
-					"dojo-test-sniff":1,
-					"dojo-xdomain-test-api":1
-				},
-
-				packages: [{
-					// note: like v1.6-, this bootstrap computes baseUrl to be the dojo directory
-					name:'dojo',
-					location:'.'
-				}]
+			defaultConfig:{
+				hasCache:{},
+				async:0
 			}
 		},
 
@@ -307,44 +282,34 @@ define([
 			}
 
 			for (p in profile) {
-				// the conditional is to keep v1.6- compat
-				// TODO: recognition of "false" should be deprecated
 				if (/log|loader|xdScopeArgs|xdDojoScopeName|expandProvide|removeDefaultNameSpaces|addGuards/.test(p)) {
 					profile[p]= "deprecated; value(" + profile[p] + ") ignored";
 				}
-				result[p=="layers" ? "rawLayers" : p]= profile[p]=="false" ? false : profile[p];
+				if(p=="layers"){
+					result.rawLayers= profile[p];
+				}else if(p=="staticHasFeatures"){
+					mix(result.staticHasFeatures, profile.staticHasFeatures);
+				}else if(p!="defaultConfig"){
+					// TODO: recognition of "false" should be deprecated
+					result[p]= (profile[p]=="false" ? false : profile[p]);
+				}
 			}
-			result.localeList = result.localeList.split(",");
+
+			if(profile.defaultConfig){
+				for(p in profile.defaultConfig){
+					if(p=="hasCache"){
+						mix(result.defaultConfig.hasCache, profile.defaultConfig.hasCache);
+					}else{
+						result.defaultConfig[p]= profile.defaultConfig[p];
+					}
+				}
+			}
 
 			// TODOC: we now take care of the console without shrink safe
 			// TODO/TODOC: burn in dojoConfig, djConfig
 			// TODO/TODOC: dojoConfig, djConfig should be able to be objects (string restrinction lifted)
 			// TODOC: action is assumed to be build, no more clean, help if you want it explicitly
 
-			bc.defaultConfig= {
-				hasCache: bc.hasCache || {
-					"host-browser":1,
-					"dom":1,
-					"dojo-loader":1,
-					"dojo-has-api":1,
-					"dojo-xhr-factory":1,
-					"dojo-inject-api":1,
-					"dojo-timeout-api":1,
-					"dojo-trace-api":1,
-					"dojo-log-api":1,
-					"dojo-loader-catches":1,
-					"dojo-dom-ready-api":1,
-					"dojo-dom-ready-plugin":1,
-					"dojo-ready-api":1,
-					"dojo-error-api":1,
-					"dojo-publish-privates":1,
-					"dojo-gettext-api":1,
-					"dojo-config-api":1,
-					"dojo-sniff":1,
-					"dojo-sync-loader":1,
-					"dojo-test-sniff":1
-				}
-			};
 			return result;
 		},
 

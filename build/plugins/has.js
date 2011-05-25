@@ -1,33 +1,43 @@
 define(["dojo/regexp"], function(dojoRegExp) {
-	// TODO: this implementation resolves and removed the has! expression at build time; need to make this optional
-
 	return {
 		start:function(
 			id,
 			referenceModule,
 			bc
 		) {
-			var hasPlugin= bc.amdResources["dojo*has"];
-			if (!hasPlugin) {
-				throw new Error("has! plugin missing");
-			}
-	
-			var 
-				has = function(featureId) {
-					return bc.staticHasFeatures[featureId];
+			var
+				getHasPluginDependency= function(){
+					var hasPlugin= bc.amdResources["dojo*has"];
+					if(!hasPlugin){
+						bc.logError("failed to find dojo/has! plugin");
+						return [];
+					}else{
+						return [hasPlugin];
+					}
 				},
-				tokens = id.match(/[\?:]|[^:\?]*/g), 
+
+				has = function(featureId) {
+					var value = bc.staticHasFeatures[featureId];
+					return (value===undefined || value==-1) ? undefined : value;
+				},
+
+				tokens = id.match(/[\?:]|[^:\?]*/g),
+
 				i = 0,
+
 				get = function(skip){
 					var operator, term = tokens[i++];
 					if(term == ":"){
-						// empty string module name, resolves to undefined
-						return undefined;
+						// empty string module name; therefore, no dependency
+						return "";
 					}else{
 						// postfixed with a ? means it is a feature to branch on, the term is the name of the feature
 						if(tokens[i++] == "?"){
-							if(!skip && has(term)){
-								// matched the feature, get the first value from the options 
+							var hasResult= has(term);
+							if(hasResult===undefined){
+								return undefined;
+							}else if(!skip && hasResult){
+								// matched the feature, get the first value from the options
 								return get();
 							}else{
 								// did not match, get the second value, passing over the first
@@ -38,22 +48,28 @@ define(["dojo/regexp"], function(dojoRegExp) {
 						// a module
 						return term;
 					}
-				};
-			var 
-				resolvedId = get(),
-				dependentModuleInfo= resolvedId && bc.getSrcModuleInfo(resolvedId, referenceModule);
-			if(dependentModuleInfo){
-				var module= bc.amdResources[dependentModuleInfo.pqn];
-				if (module) {
-					var regex= new RegExp("(dojo\/)|([./]+)" + dojoRegExp.escapeString("has!" + id), "g");
-					referenceModule.text= referenceModule.text.replace(regex, resolvedId);
-					return [hasPlugin, module];
-				} else {
-					bc.logError("failed to resolve has! dependency (" + dependentModuleInfo.pqn + ") for module (" + resource.src + ")");
-					return [hasPlugin];
-				}
+				},
+
+				resolvedId = get();
+
+			// we only need the plugin if we need to resolve at run time
+			if(resolvedId===undefined){
+				bc.logInfo("module identifier (" + id + ") could not be resolved during build-time");
+				return getHasPluginDependency();
+			}else if(!resolvedId){
+				return [];
 			}else{
-				return [hasPlugin];
+				var
+					moduleInfo= bc.getSrcModuleInfo(resolvedId, referenceModule),
+					module= bc.amdResources[moduleInfo.pqn];
+				if(module){
+					var regex= new RegExp("(dojo\\/)|([./]+)has\\!" + dojoRegExp.escapeString(id), "g");
+					referenceModule.text= referenceModule.text.replace(regex, resolvedId);
+					return [module];
+				}else{
+					bc.logError("failed to resolve has! dependency (" + moduleInfo.pqn + ")" + (referenceModule ? " for module (" + referenceModule.src + ")" : ""));
+					return getHasPluginDependency();
+				}
 			}
 		}
 	};
