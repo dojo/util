@@ -134,6 +134,12 @@ dependencies = {
 			]
 		},
 		{
+			name: "../demos/touch/src.js",
+			dependencies:[
+				"demos.touch.src"
+			]
+		},
+		{
 			// the CSS3 animations demo
 			name: "../demos/css3/src.js",
 			dependencies:[
