@@ -122,6 +122,12 @@ dependencies = {
 			]
 		},
 		{
+			name: "../demos/mobileFileBrowser/src.js",
+			dependencies:[
+				"demos.mobileFileBrowser.src"
+			]
+		},
+		{
 			name: "../demos/mobileOpenLayers/src.js",
 			dependencies:[
 				"demos.mobileOpenLayers.src"
