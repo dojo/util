@@ -231,16 +231,16 @@ define([
 
 			pack.location= computePath(pack.location || (pack.name ? "./" + pack.name : bc.basePath), bc.basePath);
 			pack.packageMap= pack.packageMap || 0;
-			pack.mapProg= require.computeMapProg(pack.packageMap);
+			require.computeMapProg(pack.packageMap, (pack.mapProg= []));
 
 			// dest says where to output the compiled code stack
 			var destPack= bc.destPackages[pack.name]= {
 				name:pack.destName || pack.name,
 				main:pack.destMain || pack.main,
 				location:computePath(pack.destLocation || ("./" + (pack.destName || pack.name)), bc.destPackageBasePath),
-				packageMap:pack.destPackageMap || pack.packageMap,
-				mapProg:require.computeMapProg(pack.destPackageMap)
+				packageMap:pack.destPackageMap || pack.packageMap
 			};
+			require.computeMapProg(pack.destPackageMap, (destPack.mapProg= []));
 			delete pack.destname;
 			delete pack.destMain;
 			delete pack.destLocation;
@@ -264,12 +264,12 @@ define([
 			}
 		}
 		// now that bc.packageMap is initialized...
-		bc.packageMapProg= require.computeMapProg(bc.packageMap);
-		bc.destPackageMapProg= require.computeMapProg(bc.destPackageMap);
+		require.computeMapProg(bc.packageMap, (bc.packageMapProg= []));
+		require.computeMapProg(bc.destPackageMap, (bc.destPackageMapProg= []));
 
 		// get this done too...
-		bc.pathsMapProg= require.computeMapProg(bc.paths);
-		bc.destPathsMapProg= require.computeMapProg(bc.destPaths || bc.paths);
+		require.computeMapProg(bc.paths, (bc.pathsMapProg= []));
+		require.computeMapProg(bc.destPaths || bc.paths, (bc.destPathsMapProg= []));
 
 		// add some methods to bc to help with resolving AMD module info
 		bc.srcModules= {};
@@ -381,6 +381,17 @@ define([
 			}
 		}
 	}
+
+	var deprecated= [];
+	for(p in bc){
+		if(/^(loader|xdDojoPath|symbol|scopeDjConfig|scopeMap|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)){
+			deprecated.push(p);
+			bc.logWarn(p + "deprecated, ignored");
+		}
+	}
+	deprecated.forEach(function(p){
+		delete bc[p];
+	});
 
 	// dump bc (if requested) before changing gateNames to gateIds below
 	if (bc.check) (function() {
