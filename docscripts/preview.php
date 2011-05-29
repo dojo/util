@@ -32,11 +32,10 @@ $showall = isset($_REQUEST['showall']);
 				@import "../../dojo/resources/dojo.css"; 
 				@import "../../dijit/themes/claro/claro.css";
 				@import "../../dijit/themes/claro/document.css";
-				@import "../../dojox/layout/resources/ExpandoPane.css";
 				
 				body, html { width:100%; height:100%; margin:0; padding:0; overflow:hidden; }
-				.sho { display:block; }
-				.nosho { display:none; } 
+				
+				.dnone { display:none; } 
 				.topbar li { display:inline; padding:5px; } 
 				.pad {
 					padding:20px;
@@ -50,45 +49,56 @@ $showall = isset($_REQUEST['showall']);
 			<script type="text/javascript" src="../../dojo/dojo.js" djConfig="parseOnLoad:true"></script>
 			<script type="text/javascript">
 				dojo.require("dojo.data.ItemFileReadStore");
+				dojo.require("dojo.hash");
 				dojo.require("dijit.Tree");
 				dojo.require("dijit.layout.BorderContainer");
-				dojo.require("dojox.layout.ExpandoPane");
 				dojo.require("dijit.layout.ContentPane");
 				dojo.require("dijit.layout.TabContainer");
-				dojo.require("dojo.fx.easing");
-
-
-				var fileStore, fileTree;
+				dojo.require("dojox.NodeList.delegate");
+				
+				var fileStore, fileTree, apiPane;
+				
 				function tgShow(id){
-					var identity = dojo.byId(id);
-					if(identity.className=="sho"){ 
-						identity.className="nosho";
-					}else{ 
-						identity.className="sho"; 
-					}
+					dojo.toggleClass(id, "dnone");
 				}
 
+				function addTab(ns, file){
+					
+					var id = ns + "." + file.split("/").join("."),
+						dij = dijit.byId(id)
+					;
+					
+					if(!dij){
+						dij = new dijit.layout.ContentPane({
+							id: id, 
+							href: "?ns=" + ns + "&file=" + file + "&showall=&ajaxy=true",
+							title: id,
+							closable: true
+						}).placeAt(apiPane);
+					}else{
+						dij.set("href", "?ns=" + ns + "&file=" + file + "&showall=&ajaxy=true&bust=" + (+new Date()));
+					}
+					apiPane.selectChild(dij);
+				};
+				
+				function gohash(hash){
+					// do an addTab for a ns/file extraction from the `hash` value
+					var a = hash.split("!"),
+						ns = a[0],
+						file = a[1]
+					;
+					ns && file && addTab(ns, file);
+				}
+				
+				dojo.subscribe("/dojo/hashchange", gohash);
+				
 				dojo.ready(function(){
-					var apipane = dijit.byId("apiTabs");
-					dojo.connect(window,"onclick",function(e){
-						if(e.target && e.target.href){
-							e.preventDefault();
-							var id = dojo.attr(e.target, "rel");
-							var dij = dijit.byId(id);
-							if(!dij){
-								dij = new dijit.layout.ContentPane({
-									id: id,
-									href: e.target.href + "&ajaxy=true",
-									title: id,
-									closable: true
-								}).placeAt(apipane);
-								
-							}else{
-								dij.set("href", e.target.href + "&ajaxy=true&bust=" + (+new Date()));
-							}
-							
-							apipane.selectChild(dij);
-						}
+					
+					apiPane = dijit.byId("apiTabs");
+					
+					dojo.query("#apiTabs").delegate(".toggler", "onclick", function(e){
+						e && e.preventDefault();
+						dojo.query(this).parent().siblings(".t").toggleClass("dnone");
 					});
 
 					//	build the tree
@@ -103,27 +113,19 @@ $showall = isset($_REQUEST['showall']);
 							var type = fileStore.getValue(item, "type");
 							if(type == "file"){
 								//	load it up
-								var apipane = dijit.byId("apiTabs");
 								var ns = fileStore.getValue(item, "ns"),
-									file = fileStore.getValue(item, "full_name"),
-									name = fileStore.getValue(item, "name"),
-									id = ns + "." + file.split("/").join(".");
-								var dij = dijit.byId(id);
-								if(!dij){
-									dij = new dijit.layout.ContentPane({
-										id: id,
-										href: "?ns=" + ns + "&file=" + file + "&showall=&ajaxy=true",
-										title: id,
-										closable: true
-									}).placeAt(apipane);
-								} else {
-									dij.set("href", "?ns=" + ns + "&file=" + file + "&showall=&ajaxy=true&bust=" + (+new Date()));
-								}
-								apipane.selectChild(dij);
+									file = fileStore.getValue(item, "full_name")
+								;
+								dojo.hash(ns + "!" + file);
 							}
 						}
 					});
-					dijit.byId("fileTreePane").domNode.appendChild(fileTree.domNode);
+					dojo.place(fileTree.domNode, dijit.byId("fileTreePane").domNode);
+
+					// if we landed with a hash, lets use it:
+					var current = dojo.hash();
+					current && ~current.indexOf("!") && gohash(current);
+
 				});
 			</script>
 
@@ -145,27 +147,7 @@ foreach ($files as $set){
 	$data[$namespace][] = $file;
 }
 $namespaces = array_keys($data); 
-
-/*
-$trees = array();
-$regexp = "";
-foreach ($data as $ns => $file){
-	$tree = "<ul>";
-	foreach ($data[$ns] as $file){
-		if(!preg_match('/tests\//i',$file)){
-			if($ifile == $file){ 
-				$tree .= "<li>".$file."</li>"; 
-			}else{ 
-				$tree .= "<li><a rel=\"". str_replace("/", ".", $file) . "\" href=\"?ns=".$ns."&amp;file=".$file."&amp;showall=".$showall."\">".$ns."/".$file."</a></li>"; 
-			}
-		}else{ $testfiles[] = $ns."/".$file; } 
-	}
-	$tree .= "</ul>";
-	$trees[$ns] = $tree;
-}
- */
 unset($files); 
-// */
 
 if(!empty($_REQUEST['ns'])){
 
@@ -195,6 +177,13 @@ if(!empty($_REQUEST['ns'])){
 					$print .= "<li><h3>Provides:</h3><ul>";
 					$print .= "<li>$val</li>"; 
 					$print .= "</ul></li>"; 
+					break;
+				case "#debug":
+				case "#raw_source":
+				case "#unwrapped_source":
+					if(!empty($val)){
+						$print .= "<div><h4><a href='#' class='toggler'>" . $key . "</a></h4><pre class='t dnone'>" . htmlentities($val) . "</pre></div>";						
+					}
 					break;
 				default:
 					$print .= "<li><h4>".$key."</h4><ul> ";
@@ -248,7 +237,7 @@ if(!empty($_REQUEST['ns'])){
 								// the stripped source, and some minimal toggling to show/hide	
 							case "source" : 
 								$print .= "<li class=\"source\"><em>source: [<a onclick=\"tgShow('unique".++$u."');\">view</a>]</em> 
-									<div class=\"nosho\" id=\"unique".$u."\">\n
+									<div class=\"dnone\" id=\"unique".$u."\">\n
 									".ltrim(str_replace("\n","<br>",str_replace("\t","&nbsp;",$val2)))."
 									</div>";  
 								break;
@@ -306,21 +295,6 @@ if(!empty($_REQUEST['ns'])){
 if(!$ajaxy){ ?>
 <div dojoType="dijit.layout.BorderContainer" id="main">
 	<div dojoType="dijit.layout.ContentPane" id="fileTreePane" region="left" style="width: 250px; overflow: auto;" splitter="true"></div>
-<!--
-	<div dojoType="dojox.layout.ExpandoPane" easeOut="dojo.fx.easing.backIn" easeIn="dojo.fx.easing.backOut" title="Namespaces" region="left" style="width:250px" splitter="true">
-		<div dojoType="dijit.layout.TabContainer" id="nstabs" tabPosition="bottom">
-<?php
-	/*
-				foreach($trees as $ns => $list){
-					print "<div attachParent=\"true\" dojoType=\"dijit.layout.ContentPane\" title=\"".$ns."\">";
-					print $list;
-					print "</div>";
-				}
-	*/
-			?>
-		</div>
-	</div>
--->
 	<div dojoType="dijit.layout.TabContainer" id="apiTabs" region="center">
 		<div dojoType="dijit.layout.ContentPane" id="apiPane" title="Crude API Browser">
 			<div class="pad"><?php echo $print; ?></div>
