@@ -1524,7 +1524,7 @@ doh.run = function(){
 };
 
 doh.runOnLoad = function(){
-	require.ready(doh, "run");
+	dojo.ready(doh, "run");
 };
 
 return doh;

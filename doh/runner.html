@@ -209,11 +209,11 @@
 						deps:["dohDojo", "doh", "dohDojo/window"],
 
 						callback:function(dohDojo, doh){
-							require.ready(function(){
+							dohDojo.ready(function(){
 								fixHeight(dohDojo);
 								doh.breakOnError= breakOnError;
 								require(test);
-								require.ready(doh, "run");
+								dohDojo.ready(doh, "run");
 							});
 						},
 
@@ -223,11 +223,11 @@
 					config= {
 						deps:["dojo", "doh", "dojo/window"],
 						callback:function(dojo, doh){
-							require.ready(function(){
+							dojo.ready(function(){
 								fixHeight(dojo);
 								doh.breakOnError= breakOnError;
 								require(test);
-								require.ready(doh, "run");
+								dojo.ready(doh, "run");
 							});
 						},
 						async:async,
