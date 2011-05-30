@@ -83,9 +83,9 @@ $showall = isset($_REQUEST['showall']);
 				
 				function gohash(hash){
 					// do an addTab for a ns/file extraction from the `hash` value
-					var a = hash.split("!"),
-						ns = a[0],
-						file = a[1]
+					var all = hash.split("/"),
+						ns = all.shift(),
+						file = all.join("/")
 					;
 					ns && file && addTab(ns, file);
 				}
@@ -95,6 +95,12 @@ $showall = isset($_REQUEST['showall']);
 				dojo.ready(function(){
 					
 					apiPane = dijit.byId("apiTabs");
+					dojo.connect(apiPane, "selectChild", function(child){
+						var hash = dojo.hash();
+						if(child.id !== hash){
+							dojo.hash(child.id);
+						}
+					});
 					
 					dojo.query("#apiTabs").delegate(".toggler", "onclick", function(e){
 						e && e.preventDefault();
@@ -116,7 +122,12 @@ $showall = isset($_REQUEST['showall']);
 								var ns = fileStore.getValue(item, "ns"),
 									file = fileStore.getValue(item, "full_name")
 								;
-								dojo.hash(ns + "!" + file);
+								var c = dojo.hash();
+								if(c == ns + "/" + file){
+									addTab(ns, file);
+								}else{
+									dojo.hash(ns + "/" + file);
+								}
 							}
 						}
 					});
@@ -124,7 +135,7 @@ $showall = isset($_REQUEST['showall']);
 
 					// if we landed with a hash, lets use it:
 					var current = dojo.hash();
-					current && ~current.indexOf("!") && gohash(current);
+					current && ~current.indexOf("/") && gohash(current);
 
 				});
 			</script>
