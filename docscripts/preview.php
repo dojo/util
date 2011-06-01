@@ -1,6 +1,6 @@
 <?php /*
 
-  _browse.php - rudimentary api browser designed to expose flaws in
+  preview.php - rudimentary api browser designed to expose flaws in
   either the dojo doc parser or the effort to document the Dojo Toolkit
   API. it is embarasingly inefficient and sloppy, but works.
   
@@ -12,6 +12,9 @@
 
   it covers all files in dojtool's modules/ directory dynamically, so
   can be used to preview documentation in custom namespace code, as well.
+  
+  deep linking is possible via hash tags, eg:
+  http://archive.dojotoolkit.org/nightly/dojotoolkit/util/docscripts/preview.php#dojo/dom-class.js
 
 */
 
@@ -44,6 +47,14 @@ $showall = isset($_REQUEST['showall']);
 				#main { 
 					width:100%; height:100%;
 				}
+				
+				.source pre {
+					margin:0; padding:0;
+				}
+				pre.error {
+					color:red;
+					background:yellow;
+				}
 			</style>
 			
 			<script type="text/javascript" src="../../dojo/dojo.js" djConfig="parseOnLoad:true"></script>
@@ -64,19 +75,22 @@ $showall = isset($_REQUEST['showall']);
 
 				function addTab(ns, file){
 					
-					var id = ns + "." + file.split("/").join("."),
-						dij = dijit.byId(id)
+					var id = ns + "." + (file.split("/").join(".")),
+						dij = dijit.byId(id),
+						href = "?ns=" + ns + "&file=" + file + "&ajaxy=1&showall=1"
 					;
 					
+
 					if(!dij){
 						dij = new dijit.layout.ContentPane({
 							id: id, 
-							href: "?ns=" + ns + "&file=" + file + "&showall=&ajaxy=true",
+							href: href,
 							title: id,
 							closable: true
-						}).placeAt(apiPane);
+						});
+						dij.placeAt(apiPane);
 					}else{
-						dij.set("href", "?ns=" + ns + "&file=" + file + "&showall=&ajaxy=true&bust=" + (+new Date()));
+						dij.set("href", href + "&bust=" + (+new Date()));
 					}
 					apiPane.selectChild(dij);
 				};
@@ -87,6 +101,7 @@ $showall = isset($_REQUEST['showall']);
 						ns = all.shift(),
 						file = all.join("/")
 					;
+					console.warn("go hash:", ns, file);
 					ns && file && addTab(ns, file);
 				}
 				
@@ -95,12 +110,12 @@ $showall = isset($_REQUEST['showall']);
 				dojo.ready(function(){
 					
 					apiPane = dijit.byId("apiTabs");
-					dojo.connect(apiPane, "selectChild", function(child){
-						var hash = dojo.hash();
-						if(child.id !== hash){
-							dojo.hash(child.id);
-						}
-					});
+				//	dojo.connect(apiPane, "selectChild", function(child){
+				//		var hash = dojo.hash();
+				//		if(child.id !== hash){
+				//			dojo.hash(child.id);
+				//		}
+				//	});
 					
 					dojo.query("#apiTabs").delegate(".toggler", "onclick", function(e){
 						e && e.preventDefault();
@@ -123,6 +138,7 @@ $showall = isset($_REQUEST['showall']);
 									file = fileStore.getValue(item, "full_name")
 								;
 								var c = dojo.hash();
+								console.warn(c, ns, file);
 								if(c == ns + "/" + file){
 									addTab(ns, file);
 								}else{
@@ -169,6 +185,9 @@ if(!empty($_REQUEST['ns'])){
 	if($ifile){
 		$apiData = dojo_get_contents($ns,$ifile);
 
+		$waserror = FALSE;
+		$errorline = 0;
+		
 		$print .= "<h2>".$ns."/".$ifile."</h2><ul>";
 		foreach($apiData as $key => $val){
 			switch($key){
@@ -190,10 +209,43 @@ if(!empty($_REQUEST['ns'])){
 					$print .= "</ul></li>"; 
 					break;
 				case "#debug":
+					$print .= "<div><h4>Debugging:</h4><ul>";
+					foreach($val as $message){
+						$print .= "<li>";
+						if(is_string($message)){
+							$print .= $message;
+						}else{
+							$er = $message->getMessage();
+							preg_match("/Line\ (\d+)/", $er, $matches);
+							if($matches[1]){
+								$waserror = TRUE;
+								$errorline = $matches[1];
+							}
+							$print .= "<pre>" . $message->getMessage() . "</pre>";
+						}
+						$print .= "</li>";
+					}
+					$print .= "</ul></div>";
+					break;
 				case "#raw_source":
+					$lines = explode("\n", $val);
+					$print .= "<div class='source'><h4><a href='#' class='toggler'>Source</a></h4><div class='t dnone'><ul>";
+					$i = 0;
+					foreach($lines as $line){
+						$i++;
+						$print .= "<li value='$i'>";
+						if($waserror && ($i == $errorline || $errorline + 1 == $i || $errorline - 1 == $i)){ 
+							$print .= "<pre class='error'>";
+						}else{ 
+							$print .= "<pre>";
+						}
+						$print .= htmlentities($line) . " </pre></li>";
+					}
+					$print .= "</ul></div></div>";
+					break;
 				case "#unwrapped_source":
 					if(!empty($val)){
-						$print .= "<div><h4><a href='#' class='toggler'>" . $key . "</a></h4><pre class='t dnone'>" . htmlentities($val) . "</pre></div>";						
+						$print .= "<div><h4><a href='#' class='toggler'>" . $key . "</a></h4><pre class='t dnone'>" . htmlentities($val) . "</pre></div>";
 					}
 					break;
 				default:
