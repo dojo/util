@@ -103,14 +103,14 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 			}
 			//Get rid of newlines.
 			if(/keepLines/i.test(bc.cssOptimize)){
+				//Remove multiple empty lines.
+				text = text.replace(/(\r\n)+/g, "\r\n");
+				text = text.replace(/(\n)+/g, "\n");
+			}else{
 				text = text.replace(/[\r\n]/g, "");
 				text = text.replace(/\s+/g, " ");
 				text = text.replace(/\{\s/g, "{");
 				text = text.replace(/\s\}/g, "}");
-			}else{
-				//Remove multiple empty lines.
-				text = text.replace(/(\r\n)+/g, "\r\n");
-				text = text.replace(/(\n)+/g, "\n");
 			}
 			resource.text= text;
 		}catch(e){
