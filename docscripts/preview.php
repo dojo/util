@@ -48,12 +48,28 @@ $showall = isset($_REQUEST['showall']);
 					width:100%; height:100%;
 				}
 				
+				.claro ul {
+				    margin-left:10px;
+				}
+				
+				.claro ul ul {
+				    border-left: 1px dotted #ccc;
+				    margin-top:5px;
+				    padding-left:10px;
+				    list-style:none;
+				}
+				
 				.source pre {
 					margin:0; padding:0;
+					border: none;
 				}
 				pre.error {
 					color:red;
 					background:yellow;
+				}
+				
+				.claro ul .source ol {
+				    list-style: number;
 				}
 			</style>
 			
@@ -229,7 +245,7 @@ if(!empty($_REQUEST['ns'])){
 					break;
 				case "#raw_source":
 					$lines = explode("\n", $val);
-					$print .= "<div class='source'><h4><a href='#' class='toggler'>Source</a></h4><div class='t dnone'><ul>";
+					$print .= "<div class='source'><h4><a href='#' class='toggler'>Source</a></h4><div class='t dnone'><ol>";
 					$i = 0;
 					foreach($lines as $line){
 						$i++;
@@ -241,7 +257,7 @@ if(!empty($_REQUEST['ns'])){
 						}
 						$print .= htmlentities($line) . " </pre></li>";
 					}
-					$print .= "</ul></div></div>";
+					$print .= "</ol></div></div>";
 					break;
 				case "#unwrapped_source":
 					if(!empty($val)){
