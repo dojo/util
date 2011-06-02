@@ -36,7 +36,7 @@ define([
 			xdDojoPath:"",
 			symbol:"",
 			scopeDjConfig:"",
-			scopeMap:{},
+			scopeMap:[],
 			buildLayers:"",
 			query:"default",
 			replaceLoaderConfig:1,
@@ -281,11 +281,18 @@ define([
 				profile.destBasePath= computePath(catPath(releaseDir, releaseName), profile.basePath);
 			}
 
+			// change the name of v1.6- log property
+			// TODO: warn if command line arg steps on a known, used build control property
+			// see similarly processing in argv
+			if(result.log!==undefined){
+				result.logLevel= result.log;
+				delete result.log;
+			}
+
 			for (p in profile) {
-				if (/log|loader|xdScopeArgs|xdDojoScopeName|expandProvide|removeDefaultNameSpaces|addGuards/.test(p)) {
-					profile[p]= "deprecated; value(" + profile[p] + ") ignored";
-				}
-				if(p=="layers"){
+				if (/^(loader|xdDojoPath|symbol|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)) {
+					bc.logWarn(p + "deprecated, ignored");
+				}else if(p=="layers"){
 					result.rawLayers= profile[p];
 				}else if(p=="staticHasFeatures"){
 					mix(result.staticHasFeatures, profile.staticHasFeatures);

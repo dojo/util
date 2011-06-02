@@ -51,16 +51,6 @@ define(["../buildControl"], function(bc) {
 				require: function(a, b) {
 					aggregateDeps.push(a.replace(/\./g, "/"));
 				},
-				requireIf: function(a, b) {
-					if (a) {
-						aggregateDeps.push(b.replace(/\./g, "/"));
-					}
-				},
-				requireAfterIf: function(a, b) {
-					if (a) {
-						aggregateDeps.push(b.replace(/\./g, "/"));
-					}
-				},
 				platformRequire: function(a) {
 					console.log("TODO:platformRequire");
 				},
@@ -141,7 +131,7 @@ define(["../buildControl"], function(bc) {
 					contents= resource.text.replace(/(\/\*([\s\S]*?)\*\/|\/\/(.*)$)/mg , ""),
 
 					// look for dojo.require et al; notice that only expressions *without* parentheses are understood
-					dojoExp= /dojo\.(require|platformRequire|provide|requireLocalization|requireAfterIf|requireIf)\s*\(([\w\W]+?)\)/mg,
+					dojoExp= /dojo\.(require|platformRequire|provide|requireLocalization)\s*\(([\w\W]+?)\)/mg,
 
 					// string-comma-string with optional whitespace
 					requireLocalizationFixup= /^\s*['"][^'"]+['"]\s*,\s*['"][^'"]+['"]/,
@@ -209,7 +199,7 @@ define(["../buildControl"], function(bc) {
 							this.text= "define(" +
 								(bc.writeAbsMids ? mid + "," : "") +
 								"[" + deps + "], function(" + scopeArgs + "){\ndojo.getObject(" + mid.replace(/\//g, ".") + ", 1);\n" +
-								text + "\n});\nrequire([" + mid + "]);\n";
+								text + "\nreturn dojo.getObject(" + mid.replace(/\//g, ".") + ");});\nrequire([" + mid + "]);\n";
 						}
 						return this.text;
 					};

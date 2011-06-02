@@ -32,8 +32,10 @@ define(["../buildControl"], function(bc) {
 		result= result.replace(/(has.add\s*\(\s*)["']([^'"]+)["']/g, function(match, prefix, featureName) {
 			if (mappedNames[featureName]<2) {
 				return (mappedNames[featureName]==0 ? "false && " : "true || ") + match;
-			} else {
+			} else if(mappedNames[featureName]!==undefined) {
 				return prefix + mappedNames[featureName];
+			} else {
+				return match;
 			}
 		});
 

@@ -250,6 +250,14 @@ define(
 		}
 	}
 
+	// change the name of v1.6- log property
+	// TODO: warn if command line arg steps on a known, used build control property
+	// see similarly processing in argv
+	if(result.log!==undefined){
+		result.logLevel= result.log;
+		delete result.log;
+	}
+
 	if (((printHelp || printVersion) && argv.length==3) || (printHelp && printVersion && argv.length==4)) {
 		//just asked for either help or version or both; don't do more work or reporting
 		process.exit(0);

@@ -382,9 +382,15 @@ define([
 		}
 	}
 
+	var fixedScopeMap = {};
+	(bc.scopeMap || []).forEach(function(pair){
+		fixedScopeMap[pair[0]] = pair[1];
+	});
+	bc.scopeMap = fixedScopeMap;
+
 	var deprecated= [];
 	for(p in bc){
-		if(/^(loader|xdDojoPath|symbol|scopeDjConfig|scopeMap|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)){
+		if(/^(loader|xdDojoPath|symbol|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)){
 			deprecated.push(p);
 			bc.logWarn(p + "deprecated, ignored");
 		}
