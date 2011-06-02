@@ -1,32 +1,32 @@
 define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "dojo"], function(bc, process, fs, fileUtils, has, dojo) {
 
 	// default to a no-op
-	var compile= function(){};
+	var compile = function(){};
 
 	if(has("host-rhino") && (bc.optimize || bc.layerOptimize)){
 		function sscompile(text, dest, optimizeSwitch, copyright){
 			// decode the optimize switch
 			var
-				options= optimizeSwitch.split("."),
-				comments= 0,
-				keepLines= 0,
-				strip= null;
+				options = optimizeSwitch.split("."),
+				comments = 0,
+				keepLines = 0,
+				strip = null;
 			while(options.length){
 				switch(options.pop()){
 				case "normal":
-					strip= "normal";
+					strip = "normal";
 					break;
 				case "warn":
-					strip= "warn";
+					strip = "warn";
 					break;
 				case "all":
-					strip= "all";
+					strip = "all";
 					break;
 				case "keeplines":
-					keepLines= 1;
+					keepLines = 1;
 					break;
 				case "comments":
-					comments= 1;
+					comments = 1;
 					break;
 				}
 			}
@@ -91,7 +91,7 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 
 		compile= function(resource, text, copyright, optimizeSwitch, callback){
 			bc.logInfo("optimizing " + resource.dest);
-			copyright= copyright || "";
+			copyright = copyright || "";
 			var result;
 			if(/closure/.test(optimizeSwitch)){
 				result= ccompile(stripConsoleRe ? text.replace(stripConsoleRe, "0 && $&") : text, resource.dest, optimizeSwitch, copyright);
@@ -112,22 +112,22 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 		// start up a few processes to compensate for the miserably slow closure compiler
 		bc.optimizerOutput= "";
 		var
-			processesStarted= 0,
-			totalOptimizerOutput= "",
-			nextProcId= 0,
-			sendJob= function(src, dest, optimizeSwitch, copyright){
+			processesStarted = 0,
+			totalOptimizerOutput = "",
+			nextProcId = 0,
+			sendJob = function(src, dest, optimizeSwitch, copyright){
 				processes[nextProcId++].write(src, dest, optimizeSwitch, copyright);
 				nextProcId= nextProcId % bc.maxOptimizationProcesses;
 			},
-			tempFileDirs= {},
-			doneRe= new RegExp("^Done\\s\\(compile\\stime.+$", "m"),
-			optimizerRunner= require.toUrl("build/optimizeRunner.js"),
-			buildRoot= optimizerRunner.match(/(.+)\/build\/optimizeRunner\.js$/)[1],
-			javaClasses= fileUtils.catPath(buildRoot, "closureCompiler/compiler.jar") + ":" + fileUtils.catPath(buildRoot, "shrinksafe/js.jar") + ":" + fileUtils.catPath(buildRoot, "shrinksafe/shrinksafe.jar");
-		for(var processes= [], i= 0; i<bc.maxOptimizationProcesses; i++) {(function(){
+			tempFileDirs = {},
+			doneRe = new RegExp("^Done\\s\\(compile\\stime.+$", "m"),
+			optimizerRunner = require.toUrl("build/optimizeRunner.js"),
+			buildRoot = optimizerRunner.match(/(.+)\/build\/optimizeRunner\.js$/)[1],
+			javaClasses = fileUtils.catPath(buildRoot, "closureCompiler/compiler.jar") + ":" + fileUtils.catPath(buildRoot, "shrinksafe/js.jar") + ":" + fileUtils.catPath(buildRoot, "shrinksafe/shrinksafe.jar");
+		for(var processes = [], i = 0; i < bc.maxOptimizationProcesses; i++) {(function(){
 			var
-				runner= require.nodeRequire("child_process").spawn("java", ["-cp", javaClasses, "org.mozilla.javascript.tools.shell.Main", optimizerRunner]),
-				proc= {
+				runner = require.nodeRequire("child_process").spawn("java", ["-cp", javaClasses, "org.mozilla.javascript.tools.shell.Main", optimizerRunner]),
+				proc = {
 					runner:runner,
 					results:"",
 					tempResults:"",
@@ -137,33 +137,33 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 						runner.stdin.write(src + "\n" + dest + "\n" + optimizeSwitch + "\n" + dojo.toJson(copyright) + "\n");
 					},
 					sink:function(output){
-						proc.tempResults+= output;
+						proc.tempResults += output;
 						var match, message, chunkLength;
-						while((match= proc.tempResults.match(doneRe))){
-							message= match[0];
+						while((match = proc.tempResults.match(doneRe))){
+							message = match[0];
 							bc.logInfo("done: " + proc.sent.shift() + " " + message.substring(5));
-							chunkLength= match.index + message.length;
-							proc.results= proc.tempResults.substring(0, chunkLength);
-							proc.tempResults= proc.tempResults.substring(chunkLength);
+							chunkLength = match.index + message.length;
+							proc.results = proc.tempResults.substring(0, chunkLength);
+							proc.tempResults = proc.tempResults.substring(chunkLength);
 						}
 					}
 				};
 			processesStarted++; // matches *3*
 			runner.stdout.on("data", function(data){
 				// the +"" converts to Javascript string
-				proc.sink(data+"");
+				proc.sink(data + "");
 			}),
 			runner.stderr.on("data", function(data){
 				// the +"" converts to Javascript string
-				proc.sink(data+"");
+				proc.sink(data + "");
 			}),
 			runner.on("exit", function(code){
 				// TODO: figure out how to stop closure compiler from emmitting this drivel
-				proc.results+= proc.tempResults;
-				totalOptimizerOutput+= proc.results.
+				proc.results += proc.tempResults;
+				totalOptimizerOutput += proc.results.
 					replace(/\n[^\n]+com.google.javascript.jscomp.PhaseOptimizer[^\n]+\n[^\n]+/g, "").
 					replace(/\n[^\n]+com.google.javascript.jscomp.Compiler[^\n]+\n[^\n]+/g, "");
-				bc.optimizerOutput+= totalOptimizerOutput;
+				bc.optimizerOutput += totalOptimizerOutput;
 				processesStarted--; // matches *3*
 				if(!processesStarted){
 					// all the processes have completed and shut down at this point
@@ -205,19 +205,19 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 
 		var stripConsoleRe= 0;
 		if(bc.stripConsole){
-			var consoleMethods= "assert|count|debug|dir|dirxml|group|groupEnd|info|profile|profileEnd|time|timeEnd|trace|log";
-			if(bc.stripConsole=="warn"){
-				consoleMethods+= "|warn";
-			}else if(bc.stripConsole=="all"){
-				consoleMethods+= "|warn|error";
+			var consoleMethods = "assert|count|debug|dir|dirxml|group|groupEnd|info|profile|profileEnd|time|timeEnd|trace|log";
+			if(bc.stripConsole == "warn"){
+				consoleMethods += "|warn";
+			}else if(bc.stripConsole == "all"){
+				consoleMethods += "|warn|error";
 			}
 			stripConsoleRe= new RegExp("console\\.(" + consoleMethods + ")\\s*\\(", "g");
 		}
 
-		compile= function(resource, text, copyright, optimizeSwitch, callback){
-			copyright= copyright || "";
+		compile = function(resource, text, copyright, optimizeSwitch, callback){
+			copyright = copyright || "";
 			if(stripConsoleRe && /closure/.test(optimizeSwitch)){
-				var tempFilename= resource.dest + ".consoleStripped.js";
+				var tempFilename = resource.dest + ".consoleStripped.js";
 				text= text.replace(stripConsoleRe, "0 && $&");
 				tempFileDirs[fileUtils.getFilepath(tempFilename)]= 1;
 				fs.writeFile(tempFilename, text, resource.encoding, function(err){
