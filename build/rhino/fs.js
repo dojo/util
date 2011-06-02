@@ -12,6 +12,10 @@ define([], function() {
 			var
 				outFile = new java.io.File(filename),
 				outWriter;
+			if (encoding=="utf8") {
+				// convert node.js idiom to java idiom
+				encoding= "UTF-8";
+			}
 			if(encoding){
 				outWriter = new java.io.OutputStreamWriter(new java.io.FileOutputStream(outFile), encoding);
 			}else{
