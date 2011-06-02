@@ -1,33 +1,22 @@
-///
-// \module b	uild/plugins/text
-//
-// This build plugin caches text resources by cache identifiers that are computed by...
-//
-//	 * removing any filetype
-//	 * computing the resulting module information (with respect to the reference module if the resource id is relative)
-//	 * appending the filetype (if any) to the module information AMD path
-//
-// For example, the text resource "myPackage/myModule/myResource.html" implies the cache identifier
-// "myPackage/myModule/myResource.html" (assuming "myPackage/myModule/myResource" is a valid
-// AMD module id). This is also to some that if the passed mid cannot be resolved to a valid AMD module
-// (after stripping the filetype (if any) and "!strip" pragma (if anY), then this plugin cannot determine a cache id, and
-// therefore cannot cache the text
-//
-define(["dojo/json"], function(json) {
+define(["../buildControl", "dojo/json"], function(bc, json) {
+	// note: this builder plugin only writes text that is part of a package
+
 	var
-		// note: we use *x in the pattern since it is guaranteed not to be in any real path or filetype
-		cacheTemplate= 'define("*text/*1", [], *2);\n\n',
+		cacheTemplate= 'require.cache["*1"]=*2;\n\n',
 
 		getPluginLayerText= function() {
-			return cacheTemplate.replace("*1", this.pqn).replace("*2", json.stringify(this.module.text));
+			var pid = bc.scopeMap[this.pid] || this.pid;
+
+			return pid ? cacheTemplate.replace("*1", pid + "/" + this.mid).replace("*2", json.stringify(this.module.text)) : "";
 		},
 
-		makePluginPseudoModule= function(module, path, filetype) {
+		makePluginPseudoModule= function(module, moduleInfo) {
 			return {
 				module:module,
-				path:path,
-				filetype:filetype,
-				pqn:path+filetype,
+				pqn:moduleInfo.pqn,
+				pid:moduleInfo.pid,
+				mid:moduleInfo.mid,
+				path:moduleInfo.path,
 				deps:[],
 				getPluginLayerText:getPluginLayerText,
 				internStrings:getPluginLayerText
@@ -44,20 +33,34 @@ define(["dojo/json"], function(json) {
 				throw new Error("text! plugin missing");
 			}
 
-			// mid may have a filetype (e.g., ".html") and/or a pragma (e.g. "!strip")
+			// mid may contain a pragma (e.g. "!strip"); remove
+			mid= mid.split("!")[0];
+
+			// the following taken from the loader toUrl function
+			// name must include a filetype; fault tolerate to allow no filetype (but things like "path/to/version2.13" will assume filetype of ".13")
 			var
-				match= mid.split("!")[0].match(/(.+?)(\.[^\/]*)?$/),
-				moduleInfo= bc.getSrcModuleInfo(match[1], referenceModule),
-				filetype= match[2] || "",
-				url= moduleInfo.url.substring(0, moduleInfo.url.length-3) + filetype,
-				textResource= bc.resources[url];
+				match = mid.match(/(.+)(\.[^\/\.]+?)$/),
+				root = (match && match[1]) || mid,
+				ext = (match && match[2]) || "",
+				moduleInfo =  bc.getSrcModuleInfo(root, referenceModule),
+				url= moduleInfo.url;
+			// recall, getModuleInfo always returns a url with a ".js" suffix iff pid; therefore, we've got to trim it
+			url= (typeof moduleInfo.pid == "string" ? url.substring(0, url.length - 3) : url) + ext;
+
+			// fixup the moduleInfo to reflect type filetype extention
+			moduleInfo.url= url;
+			moduleInfo.pqn+= ext;
+			moduleInfo.mid+= ext;
+			moduleInfo.path+= ext;
+
+			var textResource= bc.resources[url];
 			if (!textResource) {
 				throw new Error("text resource (" + url + ") missing");
 			}
 			if(bc.internStrings){
 				textResource.tag.noWrite= 1;
 			}
-			return [textPlugin, makePluginPseudoModule(textResource, moduleInfo.path, filetype)];
+			return [textPlugin, makePluginPseudoModule(textResource, moduleInfo)];
 		};
 
 	return {
