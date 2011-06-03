@@ -51,8 +51,16 @@ define(["../buildControl", "../fileUtils", "dojo/json"], function(bc, fileUtils,
 				require: function(a, b) {
 					aggregateDeps.push(a.replace(/\./g, "/"));
 				},
-				platformRequire: function(a) {
-					console.log("TODO:platformRequire");
+				platformRequire: function(modMap) {
+					// see dojo/_base/loader
+					var result = (modMap.common || []).concat(modMap[bc.platform] || modMap["default"] || []);
+					result.forEach(function(item){
+						if(item instanceof Array){
+							aggregateDeps.push(item[1].replace(/\./g, "/"));
+						}else{
+							aggregateDeps.push(item.replace(/\./g, "/"));
+						}
+					});
 				},
 				requireLocalization: function(a, b) {
 					aggregateDeps.push("dojo/i18n!" + a.replace(/\./g, "/")	 + "/nls/" + b.replace(/\./g, "/"));
@@ -195,8 +203,12 @@ define(["../buildControl", "../fileUtils", "dojo/json"], function(bc, fileUtils,
 					// look for dojo.require et al; notice that only expressions *without* parentheses are understood
 					dojoExp= /dojo\.(require|platformRequire|provide|requireLocalization)\s*\(([\w\W]+?)\)/mg,
 
+					requireProvideArgCheck= /^\s*['"][^'"]+?['"]\s*$/,
+
+					platformRequireArgCheck= /^\s*\{[\w\W]+\}\s*$/,
+
 					// string-comma-string with optional whitespace
-					requireLocalizationFixup= /^\s*['"][^'"]+['"]\s*,\s*['"][^'"]+['"]/,
+					requireLocalizationFixup= /^\s*['"][^'"]+?['"]\s*,\s*['"][^'"]+?['"]/,
 
 					dojoV1xLoaderModule= 0,
 					result, f;
@@ -207,8 +219,10 @@ define(["../buildControl", "../fileUtils", "dojo/json"], function(bc, fileUtils,
 					if (result[1]=="requireLocalization") {
 						var fixup= result[2].match(requireLocalizationFixup);
 						result= fixup ? "dojo.requireLocalization(" + fixup[0] + ")" : 0;
+					} else if(result[1]=="platformRequire"){
+						result= platformRequireArgCheck.test(result[2]) ? result[0] : 0;
 					} else {
-						result= result[0];
+						result= requireProvideArgCheck.test(result[2]) ? result[0] : 0;
 					}
 					try {
 						if (result) {
@@ -216,6 +230,8 @@ define(["../buildControl", "../fileUtils", "dojo/json"], function(bc, fileUtils,
 							resource.tag.synModule= 1;
 							f= new Function("dojo", result);
 							f(dojo);
+						}else{
+							bc.logInfo("(" + resource.src + ") did not process sync loader API: " + result[0]);
 						}
 					} catch (e) {
 						bc.logWarn("unable to evaluate dojo loader function in " + resource.src + "; ignored function call; error and function text follows...", e, result);
