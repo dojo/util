@@ -161,9 +161,6 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 			return {};
 		};
 
-
-
-
 	return {
 		getFilename:getFilename,
 		getFilepath:getFilepath,

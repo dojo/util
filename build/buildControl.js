@@ -271,16 +271,41 @@ define([
 		require.computeMapProg(bc.paths, (bc.pathsMapProg= []));
 		require.computeMapProg(bc.destPaths || bc.paths, (bc.destPathsMapProg= []));
 
-		// add some methods to bc to help with resolving AMD module info
 		bc.srcModules= {};
-		bc.getSrcModuleInfo= function(mid, referenceModule) {
-			return require.getModuleInfo(mid, referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", bc.packageMapProg, bc.pathsMapProg, true);
+		bc.destModules= {};
+
+		// add some methods to bc to help with resolving AMD module info
+		var trimLastFiveChars= function(text){
+			return text.substring(0, text.length-5);
 		};
 
-		bc.destModules= {};
-		bc.getDestModuleInfo= function(mid, referenceModule) {
+		bc.getSrcModuleInfo= function(mid, referenceModule, ignoreFileType) {
+			if(ignoreFileType){
+				var result= require.getModuleInfo(mid+"/x", referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", bc.packageMapProg, bc.pathsMapProg, true);
+				// trim /x.js
+				result.mid= trimLastFiveChars(result.mid);
+				result.pqn= trimLastFiveChars(result.pqn);
+				result.path= trimLastFiveChars(result.path);
+				result.url= trimLastFiveChars(result.url);
+				return result;
+			}else{
+				return require.getModuleInfo(mid, referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", bc.packageMapProg, bc.pathsMapProg, true);
+			}
+		};
+
+		bc.getDestModuleInfo= function(mid, referenceModule, ignoreFileType) {
 			// note: bd.destPagePath should never be required; but it's included for completeness and up to the user to provide it if some transform does decide to use it
-			return require.getModuleInfo(mid, referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", bc.destPackageMapProg, bc.destPathsMapProg, true);
+			if(ignoreFileType){
+				var result= require.getModuleInfo(mid+"/x", referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", bc.destPackageMapProg, bc.destPathsMapProg, true);
+				// trim /x.js
+				result.mid= trimLastFiveChars(result.mid);
+				result.pqn= trimLastFiveChars(result.pqn);
+				result.path= trimLastFiveChars(result.path);
+				result.url= trimLastFiveChars(result.url);
+				return result;
+			}else{
+				return require.getModuleInfo(mid, referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", bc.destPackageMapProg, bc.destPathsMapProg, true);
+			}
 		};
 	})();
 
@@ -388,11 +413,17 @@ define([
 	});
 	bc.scopeMap = fixedScopeMap;
 
+	var fixedInternStringsSkipList = {};
+	(bc.internSkipList || bc.internStringsSkipList || []).forEach(function(mid){
+		fixedInternStringsSkipList[mid.replace(/\./g, "/")] = 1;
+	});
+	bc.internStringsSkipList = fixedInternStringsSkipList;
+
 	var deprecated= [];
 	for(p in bc){
 		if(/^(loader|xdDojoPath|symbol|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)){
 			deprecated.push(p);
-			bc.logWarn(p + "deprecated, ignored");
+			bc.logWarn(p + " deprecated, ignored");
 		}
 	}
 	deprecated.forEach(function(p){

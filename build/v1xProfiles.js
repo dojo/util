@@ -26,6 +26,7 @@ define([
 			releaseName:"dojo",
 			releaseDir:"../../release/",
 			internStrings:true,
+			internSkipList:[],
 			optimize:"",
 			layerOptimize:"shrinksafe",
 			cssOptimize:"",
@@ -33,22 +34,22 @@ define([
 			stripConsole:"normal",
 			copyTests:false,
 			mini:true,
-			xdDojoPath:"",
-			symbol:"",
-			scopeDjConfig:"",
 			scopeMap:[],
-			buildLayers:"",
-			query:"default",
 			replaceLoaderConfig:1,
 
 			// the following configuration variables are deprecated and have no effect
-			//log:0,
-			//loader:0,
-			//xdScopeArgs:0,
-			//xdDojoScopeName:0,
-			//expandProvide:0,
-			//removeDefaultNameSpaces:0,
-			//addGuards:0,
+			//query,
+			//buildLayers,
+			//scopeDjConfig,
+			//symbol,
+			//xdDojoPath,
+			//log,
+			//loader,
+			//xdScopeArgs,
+			//xdDojoScopeName,
+			//expandProvide,
+			//removeDefaultNameSpaces,
+			//addGuards,
 
 			// the following values are settings understood by the v1.7+ builder that cause behavior like the v1.6- builder
 
@@ -291,7 +292,7 @@ define([
 
 			for (p in profile) {
 				if (/^(loader|xdDojoPath|symbol|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)) {
-					bc.logWarn(p + "deprecated, ignored");
+					bc.logWarn(p + " deprecated, ignored");
 				}else if(p=="layers"){
 					result.rawLayers= profile[p];
 				}else if(p=="staticHasFeatures"){

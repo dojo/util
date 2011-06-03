@@ -1,4 +1,4 @@
-define(["../buildControl"], function(bc) {
+define(["../buildControl", "../fileUtils", "dojo/json"], function(bc, fileUtils, json) {
 	return function(resource) {
 		var
 			deps,
@@ -117,6 +117,68 @@ define(["../buildControl"], function(bc) {
 				return 0;
 			},
 
+			// the following is a direct copy from the v1.6- build util; this is so janky, we dare not touch
+			interningDojoUriRegExpString = "(((templatePath|templateCssPath)\\s*(=|:)\\s*)dojo\\.(module)?Url\\(|dojo\\.cache\\s*\\(\\s*)\\s*?[\\\"\\']([\\w\\.\\/]+)[\\\"\\'](([\\,\\s]*)[\\\"\\']([\\w\\.\\/-]*)[\\\"\\'])?(\\s*,\\s*)?([^\\)]*)?\\s*\\)",
+			//                              123                                 4                5                                                     6                      78                   9                         0           1
+
+			interningGlobalDojoUriRegExp = new RegExp(interningDojoUriRegExpString, "g"),
+
+			interningLocalDojoUriRegExp = new RegExp(interningDojoUriRegExpString),
+
+			internStrings = function(){
+				var shownFileName = false;
+				resource.text= resource.text.replace(interningGlobalDojoUriRegExp, function(matchString){
+					var parts = matchString.match(interningLocalDojoUriRegExp);
+
+					if(!shownFileName){
+						bc.logInfo("interning strings for : " + resource.src);
+						shownFileName = true;
+					}
+
+					var textModuleInfo= bc.getSrcModuleInfo(fileUtils.catPath(parts[6].replace(/\./g, "/"), parts[9]), 0, true);
+					if(bc.internStringsSkipList[textModuleInfo.path]){
+						bc.logInfo("skipping " + textModuleInfo.path);
+						return matchString;
+					}
+
+					var textModule = bc.resources[textModuleInfo.url];
+					if(!textModule){
+						bc.logInfo("could not find " + textModuleInfo.url);
+						return matchString;
+					}
+
+					var text = textModule.getText();
+					if(!text){
+						bc.logInfo("skipping because there is nothing to intern " + textModuleInfo.path);
+						return matchString;
+					}
+
+					text = json.stringify(text);
+
+					if(matchString.indexOf("dojo.cache") != -1){
+						//Handle dojo.cache-related interning.
+						var endContent = parts[11];
+						if(!endContent){
+							endContent = text;
+						}else{
+							var braceIndex = endContent.indexOf("{");
+							if(braceIndex != -1){
+								endContent = endContent.substring(0, braceIndex + 1)
+									+ 'value: ' + text + ','
+									+ endContent.substring(braceIndex + 1, endContent.length);
+							}
+						}
+						return 'dojo.cache("' + parts[6] + '", "' + parts[9] + '", ' + endContent + ')';
+					}else if(parts[3] == "templatePath"){
+						//Replace templatePaths
+						return "templateString" + parts[4] + text;
+					}else{
+						//Dealing with templateCssPath; not doing this anymore
+						return matchString;
+					}
+				});
+			},
+
 			processWithRegExs= function() {
 				// do it the hard (unreliable) way; first try to find "dojo.provide" et al since those names are less likely
 				// to be overloaded than "define" and "require"
@@ -173,6 +235,9 @@ define(["../buildControl"], function(bc) {
 				}
 
 				if(dojoV1xLoaderModule){
+					if(bc.internStrings){
+						internStrings();
+					}
 					var getText= resource.getText;
 					resource.getText= function(){
 						if (!this.replacementsApplied) {
