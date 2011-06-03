@@ -93,7 +93,7 @@ define([
 
 			defaultConfig:{
 				hasCache:{},
-				async:0
+				async:bc.cdnBuild ? "xd" : 0
 			}
 		},
 
