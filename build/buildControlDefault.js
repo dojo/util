@@ -25,7 +25,8 @@ define(["./buildControlBase"], function(bc) {
 		plugins:{
 			"dojo/text":"build/plugins/text",
 			"dojo/i18n":"build/plugins/i18n",
-			"dojo/has":"build/plugins/has"
+			"dojo/has":"build/plugins/has",
+			"dojo/selector/_loader":"build/plugins/querySelector"
 		},
 
 		gates:[
