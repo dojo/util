@@ -6,6 +6,7 @@ dependencies = {
 			name: "dojo.js",
 			customBase: true,
 			dependencies: [
+				"dojo.selector.lite",
 				"dojox.mobile.parser",
 				"dojox.mobile",
 				"dojox.mobile.compat"
