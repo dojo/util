@@ -33,9 +33,13 @@ svn co https://svn.dojotoolkit.org/src/tags/$tagName $buildName
 cd $buildName/util/buildscripts
 
 #Update the dojo version in the tag
-java -jar ../shrinksafe/js.jar changeVersion.js $version ../../dojo/_base/_loader/bootstrap.js
+java -jar ../shrinksafe/js.jar changeVersion.js $version ../../dojo/_base/kernel.js
+java -jar ../shrinksafe/js.jar changeVersion.js $version ../../dojo/package.json
+java -jar ../shrinksafe/js.jar changeVersion.js $version ../../dijit/package.json
 cd ../../dojo
-svn commit -m "Updating dojo version for the tag. \!strict" _base/_loader/bootstrap.js
+svn commit -m "Updating dojo version for the tag. \!strict" package.json _base/kernel.js
+cd ../dijit
+svn commit -m "Updating dijit version for the tag. \!strict" package.json
 
 #Erase the SVN dir and replace with an exported SVN contents.
 cd ../..
@@ -76,7 +80,7 @@ mv $srcName $buildName
 #Run the build.
 cd $buildName/util/buildscripts/
 chmod +x ./build.sh
-./build.sh profile=standard version=$1 releaseName=$buildName cssOptimize=comments.keepLines optimize=shrinksafe.keepLines action=release 
+./build.sh profile=standard version=$1 releaseName=$buildName cssOptimize=comments.keepLines optimize=shrinksafe.keepLines action=release insertAbsMids=1
 # remove tests and demos, but only for the actual release:
 chmod +x ./clean_release.sh
 ./clean_release.sh ../../release $buildName
@@ -103,7 +107,7 @@ tar -xzvf $srcName.tar.gz
 cd $srcName/util/buildscripts/
 
 # build the version that will be extracted and live on downloads.dojotoolkit.org (with tests)
-./build.sh action=release version=$1 profile=standard cssOptimize=comments.keepLines releaseName=$buildName copyTests=true mini=false
+./build.sh action=release version=$1 profile=standard cssOptimize=comments.keepLines releaseName=$buildName copyTests=true mini=false insertAbsMids=1
 
 # cleanup the -src extraction, moving the newly built tree into place. 
 cd ../../release
