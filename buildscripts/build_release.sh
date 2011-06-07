@@ -118,7 +118,7 @@ rm -rf release/
 # generate api.xml and api.json
 cd util/docscripts/
 php -q generate.php
-mv api.* ../../../../build/
+mv cache/api.* ../../../../build/
 cd ../../../../
 
 # make a folder structure appropriate for directly extracting on downloads.dojotoolkit.org
