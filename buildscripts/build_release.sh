@@ -127,15 +127,20 @@ rm -rf release-$1/$srcName/
 cd release-$1
 
 # md5sum the release files -- OSX doesn't have md5sum, foundation servers don't have md5
-if [ -e `which md5` ]; then
-	md5=`which md5`
-elif [ -e `which md5sum` ]; then
+md5=`which md5`
+if [[ -n $md5 && -x $md5 ]]; then
+	echo "Found $md5";
+else
 	md5=`which md5sum`
 fi
 
-for i in *.zip; do $md5 $i > $i.md5; done
-for i in *.gz; do $md5 $i > $i.md5; done
-for i in *.js; do $md5 $i > $i.md5; done
+if [[ -n $md5 && -x $md5 ]]; then
+	for i in *.zip; do $md5 $i > $i.md5; done
+	for i in *.gz; do $md5 $i > $i.md5; done
+	for i in *.js; do $md5 $i > $i.md5; done
+else
+	echo "ERROR: Failed to generate md5 checksums" 
+fi
 
 # pack up the whole thing for easy copying
 cd ..
