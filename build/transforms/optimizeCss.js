@@ -27,8 +27,23 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 			return url;
 		},
 
+		removeComments = function(text){
+			var startIndex = -1;
+			//Get rid of comments.
+			while((startIndex = text.indexOf("/*")) != -1){
+				var endIndex = text.indexOf("*/", startIndex + 2);
+				if(endIndex == -1){
+					throw "Improper comment in CSS file: " + resource.src;
+				}
+				text = text.substring(0, startIndex) + text.substring(endIndex + 2, text.length);
+			}
+			return text;
+		},
+
 		flattenCss = function(/*String*/fileName, /*String*/text){
 			//summary: inlines nested stylesheets that have @import calls in them.
+
+			text= removeComments(text);
 
 			// get the path of the reference resource
 			var referencePath = fileUtils.getFilepath(checkSlashes(fileName));
@@ -48,7 +63,6 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 
 				//Make sure we have a unix path for the rest of the operation.
 				importFileName = checkSlashes(importFileName);
-
 				var
 					fullImportFileName = importFileName.charAt(0) == "/" ? importFileName : fileUtils.compactPath(fileUtils.catPath(referencePath, importFileName)),
 					importPath= fileUtils.getFilepath(importFileName),
@@ -92,15 +106,6 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 
 		//Do comment removal.
 		try{
-			var startIndex = -1;
-			//Get rid of comments.
-			while((startIndex = text.indexOf("/*")) != -1){
-				var endIndex = text.indexOf("*/", startIndex + 2);
-				if(endIndex == -1){
-					throw "Improper comment in CSS file: " + resource.src;
-				}
-				text = text.substring(0, startIndex) + text.substring(endIndex + 2, text.length);
-			}
 			//Get rid of newlines.
 			if(/keepLines/i.test(bc.cssOptimize)){
 				//Remove multiple empty lines.
