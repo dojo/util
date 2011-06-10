@@ -1,4 +1,4 @@
-define(["../buildControl", "../fileUtils", "dojo/json"], function(bc, fileUtils, json) {
+define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, fileUtils, json, fs) {
 	return function(resource) {
 		var
 			deps,
@@ -134,7 +134,13 @@ define(["../buildControl", "../fileUtils", "dojo/json"], function(bc, fileUtils,
 			interningLocalDojoUriRegExp = new RegExp(interningDojoUriRegExpString),
 
 			internStrings = function(){
-				var shownFileName = false;
+				var
+					shownFileName = false,
+
+					getText = function(src){
+						return fs.readFileSync(src, "utf8");
+					};
+
 				resource.text= resource.text.replace(interningGlobalDojoUriRegExp, function(matchString){
 					var parts = matchString.match(interningLocalDojoUriRegExp);
 
@@ -155,7 +161,9 @@ define(["../buildControl", "../fileUtils", "dojo/json"], function(bc, fileUtils,
 						return matchString;
 					}
 
-					var text = textModule.getText();
+					// note: it's possible the module is being processed by a set of transforms that don't add a
+					// getText method (e.g., copy); therefore, we provide one for these cases
+					var text = (textModule.getText && textModule.getText()) || getText(textModule.src);
 					if(!text){
 						bc.logInfo("skipping because there is nothing to intern " + textModuleInfo.path);
 						return matchString;
