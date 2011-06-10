@@ -207,7 +207,7 @@ define([
 				if(isEmpty(packageJson)){
 					bc.logWarn("the package.json file for package " + packageName + " was missing or empty");
 				}else{
-					// it's never rational to override the package.json lib and main advice if it exists
+					// it's never rational to override the package.json main advice if it exists
 					if(packageJson.main){
 						pack.main= packageJson.main;
 					}
@@ -218,6 +218,9 @@ define([
 						if (!(p in pack)) {
 							pack[p]= dojoBuild[p];
 						}
+					}
+					if(packageJson.version){
+						bc.logInfo("using version " + packageJson.version + " for package " + packageName);
 					}
 				}
 			}
