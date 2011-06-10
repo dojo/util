@@ -92,7 +92,7 @@ define([
 			},
 
 			defaultConfig:{
-				hasCache:{},
+				hasCache:{"config-tlmSiblingOfDojo":1},
 				async:bc.cdnBuild ? "xd" : 0
 			}
 		},
