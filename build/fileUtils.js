@@ -136,7 +136,7 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 				if (!dirExists(path)) {
 					ensureDirectory(getFilepath(path));
 					try {
-						fs.mkdirSync(path, getMode("774"));
+						fs.mkdirSync(path, getMode("775"));
 					} catch (e) {
 						//squelch
 					}
