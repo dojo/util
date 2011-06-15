@@ -115,6 +115,7 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 			processesStarted = 0,
 			totalOptimizerOutput = "",
 			nextProcId = 0,
+			processes, i, //used in for loop
 			sendJob = function(src, dest, optimizeSwitch, copyright){
 				processes[nextProcId++].write(src, dest, optimizeSwitch, copyright);
 				nextProcId= nextProcId % bc.maxOptimizationProcesses;
@@ -123,73 +124,102 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 			doneRe = new RegExp("^Done\\s\\(compile\\stime.+$", "m"),
 			optimizerRunner = require.toUrl("build/optimizeRunner.js"),
 			buildRoot = optimizerRunner.match(/(.+)\/build\/optimizeRunner\.js$/)[1],
+			runJava, //function, defined later
+			oldSendJob = sendJob, //preserves reference if sendJob is replaced
+			child_process = require.nodeRequire("child_process"),
 			javaClasses = fileUtils.catPath(buildRoot, "closureCompiler/compiler.jar") + ":" + fileUtils.catPath(buildRoot, "shrinksafe/js.jar") + ":" + fileUtils.catPath(buildRoot, "shrinksafe/shrinksafe.jar");
-		for(var processes = [], i = 0; i < bc.maxOptimizationProcesses; i++) {(function(){
-			var
-				runner = require.nodeRequire("child_process").spawn("java", ["-cp", javaClasses, "org.mozilla.javascript.tools.shell.Main", optimizerRunner]),
-				proc = {
-					runner:runner,
-					results:"",
-					tempResults:"",
-					sent:[],
-					write:function(src, dest, optimizeSwitch, copyright){
-						proc.sent.push(dest);
-						runner.stdin.write(src + "\n" + dest + "\n" + optimizeSwitch + "\n" + dojo.toJson(copyright) + "\n");
-					},
-					sink:function(output){
-						proc.tempResults += output;
-						var match, message, chunkLength;
-						while((match = proc.tempResults.match(doneRe))){
-							message = match[0];
-							bc.logInfo("done: " + proc.sent.shift() + " " + message.substring(5));
-							chunkLength = match.index + message.length;
-							proc.results = proc.tempResults.substring(0, chunkLength);
-							proc.tempResults = proc.tempResults.substring(chunkLength);
-						}
-					}
+			if(global.process.platform === 'cygwin'){
+				//assume we're working with Windows Java, and need to translate paths
+				runJava = function(cb){
+					child_process.exec("cygpath -wp '" + javaClasses + "'", function(err, stdout){
+						javaClasses = stdout.trim();
+						child_process.exec("cygpath -w '" + optimizerRunner + "'", function(err, stdout){
+							optimizerRunner = stdout.trim();
+							cb();
+						});
+					});
 				};
-			processesStarted++; // matches *3*
-			runner.stdout.on("data", function(data){
-				// the +"" converts to Javascript string
-				proc.sink(data + "");
-			}),
-			runner.stderr.on("data", function(data){
-				// the +"" converts to Javascript string
-				proc.sink(data + "");
-			}),
-			runner.on("exit", function(code){
-				// TODO: figure out how to stop closure compiler from emmitting this drivel
-				proc.results += proc.tempResults;
-				totalOptimizerOutput += proc.results.
-					replace(/\n[^\n]+com.google.javascript.jscomp.PhaseOptimizer[^\n]+\n[^\n]+/g, "").
-					replace(/\n[^\n]+com.google.javascript.jscomp.Compiler[^\n]+\n[^\n]+/g, "");
-				bc.optimizerOutput += totalOptimizerOutput;
-				processesStarted--; // matches *3*
-				if(!processesStarted){
-					// all the processes have completed and shut down at this point
-					if(1 || bc.showOptimizerOutput){
-						bc.logInfo(totalOptimizerOutput);
+				//wrap sendJob calls to convert to windows paths first
+				sendJob = function(src, dest, optimizeSwitch, copyright){
+					child_process.exec("cygpath -wp '" + src + "'", function(err, srcstdout){
+						child_process.exec("cygpath -wp '" + dest + "'", function(err, deststdout){
+							oldSendJob(srcstdout.trim(), deststdout.trim(),
+								optimizeSwitch, copyright);
+						});
+					});
+				};
+			}else{
+				//no waiting necessary, pass through
+				runJava = function(cb) { cb(); };
+			}
+		runJava(function(cp) {
+			for(processes = [], i = 0; i < bc.maxOptimizationProcesses; i++) {(function(){
+				var
+					runner = child_process.spawn("java", ["-cp", javaClasses, "org.mozilla.javascript.tools.shell.Main", optimizerRunner]),
+					proc = {
+						runner:runner,
+						results:"",
+						tempResults:"",
+						sent:[],
+						write:function(src, dest, optimizeSwitch, copyright){
+							proc.sent.push(dest);
+							runner.stdin.write(src + "\n" + dest + "\n" + optimizeSwitch + "\n" + dojo.toJson(copyright) + "\n");
+						},
+						sink:function(output){
+							proc.tempResults += output;
+							var match, message, chunkLength;
+							while((match = proc.tempResults.match(doneRe))){
+								message = match[0];
+								bc.logInfo("done: " + proc.sent.shift() + " " + message.substring(5));
+								chunkLength = match.index + message.length;
+								proc.results = proc.tempResults.substring(0, chunkLength);
+								proc.tempResults = proc.tempResults.substring(chunkLength);
+							}
+						}
+					};
+				processesStarted++; // matches *3*
+				runner.stdout.on("data", function(data){
+					// the +"" converts to Javascript string
+					proc.sink(data + "");
+				}),
+				runner.stderr.on("data", function(data){
+					// the +"" converts to Javascript string
+					proc.sink(data + "");
+				}),
+				runner.on("exit", function(code){
+					// TODO: figure out how to stop closure compiler from emmitting this drivel
+					proc.results += proc.tempResults;
+					totalOptimizerOutput += proc.results.
+						replace(/\n[^\n]+com.google.javascript.jscomp.PhaseOptimizer[^\n]+\n[^\n]+/g, "").
+						replace(/\n[^\n]+com.google.javascript.jscomp.Compiler[^\n]+\n[^\n]+/g, "");
+					bc.optimizerOutput += totalOptimizerOutput;
+					processesStarted--; // matches *3*
+					if(!processesStarted){
+						// all the processes have completed and shut down at this point
+						if(1 || bc.showOptimizerOutput){
+							bc.logInfo(totalOptimizerOutput);
+						}
+						/*
+						for(var p in tempFileDirs){
+							bc.waiting++;  // matched with *2*
+							var
+								cb= function(code, text){
+									bc.passGate(); // matched with *2*
+								},
+								filename= p + "/*consoleStripped*",
+								errorMessage= "failed to delete temporary files (" + filename + ")",
+								args= has("is-windows") ?
+									["cmd", "/c", "del", fileUtils.normalize(filename), errorMessage, bc, cb] :
+									["rm", filename, errorMessage, bc, cb];
+							process.exec.apply(args);
+						}
+						*/
+						bc.passGate(); // matched with *1*
 					}
-					/*
-					for(var p in tempFileDirs){
-						bc.waiting++;  // matched with *2*
-						var
-							cb= function(code, text){
-								bc.passGate(); // matched with *2*
-							},
-							filename= p + "/*consoleStripped*",
-							errorMessage= "failed to delete temporary files (" + filename + ")",
-							args= has("is-windows") ?
-								["cmd", "/c", "del", fileUtils.normalize(filename), errorMessage, bc, cb] :
-								["rm", filename, errorMessage, bc, cb];
-						process.exec.apply(args);
-					}
-					*/
-					bc.passGate(); // matched with *1*
-				}
-			});
-			processes.push(proc);
-		})();}
+				});
+				processes.push(proc);
+			})();}
+		}); //end runJava(function...)
 
 		bc.gateListeners.push(function(gate){
 			if(gate=="cleanup"){
