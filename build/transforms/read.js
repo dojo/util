@@ -20,7 +20,9 @@ define(["../buildControl", "../fileUtils", "../fs", "../replace"], function(bc, 
 				dtd:"utf8",
 				xml:"utf8",
 				png:undefined,
-				jpg:undefined
+				jpg:undefined,
+				jpeg:undefined,
+				gif:undefined
 			};
 
 	return function(resource, callback) {

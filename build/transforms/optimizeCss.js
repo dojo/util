@@ -27,23 +27,23 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 			return url;
 		},
 
-		removeComments = function(text){
+		removeComments = function(text, fileName){
 			var startIndex = -1;
 			//Get rid of comments.
 			while((startIndex = text.indexOf("/*")) != -1){
 				var endIndex = text.indexOf("*/", startIndex + 2);
 				if(endIndex == -1){
-					throw "Improper comment in CSS file: " + resource.src;
+					throw "Improper comment in CSS file: " + fileName;
 				}
 				text = text.substring(0, startIndex) + text.substring(endIndex + 2, text.length);
 			}
 			return text;
 		},
 
-		flattenCss = function(/*String*/fileName, /*String*/text){
+		flattenCss = function(/*String*/fileName, /*String*/text, cssImportIgnore){
 			//summary: inlines nested stylesheets that have @import calls in them.
 
-			text= removeComments(text);
+			text= removeComments(text, fileName);
 
 			// get the path of the reference resource
 			var referencePath = fileUtils.getFilepath(checkSlashes(fileName));
@@ -67,13 +67,14 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 					fullImportFileName = importFileName.charAt(0) == "/" ? importFileName : fileUtils.compactPath(fileUtils.catPath(referencePath, importFileName)),
 					importPath= fileUtils.getFilepath(importFileName),
 					importModule= bc.resources[fullImportFileName],
-					importContents = importModule && importModule.text;
+					importContents = importModule && (importModule.rawText || importModule.text);
 				if(!importContents){
 					bc.logWarn("CSS import (" + importFileName + ")	 skipped in " + importFileName);
 					return fullMatch;
 				}
 
 				//Make sure to flatten any nested imports.
+
 				importContents = flattenCss(fullImportFileName, importContents);
 
 				//Modify URL paths to match the path represented by this file.
@@ -103,8 +104,6 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 
 		//bc.logInfo("Optimizing CSS file: " + resource.src);
 		var text = flattenCss(resource.src, resource.text, cssImportIgnore);
-
-		//Do comment removal.
 		try{
 			//Get rid of newlines.
 			if(/keepLines/i.test(bc.cssOptimize)){
@@ -117,6 +116,7 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 				text = text.replace(/\{\s/g, "{");
 				text = text.replace(/\s\}/g, "}");
 			}
+			resource.rawText = resource.text;
 			resource.text= text;
 		}catch(e){
 			bc.logError("Could not optimized CSS file: " + resource.src + "; error follows...", e);

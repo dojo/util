@@ -100,6 +100,7 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 			return ts.getFullYear() + f(ts.getMonth()+1) + f(ts.getDate()) + f(ts.getHours()) + f(ts.getMinutes()) + f(ts.getSeconds());
 		},
 
+		// FIXME: either use rwx or get rid of this
 		getMode= function(octal) {
 			for (var result= 0, i= 0; i<octal.length; result= (result * 8) + octal.charCodeAt(i++) - 48);
 			return result;
