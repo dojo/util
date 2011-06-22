@@ -74,7 +74,6 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 				}
 
 				//Make sure to flatten any nested imports.
-
 				importContents = flattenCss(fullImportFileName, importContents);
 
 				//Modify URL paths to match the path represented by this file.

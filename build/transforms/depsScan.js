@@ -1,6 +1,8 @@
 define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, fileUtils, json, fs) {
 	return function(resource) {
 		var
+			absMid = 0,
+
 			deps,
 
 			aggregateDeps= [],
@@ -32,6 +34,7 @@ define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, f
 							[mid, dependencies, factory]);
 				}
 
+				absMid = args[0];
 				deps= args[1];
 				aggregateDeps= aggregateDeps.concat(deps);
 			},
@@ -88,13 +91,24 @@ define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, f
 				}
 			},
 
+			tagAbsMid = function(){
+				if(absMid && absMid!=resource.path){
+					bc.logError("AMD module (" + resource.src + ") specified an absolute module identifier that is not consistent with the configuration and filename");
+				}
+				if(absMid){
+					resource.tag.hasAbsMid = 1;
+				}
+			},
+
 			processPureAmdModule= function() {
 				// find the dependencies for this resource using the fast path if the module says it's OK
 				// pure AMD says the module can be executed in the build environment
 				// note: the user can provide a build environment with TODO
 				try {
+
 					var f= new Function("define", "require", resource.text);
 					f(define, require);
+					tagAbsMid();
 				} catch (e) {
 					bc.logError("unable to evaluate pure AMD module in " + resource.src + "; error follows...", e);
 				}
@@ -295,9 +309,24 @@ define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, f
 				}else{
 					// look for AMD define
 					var
-						// look for define applications with an optional string first arg and an array second arg;
+						// look for define applications with an optional string first arg and an optional array second arg;
 						// notice the regex stops after the second arg
-						defineExp= /(^|\s*)define\s*\(\s*(["'][^'"]+['"]\s*,\s*)?\[[^\]]*?\]\s*,/g,
+						//          1                    2                   3      4                5
+						defineExp= /(^|\s*)define\s*\(\s*(["'][^'"]+['"])?\s*(,)?\s*(\[[^\]]*?\])?\s*(,)?/g,
+
+						// a test run in the console
+						//test = [
+						//	'define("test")',
+						//	'define("test", ["test1"])',
+						//	'define("test", ["test1", "test2"])',
+						//	'define(["test1"])',
+						//	'define(["test1", "test2"])',
+						//	'define("test", ["test1"], function(test){ hello;})',
+						//	'define("test", function(test){ hello;})',
+						//	'define(["test1"], function(test){ hello;})',
+						//	'define(function(test){ hello;})',
+						//	'define({a:1})'
+						//],
 
 						// look for require applications with an array for the first arg;
 						// notice the regex stops after the first arg
@@ -307,9 +336,40 @@ define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, f
 					while((result= defineExp.exec(contents)) != null) {
 						try {
 							foundDefine = 1;
-							result= result[0] + "{})";
+							if(result[2]){
+								// first arg a string
+								if(result[3]){
+									// first arg a module id
+									if(result[5]){
+										// (mid, deps, factory)
+										result= result[0] + "{})";
+									}else if(result[4]){
+										// (mid, <array value>)
+										result = result[0] + ")";
+									}else {
+										// (mid, factory)
+										result = result[0] + "{})";
+									}
+								}else{
+									// no comma after string first arg; therefore module value of a string
+									result= result[0]  + ")";
+								}
+							}else if(result[4]){
+								// first arg an array
+								if(result[5]){
+									// (deps, factory)
+									result = result[0] + "{})";
+								}else{
+									// no comma after array first arg; therefore module value is an array
+									result = result[0] + ")";
+								}
+							}else{
+								//just a factory
+								result = "define({})";
+							}
 							f= new Function("define", result);
 							f(define);
+							tagAbsMid();
 						} catch (e) {
 							bc.logWarn("unable to evaluate AMD define function in " + resource.src + "; ignored function call; error and function text follows...", e, result);
 						}

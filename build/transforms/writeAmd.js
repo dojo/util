@@ -91,11 +91,11 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 			text,
 			resource
 		){
-			if(!resource.mid){
+			if(!resource.mid || resource.tag.hasAbsMid){
 				return text;
 			}
 			var mid= (resource.pid ? resource.pid + "/" :  "") + resource.mid;
-			return text.replace(/(define\s*\(\s*)(.+)/, "$1\"" + mid + "\", $2");
+			return text.replace(/(define\s*\(\s*)(.*)/, "$1\"" + mid + "\", $2");
 		},
 
 		getLayerText= function(
@@ -120,7 +120,7 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 			var text= "";
 			if(resource){
 				text= resource.getText();
-				if(resource.tag.amd && bc.insertAbsMids){
+				if(bc.insertAbsMids){
 					text= insertAbsMid(text, resource);
 				}
 			}
@@ -161,7 +161,7 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 				copyright= resource.layer.copyright || "";
 			}else{
 				text= (bc.internStrings ? getStrings(resource) : "") + resource.getText();
-				if(resource.tag.amd && bc.insertAbsMids){
+				if(!resource.tag.nls && bc.insertAbsMids){
 					text= insertAbsMid(text, resource);
 				}
 				resource.text= text;

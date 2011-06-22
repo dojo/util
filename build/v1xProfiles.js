@@ -36,6 +36,7 @@ define([
 			mini:true,
 			scopeMap:[],
 			replaceLoaderConfig:1,
+			insertAbsMids:1,
 
 			// the following configuration variables are deprecated and have no effect
 			//query,
@@ -136,11 +137,10 @@ define([
 				result[p]= defaultBuildProps[p];
 			}
 
-			// find all the top-level modules by traversing each layer's dependencies
+			// find all the top-level modules by traversing each layer's dependencies (a vector of dotted module names)
 			var topLevelMids= {dojo:1};
 			layers.forEach(function(layer){
 				(layer.dependencies || []).forEach(function(mid) {
-					// pair a [mid, path], mid, a dotted module id, path relative to dojo directory
 					topLevelMids[getTopLevelModule(mid)]= 1;
 				});
 			});
@@ -148,13 +148,14 @@ define([
 			// convert the prefix vector to a map; make sure all the prefixes are in the top-level map
 			var prefixMap= {}, copyrightMap= {};
 			prefixes.forEach(function(pair){
+				// pair a [mid, path], mid, a dotted module id, path relative to dojo directory
 				topLevelMids[pair[0]]= 1;
 				prefixMap[pair[0]]= pair[1];
 				copyrightMap[pair[0]]= pair[2];
 			});
 
 			// make sure we have a dojo prefix; memorize it;
-			// notice we're using the dojo being used to run the build program; this seems weak, but the only alternative is to quit
+			// notice we default to the dojo being used to run the build program; this seems weak, but the only alternative is to quit
 			var activeDojoPath= fileUtils.computePath(require.toUrl("dojo/package.json").match(/(.+)\/package\.json$/)[1], process.cwd());
 			if(!prefixMap.dojo) {
 				// use the loader to find the real dojo path
@@ -189,9 +190,9 @@ define([
 				});
 			}
 
-			// remember the doh package info (this is done here to get the location
-			// this will be added to packages in buildControl after the command line
-			// switches are processed (remember, they're not processed here
+			// remember the doh package info (this is done here to get the location and destLocation)
+			// this will be added to packages in buildControl after the command line switches are processed
+			// iff !mini && copyTests (remember, they're not processed here)
 			result.dohPackageInfo= {
 				name:"doh",
 				location:dojoPath + "/../util/doh",
