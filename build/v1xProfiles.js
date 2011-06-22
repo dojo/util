@@ -257,7 +257,7 @@ define([
 						result.include.push("dojo");
 					}
 				}else{
-					result.exclude.push("dojo");
+					result.exclude.push("dojo/dojo");
 				}
 				if (layer.discard) {
 					result.discard= true;
