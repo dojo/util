@@ -167,7 +167,7 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 				resource.text= text;
 				copyright= resource.pack.copyright || "";
 			}
-			fs.writeFile(getDestFilename(resource), copyright + text, resource.encoding, function(err) {
+			fs.writeFile(getDestFilename(resource), (bc.staticHasFeatures["dojo-sync-loader"] ? "require.built();\n" : "") + copyright + text, resource.encoding, function(err) {
 				callback(resource, err);
 			});
 			return callback;
