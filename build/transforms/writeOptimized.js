@@ -1,5 +1,7 @@
 define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "dojo"], function(bc, process, fs, fileUtils, has, dojo) {
 
+	var built = "//>>built\n";
+
 	// default to a no-op
 	var compile = function(){};
 
@@ -55,7 +57,7 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 			}finally{
 				Packages.org.mozilla.javascript.Context.exit();
 			}
-			return copyright + text;
+			return copyright +  built + text;
 		}
 
 		var JSSourceFilefromCode, closurefromCode, jscomp= 0;
@@ -86,7 +88,7 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 			//Run the compiler
 			var compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
 			var result = compiler.compile(externSourceFile, jsSourceFile, options);
-			return copyright + compiler.toSource();
+			return copyright + built + compiler.toSource();
 		}
 
 		compile= function(resource, text, copyright, optimizeSwitch, callback){

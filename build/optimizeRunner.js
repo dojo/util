@@ -23,6 +23,8 @@ function writeFile(filename, contents, encoding, cb) {
 	};
 }
 
+var built = "//>>built\n";
+
 function sscompile(src, dest, optimizeSwitch, copyright){
 	// decode the optimize switch
 	var
@@ -75,7 +77,7 @@ function sscompile(src, dest, optimizeSwitch, copyright){
 	}finally{
 		Packages.org.mozilla.javascript.Context.exit();
 	}
-	writeFile(dest, copyright + text, "utf-8");
+	writeFile(dest, copyright + built + text, "utf-8");
 }
 
 var JSSourceFilefromCode, closurefromCode, jscomp= 0;
@@ -106,7 +108,7 @@ function ccompile(src, dest, optimizeSwitch, copyright){
 	//Run the compiler
 	var compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
 	var result = compiler.compile(externSourceFile, jsSourceFile, options);
-	writeFile(dest, copyright + compiler.toSource(), "utf-8");
+	writeFile(dest, copyright + built + compiler.toSource(), "utf-8");
 }
 
 
