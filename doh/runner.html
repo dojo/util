@@ -164,6 +164,7 @@
 				if(sandbox){
 					// configure the loader assuming the dojo loader; of course the injected boot(s) can override this config
 					config= {
+						paths: paths,
 						// this config uses the dojo loader's scoping features to sandbox the version of dojo used by doh
 						packages:[{
 							name:'doh',
@@ -221,6 +222,7 @@
 					};
 				}else{
 					config= {
+						paths: paths,
 						deps:["dojo", "doh", "dojo/window"],
 						callback:function(dojo, doh){
 							dojo.ready(function(){
