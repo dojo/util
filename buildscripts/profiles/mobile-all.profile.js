@@ -22,12 +22,6 @@ dependencies = {
 		}
 	],
 
-	plugins: { // workaround to exclude acme.js from the build (until #13198 is fixed)
-		"dojo/text":"build/plugins/text",
-		"dojo/i18n":"build/plugins/i18n",
-		"dojo/has":"build/plugins/has"
-	},
-
 	prefixes: [
 		[ "dijit", "../dijit" ],
 		[ "dojox", "../dojox" ]
