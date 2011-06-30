@@ -173,15 +173,15 @@ dojo.provide("util.docscripts.tests.basic");
 //		},
 //		
 //		function fetch_amd_declare(t){
-//		    docs = getdata("util/docscripts/tests/declare_amd.js");
-//		    console.warn("amg-declare", docs);
+//			docs = getdata("util/docscripts/tests/declare_amd.js");
+//			console.warn("amg-declare", docs);
 //		},
 		
 		function functional(t){
-		    // refs #13345
-		    docs = getdata("util/docscripts/tests/functional.js");
-		    var hasit = getmember("util.docscripts.tests.FunctionalThinger");
-		    t.t(hasit, "object exists in parsed output, meaning parsing happened");
+			// refs #13345
+			docs = getdata("util/docscripts/tests/functional.js");
+			var hasit = getmember("util.docscripts.tests.FunctionalThinger");
+			t.t(hasit, "object exists in parsed output, meaning parsing happened");
 		}
 		
 		
