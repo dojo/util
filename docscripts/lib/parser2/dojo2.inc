@@ -239,7 +239,8 @@ function _amd_unwrap($text, $namespace, $file_name) {
 	// FIXME: temporary fix, inject pseudo-docs for AMD style define([], function(a,b,c))
 	// tricks parser into thinking a b and c are aliases to global objects:
 	// FIXME: regexp is really greedy. also breaks define statements in docs if doesn't match first one
-	$text = preg_replace_callback('/(define\((.*?)function(.*?)\{(.*)\}\);)/s', "_amd_pseudodoc_fix", $text, 1);
+	// FIXME: will only break on define([ "eval!function() { return 'fml'; }" ); so don't do that.
+	$text = preg_replace_callback('/(define\((.*?)function([\s(]+.*?)\{(.*)\}\);)/s', "_amd_pseudodoc_fix", $text, 1);
 	
 	// old re:
 	// '/(define\(.*?function.*\()(.*)\)\s?\{/'
