@@ -144,8 +144,8 @@ function dojo_get_files($limit=null) {
 }
 
 function _amd_pseudodoc_fix($matches){
-    // adds a pseudo-block of aliases to trick parser into believing the things inside of define() callbacks
-    // are in fact global
+	// adds a pseudo-block of aliases to trick parser into believing the things inside of define() callbacks
+	// are in fact global
 //	$out = $matches[1];
 //	$args = trim($matches[2]);
 //	if($args != ""){
@@ -165,14 +165,14 @@ function _amd_pseudodoc_fix($matches){
 //	
 //	return $out;
 
-    // turn (dojo, dijit) into (this.dojo, this.dijit);
-    $args = $matches[3];
-    $freshargs = preg_replace('/\w+/', "_$0", $args);
-    $newargs = $args; // preg_replace('/\w+/', "this.$0", $args);
-    $body = $matches[4];
+	// turn (dojo, dijit) into (this.dojo, this.dijit);
+	$args = $matches[3];
+	$freshargs = preg_replace('/\w+/', "_$0", $args);
+	$newargs = $args; // preg_replace('/\w+/', "this.$0", $args);
+	$body = $matches[4];
 
-    return ";(function" . $freshargs . "{" . $body . "})" . $args . ";";
-    
+	return ";(function" . $freshargs . "{" . $body . "})" . $args . ";";
+	
 }
 
 function _amd_unwrap($text, $namespace, $file_name) {
@@ -240,7 +240,7 @@ function _amd_unwrap($text, $namespace, $file_name) {
 	// tricks parser into thinking a b and c are aliases to global objects:
 	// FIXME: regexp is really greedy. also breaks define statements in docs if doesn't match first one
 	// FIXME: will only break on define([ "eval!function() { return 'fml'; }" ); so don't do that.
-	$text = preg_replace_callback('/(define\((.*?)function([\s(]+.*?)\{(.*)\}\);)/s', "_amd_pseudodoc_fix", $text, 1);
+	$text = preg_replace_callback('/(define\((.*?)function(\s*\(.*?)\{(.*)\}\);)/s', "_amd_pseudodoc_fix", $text, 1);
 	
 	// old re:
 	// '/(define\(.*?function.*\()(.*)\)\s?\{/'
@@ -260,24 +260,24 @@ function dojo_get_contents($namespace, $file_name) {
 	}
 
 	$output = array();
-    $output['#debug'] = array();
+	$output['#debug'] = array();
 
 	$filedata = file_get_contents($location . '/' . $file_name);
 	$output['#raw_source'] = $filedata;
 	$filedata_amd = _amd_unwrap($filedata, $namespace, $file_name);
 	if($filedata_amd != $filedata){
-        $output['#unwrapped_source'] = $filedata_amd;
-    }
-    $filedata = $filedata_amd;
-    
+		$output['#unwrapped_source'] = $filedata_amd;
+	}
+	$filedata = $filedata_amd;
+	
 	$lines = preg_replace('%/\*={3,}|={3,}\*/%', '', $filedata);
 	
 	try{
-	    $parser = new JavaScriptParser(JavaScriptLanguage::tokenize($lines));
+		$parser = new JavaScriptParser(JavaScriptLanguage::tokenize($lines));
 	}catch(Exception $e){
-	    $output['#debug'][] = "Died parsing $file_name";
-	    $output['#debug'][] = $e;
-	    return $output;
+		$output['#debug'][] = "Died parsing $file_name";
+		$output['#debug'][] = $e;
+		return $output;
 	}
 	
 //	print '<pre>';
@@ -287,11 +287,11 @@ function dojo_get_contents($namespace, $file_name) {
 //	die();
 	
 	try{
-	    $package = new JavaScriptStatements($parser->statements());	    
+		$package = new JavaScriptStatements($parser->statements());		
 	}catch(Exception $e){
-	    $output['#debug'][] = "Died parsing statements";
-	    $output['#debug'][] = $e;
-	    return $output;
+		$output['#debug'][] = "Died parsing statements";
+		$output['#debug'][] = $e;
+		return $output;
 	}
 
 	// Handle dojo.provide calls
@@ -302,7 +302,7 @@ function dojo_get_contents($namespace, $file_name) {
 	}
 
 	$output['#resource'] = $file_name;
-    
+	
 	// Handle dojo.require calls
 	foreach ($package->function_calls(TRUE, 'dojo.require') as $call) {
 		if ($module = $call->arguments()->getString(0)) {
@@ -310,17 +310,6 @@ function dojo_get_contents($namespace, $file_name) {
 		}
 	}
 
-// thought about doing it here, somehow forcing the args to define callback as globals?
-//    foreach ($package->function_calls(TRUE, 'define') as $call) {
-//        $output['#debug'][] = $call->assignment();
-//        $arguments = $call->arguments();
-//        
-//        for($i = 1; $i < $arguments->length; $i++){
-//            print_r($arguments->getObject($i));            
-//        }
-//
-//    }
-//
 	// Handle mixin/extend calls
 	foreach ($package->function_calls(TRUE, 'dojo.mixin', 'dojo.extend') as $call) {
 		$arguments = $call->arguments();
@@ -377,10 +366,10 @@ function dojo_get_contents($namespace, $file_name) {
 		$arguments = $call->arguments();
 		$name = $arguments->getString(0);
 		if (!$name) {
-		    $output['#debug'][] = "Found declare() without a name? check return value?";
+			$output['#debug'][] = "Found declare() without a name? check return value?";
 			continue;
 		} else{
-		    // $output['#debug'][] = "Found declare w/ $name";
+			// $output['#debug'][] = "Found declare w/ $name";
 		}
 		$output[$name]['type'] = 'Function';
 		if ($superclass = $arguments->getVariable(1)) {
