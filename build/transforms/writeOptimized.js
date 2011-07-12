@@ -92,7 +92,7 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 		}
 
 		compile= function(resource, text, copyright, optimizeSwitch, callback){
-			bc.logInfo("optimizing " + resource.dest);
+			bc.log("optimize", ["module", resource.mid]);
 			copyright = copyright || "";
 			var result;
 			if(/closure/.test(optimizeSwitch)){
@@ -102,7 +102,7 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 			}
 			fs.writeFile(resource.dest, result, resource.encoding, function(err){
 				if(err){
-					bc.logError("failed to write optimized file (" + result.dest + ")");
+					bc.log("optimizeFailedWrite", ["filename", result.dest]);
 				}
 				callback(resource, err);
 			});
@@ -112,7 +112,6 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 
 	if(has("host-node") && (bc.optimize || bc.layerOptimize)){
 		// start up a few processes to compensate for the miserably slow closure compiler
-		bc.optimizerOutput= "";
 		var
 			processesStarted = 0,
 			totalOptimizerOutput = "",
@@ -172,9 +171,9 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 							var match, message, chunkLength;
 							while((match = proc.tempResults.match(doneRe))){
 								message = match[0];
-								bc.logInfo("done: " + proc.sent.shift() + " " + message.substring(5));
+								bc.log("optimizeDone", [proc.sent.shift() + " " + message.substring(5)]);
 								chunkLength = match.index + message.length;
-								proc.results = proc.tempResults.substring(0, chunkLength);
+								proc.results += proc.tempResults.substring(0, chunkLength);
 								proc.tempResults = proc.tempResults.substring(chunkLength);
 							}
 						}
@@ -194,12 +193,12 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 					totalOptimizerOutput += proc.results.
 						replace(/\n[^\n]+com.google.javascript.jscomp.PhaseOptimizer[^\n]+\n[^\n]+/g, "").
 						replace(/\n[^\n]+com.google.javascript.jscomp.Compiler[^\n]+\n[^\n]+/g, "");
-					bc.optimizerOutput += totalOptimizerOutput;
+					bc.logOptimizerOutput(totalOptimizerOutput);
 					processesStarted--; // matches *3*
 					if(!processesStarted){
 						// all the processes have completed and shut down at this point
 						if(1 || bc.showOptimizerOutput){
-							bc.logInfo(totalOptimizerOutput);
+							bc.log("optimizeMessages", [totalOptimizerOutput]);
 						}
 						/*
 						for(var p in tempFileDirs){
@@ -227,7 +226,7 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 			if(gate=="cleanup"){
 				// going through the cleanup gate signals that all optimizations have been started;
 				// we now signal the runner there are no more files and wait for the runner to stop
-				bc.logInfo("waiting for the optimizer runner to finish...");
+				bc.log("pacify", "waiting for the optimizer runner to finish...");
 				bc.waiting++;  // matched with *1*
 				processes.forEach(function(proc){
 					proc.write(".\n");

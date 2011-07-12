@@ -20,8 +20,7 @@ define(["../fileHandleThrottle"], function(fht) {
 				process.on("exit", function(code){
 					fht.release();
 					if(code){
-						bc.logError(errorMessage);
-						bc.logError(text);
+						bc.log("execFailed", ["message", errorMessage, "output", text]);
 					}
 					callback && callback(code, text);
 				});
@@ -33,6 +32,7 @@ define(["../fileHandleThrottle"], function(fht) {
 				});
 			});
 		},
+
 
 		spawn:function(){
 			console.log("ERROR: NOT IMPLEMENTED");

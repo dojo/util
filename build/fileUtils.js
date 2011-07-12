@@ -150,17 +150,17 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 			ensureDirectory(getFilepath(filename));
 		},
 
-		readJson= function(filename) {
+		readAndEval= function(filename, type) {
 			try {
 				if (fileExists(filename)) {
 					return eval("(" + fs.readFileSync(filename, "utf8") + ")");
 				}
 			} catch (e) {
-				bc.logError("failed to read package.json from " + filename + "; error follows...");
-				bc.logInfo(e);
+				bc.log("failedReadAndEval", ["filename", filename, "type", type, "error", e]);
 			}
 			return {};
 		};
+
 
 	return {
 		getFilename:getFilename,
@@ -179,6 +179,6 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 		ensureDirectory:ensureDirectory,
 		ensureDirectoryByFilename:ensureDirectoryByFilename,
 		clearCheckedDirectoriesCache:clearCheckedDirectoriesCache,
-		readJson:readJson
+		readAndEval:readAndEval
 	};
 });

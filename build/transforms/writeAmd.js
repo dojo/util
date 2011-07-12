@@ -9,7 +9,7 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 			include,
 			exclude
 		) {
-			// add property layerSet (a set of pqn) to layerModule that...
+			// add property layerSet (a set of mid) to layerModule that...
 			//
 			//	 * includes dependency tree of layerModule
 			//	 * includes all modules in layerInclude and their dependency trees
@@ -18,27 +18,27 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 			//
 			// note: layerSet is built exactly as given above, so included modules that are later excluded
 			// are *not* in result layerSet
-			if(layerModule && computingLayers[layerModule.pqn]){
-				bc.logError("cycle detected in layer dependencies with respect to layer " + layerModule.pqn);
+			if(layerModule && computingLayers[layerModule.mid]){
+				bc.log("amdCircularDependency", ["module", layerModule.mid]);
 				return {};
 			}
-			computingLayers[layerModule.pqn]= 1;
+			computingLayers[layerModule.mid]= 1;
 
 			var
 				includeSet= {},
 				visited,
 				includePhase,
 				traverse= function(module) {
-					var pqn= module.pqn;
+					var mid= module.mid;
 
-					if (visited[pqn]) {
+					if (visited[mid]) {
 						return;
 					}
-					visited[pqn]= 1;
+					visited[mid]= 1;
 					if (includePhase) {
-						includeSet[pqn]= module;
+						includeSet[mid]= module;
 					} else {
-						delete includeSet[pqn];
+						delete includeSet[mid];
 					}
 					if(module!==layerModule && module.layer){
 						var layerModuleSet= module.moduleSet || computeLayerContents(module, module.layer.include, module.layer.exclude);
@@ -61,9 +61,9 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 				traverse(layerModule);
 			}
 			include.forEach(function(mid) {
-				var module= bc.amdResources[bc.getSrcModuleInfo(mid).pqn];
+				var module= bc.amdResources[bc.getSrcModuleInfo(mid, layerModule).mid];
 				if (!module) {
-					bc.logError("failed to find module (" + mid + ") while computing layer include contents");
+					bc.log("amdMissingLayerIncludeModule", ["missing", mid, "layer", layerModule && layerModule.mid]);
 				} else {
 					traverse(module);
 				}
@@ -72,9 +72,9 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 			visited= {};
 			includePhase= false;
 			exclude.forEach(function(mid) {
-				var module= bc.amdResources[bc.getSrcModuleInfo(mid).pqn];
+				var module= bc.amdResources[bc.getSrcModuleInfo(mid, layerModule).mid];
 				if (!module) {
-					bc.logError("failed to find module (" + mid + ") while computing layer exclude contents");
+					bc.log("amdMissingLayerExcludeModule", ["missing", mid, "layer", layerModule && layerModule.mid]);
 				} else {
 					traverse(module);
 				}
@@ -82,7 +82,7 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 
 			if(layerModule){
 				layerModule.moduleSet= includeSet;
-				delete computingLayers[layerModule.pqn];
+				delete computingLayers[layerModule.mid];
 			}
 			return includeSet;
 		},
@@ -94,8 +94,7 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 			if(!resource.mid || resource.tag.hasAbsMid){
 				return text;
 			}
-			var mid= (resource.pid ? resource.pid + "/" :  "") + resource.mid;
-			return text.replace(/(define\s*\(\s*)(.*)/, "$1\"" + mid + "\", $2");
+			return text.replace(/(define\s*\(\s*)(.*)/, "$1\"" + resource.mid + "\", $2");
 		},
 
 		getLayerText= function(
@@ -107,14 +106,14 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 				cache= [],
 				pluginLayerText= "",
 				moduleSet= computeLayerContents(resource, include, exclude);
-			for (var p in moduleSet) if(!resource || p!=resource.pqn){
+			for (var p in moduleSet) if(!resource || p!=resource.mid){
 				var module= moduleSet[p];
 				if (module.getPluginLayerText) {
 					pluginLayerText+= module.getPluginLayerText();
 				} else if(module.getText){
 					cache.push("'" + p + "':function(){\n" + module.getText() + "\n}");
 				} else {
-					bc.logError("failed to include module (" + module.src + ") in layer " + resource.src);
+					bc.log("amdMissingLayerModuleText", ["module", module.mid, "layer", resource.mid]);
 				}
 			}
 			var text= "";
@@ -124,7 +123,8 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 					text= insertAbsMid(text, resource);
 				}
 			}
-			return "require({cache:{\n" + cache.join(",\n") + "}});\n" + pluginLayerText + "\n" + text;
+			cache = cache.length ? "require({cache:{\n" + cache.join(",\n") + "}});\n" : "";
+			return cache + pluginLayerText + "\n" + text;
 		},
 
 		getStrings= function(
@@ -160,10 +160,11 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 				text= resource.layerText= getLayerText(resource, resource.layer.include, resource.layer.exclude);
 				copyright= resource.layer.copyright || "";
 			}else{
-				text= (bc.internStrings ? getStrings(resource) : "") + resource.getText();
+				text = resource.getText();
 				if(!resource.tag.nls && bc.insertAbsMids){
 					text= insertAbsMid(text, resource);
 				}
+				text= (bc.internStrings ? getStrings(resource) : "") + text;
 				resource.text= text;
 				copyright= resource.pack.copyright || "";
 			}

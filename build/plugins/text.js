@@ -1,22 +1,14 @@
 define(["../buildControl", "dojo/json"], function(bc, json) {
 	// note: this builder plugin only writes text that is part of a package
-
-	var
-		cacheTemplate= 'require.cache["*1"]=*2;\n\n',
-
-		getPluginLayerText= function() {
-			var pid = bc.scopeMap[this.pid] || this.pid;
-
-			return pid ? cacheTemplate.replace("*1", pid + "/" + this.mid).replace("*2", json.stringify(this.module.text)) : "";
+	var getPluginLayerText= function() {
+			return 'require.cache["' + this.mid + '"]=' + json.stringify(this.module.text+"") + ';\n\n';
 		},
 
 		makePluginPseudoModule= function(module, moduleInfo) {
 			return {
 				module:module,
-				pqn:moduleInfo.pqn,
 				pid:moduleInfo.pid,
 				mid:moduleInfo.mid,
-				path:moduleInfo.path,
 				deps:[],
 				getPluginLayerText:getPluginLayerText,
 				internStrings:getPluginLayerText
@@ -28,7 +20,7 @@ define(["../buildControl", "dojo/json"], function(bc, json) {
 			referenceModule,
 			bc
 		) {
-			var textPlugin= bc.amdResources["dojo*text"];
+			var textPlugin= bc.amdResources["dojo/text"];
 			if (!textPlugin) {
 				throw new Error("text! plugin missing");
 			}
@@ -49,16 +41,14 @@ define(["../buildControl", "dojo/json"], function(bc, json) {
 
 			// fixup the moduleInfo to reflect type filetype extention
 			moduleInfo.url= url;
-			moduleInfo.pqn+= ext;
 			moduleInfo.mid+= ext;
-			moduleInfo.path+= ext;
 
 			var textResource= bc.resources[url];
 			if (!textResource) {
 				throw new Error("text resource (" + url + ") missing");
 			}
 			if(bc.internStrings){
-				textResource.tag.noWrite= 1;
+				textResource.tag.noWrite= 0;
 			}
 			return [textPlugin, makePluginPseudoModule(textResource, moduleInfo)];
 		};

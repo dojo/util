@@ -1,34 +1,43 @@
-define(["../buildControl", "../version"], function(bc, version) {
+define(["../buildControl", "../version", "../fileUtils"], function(bc, version, fileUtils) {
+	var dir = ".",
+		filename = "build-report.txt";
+
 	return function(resource, callback) {
 		resource.reports.push({
-			dir:".",
-			filename:"build-report.txt",
+			dir:dir,
+			filename:filename,
 			content: function(){
 				var result= "";
 
-				result+= "build started: " + bc.startTimestamp + "\n";
-				result+= "build application version: " + version + "\n";
+				result+= "Build started: " + bc.startTimestamp + "\n";
+				result+= "Build application version: " + version + "\n";
 
-				result+= "Messages:\n";
-				result+= bc.messages.join("\n") + "\n\n";
+				result+= "Messages:\n" + bc.getAllNonreportMessages();
 
 				result+= "Layer Contents:\n";
 				for(var p in bc.resources){
 					resource= bc.resources[p];
 					if(resource.moduleSet){
-						result+= resource.path + ":\n";
+						result+= resource.mid + ":\n";
 						var moduleSet= resource.moduleSet;
 						for(var q in moduleSet){
-							result+= "\t" + moduleSet[q].path + "\n";
+							result+= "\t" + moduleSet[q].mid + "\n";
 						}
 						result+= "\n";
 					}
 				}
 
-				result+= "Optimizer Messages:\n";
-				result+= bc.optimizerOutput;
+				var optimizerOutput = bc.getOptimizerOutput();
+				if(optimizerOutput.length){
+					result+= "Optimizer Messages:\n" + optimizerOutput;
+				}
 
-				result+= "build finished: " + new Date() + "\n";
+				result+= bc.getAllReportMessages();
+
+				console.log("Report written to " + fileUtils.computePath(fileUtils.catPath(dir, filename), bc.destBasePath));
+
+				result+= "\n\nProcess finished normally\n";
+				result+= "\terrors: " + bc.getErrorCount() + "\n\twarnings: " + bc.getWarnCount() + "\n\tbuild time: " + ((new Date()).getTime() - bc.startTimestamp.getTime()) / 1000 + " seconds";
 				return result;
 			}
 		});

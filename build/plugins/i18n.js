@@ -1,7 +1,7 @@
 ///
 // \module build/plugins/i18n
 //
-define([], function() {
+define(["../buildControl"], function(bc) {
 	var
 		nlsRe=
 			// regexp for reconstructing the master bundle name from parts of the regexp match
@@ -14,7 +14,7 @@ define([], function() {
 			/(^.*(^|\/)nls(\/|$))([^\/]*)\/?([^\/]*)/,
 
 		getAvailableLocales= function(
-			root, 
+			root,
 			locale,
 			bundlePath,
 			bundleName,
@@ -28,57 +28,18 @@ define([], function() {
 			}
 		},
 
-		startI18nPlugin= function(
-			mid,
-			referenceModule
-		) {
-			var
-				match= nlsRe.exec(mid),
-				bundlePath= match[1],
-				bundleName= match[5] || match[4],
-				locale= (match[5] && match[4]),
-				moduleInfo= bc.getSrcModuleInfo(bundlePath + bundleName, referenceModule),
-				pqn= moduleInfo.pqn= "i18n!" + moduleInfo.pid + "*" + moduleInfo.mid + (locale ? "/" + locale : "");
-			if (bc.jobs[pqn]) {
-				// already resolved...
-				return bc.jobs[pqn];
-			} else {
-				// bundlePath may have been relative; get the absolute path
-				bundlePath= moduleInfo.path.match(/(.+\/)[^\/]+$/)[1];
-
-				// compute all of the necessary bundle module ids
-				var 
-					rootBundle= bc.resources[moduleInfo.url].bundle,
-					availableLocales= {};
-				availableLocales[bundlePath + bundleName]= 1;
-				if (locale) {
-					getAvailableLocales(rootBundle, locale, bundlePath, bundleName, availableLocales);
-				}
-				bc.locales.forEach(function(locale) {
-					getAvailableLocales(rootBundle, locale, bundlePath, bundleName, availableLocales);
-				});
-				var deps= [bc.amdResources["i18n"]];
-				for (var p in availableLocales) {
-					deps.push(bc.amdResources[p]);
-				}
-				moduleInfo.deps= deps;
-				moduleInfo.pluginResource= true; 
-				return bc.amdResources[pqn]= moduleInfo;
-			}
-		},
-
 		start= function(
 			mid,
 			referenceModule,
 			bc
 		) {
 			var
-				i18nPlugin= bc.amdResources["dojo*i18n"],
+				i18nPlugin= bc.amdResources["dojo/i18n"],
 				match= nlsRe.exec(mid),
 				bundleName= match[5] || match[4],
-				bundlePath= bc.getSrcModuleInfo(match[1] + bundleName, referenceModule).pqn.match(/(.+\/)[^\/]+/)[1],
+				bundlePath= bc.getSrcModuleInfo(match[1] + bundleName, referenceModule).mid.match(/(.+\/)[^\/]+/)[1],
 				locale= (match[5] && match[4]),
-				i18nResourceMid= locale ? bundlePath + locale + "/" + bundleName : bundlePath + bundleName,
+				i18nResourceMid= bundlePath + (locale ? locale + "/" : "") + bundleName,
 				i18nResource= bc.amdResources[i18nResourceMid];
 
 			if (!i18nPlugin) {

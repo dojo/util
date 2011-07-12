@@ -30,7 +30,7 @@ define([
 				result= [computePath(item[0], srcBasePath), computePath(item[1], destBasePath)].concat(item.slice(2));
 			}
 			if (!isAbsolutePath(result[0]) || !isAbsolutePath(result[1])) {
-				bc.logError("Unable to compute an absolute path for an item in " + hint + " (" + item + ")");
+				bc.log("inputInvalidPath" ["path", item, "hint", hint]);
 			}
 			return result;
 		},
@@ -94,7 +94,7 @@ define([
 		};
 
 	if(!args.buildControlScripts.length){
-		bc.logError("no profile or build control script provided; use the option --help for help");
+		bc.log("pacify", "no profile or build control script provided; use the option --help for help");
 		process.exit(0);
 	}
 
@@ -125,7 +125,7 @@ define([
 					}
 					break;
 				case "profileFile":
-					bc.logInfo("the \"profileFile\" switch has been deprecated\n\"profile\" can now be used with either profile names (pointing to profiles in the util/buildscripts/profile directory) or filenames (pointing explicitly to the file given)");
+					bc.log("inputDeprecatedProfileFile");
 					item= processProfileFile(item[1], args);
 					break;
 			}
@@ -178,15 +178,24 @@ define([
 		bc.replacements= cleanSet;
 	})();
 
-
-	// if copyTests, then add the prefix for doh
-	if(bc.mini){
-		bc.copyTests= false;
+	// explicit mini and/or copyTests wins;
+	// in particular, explicit copyTests ignores explicit mini with regard to tests
+	if(!("mini" in bc)){
+		bc.mini = true;
+	}
+	if(!("copyTests" in bc)){
+		bc.copyTests = !bc.mini;
+	}
+	if(isString(bc.copyTests)){
+		bc.copyTests = bc.copyTests.toLowerCase();
+	}
+	if(bc.copyTests!="build"){
+		// convert to pure boolean
+		bc.copyTests = !!bc.copyTests;
 	}
 	if(bc.copyTests && !bc.packageMap.doh){
 		bc.packageMap.doh= bc.dohPackageInfo;
 	}
-
 
 	// clean up bc.packageMap and bc.paths so they can be used just as in bdLoad
 	(function() {
@@ -202,25 +211,32 @@ define([
 		for (var packageName in bc.packages) {
 			var pack= bc.packages[packageName];
 
-			var packageJson= readJson(catPath(pack.location, "package.json"));
-			if (packageJson) {
-				if(isEmpty(packageJson)){
-					bc.logWarn("the package.json file for package " + packageName + " was missing or empty");
-				}else{
-					// it's never rational to override the package.json main advice if it exists
-					if(packageJson.main){
-						pack.main= packageJson.main;
-					}
-
-					// otoh, the dojoBuild config in package.json is considered a default that may be overridden
-					var dojoBuild= packageJson.dojoBuild || {};
-					for (var p in dojoBuild) {
-						if (!(p in pack)) {
-							pack[p]= dojoBuild[p];
-						}
-					}
-					if(packageJson.version){
-						bc.logInfo("using version " + packageJson.version + " for package " + packageName);
+			var filename = catPath(pack.location, "package.json"),
+				packageJson= readAndEval(filename, "package.json"),
+				defaultProfileFilename = pack.name + ".profile.js";
+			if(isEmpty(packageJson)){
+				bc.log("inputMissingPackageJson", ["filename", filename]);
+			}else{
+				if(packageJson.main && !pack.main){
+					pack.main= packageJson.main;
+				}
+				if("dojoBuild" in packageJson){
+					// notice this allows setting defaultProfileFilename to "" which will prevent a default profile from being processed
+					defaultProfileFilename = packageJson.dojoBuild;
+				}
+				if(packageJson.version){
+					bc.log("packageVersion", ["package", packageName, "version", packageJson.version]);
+				}
+			}
+			if(defaultProfileFilename){
+				var defaultProfile = readAndEval(catPath(pack.location, defaultProfileFilename), "default profile");
+				for (var p in defaultProfile) {
+					if (!(p in pack)) {
+						pack[p]= defaultProfile[p];
+					}else if(p in {resourceTags:1}){
+						// these are mixed one level deep
+						// TODO: review all profile properties and see if there are any others than resourceTags that ought to go here
+						mix(pack[p], defaultProfile[p]);
 					}
 				}
 			}
@@ -251,7 +267,7 @@ define([
 
 			if (!pack.trees) {
 				// copy the package tree; don't copy any hidden directorys (e.g., .git, .svn) or temp files
-				pack.trees= [[pack.location, destPack.location, "/\\.", "~$"]];
+				pack.trees= [[pack.location, destPack.location, /(\/\.)|(~$)/]];
 			} // else the user has provided explicit copy instructions
 
 			// filenames, dirs, trees just like global, except relative to the pack.(src|dest)Location
@@ -287,8 +303,6 @@ define([
 				var result= require.getModuleInfo(mid+"/x", referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", bc.packageMapProg, bc.pathsMapProg, true);
 				// trim /x.js
 				result.mid= trimLastFiveChars(result.mid);
-				result.pqn= trimLastFiveChars(result.pqn);
-				result.path= trimLastFiveChars(result.path);
 				result.url= trimLastFiveChars(result.url);
 				return result;
 			}else{
@@ -302,8 +316,6 @@ define([
 				var result= require.getModuleInfo(mid+"/x", referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", bc.destPackageMapProg, bc.destPathsMapProg, true);
 				// trim /x.js
 				result.mid= trimLastFiveChars(result.mid);
-				result.pqn= trimLastFiveChars(result.pqn);
-				result.path= trimLastFiveChars(result.path);
 				result.url= trimLastFiveChars(result.url);
 				return result;
 			}else{
@@ -355,7 +367,7 @@ define([
 					bc.release= true;
 					break;
 				default:
-					bc.logError("Unknown action (" + action + ") provided");
+					bc.log("inputUnknownAction" ["action", action]);
 					process.exit(0);
 
 			}
@@ -363,7 +375,7 @@ define([
 	}
 
 	if(!bc.check && !bc.clean && !bc.release){
-		bc.logError("nothing to do; you must explicitly instruct the application to do something; use the option --help for help");
+		bc.log("pacify", "Nothing to do; you must explicitly instruct the application to do something; use the option --help for help.");
 		process.exit(0);
 	}
 
@@ -379,20 +391,20 @@ define([
 	if (!stripConsole || stripConsole=="none") {
 		stripConsole= false;
 	} else if (stripConsole == "normal,warn") {
-		bc.logWarn("stripConsole value \"normal,warn\" replaced with \"warn\".  Please update your build scripts.");
+		bc.log("inputDeprecatedStripConsole", ["deprecated", "normal,warn", "use", "warn"]);
 		stripConsole = "warn";
 	} else if (stripConsole == "normal,error") {
-		bc.logWarn("stripConsole value \"normal,error\" replaced with \"all\".  Please update your build scripts.");
+		bc.log("inputDeprecatedStripConsole", ["deprecated", "normal,error", "use", "all"]);
 		stripConsole = "all";
 	} else if (!/normal|warn|all|none/.test(stripConsole)){
-		bc.logError("invalid stripConsole value: " + stripConsole);
+		bc.log("inputUnknownStripConsole", ["value", stripConsole]);
 	}
 	bc.stripConsole= stripConsole;
 
 	if(bc.optimize){
 		bc.optimize= bc.optimize.toLowerCase();
 		if(!/^(comments|shrinksafe(\.keeplines)?|closure(\.keeplines)?)$/.test(bc.optimize)){
-			bc.logError("unrecognized optimize switch (" + bc.optimize + ") must be one of 'comments', 'shrinksafe', 'shrinksafe.keeplines', 'closure'; use the option --help for help");
+			bc.log("inputUnknownOptimize" ["value", bc.optimize]);
 		}else{
 			if(/shrinksafe/.test(bc.optimize) && stripConsole){
 				bc.optimize+= "." + stripConsole;
@@ -402,7 +414,7 @@ define([
 	if(bc.layerOptimize){
 		bc.layerOptimize= bc.layerOptimize.toLowerCase();
 		if(!/^(comments|shrinksafe(\.keeplines)?|closure(\.keeplines)?)$/.test(bc.layerOptimize)){
-			bc.logError("unrecognized layerOptimize switch (" + bc.layerOptimize + ") must be one of 'comments', 'shrinksafe', 'shrinksafe.keeplines', 'closure'; use the option --help for help");
+			bc.log("inputUnknownLayerOptimize" ["value", bc.layerOptimize]);
 		}else{
 			if(/shrinksafe/.test(bc.layerOptimize) && stripConsole){
 				bc.layerOptimize+= "." + stripConsole;
@@ -411,8 +423,10 @@ define([
 	}
 
 	var fixedScopeMap = {};
-	(bc.scopeMap || []).forEach(function(pair){
+	bc.scopeNames = [];
+	(bc.scopeMap || [["dojo", "dojo"], ["dijit", "dijit"], ["dojox", "dojox"]]).forEach(function(pair){
 		fixedScopeMap[pair[0]] = pair[1];
+		bc.scopeNames.push(pair[0]);
 	});
 	bc.scopeMap = fixedScopeMap;
 
@@ -426,7 +440,7 @@ define([
 	for(p in bc){
 		if(/^(loader|xdDojoPath|symbol|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)){
 			deprecated.push(p);
-			bc.logWarn(p + " deprecated, ignored");
+			bc.log("inputDeprecated", ["switch", p]);
 		}
 	}
 	deprecated.forEach(function(p){
@@ -435,7 +449,7 @@ define([
 
 	// dump bc (if requested) before changing gateNames to gateIds below
 	if (bc.check) (function() {
-		bc.logInfo(stringify(bc) + "\n");
+		bc.log("pacify", stringify(bc));
 if(0){
 		// don't dump out private properties used by build--they'll just generate questions
 		var
@@ -478,7 +492,7 @@ if(0){
 				destName:destPack.name, destMain:destPack.main, destLocation:destPack.location
 			});
 		}
-		bc.logInfo(stringify(dump) + "\n");
+		bc.log("pacify", stringify(dump));
 }
 	})();
 
@@ -496,7 +510,7 @@ if(0){
 			// each item is a [AMD-MID, gateName] pair
 			gateId= gates[transforms[transformId][1]];
 			if (typeof gateId == "undefined") {
-				bc.logError("Unknown gate (" + transformId + ":" + transforms[transformId] + ") given in transforms");
+				bc.log("inputUnknownGate", ["transform", transformId, "gate", transforms[transformId][1]]);
 			} else {
 				transforms[transformId][1]= gateId;
 			}
@@ -519,7 +533,7 @@ if(0){
 					return [id, transforms[id][1]];
 				} else {
 					error= true;
-					bc.logError("Unknown transform (" + id + ") in transformJobs.");
+					bc.log("inputUnknownTransform", ["transform", id]);
 					return 0;
 				}
 			});
@@ -543,6 +557,20 @@ if(0){
 
 	if (args.unitTest=="dumpbc") {
 		console.log(stringify(bc) + "\n");
+	}
+
+	if(bc.quiet){
+		(function(){
+			var delSet = {};
+			for(var p in bc.pacifySet){
+				if(bc.messageMap[p][1]>199){
+					delSet[p] = 1;
+				}
+			}
+			for(p in delSet){
+				delete bc.pacifySet[p];
+			}
+		})();
 	}
 
 	return bc;

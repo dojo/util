@@ -18,8 +18,7 @@ define(["../buildControl", "../stringify"], function(bc, stringify) {
 				return sorted.sort();
 			};
 
-			bc.logInfo("has features: ");
-			bc.logInfo(sorted.map(function(item) {
+			bc.log("hasReport", sorted.map(function(item) {
 				return "	// " + sort(item[1]).join(", ") + "\n	 '" + item[0] + "':1";
 			}).join(",\n\n"));
 		}

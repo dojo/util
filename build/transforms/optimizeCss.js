@@ -69,7 +69,7 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 					importModule= bc.resources[fullImportFileName],
 					importContents = importModule && (importModule.rawText || importModule.text);
 				if(!importContents){
-					bc.logWarn("CSS import (" + importFileName + ")	 skipped in " + importFileName);
+					skipped.push([importFileName, fileName]);
 					return fullMatch;
 				}
 
@@ -87,22 +87,27 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 						//It is a relative URL, tack on the path prefix
 						urlMatch =  fileUtils.compactPath(fileUtils.catPath(importPath, fixedUrlMatch));
 					}else{
-						bc.logWarn("Non-relative URL (" + urlMatch + ") skipped in " + importFileName);
+						nonrelative.push([urlMatch, importFileName]);
 					}
 					return "url(" + fileUtils.compactPath(urlMatch) + ")";
 				});
 
 				return importContents;
 			});
-		};
+		},
+
+		skipped, nonrelative;
+
 
 	return function(resource, callback) {
 		if(!bc.cssOptimize){
 			return;
 		}
 
-		//bc.logInfo("Optimizing CSS file: " + resource.src);
+		skipped = [];
+		nonrelative = [];
 		var text = flattenCss(resource.src, resource.text, cssImportIgnore);
+
 		try{
 			//Get rid of newlines.
 			if(/keepLines/i.test(bc.cssOptimize)){
@@ -117,8 +122,13 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 			}
 			resource.rawText = resource.text;
 			resource.text= text;
+			var messageArgs = ["file", resource.src];
+			skipped.length && messageArgs.push("skipped", skipped);
+			nonrelative.length && messageArgs.push("non-relative URLs skipped", nonrelative);
+
+			bc.log("cssOptimize", messageArgs);
 		}catch(e){
-			bc.logError("Could not optimized CSS file: " + resource.src + "; error follows...", e);
+			bc.log("cssOptimizeFailed", ["file", resource.src, "error", e]);
 		}
 	};
 });

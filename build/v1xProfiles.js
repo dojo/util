@@ -32,11 +32,13 @@ define([
 			cssOptimize:"",
 			cssImportIgnore:"",
 			stripConsole:"normal",
-			copyTests:false,
-			mini:true,
-			scopeMap:[],
+			scopeMap:[["dojo", "dojo"], ["dijit", "dijit"], ["dojox", "dojox"]],
 			replaceLoaderConfig:1,
 			insertAbsMids:1,
+
+			// these will be set in buildControl; see buildControl.js for details
+			//copyTests:false,
+			//mini:true,
 
 			// the following configuration variables are deprecated and have no effect
 			//query,
@@ -62,24 +64,20 @@ define([
 				'host-browser':1,
 				'dom':1,
 				'dojo-auto-init':0,
-				'dojo-combo-api':1,
+				'dojo-combo-api':0,
 				'dojo-config-addOnLoad':1,
 				'dojo-config-api':1,
 				'dojo-config-require':1,
 				'dojo-debug-messages':0,
-				'dojo-dom-ready-api':1,
-				'dojo-dom-ready-plugin':1,
-				'dojo-error-api':0,
 				'dojo-firebug':0,
-				'dojo-gettext-api':1,
 				'dojo-guarantee-console':1,
 				'dojo-has-api':1,
+				"dojo-dom-ready-api":1,
 				'dojo-inject-api':1,
 				'dojo-loader':1,
 				'dojo-loader-catches':0,
 				'dojo-log-api':1,
 				'dojo-publish-privates':1,
-				'dojo-ready-api':1,
 				'dojo-requirejs-api':1,
 				'dojo-sniff':1,
 				'dojo-sync-loader':1,
@@ -88,12 +86,43 @@ define([
 				'dojo-trace-api':0,
 				'dojo-undef-api':0,
 				'dojo-v1x-i18n-Api':1,
-				'dojo-xdomain-test-api':1,
-				'dojo-xhr-factory':1
+				'dojo-xdomain-test-api':1
 			},
 
 			defaultConfig:{
-				hasCache:{"config-tlmSiblingOfDojo":1},
+				hasCache:{
+					// these are the values given above, not-build client code may test for these so they need to be available
+					'host-browser':1,
+					'dom':1,
+					'dojo-auto-init':0,
+					'dojo-combo-api':0,
+					'dojo-config-addOnLoad':1,
+					'dojo-config-api':1,
+					'dojo-config-require':1,
+					'dojo-debug-messages':0,
+					'dojo-firebug':0,
+					'dojo-guarantee-console':1,
+					'dojo-has-api':1,
+					"dojo-dom-ready-api":1,
+					'dojo-inject-api':1,
+					'dojo-loader':1,
+					'dojo-loader-catches':0,
+					'dojo-log-api':1,
+					'dojo-publish-privates':1,
+					'dojo-requirejs-api':1,
+					'dojo-sniff':1,
+					'dojo-sync-loader':1,
+					'dojo-test-sniff':1,
+					'dojo-timeout-api':1,
+					'dojo-trace-api':0,
+					'dojo-undef-api':0,
+					'dojo-v1x-i18n-Api':1,
+					'dojo-xdomain-test-api':1,
+
+					// these are not static, but the default values given in the bootstrap
+					"config-tlmSiblingOfDojo":1,
+					"dojo-amd-factory-scan":1
+				},
 				async:bc.cdnBuild ? "xd" : 0
 			}
 		},
@@ -146,12 +175,22 @@ define([
 			});
 
 			// convert the prefix vector to a map; make sure all the prefixes are in the top-level map
-			var prefixMap= {}, copyrightMap= {};
+			var prefixMap =
+					// map from top-level mid --> path
+					{},
+				copyrightMap =
+					// map from top-level mid --> copyright message (usually undefined)
+					{},
+				runtimeMap =
+					// map from top-level mid --> runtime environment for computing depenencies in transforms/depsScan (usually undefined)
+					{};
 			prefixes.forEach(function(pair){
-				// pair a [mid, path], mid, a dotted module id, path relative to dojo directory
-				topLevelMids[pair[0]]= 1;
-				prefixMap[pair[0]]= pair[1];
-				copyrightMap[pair[0]]= pair[2];
+				// pair a [mid, path], mid, a top-level module id, path relative to dojo directory
+				var mid = pair[0];
+				topLevelMids[mid]= 1;
+				prefixMap[mid]= pair[1];
+				copyrightMap[mid]= pair[2];
+				runtimeMap[mid]= pair[3];
 			});
 
 			// make sure we have a dojo prefix; memorize it;
@@ -162,10 +201,10 @@ define([
 				prefixMap.dojo= activeDojoPath;
 			}else{
 				if (profile.basePath===undefined && /^\./.test(prefixMap.dojo) && compactPath(catPath(activeDojoPath, "../util/buildscripts"))!=process.cwd()){
-					bc.logWarn("did not specify profile.basePath, yet did specify a relative dojo path and running build with the current working directory different than util/buildscripts");
+					bc.log("oddDojoPath");
 				}
 				if(computePath(prefixMap.dojo, profile.basePath || process.cwd())!=activeDojoPath){
-					bc.logWarn("dojo path specified in profile is different than the dojo being used for the build program");
+					bc.log("buildUsingDifferentDojo");
 				}
 			}
 
@@ -186,7 +225,8 @@ define([
 				packages.push({
 					name:mid,
 					location:prefixMap[mid],
-					copyright:copyrightMap[mid]!==undefined ? copyrightMap[mid] : defaultCopyright
+					copyright:copyrightMap[mid]!==undefined ? copyrightMap[mid] : defaultCopyright,
+					runtime:runtimeMap[mid]
 				});
 			}
 
@@ -218,7 +258,7 @@ define([
 			layers.forEach(function(layer) {
 				var mid= filenameToMid(computePath(layer.name, dojoPath));
 				if (!mid) {
-					bc.logError("unable to resolve layer name (" + layer.name + ") into a module identifier");
+					bc.log("layerToMidFailed", ["layer", layer.name]);
 					return;
 				}
 				layerNameToLayerMid[layer.name]= mid;
@@ -237,7 +277,7 @@ define([
 						return defaultCopyright + defaultBuildNotice;
 					}
 				},
-				fixedLayers= {"dojo/dojo": {copyright:defaultCopyright + defaultBuildNotice, include:["dojo"], exclude:[]}};
+				fixedLayers= {"dojo/dojo": {copyright:defaultCopyright + defaultBuildNotice, include:["dojo/main"], exclude:[]}};
 			layers.forEach(function(layer) {
 				var
 					mid= layerNameToLayerMid[layer.name],
@@ -247,17 +287,19 @@ define([
 						exclude:(layer.layerDependencies || []).map(function(item) {
 							var mid= layerNameToLayerMid[item];
 							if (!mid) {
-								bc.logError("unable to resolve layer dependency (" + item + ") in layer (" + layer.name + ")");
+								bc.log("layerMissingDependency", ["layer", layer.name, "dependency", item]);
 							}
 							return mid;
 						})
 					};
 				if(mid=="dojo/dojo"){
 					if(!layer.customBase){
-						result.include.push("dojo");
+						result.include.push("dojo/main");
 					}
 				}else{
-					result.exclude.push("dojo/dojo");
+					if(!layer.customBase){
+						result.exclude.push("dojo/dojo");
+					}
 				}
 				if (layer.discard) {
 					result.discard= true;
@@ -274,7 +316,7 @@ define([
 
 			if (profile.destBasePath) {
 				if (profile.releaseDir || profile.releaseName) {
-					bc.logWarn("destBasePath given; ignoring releaseDir and releaseName");
+					bc.log("ignoringReleaseDirName");
 				}
 			} else {
 				var
@@ -293,7 +335,7 @@ define([
 
 			for (p in profile) {
 				if (/^(loader|xdDojoPath|symbol|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)) {
-					bc.logWarn(p + " deprecated, ignored");
+					bc.log("inputDeprecated", ["switch", p]);
 				}else if(p=="layers"){
 					result.rawLayers= profile[p];
 				}else if(p=="staticHasFeatures"){
@@ -327,17 +369,17 @@ define([
 
 			//Remove the call to getDependencyList.js because it is not supported anymore.
 			if (/load\(("|')getDependencyList.js("|')\)/.test(text)) {
-				bc.logWarn("load(\"getDependencyList.js\") is no supported.");
+				bc.log("getDependencyListRemoved", ["profile", filename]);
 				text.replace(/load\(("|')getDependencyList.js("|')\)/, "");
 			}
 
 			// how about calling it a profile (instead of v1.6- dependencies)...
 			var profile= (function(__text){
 				var
-					// the logger is currently depricated; stub it out so profiles to cause exceptions on undefined
+					// the logger is currently deprecated; stub it out so profiles won't cause exceptions on undefined
 					// TODO: should we bring this back?
-					warn = function(){
-						bc.logWarn("logger function call ignored; logger is deprecated");
+					warn = function(message){
+						bc.log("inputLoggerRemoved");
 					},
 					logger = {
 						TRACE: 0,
@@ -360,7 +402,7 @@ define([
 		},
 
 		processHtmlFiles= function(files){
-			bc.logInfo("html files: " + files.join(", "));
+			bc.log("processHtmlFiles", ["files", files.join(", ")]);
 			var
 				layers = {},
 				prefix = "",

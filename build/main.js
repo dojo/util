@@ -93,7 +93,7 @@ define(["require", "dojo/has"], function(require, has) {
 			resources= [],
 
 			reportError= function(resource, err) {
-				bc.logError("error while transforming resource: " + resource.src + "\ntransform: " + resource.jobPos + "\n" + err);
+				bc.log("transformFailed", ["resource", resource.src, "transform", resource.jobPos, "error", err]);
 				resource.error= true;
 			},
 
@@ -150,7 +150,7 @@ define(["require", "dojo/has"], function(require, has) {
 			advanceGate= function(currentGate) {
 				while (1) {
 					bc.currentGate= ++currentGate;
-					bc.logInfo("starting " + bc.gates[bc.currentGate][2] + "...");
+					bc.log("pacify", "starting " + bc.gates[bc.currentGate][2] + "...");
 					gateListeners.forEach(function(listener){
 						listener(bc.gates[bc.currentGate][1]);
 					});
@@ -175,10 +175,9 @@ define(["require", "dojo/has"], function(require, has) {
 					passGate();
 				} else {
 					if (!resources.length) {
-						bc.logWarn("failed to discover any resources to transform. Nothing to do; terminating application");
+						bc.log("discoveryFailed");
 					}
-					bc.logInfo("Errors: " + bc.errorCount + ", Warnings: " + bc.warnCount);
-					bc.logInfo("Total build time: " + ((new Date()).getTime() - bc.startTimestamp.getTime()) / 1000 + " seconds");
+					console.log("Process finished normally.\n\terrors: " + bc.getErrorCount() + "\n\twarnings: " + bc.getWarnCount() + "\n\tbuild time: " + ((new Date()).getTime() - bc.startTimestamp.getTime()) / 1000 + " seconds");
 					// that's all, folks...
 				}
 			};
@@ -190,12 +189,12 @@ define(["require", "dojo/has"], function(require, has) {
 				dest= resource.dest;
 			if (bc.resourcesByDest[src]) {
 				// a dest is scheduled to overwrite a source
-				bc.logError(src + " will be overwritten by " + bc.resources.byDest[src].src);
+				bc.log("overwrite", ["input", src, "resource destined for same location: ", bc.resources.byDest[src].src]);
 				return;
 			}
 			if (bc.resourcesByDest[dest]) {
 				// multiple srcs scheduled to write into a single dest
-				bc.logError(src + " and " + bc.resourcesByDest[dest].src + " are both attempting to write into " + dest);
+				bc.log("outputCollide", ["source1", src, "source-2", bc.resourcesByDest[dest].src]);
 				return;
 			}
 			// remember the resources in the global maps
@@ -214,7 +213,7 @@ define(["require", "dojo/has"], function(require, has) {
 					return;
 				}
 			}
-			bc.logWarn("Resource (" + resource.src + ") was discovered, but there is no transform job specified.");
+			bc.log("noTransform", ["resoures", resource.src]);
 		};
 
 		function doBuild(){
@@ -253,14 +252,14 @@ define(["require", "dojo/has"], function(require, has) {
 					});
 				}
 				for (i=0; i<pluginNames.length;) {
-					bc.plugins[bc.getSrcModuleInfo(pluginNames[i++]).pqn]= arguments[argsPos++];
+					bc.plugins[bc.getSrcModuleInfo(pluginNames[i++]).mid]= arguments[argsPos++];
 				}
 
 				// start the transform engine: initialize bc.currentGate and bc.waiting, then discover and start each resource.
 				// note: discovery procs will call bc.start with each discovered resource, which will call advance, which will
 				// enter each resource in a race to the next gate, which will result in many bc.waiting incs/decs
 				bc.waiting= 1;  // matches *1*
-				bc.logInfo("discovering resources...");
+				bc.log("pacify", "discovering resources...");
 				advanceGate(-1);
 				discoveryProcs.forEach(function(proc) { proc(); });
 				passGate();  // matched *1*

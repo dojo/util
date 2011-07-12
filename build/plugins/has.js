@@ -7,9 +7,9 @@ define(["dojo/regexp"], function(dojoRegExp) {
 		) {
 			var
 				getHasPluginDependency= function(){
-					var hasPlugin= bc.amdResources["dojo*has"];
+					var hasPlugin= bc.amdResources["dojo/has"];
 					if(!hasPlugin){
-						bc.logError("failed to find dojo/has! plugin");
+						bc.log("dojoHasMissingPlugin");
 						return [];
 					}else{
 						return [hasPlugin];
@@ -54,7 +54,7 @@ define(["dojo/regexp"], function(dojoRegExp) {
 
 			// we only need the plugin if we need to resolve at run time
 			if(resolvedId===undefined){
-				bc.logInfo("module identifier (" + id + ") could not be resolved during build-time");
+				bc.log("dojoHasUnresolvedMid", ["plugin resource id", id, "reference module id", referenceModule && referenceModule.mid]);
 				return getHasPluginDependency();
 			}
 
@@ -67,12 +67,12 @@ define(["dojo/regexp"], function(dojoRegExp) {
 			}else{
 				var
 					moduleInfo= bc.getSrcModuleInfo(resolvedId, referenceModule),
-					module= bc.amdResources[moduleInfo.pqn];
+					module= bc.amdResources[moduleInfo.mid];
 				if(module){
 					referenceModule.text= referenceModule.text.replace(regex, resolvedId);
 					return [module];
 				}else{
-					bc.logError("failed to resolve has! dependency (" + moduleInfo.pqn + ")" + (referenceModule ? " for module (" + referenceModule.src + ")" : ""));
+					bc.log("dojoHasMissingMid", ["plugin resource id", id, "resolved plugin resource id", moduleInfo.mid, "reference module id", referenceModule && referenceModule.mid]);
 					return getHasPluginDependency();
 				}
 			}

@@ -16,6 +16,9 @@ define(["../buildControl"], function(bc) {
 		};
 
 	return function(resource) {
+		if(typeof resource.text!="string"){
+			return;
+		}
 		var
 			foundIndex = -1,
 			startIndex = 0,
@@ -76,7 +79,7 @@ define(["../buildControl"], function(bc) {
 				}
 			}
 		}
- 
+
 		resource.text= text;
 		return 0;
 	};

@@ -7,12 +7,12 @@ define(["../buildControl", "../stringify"], function(bc, stringify) {
 			resource, p;
 		for (p in bc.resources) {
 			resource= bc.resources[p];
-			if (resource.deps && !resource.test && !/\/nls\//.test(resource.src) && resource.pqn!="dojo*_base" && resource.pqn!="dojo*_base/browser" && (resource.pqn=="dojo*main" || /_base/.test(resource.pqn))) {
+			if (resource.deps && !resource.test && !/\/nls\//.test(resource.src) && resource.mid!="dojo/_base" && resource.mid!="dojo/_base/browser" && (resource.mid=="dojo/main" || /_base/.test(resource.mid))) {
 				resource.deps.forEach(function(module){
-					//console.log('"' + resource.path + '" -> "' + module.path + '";');
+					//console.log('"' + resource.mid + '" -> "' + module.mid + '";');
 				});
 				resource.uid= i;
-				midToId[bc.resources[p].path]= i;
+				midToId[bc.resources[p].mid]= i;
 				modules.push(resource);
 				i++;
 			}
@@ -35,7 +35,7 @@ define(["../buildControl", "../stringify"], function(bc, stringify) {
 				}
 			};
 		modules.forEach(function(item, i) {
-			var parts= item.path.split("/");
+			var parts= item.mid.split("/");
 			getItem(parts, idTree)["*"]= i;
 		});
 //console.log(stringify(depsTree));

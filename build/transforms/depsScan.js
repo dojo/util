@@ -1,20 +1,27 @@
-define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, fileUtils, json, fs) {
+define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo/json", "dojo/_base/lang", "dojo/_base/loader", "../fs"],
+	function(require, bc, fileUtils, removeComments, json, lang, syncLoader, fs) {
 	return function(resource) {
 		var
+			mix = function(dest, src){
+				dest = dest || {};
+				for(var p in src){
+					dest[p] = src[p];
+				}
+				return dest;
+			},
+
 			absMid = 0,
 
-			deps,
+			aggregateDeps = [],
 
-			aggregateDeps= [],
+			defineApplied = 0,
 
-			defineApplied= 0,
-
-			define= function(mid, dependencies, factory) {
-				defineApplied= 1;
+			simulatedDefine= function(mid, dependencies, factory) {
+				defineApplied = 1;
 				var
-					arity= arguments.length,
-					args= 0,
-					defaultDeps= ["require", "exports", "module"];
+					arity = arguments.length,
+					args = 0,
+					defaultDeps = ["require", "exports", "module"];
 
 				// TODO: add the factory scan?
 				if (0) {
@@ -34,43 +41,112 @@ define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, f
 							[mid, dependencies, factory]);
 				}
 
+				if(args[1].some(function(item){return !lang.isString(item);})){
+					throw new Error("define dependency vector contains elements that are not of type string.");
+				}
+
 				absMid = args[0];
-				deps= args[1];
-				aggregateDeps= aggregateDeps.concat(deps);
+				aggregateDeps= aggregateDeps.concat(args[1]);
 			},
 
-			require= function(depsOrConfig, callbackOrDeps) {
-				if (depsOrConfig instanceof Array) {
+			simulatedRequire= function(depsOrConfig, callbackOrDeps) {
+				// add contents of deps vector to aggregateDeps iff it contains no relative ids; do not process deps property in config
+				var hasRelativeIds = function(deps){ return deps.some(function(item){ return /^\./.test(item); }); };
+				if (lang.isArray(depsOrConfig) && !hasRelativeIds(depsOrConfig)){
 					aggregateDeps= aggregateDeps.concat(depsOrConfig);
-				} else {
-					aggregateDeps= aggregateDeps.concat(depsOrConfig.deps || []);
-					(callbackOrDeps instanceof Array) && (aggregateDeps= aggregateDeps.concat(callbackOrDeps));
+				} else if(lang.isArray(callbackOrDeps) && !hasRelativeIds(callbackOrDeps)){
+					aggregateDeps= aggregateDeps.concat(callbackOrDeps);
 				}
 			},
 
-			dojoProvideList= [],
+			slashName = function(dottedName){
+				return dottedName.replace(/\./g, "/");
+			},
 
-			dojo= {
-				require: function(a, b) {
-					aggregateDeps.push(a.replace(/\./g, "/"));
+			pluginStrategyRequired =
+				// truthy if dojo.loadInit|require[After]If|platformRequire detected that cannot be resolved at build-time; falsy otherwise
+				0,
+
+			dojoProvides =
+				// vector of modules dojo.provide'd by the resource
+				[],
+
+			dojoRequires =
+				// vector of modules dojo.require'd by the resource
+				[],
+
+			simulatedDojo =
+				// the dojo legacy loader API
+				{
+					require:function(moduleName, omitModuleCheck) {
+						dojoRequires.push(slashName(moduleName));
+					},
+					provide:function(moduleName) {
+						dojoProvides.push(slashName(moduleName));
+					},
+					requireLocalization: function(moduleName, bundleName, locale) {
+						aggregateDeps.push("dojo/i18n!" + slashName(moduleName) + "/nls/" + (!locale || /root/i.test(locale) ? "" : locale + "/") + slashName(bundleName));
+					},
+					platformRequire:function(modMap) {
+						pluginStrategyRequired = 1;
+						(modMap.common || []).concat((bc.platform && modMap[bc.platform]) || []).forEach(function(item){
+							dojoRequires.push(lang.isArray(item) ? slashName(item[0]) : slashName(item));
+						});
+					},
+					loadInit:function(callback){
+						pluginStrategyRequired = 1;
+						callback();
+					},
+					requireIf:function(expr, moduleName, omitModuleCheck) {
+						pluginStrategyRequired = 1;
+						expr && dojoRequires.push(slashName(moduleName));
+					},
+					requireAfterIf:function(expr, moduleName, omitModuleCheck) {
+						pluginStrategyRequired = 1;
+						expr && dojoRequires.push(slashName(moduleName));
+					}
 				},
-				platformRequire: function(modMap) {
-					// see dojo/_base/loader
-					var result = (modMap.common || []).concat(modMap[bc.platform] || modMap["default"] || []);
-					result.forEach(function(item){
-						if(item instanceof Array){
-							aggregateDeps.push(item[1].replace(/\./g, "/"));
-						}else{
-							aggregateDeps.push(item.replace(/\./g, "/"));
-						}
-					});
-				},
-				requireLocalization: function(a, b) {
-					aggregateDeps.push("dojo/i18n!" + a.replace(/\./g, "/")	 + "/nls/" + b.replace(/\./g, "/"));
-				},
-				provide: function(a) {
-					dojoProvideList.push(a);
+
+			evaluatorWithNoRuntime =
+				new Function("dojo", "__text", "eval(__text);"),
+
+			applyLegacyCalls = function(callList){
+				var evaluator;
+				if(resource.pack.runtime){
+					// if a runtime is provided, then a special evaluator has to be constructed
+					var runtime = resource.pack.runtime,
+						args = [],
+						params = [],
+						p;
+					runtime.dojo = mix(runtime.dojo, simulatedDojo);
+					for(p in runtime){
+						args.push(runtime[p]);
+						params.push(p);
+					}
+					evaluator = new Function("__bc", "__args", "__text", "(function(" + params.join(",") + "){ eval(__text); }).apply(__bc, __args);");
+					args = [bc, args];
+				}else{
+					args = [simulatedDojo];
+					evaluator = evaluatorWithNoRuntime;
 				}
+
+				// apply the legacy API calls
+				var results = callList.map(function(application){
+					try{
+						evaluator.apply(bc, args.concat(application));
+						return 0;
+					}catch(e){
+						pluginStrategyRequired = 1;
+						return [e, application];
+					}
+				});
+
+				// report the results
+				results.forEach(function(item){
+					if(item){
+						bc.log("legacyFailedEval", ["module", resource.mid, "text", item[0], "error", item[1]]);
+					}
+				});
 			},
 
 			getAmdModule= function(
@@ -79,21 +155,19 @@ define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, f
 			) {
 				var match= mid.match(/^([^\!]+)\!(.*)$/);
 				if (match) {
-					var
-						pluginId= bc.getSrcModuleInfo(match[1], referenceModule).pqn,
+					var pluginId= bc.getSrcModuleInfo(match[1], referenceModule).mid,
 						pluginProc= bc.plugins[pluginId];
 					return pluginProc ? pluginProc.start(match[2], referenceModule, bc) : 0;
 				} else {
-					var
-						moduleInfo= bc.getSrcModuleInfo(mid, referenceModule),
-						module= moduleInfo && bc.amdResources[moduleInfo.pqn];
+					var moduleInfo= bc.getSrcModuleInfo(mid, referenceModule),
+						module= moduleInfo && bc.amdResources[moduleInfo.mid];
 					return module;
 				}
 			},
 
 			tagAbsMid = function(){
-				if(absMid && absMid!=resource.path){
-					bc.logError("AMD module (" + resource.src + ") specified an absolute module identifier that is not consistent with the configuration and filename");
+				if(absMid && absMid!=resource.mid){
+					bc.log("amdInconsistentMid", ["module", resource.mid, "specified", absMid]);
 				}
 				if(absMid){
 					resource.tag.hasAbsMid = 1;
@@ -105,17 +179,206 @@ define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, f
 				// pure AMD says the module can be executed in the build environment
 				// note: the user can provide a build environment with TODO
 				try {
-
-					var f= new Function("define", "require", resource.text);
-					f(define, require);
+					if(resource.mid!="dojo/_base/loader" && /dojo\.(require|provide)\s*\(/.test(removeComments(resource.text))){
+						bc.log("amdPureContainedLegacyApi", ["module", resource.mid]);
+					}
+					(new Function("define", "require", resource.text))(simulatedDefine, simulatedRequire);
 					tagAbsMid();
 				} catch (e) {
-					bc.logError("unable to evaluate pure AMD module in " + resource.src + "; error follows...", e);
+					bc.log("amdFailedEval", ["module", resource.mid, "error", e]);
 				}
 			},
 
-			isObject= function(it){
-				return typeof it=="object" && !(it instanceof Array) && it!==null;
+			convertToStrings= function(text){
+				var strings = [],
+
+					// a DFA, the states...
+					spaces = "spaces",
+					string = "string",
+					endOfString = "endOfString",
+					done = "done",
+					error = "error",
+
+					// the machine...
+					dfa = {
+						spaces:function(c){
+							if(/\s/.test(c)){
+								return spaces;
+							}
+							if(c=="'" || c=='"'){
+								quoteType= c;
+								current = "";
+								return string;
+							}
+							if(c==0){
+								return done;
+							}
+							return error;
+						},
+						string:function(c){
+							if(c==quoteType){
+								strings.push(current);
+								return "endOfString";
+							}else{
+								current+= c;
+								return "string";
+							}
+						},
+						endOfString:function(c){
+							if(/\s/.test(c)){
+								return endOfString;
+							}
+							if(c==0){
+								return done;
+							}
+							if(c==","){
+								return spaces;
+							}
+							return error;
+						}
+					},
+
+					state = spaces,
+
+					quoteType, current;
+
+
+				for (var i= 0; i<text.length; i++){
+					state = dfa[state](text.charAt(i));
+					if(state==error){
+						return 0;
+					}
+				}
+				if(dfa[state](0)!=error){
+					return strings;
+				}
+				return 0;
+			},
+
+			processPossibleAmdWithRegExs= function(text) {
+				// look for AMD define and/or require; require must not have relative mids; require signature with config argument is not discovered
+				// (remember, a config could have a string or regex that could have an unmatched right "}", so there is not way to guarantee we can find the correct
+				// end of the config arg without parsing)
+
+				var amdCallCount =
+						// the number of AMD applications found
+						0,
+
+					defineExp=
+						// look for define applications with an optional string first arg and an optional array second arg;
+						// notice the regex stops after the second arg
+						// a test run in the console
+						// test = [
+						//	'define("test")',
+						//	'define("test", ["test1"])',
+						//	'define("test", ["test1", "test2"])',
+						//	'define(["test1"])',
+ 						//	'define(["test1", "test2"])',
+						//	'define("test", ["test1"], function(test){ hello;})',
+						//	'define("test", function(test){ hello;})',
+						//	'define(["test1"], function(test){ hello;})',
+						//	'define(function(test){ hello;})',
+						//	'define({a:1})'
+						// ]
+					    //                    2                   3      4                5
+						/(^|\s)define\s*\(\s*(["'][^'"]+['"])?\s*(,)?\s*(\[[^\]]*?\])?\s*(,)?/g,
+
+					result;
+				while((result= defineExp.exec(text)) != null) {
+					try {
+						if(result[2]){
+							// first arg a string
+							if(result[3]){
+								// first arg a module id
+								if(result[5]){
+									// (mid, deps, <factory>)
+									result= result[0] + "{})";
+								}else if(result[4]){
+									// (mid, <factory:array value>)
+									result = result[0] + ")";
+								}else {
+									// (mid, <factory>)
+									result = result[0] + "{})";
+								}
+							}else{
+								// (<factory:string-value>)
+								result= result[0]  + ")";
+							}
+						}else if(result[4]){
+							// first arg an array
+							if(result[5]){
+								// (deps, <factory>)
+								result = result[0] + "{})";
+							}else{
+								// (<factory:array-value>)
+								result = result[0] + ")";
+							}
+						}else{
+							//just a factory
+							result = "define({})";
+						}
+						amdCallCount++;
+						(new Function("define", result))(simulatedDefine);
+						tagAbsMid();
+					} catch (e) {
+						amdCallCount--;
+						bc.log("amdFailedDefineEval", ["module", resource.mid, "text", result, "error", e]);
+					}
+				}
+
+				var requireExp=
+						// look for require applications with an array for the first arg; notice the regex stops after the first arg and config signature is not processed
+						/(^|\s)require\s*\(\s*\[([^\]]*?)\]/g;
+				while((result= requireExp.exec(text)) != null) {
+					var mids = convertToStrings(result[2]);
+					if(mids){
+						amdCallCount++;
+						aggregateDeps= aggregateDeps.concat(mids.filter(function(item){return item.charAt(0)!=".";}));
+					}
+				}
+				return amdCallCount;
+			},
+
+			processSyncNlsBundle = function(){
+				resource.tag.syncNls= 1;
+				var
+					match= resource.mid.match(/(^.*\/nls\/)(([a-zA-Z\-]+)\/)?([^\/]+)$/),
+					prefix= match[1],
+					locale= match[3],
+					bundle= match[4];
+				if(locale){
+					var
+						rootPath= prefix + bundle,
+						rootBundle= bc.amdResources[rootPath];
+					if(rootBundle){
+						var localizedSet= rootBundle.localizedSet || (rootBundle.localizedSet= {});
+						localizedSet[locale]= 1;
+					}else{
+						bc.log("i18nNoRoot" ["bundle", resource.mid]);
+					}
+				}
+
+				var getText= resource.getText;
+				resource.getText= function(){
+					var text= getText.call(this);
+
+					// this is frome the old builder...
+					// If this is an nls bundle, make sure it does not end in a ; Otherwise, bad things happen.
+					if(text.match(/\/nls\//)){
+						text = text.replace(/;\s*$/, "");
+					}
+
+					if(this.localizedSet){
+						// this is the root bundle
+						var availableLocales= [];
+						for(var p in this.localizedSet){
+							availableLocales.push("\"" + p + "\":1");
+						}
+						return "define({root:\n" + text + ",\n" + availableLocales.join(",\n") + "\n});\n";
+					}else{
+						return "define(\n" + text + "\n);";
+					}
+				};
 			},
 
 			amdBundle= {},
@@ -124,8 +387,7 @@ define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, f
 
 			evalNlsResource= function(text){
 				try{
-					var f= new Function("define", resource.text);
-					f(define);
+					(new Function("define", resource.text))(simulatedDefine);
 					if(defineApplied){
 						return amdBundle;
 					}
@@ -133,45 +395,43 @@ define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, f
 				}
 				try{
 					var result= eval(text);
-					return isObject(result) ? syncBundle : 0;
+					if(lang.isObject(result)){
+						return syncBundle;
+					}
 				}catch(e){
 				}
 				return 0;
 			},
 
-			// the following is a direct copy from the v1.6- build util; this is so janky, we dare not touch
-			interningDojoUriRegExpString = "(((templatePath|templateCssPath)\\s*(=|:)\\s*)dojo\\.(module)?Url\\(|dojo\\.cache\\s*\\(\\s*)\\s*?[\\\"\\']([\\w\\.\\/]+)[\\\"\\'](([\\,\\s]*)[\\\"\\']([\\w\\.\\/-]*)[\\\"\\'])?(\\s*,\\s*)?([^\\)]*)?\\s*\\)",
-			//                              123                                 4                5                                                     6                      78                   9                         0           1
+			interningDojoUriRegExpString =
+				// the following is a direct copy from the v1.6- build util; this is so janky, we dare not touch
+				//23                                 4                5                                                     6                      78                   9                         0           1
+				"(((templatePath|templateCssPath)\\s*(=|:)\\s*)dojo\\.(module)?Url\\(|dojo\\.cache\\s*\\(\\s*)\\s*?[\\\"\\']([\\w\\.\\/]+)[\\\"\\'](([\\,\\s]*)[\\\"\\']([\\w\\.\\/-]*)[\\\"\\'])?(\\s*,\\s*)?([^\\)]*)?\\s*\\)",
 
 			interningGlobalDojoUriRegExp = new RegExp(interningDojoUriRegExpString, "g"),
 
 			interningLocalDojoUriRegExp = new RegExp(interningDojoUriRegExpString),
 
 			internStrings = function(){
-				var
-					shownFileName = false,
-
-					getText = function(src){
+				var getText = function(src){
 						return fs.readFileSync(src, "utf8");
-					};
+					},
+					skipping = [],
+					notFound = [],
+					nothing = [];
 
 				resource.text= resource.text.replace(interningGlobalDojoUriRegExp, function(matchString){
 					var parts = matchString.match(interningLocalDojoUriRegExp);
 
-					if(!shownFileName){
-						bc.logInfo("interning strings for : " + resource.src);
-						shownFileName = true;
-					}
-
 					var textModuleInfo= bc.getSrcModuleInfo(fileUtils.catPath(parts[6].replace(/\./g, "/"), parts[9]), 0, true);
-					if(bc.internStringsSkipList[textModuleInfo.path]){
-						bc.logInfo("skipping " + textModuleInfo.path);
+					if(bc.internStringsSkipList[textModuleInfo.mid]){
+						skipping.push(textModuleInfo.src);
 						return matchString;
 					}
 
 					var textModule = bc.resources[textModuleInfo.url];
 					if(!textModule){
-						bc.logInfo("could not find " + textModuleInfo.url);
+						notFound.push(textModuleInfo.src);
 						return matchString;
 					}
 
@@ -179,7 +439,7 @@ define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, f
 					// getText method (e.g., copy); therefore, we provide one for these cases
 					var text = (textModule.getText && textModule.getText()) || getText(textModule.src);
 					if(!text){
-						bc.logInfo("skipping because there is nothing to intern " + textModuleInfo.path);
+						nothing.push(textModule.src);
 						return matchString;
 					}
 
@@ -207,236 +467,115 @@ define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, f
 						return matchString;
 					}
 				});
+				var logArgs = ["module", resource.mid];
+				if(skipping.length){
+					logArgs.push("skipping", skipping);
+				}
+				if(notFound.length){
+					logArgs.push("not found", notFound);
+				}
+				if(nothing.length){
+					logArgs.push("nothing to intern", nothing);
+				}
+				bc.log("internStrings", logArgs);
 			},
 
-			processWithRegExs= function() {
-				// do it the hard (unreliable) way; first try to find "dojo.provide" et al since those names are less likely
+			processWithRegExs = function() {
+				// try to figure out if the module is legacy or AMD and then process the loader applications found
+				//
+				// Warning: the process is flawed because regexs will find things that are not there and miss things that are
+				// there is no way around this without a proper parser.  Note however, this kind of process has been in use
+				// with the v1.x build system for a long time.
+				//
+				// TODO: replace this process with a parser
+				//
+				// do it the unreliable way; first try to find "dojo.provide" et al since those names are less likely
 				// to be overloaded than "define" and "require"
-
-				// TODO: the naive regex process that's used below may fail to properly recognize the semnatics of the code.
-				// There is no way around this other than a proper tokenizer and parser. Note however, this kind of process
-				// has been in use with the v1.x build system for a long time.
-				// TODO: provide a way to let the build user provide an execution environment for applications like dojo.requireIf
-				// TODO: add scanning for dojo.cache for intern strings support of old-style modules
-				var
-					// strip comments...string and regexs in the code may cause this to fail badly
-					contents= resource.text.replace(/(\/\*([\s\S]*?)\*\/|\/\/(.*)$)/mg , ""),
-
-					// look for dojo.require et al; notice that only expressions *without* parentheses are understood
-					dojoExp= /dojo\.(require|platformRequire|provide|requireLocalization)\s*\(([\w\W]+?)\)/mg,
-
-					requireProvideArgCheck= /^\s*['"][^'"]+?['"]\s*$/,
-
-					platformRequireArgCheck= /^\s*\{[\w\W]+\}\s*$/,
-
-					// string-comma-string with optional whitespace
-					requireLocalizationFixup= /^\s*['"][^'"]+?['"]\s*,\s*['"][^'"]+?['"]/,
-
-					dojoV1xLoaderModule= 0,
-					result, f;
-
-				// look for dojo loader applications
-				while((result= dojoExp.exec(contents)) != null) {
-					// fix up requireLocalization a bit
-					if (result[1]=="requireLocalization") {
-						var fixup= result[2].match(requireLocalizationFixup);
-						result= fixup ? "dojo.requireLocalization(" + fixup[0] + ")" : 0;
-					} else if(result[1]=="platformRequire"){
-						result= platformRequireArgCheck.test(result[2]) ? result[0] : 0;
-					} else {
-						result= requireProvideArgCheck.test(result[2]) ? result[0] : 0;
-					}
-					try {
-						if (result) {
-							dojoV1xLoaderModule= 1;
-							resource.tag.synModule= 1;
-							f= new Function("dojo", result);
-							f(dojo);
-						}else{
-							bc.logInfo("(" + resource.src + ") did not process sync loader API: " + result[0]);
-						}
-					} catch (e) {
-						bc.logWarn("unable to evaluate dojo loader function in " + resource.src + "; ignored function call; error and function text follows...", e, result);
-					}
+				if(bc.internStrings){
+					internStrings();
 				}
+				var text =
+						// apply any replacements before processing
+						resource.getText(),
+
+					names =
+						bc.scopeNames,
+
+					extractResult =
+						// a vector of legacy loader API applications as pairs of [function-name, complete-function-application-text] + the following two properties
+						//   * text: the original text with all dojo.loadInit applications preceeded by 0 &&, thereby causing those applications to be discared by the minifier
+						//   * extractText: all legacy loader applications, with all dojo.loadInit applications moved to the beginning
+						// See dojo.js
+						syncLoader.extractLegacyApiApplications(text, removeComments(text));
+				if(!extractResult.extractText && processPossibleAmdWithRegExs(removeComments(text))){
+					// zero legacy calls detected *and* at least one AMD call detected; therefore, assume it's AMD
+					bc.log("amdNotPureContainedNoLegacyApi", ["module", resource.mid]);
+					return;
+				}
+				bc.log("legacyAssumed", ["module", resource.mid]);
+
+				if(!extractResult){
+					// no legacy API calls to worry about; therefore...
+					resource.getText = function(){ return "define(" + json.stringify(names) + ", function(" + names.join(",") + "){\n" + text + "});\n"; };
+					return;
+				}
+				// apply the legacy calls in a special environment
+				applyLegacyCalls(extractResult[2]);
 
 				// check for multiple or irrational dojo.provides
-				if (dojoProvideList.length) {
-					if (dojoProvideList.length>1) {
-						bc.logWarn("multiple dojo.provides given in a single resource (" + resource.src + ")");
+				if (dojoProvides.length) {
+					if (dojoProvides.length>1) {
+						bc.log("legacyMultipleProvides", ["module", resource.mid, "provides", dojoProvides]);
 					}
-					dojoProvideList.forEach(function(item) {
-						if (item.replace(/\./g, "/")!=resource.path) {
-							bc.logWarn("dojo.provide module identifier (" + item + ") does not match resource location (" + resource.path + ")");
+					dojoProvides.forEach(function(item) {
+						if (item.replace(/\./g, "/")!=resource.mid) {
+							bc.log("legacyImproperProvide", ["module", resource.mid, "provide", item]);
 						}
 					});
 				}
 
-				if(dojoV1xLoaderModule){
-					if(bc.internStrings){
-						internStrings();
-					}
-					var getText= resource.getText;
-					resource.getText= function(){
-						if (!this.replacementsApplied) {
-							this.replacementsApplied= true;
-							var
-								depsSet= {},
-								deps= ["\"dojo\"", "\"dijit\"", "\"dojox\""].concat(this.deps.map(function(dep){
-									depsSet[dep.path.replace(/\//g, ".")]= 1;
-									return "\"" + dep.path + "\"";
-								})).join(","),
+				if(pluginStrategyRequired){
+					// some loadInit and/or require[After]If and/or platformRequire applications that could not be resolved at build time
+					bc.log("legacyUsingLoadInitPlug", ["module", resource.mid]);
 
-								// TODO: fix this for rescoping
-								scopeArgs= "dojo, dijit, dojox",
+					// construct and start the synthetic plugin resource
+					var pluginText, mid, pluginResource, pluginResourceId;
+					pluginText =
+						"// generated by build app\n" +
+						"define([], {\n" +
+						"\tnames:" + json.stringify(names) + ",\n" +
+						"\tdef:function(" + names.join(",") + "){\n" + extractResult[1] + "\n}\n" +
+						"});\n\n";
+					mid = resource.mid + "-loadInit";
+					pluginResource = mix({}, resource, {
+						src:resource.src.substring(0, resource.src.length-3) + "-loadInit.js",
+						dest:bc.getDestModuleInfo(mid).url,
+						mid:mid,
+						tag: {loadInitResource:1},
+						deps:[],
+						getText:function() { return pluginText; }
+					});
+					bc.start(pluginResource);
 
-								mid= "\"" + this.path + "\"",
-
-								text= getText.call(this).replace(/dojo\.((require)|(provide))\s*\(\s*['"]([^'"]+)['"]\s*\)\s*;?\s*/g, function(match, unused, require, provide, id){
-									if(provide || id in depsSet){
-										return "/* builder delete begin\n" + match + "\n builder delete end */\n";
-									}else{
-										return match;
-									}
-								});
-							this.text= "define(" +
-								(bc.writeAbsMids ? mid + "," : "") +
-								"[" + deps + "], function(" + scopeArgs + "){\ndojo.getObject(" + mid.replace(/\//g, ".") + ", 1);\n" +
-								text + "\nreturn dojo.getObject(" + mid.replace(/\//g, ".") + ");});\nrequire([" + mid + "]);\n";
-						}
-						return this.text;
-					};
-				}else{
-					// look for AMD define
-					var
-						// look for define applications with an optional string first arg and an optional array second arg;
-						// notice the regex stops after the second arg
-						//          1                    2                   3      4                5
-						defineExp= /(^|\s*)define\s*\(\s*(["'][^'"]+['"])?\s*(,)?\s*(\[[^\]]*?\])?\s*(,)?/g,
-
-						// a test run in the console
-						//test = [
-						//	'define("test")',
-						//	'define("test", ["test1"])',
-						//	'define("test", ["test1", "test2"])',
-						//	'define(["test1"])',
-						//	'define(["test1", "test2"])',
-						//	'define("test", ["test1"], function(test){ hello;})',
-						//	'define("test", function(test){ hello;})',
-						//	'define(["test1"], function(test){ hello;})',
-						//	'define(function(test){ hello;})',
-						//	'define({a:1})'
-						//],
-
-						// look for require applications with an array for the first arg;
-						// notice the regex stops after the first arg
-						requireExp= /(^|\s)require\s*\(\s*\[[^\]]*?\]/g,
-
-						foundDefine = 0;
-					while((result= defineExp.exec(contents)) != null) {
-						try {
-							foundDefine = 1;
-							if(result[2]){
-								// first arg a string
-								if(result[3]){
-									// first arg a module id
-									if(result[5]){
-										// (mid, deps, factory)
-										result= result[0] + "{})";
-									}else if(result[4]){
-										// (mid, <array value>)
-										result = result[0] + ")";
-									}else {
-										// (mid, factory)
-										result = result[0] + "{})";
-									}
-								}else{
-									// no comma after string first arg; therefore module value of a string
-									result= result[0]  + ")";
-								}
-							}else if(result[4]){
-								// first arg an array
-								if(result[5]){
-									// (deps, factory)
-									result = result[0] + "{})";
-								}else{
-									// no comma after array first arg; therefore module value is an array
-									result = result[0] + ")";
-								}
-							}else{
-								//just a factory
-								result = "define({})";
-							}
-							f= new Function("define", result);
-							f(define);
-							tagAbsMid();
-						} catch (e) {
-							bc.logWarn("unable to evaluate AMD define function in " + resource.src + "; ignored function call; error and function text follows...", e, result);
-						}
-					}
-					// look for AMD require, iff no define since a require inside a define should not be processed
-					if(!foundDefine){
-						while((result= requireExp.exec(contents)) != null) {
-							try {
-								result= result[0] + ")";
-								f= new Function("require", result);
-								f(require);
-							} catch (e) {
-								bc.logWarn("unable to evaluate AMD require function in " + resource.src + "; ignored function call; error and function text follows...", e, result);
-							}
-						}
-					}
+					pluginResourceId = "dojo/loadInit!" + mid;
+					aggregateDeps.push(pluginResourceId);
+				}else if(dojoRequires.length){
+					aggregateDeps.push("dojo/require!" + dojoRequires.join(","));
 				}
+				aggregateDeps = names.concat(aggregateDeps);
+				// need to use extractResult[0] since it may delete the dojo.loadInit applications
+				resource.getText = function(){ return "// wrapped by build app\ndefine(" + json.stringify(aggregateDeps) + ", function(" + names.join(",") + "){\n" + extractResult[0] + "\n});\n"; };
 			};
-
 		// scan the resource for dependencies
 		if(resource.tag.nls){
-			// either a v1.x sync bundle or an AMD bundle
+			// either a v1.x sync bundle or an AMD NLS bundle
 			var nlsResult= evalNlsResource(resource.text);
 			if(nlsResult===syncBundle){
-				resource.tag.syncNls= 1;
-				var
-					match= resource.pqn.match(/(^.*\/nls\/)(([a-zA-Z\-]+)\/)?([^\/]+)$/),
-					prefix= match[1],
-					locale= match[3],
-					bundle= match[4];
-				if(locale){
-					var
-						rootPqn= prefix + bundle,
-						rootBundle= bc.amdResources[rootPqn];
-					if(rootBundle){
-						var localizedSet= rootBundle.localizedSet || (rootBundle.localizedSet= {});
-						localizedSet[locale]= 1;
-					}else{
-						bc.logWarn("module (" + resource.src + ") appeared to be a pre-AMD style (synchronous) i18n bundle, but there was no root bundle found.");
-					}
-				}
-
-				var getText= resource.getText;
-				resource.getText= function(){
-					var text= getText.call(this);
-
-					// this is frome the old builder...
-					// If this is an nls bundle, make sure it does not end in a ; Otherwise, bad things happen.
-					if(text.match(/\/nls\//)){
-						text = text.replace(/;\s*$/, "");
-					}
-
-					if(this.localizedSet){
-						// this is the root bundle
-						var availableLocales= [];
-						for(var p in this.localizedSet){
-							availableLocales.push("\"" + p + "\":1");
-						}
-						return "define({root:\n" + text + ",\n" + availableLocales.join(",\n") + "\n});\n";
-					}else{
-						return "define(" + text + ");";
-					}
-				};
+				processSyncNlsBundle();
 			}else if(nlsResult===amdBundle){
 				processPureAmdModule();
 			}else{
-				bc.logWarn("module (" + resource.src + ") appeared to be an i18n bundle, but was not; it will be copied but otherwise ignored.");
+				bc.log("i18nImproperBundle", ["module", resource.mid]);
 			}
 		}else if(resource.tag.amd || /\/\/>>\s*pure-amd/.test(resource.text)) {
 			processPureAmdModule();
@@ -445,20 +584,20 @@ define(["../buildControl", "../fileUtils", "dojo/json", "../fs"], function(bc, f
 		}
 
 		// resolve the dependencies into modules
-		deps= resource.deps;
+		var deps= resource.deps;
 		aggregateDeps.forEach(function(dep) {
 			if (!(/^(require|exports|module)$/.test(dep))) {
 				try {
 					var module= getAmdModule(dep, resource);
-					if (module instanceof Array) {
+					if (lang.isArray(module)) {
 						module.forEach(function(module){ deps.push(module); });
 					} else if (module) {
 						deps.push(module);
 					} else {
-						bc.logWarn("failed to resolve dependency (" + dep + ") for module (" + resource.src + ")");
+						bc.log("amdMissingDependency", ["module", resource.mid, "dependency", dep]);
 					}
 				} catch (e) {
-					bc.logWarn("failed to resolve dependency (" + dep + ") for module (" + resource.src + ")", e);
+					bc.log("amdMissingDependency", ["module", resource.mid, "dependency", dep, "error", e]);
 				}
 			}
 		});

@@ -28,7 +28,7 @@ define([
 				}
 				var result= stringify(bc.userConfig);
 				if (result.unsolved) {
-					bc.logWarn("The user configuration contains unsolved values. This may or may not be an error.");
+					bc.log("configUnresolvedValues");
 				}
 				return result;
 			},
@@ -54,14 +54,12 @@ define([
 				// the purpose of this somewhat verbose routine is to write a minimal package object for each
 				// package, yet allow client code to pass extra (i.e., outside the scope of CJS specs) config
 				// information within the package object
-				var
-					 srcPack= bc.packages[name],
-					 destPack= bc.destPackages[name],
-					 result= {},
-					 p;
-				for (p in srcPack) result[p]= srcPack[p];
-				for (p in destPack) result[p]= destPack[p];
-
+				var destPack= bc.destPackages[name],
+					result= {};
+				result.name = destPack.name;
+				if(destPack.main!="main"){
+					result.name = destPack.main;
+				}
 				// everything relative to the dojo dir
 				// TODO: making everything relative to dojo needs to be optional
 				if (name=="dojo") {
@@ -69,36 +67,32 @@ define([
 				} else {
 					result.location= computeLocation(bc.destPackageBasePath + "/dojo", destPack.location);
 				}
-
-				// delete the build garbage in the package object; no need for this in deployed code
-				delete result.mapProg;
-				delete result.trees;
-				delete result.dirs;
-				delete result.files;
-				delete result.resourceTags;
-				delete result.copyright;
-
-				// delete values that === default values
-				if (result.main=="main") delete result.main;
-				if (!result.packageMap.length) delete result.packageMap;
-
+				var packageDefaultConfig = bc.defaultConfig && bc.defaultConfig.packages && bc.defaultConfig.packages[name];
+				for(var p in packageDefaultConfig){
+					result[p] = packageDefaultConfig[p];
+				}
 				return result;
 			},
 
 			getDefaultConfig= function() {
-				var config= bc.defaultConfig || {hasCache:{}};
-				config.packages= config.packages || [];
+				var p, config = {packages:[], hasCache:{}};
 				if (bc.baseUrl) {
 					config.baseUrl= bc.baseUrl;
 				}
-				for (var p in bc.packages) {
+				for (p in bc.packages) {
 					config.packages.push(getPackage(p));
 				}
-				var result= stringify(config);
-				if (result.unsolved) {
-					bc.logWarn("The default configuration contains unsolved values. This may or may not be an error.");
+				for(p in bc.defaultConfig){
+					if(p!=="packages"){
+						// per-package default config was handled above
+						config[p] = bc.defaultConfig[p];
+					}
 				}
-				return result;
+				config= stringify(config);
+				if (config.unsolved) {
+					bc.log("configUnresolvedValues");
+				}
+				return config;
 			},
 
 			stampVersion= function(text){

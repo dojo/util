@@ -28,30 +28,32 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./p
 			// item is a vector of regexs or "!" starting at startAt
 			// if "!", then satisfying the next regex says the filter is *not* passed
 
-			if(typeof item=="string"){
-				return new Function("name", item);
+			if(typeof item=="function"){
+				return item;
 			}
 
 			var result= item.slice(startAt || 0);
 			if (!result.length) {
-				// absent adice, assume the filename passes the filter
+				// absent advice, assume the filename passes the filter
 				return function(){ return 0; };
 			}
 
-			for (var notExpr= false, not= [], regExs= [], nots= 0, i= 0; i<result.length;) {
+			for(var notExpr, not= [], regExs= [], notsFound= 0, i= 0; i<result.length;){
 				item= result[i++];
 				if (item=="!") {
+					notsFound = 1;
 					notExpr= true;
+					item= result[i++];
 				} else {
-					regExs.push(new RegExp(item));
-					not.push(notExpr);
-					nots= nots || notExpr;
 					notExpr= false;
 				}
+				regExs.push(item);
+				not.push(notExpr);
+				notExpr= false;
 			}
 
 			var length= not.length;
-			if (nots) {
+			if (notsFound) {
 				return function(filename) {
 					var potential= 0;
 					for (var i= 0; i<length; i++) {
@@ -85,7 +87,7 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./p
 			}
 			return function(resource) {
 				for (var p in tag) {
-					if (tag[p](resource.src)) {
+					if (tag[p](resource.src, resource.mid, resource)) {
 						resource.tag[p]= 1;
 					}
 				}
@@ -153,7 +155,7 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./p
 			}
 			if (!treeItem) {
 				// create a tree item; don't traverse into hidden, backup, etc. files (e.g., .svn, .git, etc.)
-				treeItem= [pack.location, destPack.location, "*/\\.*", "~$"];
+				treeItem= [pack.location, destPack.location, /(\/\.)|(~$)/];
 			}
 
 			var filenames= [];
@@ -166,7 +168,7 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./p
 				locationPathLength= pack.location.length + 1,
 				packName= pack.name,
 				prefix= packName ? packName + "/" : "",
-				mainModuleInfo= packName && bc.getSrcModuleInfo(packName, 0),
+				mainModuleInfo= packName && bc.getSrcModuleInfo(packName),
 				mainModuleFilename= packName && mainModuleInfo.url;
 			filenames.forEach(function(filename) {
 				// strip the package location path and the .js suffix (iff any) to get the mid
@@ -175,7 +177,7 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./p
 					mid= prefix + filename.substring(locationPathLength, maybeModule ? filename.length-3 : filename.length),
 					moduleInfo= maybeModule && bc.getSrcModuleInfo(mid);
 				if (!maybeModule) {
-					notModules[mid]= filename;
+					notModules[mid]= [filename, mid];
 				} else if (filename==mainModuleFilename) {
 					maybeAmdModules[packName]= mainModuleInfo;
 				} else {
@@ -204,16 +206,6 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./p
 			var
 				tagResource= getResourceTagFunction(pack.resourceTags),
 				startResource= function(resource) {
-					// this algorithm, along with the whole idea of copyTests and mini, is very loose and prone to unintended side-effects
-					// TODO: reconsider copyTests and mini
-					var filterOn= resource.src.substring(pack.location.length);
-					if(!bc.copyTests && /\/tests\//.test(filterOn)){
-						return;
-					}
-					if(bc.mini && /\/demos\/|tests\.js|dijit\/bench|dijit\/themes\/themeTest|(\.php$)/.test(filterOn)){
-						return;
-					}
-
 					resource.tag= {};
 					tagResource(resource);
 					start(resource);
@@ -224,12 +216,10 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./p
 				moduleInfo= maybeAmdModules[p];
 				var resource= {
 					src:moduleInfo.url,
-					dest:bc.getDestModuleInfo(moduleInfo.path).url,
+					dest:bc.getDestModuleInfo(moduleInfo.mid).url,
 					pid:moduleInfo.pid,
 					mid:moduleInfo.mid,
-					pqn:moduleInfo.pqn,
 					pack:pack,
-					path:moduleInfo.path,
 					deps:[]
 				};
 				startResource(resource);
@@ -239,7 +229,10 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./p
 			var prefixLength= prefix.length;
 			for (p in notModules) {
 				resource= {
-					src:notModules[p],
+					src:notModules[p][0],
+					// not really an AMD mid, but the filename with installation-dependent prefix stripped
+					// this makes tagging easier
+					mid:notModules[p][1],
 					dest:catPath(destPack.location, p.substring(prefixLength))
 				};
 				startResource(resource);
@@ -325,19 +318,16 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./p
 			var
 				layer= bc.layers[mid],
 				moduleInfo= bc.getSrcModuleInfo(mid),
-				pqn= moduleInfo.pqn,
-				resource= bc.amdResources[pqn];
+				resource= bc.amdResources[moduleInfo.mid];
 			if (!resource) {
 				// this is a synthetic layer (just a set of real modules aggregated but doesn't exist in the source)
 				resource= {
 					tag:{synthetic:1, amd:1},
 					src:moduleInfo.url,
-					dest:bc.getDestModuleInfo(moduleInfo.path).url,
+					dest:bc.getDestModuleInfo(moduleInfo.mid).url,
 					pid:moduleInfo.pid,
 					mid:moduleInfo.mid,
-					pqn:moduleInfo.pqn,
 					pack:moduleInfo.pack,
-					path:moduleInfo.path,
 					deps:[],
 					text:"define([], 1);\n",
 					getText:function(){
@@ -352,7 +342,7 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./p
 				if (bc.loader) {
 					bc.loader.boots.push(resource);
 				} else {
-					bc.logError("unable to find loader for boot layer (" + mid + ")");
+					bc.log("inputNoLoaderForBoot", ["boot layer", mid]);
 				}
 			}
 		}
