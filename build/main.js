@@ -53,7 +53,7 @@ define(["require", "dojo/has"], function(require, has) {
 		console.log("running under rhino");
 		define("commandLineArgs", [], function() {
 			var result= [];
-			require.commandLineArgs.forEach(function(item) {
+			require.rawConfig.commandLineArgs.forEach(function(item) {
 				var parts= item.split("=");
 				if (parts[0]!="baseUrl") {
 					result.push(item);

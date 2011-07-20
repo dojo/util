@@ -86,7 +86,8 @@ define([
 				'dojo-trace-api':0,
 				'dojo-undef-api':0,
 				'dojo-v1x-i18n-Api':1,
-				'dojo-xdomain-test-api':1
+				'dojo-xdomain-test-api':1,
+				'dojo-built':1
 			},
 
 			defaultConfig:{
