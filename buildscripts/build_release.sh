@@ -107,7 +107,7 @@ tar -xzvf $srcName.tar.gz
 cd $srcName/util/buildscripts/
 
 # build the version that will be extracted and live on downloads.dojotoolkit.org (with tests)
-./build.sh profile=standard version=$1 releaseName=$buildName cssOptimize=comments.keepLines action=release copyTests=true mini=false insertAbsMids=1
+./build.sh action=release version=$1 profile=standard cssOptimize=comments.keepLines releaseName=$buildName copyTests=true mini=false insertAbsMids=1
 
 # cleanup the -src extraction, moving the newly built tree into place. 
 cd ../../release
