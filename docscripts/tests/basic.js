@@ -182,9 +182,43 @@ dojo.provide("util.docscripts.tests.basic");
 			docs = getdata("util/docscripts/tests/functional.js");
 			var hasit = getmember("util.docscripts.tests.FunctionalThinger");
 			t.t(hasit, "object exists in parsed output, meaning parsing happened");
+		},
+		
+		function raw_declare_init(t){
+			docs = getdata("util/docscripts/tests/extend_declare.js");
+			t.t(true);
+		},
+		
+		function raw_declare(t){
+			var barbaz = getmember("dojo.BarBaz");
+			t.t(barbaz, "raw declare() call defined a named class");
+		},
+		
+		function lang_extend(t){
+			var someprop = getmember("dojo.BarBaz.someProp");
+			t.t(someprop, "lang.extend worked");
+			t.is("String", someprop.type, "lang.extend unwrapped innards");
+		},
+
+// FIXME; dojo.mixin(a.b.prototype, { ... }) parses, but shows up differently in the obj
+// ... differently than dojo.extend(a.b, { ... }) ... the former is attached to "a.b", the
+// latter attached to "a.b.prototype". no sure how this pans out for generate.php
+//
+//		function lang_mixin(t){
+//			var someprop = getmember("dojo.BarBaz.moreProps");
+//			console.log(docs, someprop);
+//			t.t(someprop, "lang._mixin worked");
+//			t.is("String", someprop.type, "lang._mixin unwrapped innards");
+//		},
+//		
+		
+		function winning(t){
+			var prop = getmember("dojo.BarBaz.winning");
+			console.warn(prop);
+			t.t(prop, "aliased extend() call resolves properly");
+			t.is("Boolean", prop.type);
+			t.is("Always true.", prop.summary, "are we? rad.")
 		}
-		
-		
 	
 	]);
 

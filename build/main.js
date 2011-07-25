@@ -194,7 +194,7 @@ define(["require", "dojo/has"], function(require, has) {
 			}
 			if (bc.resourcesByDest[dest]) {
 				// multiple srcs scheduled to write into a single dest
-				bc.log("outputCollide", ["source1", src, "source-2", bc.resourcesByDest[dest].src]);
+				bc.log("outputCollide", ["source-1", src, "source-2", bc.resourcesByDest[dest].src]);
 				return;
 			}
 			// remember the resources in the global maps

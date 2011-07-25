@@ -311,9 +311,10 @@ function dojo_get_contents($namespace, $file_name) {
 	}
 
 	// Handle mixin/extend calls
-	foreach ($package->function_calls(TRUE, 'dojo.mixin', 'dojo.extend') as $call) {
+	foreach ($package->function_calls(TRUE, 'dojo.mixin', 'dojo.extend', 'lang.extend', 'lang.mixin', 'lang._mixin', 'dojo._mixin') as $call) {
 		$arguments = $call->arguments();
 		$assignment = $call->assignment();
+		$name = $call->name();
 		$root = NULL;
 		if ($constructor = $arguments->getFunction(0)) {
 			if ($assignment) {
@@ -322,13 +323,13 @@ function dojo_get_contents($namespace, $file_name) {
 		}
 		else {
 			$root = $arguments->getVariable(0, TRUE);
-			if ($call->name() == 'dojo.extend') {
+			if (endswith($name, 'extend')) {
 				$output[$root]['type'] = 'Function';
 			}
 		}
 
 		foreach (array_diff(array_unique(array($assignment, $root)), array(NULL)) as $root) {
-			$mixin = $call->name() == 'dojo.mixin';
+			$mixin = endswith($name, "mixin");
 			for ($i = 1; $i < $arguments->length; $i++) {
 				if ($arguments->getObject($i)) {
 					$keys = array();
@@ -362,11 +363,12 @@ function dojo_get_contents($namespace, $file_name) {
 		}
 	}
 
-	foreach ($package->function_calls(TRUE, 'dojo.declare') as $call) {
+	foreach ($package->function_calls(TRUE, 'dojo.declare', 'declare') as $call) {
 		$arguments = $call->arguments();
 		$name = $arguments->getString(0);
 		if (!$name) {
-			$output['#debug'][] = "Found declare() without a name? check return value?";
+			$assignment = $call->assignment();
+			$output['#debug'][] = "Found declare() without a name? check return value?" + $assignments;
 			continue;
 		} else{
 			// $output['#debug'][] = "Found declare w/ $name";
@@ -514,4 +516,10 @@ function dojo_get_contents($namespace, $file_name) {
 	}
 
 	return $output;
+}
+
+function endswith($haystack, $needle){
+	$length = strlen($needle);
+	$start = $length * -1; 
+	return (substr($haystack, $start) === $needle);
 }

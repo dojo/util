@@ -149,7 +149,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 				});
 			},
 
-			getAmdModule= function(
+			getAmdModule = function(
 				mid,
 				referenceModule
 			) {
@@ -420,10 +420,11 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 					notFound = [],
 					nothing = [];
 
-				resource.text= resource.text.replace(interningGlobalDojoUriRegExp, function(matchString){
+				resource.text = resource.text.replace(interningGlobalDojoUriRegExp, function(matchString){
+				    
 					var parts = matchString.match(interningLocalDojoUriRegExp);
 
-					var textModuleInfo= bc.getSrcModuleInfo(fileUtils.catPath(parts[6].replace(/\./g, "/"), parts[9]), 0, true);
+					var textModuleInfo = bc.getSrcModuleInfo(fileUtils.catPath(parts[6].replace(/\./g, "/"), parts[9]), 0, true);
 					if(bc.internStringsSkipList[textModuleInfo.mid]){
 						skipping.push(textModuleInfo.src);
 						return matchString;
