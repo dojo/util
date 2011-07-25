@@ -4,7 +4,7 @@ define(["dojo", "dojox/lang/functional", "dijit"], function(dojo, dlf, dijit){
 		// summary:
 		//		This is a test.
 		constructor: function(args){
-			dojo.mixin(this.args);
+			dojo._mixin(this, args);
 		}
 		
 	});
