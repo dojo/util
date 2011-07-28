@@ -1,17 +1,17 @@
 define(["../buildControl", "dojo/json"], function(bc, json) {
 	// note: this builder plugin only writes text that is part of a package
-	var getPluginLayerText= function() {
-			return 'require.cache["' + this.mid + '"]=' + json.stringify(this.module.text+"") + ';\n\n';
-		},
-
-		makePluginPseudoModule= function(module, moduleInfo) {
+	var makePluginPseudoModule= function(module, moduleInfo) {
 			return {
 				module:module,
 				pid:moduleInfo.pid,
 				mid:moduleInfo.mid,
 				deps:[],
-				getPluginLayerText:getPluginLayerText,
-				internStrings:getPluginLayerText
+				getText:function(){
+					return json.stringify(this.module.text+"");
+				},
+				internStrings:function(){
+					return ["url:" + this.mid, json.stringify(this.module.text+"")];
+				}
 			};
 		},
 

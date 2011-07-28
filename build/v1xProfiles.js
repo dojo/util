@@ -35,12 +35,13 @@ define([
 			scopeMap:[["dojo", "dojo"], ["dijit", "dijit"], ["dojox", "dojox"]],
 			replaceLoaderConfig:1,
 			insertAbsMids:1,
+			applyDojoPragmas:1,
 
 			// these will be set in buildControl; see buildControl.js for details
 			//copyTests:false,
 			//mini:true,
 
-			// the following configuration variables are deprecated and have no effect
+			// the following configuration variables are deprecated in 1.7 compared to 1.6 and have no effect
 			//query,
 			//buildLayers,
 			//scopeDjConfig,
@@ -55,76 +56,57 @@ define([
 			//addGuards,
 
 			// the following values are settings understood by the v1.7+ builder that cause behavior like the v1.6- builder
-
-			// if we're building consequent to a profile, then don't include a default package
-			noDefaultPackage:1,
 			destPackageBasePath:".",
 
 			staticHasFeatures: {
-				'host-browser':1,
-				'dom':1,
-				'dojo-auto-init':0,
+				// consider turning these hard on for standard 1.x build
+				//'config-publishRequireResult':1,
+				//'config-tlmSiblingOfDojo':1,
+
+				'dojo-1x-base':1,
+				'dojo-amd-factory-scan':0,
+				'dojo-built':1,
 				'dojo-combo-api':0,
+				'dojo-log-api':1,
+				'dojo-test-sniff':0,// must be turned on for several tests to work
 				'dojo-config-addOnLoad':1,
 				'dojo-config-api':1,
 				'dojo-config-require':1,
-				'dojo-debug-messages':0,
-				'dojo-firebug':0,
+				'dojo-dom-ready-api':1,
 				'dojo-guarantee-console':1,
 				'dojo-has-api':1,
-				"dojo-dom-ready-api":1,
 				'dojo-inject-api':1,
 				'dojo-loader':1,
-				'dojo-loader-catches':0,
-				'dojo-log-api':1,
-				'dojo-publish-privates':1,
-				'dojo-requirejs-api':1,
+				'dojo-modulePaths':1,
+				'dojo-moduleUrl':1,
+				'dojo-publish-privates':0,
+				'dojo-requirejs-api':0,
+				'dojo-scopeMap':1,
 				'dojo-sniff':1,
 				'dojo-sync-loader':1,
-				'dojo-test-sniff':1,
 				'dojo-timeout-api':1,
 				'dojo-trace-api':0,
 				'dojo-undef-api':0,
 				'dojo-v1x-i18n-Api':1,
-				'dojo-xdomain-test-api':1,
-				'dojo-built':1
+				'dojo-xhr-factory':1,
+				'dom':1,
+				'host-browser':1,
+				'host-node':0,
+				'host-rhino':0
 			},
 
 			defaultConfig:{
 				hasCache:{
 					// these are the values given above, not-build client code may test for these so they need to be available
-					'host-browser':1,
-					'dom':1,
-					'dojo-auto-init':0,
-					'dojo-combo-api':0,
-					'dojo-config-addOnLoad':1,
-					'dojo-config-api':1,
-					'dojo-config-require':1,
-					'dojo-debug-messages':0,
-					'dojo-firebug':0,
-					'dojo-guarantee-console':1,
-					'dojo-has-api':1,
-					"dojo-dom-ready-api":1,
-					'dojo-inject-api':1,
+					'dojo-built':1,
 					'dojo-loader':1,
-					'dojo-loader-catches':0,
-					'dojo-log-api':1,
-					'dojo-publish-privates':1,
-					'dojo-requirejs-api':1,
-					'dojo-sniff':1,
-					'dojo-sync-loader':1,
-					'dojo-test-sniff':1,
-					'dojo-timeout-api':1,
-					'dojo-trace-api':0,
-					'dojo-undef-api':0,
-					'dojo-v1x-i18n-Api':1,
-					'dojo-xdomain-test-api':1,
+					'dom':1,
+					'host-browser':1,
 
-					// these are not static, but the default values given in the bootstrap
-					"config-tlmSiblingOfDojo":1,
-					"dojo-amd-factory-scan":1
+					// default
+					"config-selectorEngine":"acme"
 				},
-				async:bc.cdnBuild ? "xd" : 0
+				async:0
 			}
 		},
 
@@ -333,7 +315,6 @@ define([
 				result.logLevel= result.log;
 				delete result.log;
 			}
-
 			for (p in profile) {
 				if (/^(loader|xdDojoPath|symbol|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)) {
 					bc.log("inputDeprecated", ["switch", p]);
@@ -346,7 +327,6 @@ define([
 					result[p]= (profile[p]=="false" ? false : profile[p]);
 				}
 			}
-
 			if(profile.defaultConfig){
 				for(p in profile.defaultConfig){
 					if(p=="hasCache"){

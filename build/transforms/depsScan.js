@@ -586,6 +586,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 
 		// resolve the dependencies into modules
 		var deps= resource.deps;
+		resource.aggregateDeps = aggregateDeps;
 		aggregateDeps.forEach(function(dep) {
 			if (!(/^(require|exports|module)$/.test(dep))) {
 				try {

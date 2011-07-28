@@ -64,6 +64,10 @@ define([], function(){
 		[1, 331, "getDependencyListRemoved", "load(\"getDependencyList.js\") is no supported."],
 		[1, 332, "invalidMessageId", "Invalid message identifier."],
 		[1, 333, "legacyMissingDependency", "Missing dependency in legacy module."],
+		[1, 334, "amdCannotInstantiateLayer", "Cannot instantiate all modules in layer."],
+		[1, 335, "dojoPragmaEvalFail", "Failed to evaluate dojo pragma."],
+		[1, 336, "dojoPragmaInvalid", "Failed to find end marker for dojo pragma."],
+
 
 		// reports 400-499
 		[1, 400, "hasReport", "Has Features Detected"],

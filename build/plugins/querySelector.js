@@ -5,7 +5,7 @@ define(function() {
 			referenceModule,
 			bc
 		) {
-			return [bc.amdResources["dojo/selector/acme"]];
+			return [bc.amdResources["dojo/selector/_loader"]];
 		}
 	};
 });

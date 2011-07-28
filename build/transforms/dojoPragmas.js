@@ -16,6 +16,9 @@ define(["../buildControl"], function(bc) {
 		};
 
 	return function(resource) {
+		if(!bc.applyDojoPragmas){
+			return;
+		}
 		if(typeof resource.text!="string"){
 			return;
 		}
@@ -45,7 +48,8 @@ define(["../buildControl"], function(bc) {
 				try{
 					isTrue = evalPragma(condition, bc, resource.src);
 				}catch(e){
-					return "error while applying dojo pragma (" + conditionLine + ")\n" + e + "\n";
+					bc.log("dojoPragmaEvalFail", ["module", resource.mid, "expression", conditionLine, "error", e]);
+					return;
 				}
 
 				//Find the endpoint marker.
@@ -75,12 +79,11 @@ define(["../buildControl"], function(bc) {
 					//where we need to look for more conditionals in the next while loop pass.
 					startIndex = foundIndex;
 				}else{
-					return "cannot find end marker while applying dojo pragma (" + conditionLine + ")";
+					bc.log("dojoPragmaInvalid", ["module", resource.mid, "expression", conditionLine]);
+					return;
 				}
 			}
 		}
-
 		resource.text= text;
-		return 0;
 	};
 });
