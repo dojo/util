@@ -401,10 +401,13 @@ define([
 	}
 	bc.stripConsole= stripConsole;
 
+//FIXME: notice how optimize and layerOptimize are converted to strings below; this makes something like optimize=1 fail gracefully; do we need to do this elsewhere?
+
 	if(bc.optimize){
+		bc.optimize= bc.optimize + "";
 		bc.optimize= bc.optimize.toLowerCase();
 		if(!/^(comments|shrinksafe(\.keeplines)?|closure(\.keeplines)?)$/.test(bc.optimize)){
-			bc.log("inputUnknownOptimize" ["value", bc.optimize]);
+			bc.log("inputUnknownOptimize", ["value", bc.optimize]);
 		}else{
 			if(/shrinksafe/.test(bc.optimize) && stripConsole){
 				bc.optimize+= "." + stripConsole;
@@ -412,9 +415,10 @@ define([
 		}
 	}
 	if(bc.layerOptimize){
+		bc.layerOptimize= bc.layerOptimize + "";
 		bc.layerOptimize= bc.layerOptimize.toLowerCase();
 		if(!/^(comments|shrinksafe(\.keeplines)?|closure(\.keeplines)?)$/.test(bc.layerOptimize)){
-			bc.log("inputUnknownLayerOptimize" ["value", bc.layerOptimize]);
+			bc.log("inputUnknownLayerOptimize", ["value", bc.layerOptimize]);
 		}else{
 			if(/shrinksafe/.test(bc.layerOptimize) && stripConsole){
 				bc.layerOptimize+= "." + stripConsole;
