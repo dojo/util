@@ -172,7 +172,7 @@ define([
 				var mid = pair[0];
 				topLevelMids[mid]= 1;
 				prefixMap[mid]= pair[1];
-				copyrightMap[mid]= pair[2];
+				copyrightMap[mid]= (pair[2] && (maybeRead(pair[2]) || pair[2])) || "";
 				runtimeMap[mid]= pair[3];
 			});
 

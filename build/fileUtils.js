@@ -159,6 +159,16 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 				bc.log("failedReadAndEval", ["filename", filename, "type", type, "error", e]);
 			}
 			return {};
+		},
+
+		maybeRead = function(filename) {
+			try {
+				if (fileExists(filename)) {
+					return fs.readFileSync(filename, "utf8");
+				}
+			} catch (e) {
+			}
+			return 0;
 		};
 
 
@@ -179,6 +189,7 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 		ensureDirectory:ensureDirectory,
 		ensureDirectoryByFilename:ensureDirectoryByFilename,
 		clearCheckedDirectoriesCache:clearCheckedDirectoriesCache,
-		readAndEval:readAndEval
+		readAndEval:readAndEval,
+		maybeRead:maybeRead
 	};
 });
