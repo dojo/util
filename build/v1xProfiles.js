@@ -254,8 +254,9 @@ define([
 					if(explicit!==undefined){
 						return explicit;
 					}
-					if(copyrightMap[getTopLevelModule(mid)]!==undefined){
-						return copyrightMap[getTopLevelModule(mid)];
+					var copyright = copyrightMap[mid.split('/',1)[0]];
+					if(copyright){
+						return copyright;
 					}else{
 						return defaultCopyright + defaultBuildNotice;
 					}
