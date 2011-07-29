@@ -100,12 +100,6 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 			return ts.getFullYear() + f(ts.getMonth()+1) + f(ts.getDate()) + f(ts.getHours()) + f(ts.getMinutes()) + f(ts.getSeconds());
 		},
 
-		// FIXME: either use rwx or get rid of this
-		getMode= function(octal) {
-			for (var result= 0, i= 0; i<octal.length; result= (result * 8) + octal.charCodeAt(i++) - 48);
-			return result;
-		},
-
 		dirExists= function(
 			filename
 		) {
@@ -131,13 +125,12 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 		clearCheckedDirectoriesCache= function() {
 			checkedDirectories= {};
 		},
-
 		ensureDirectory= function(path) {
 			if (!checkedDirectories[path]) {
 				if (!dirExists(path)) {
 					ensureDirectory(getFilepath(path));
 					try {
-						fs.mkdirSync(path, getMode("775"));
+						fs.mkdirSync(path, 0755);
 					} catch (e) {
 						//squelch
 					}
@@ -183,7 +176,6 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 		catPath:catPath,
 		compactPath:compactPath,
 		computePath:computePath,
-		getMode:getMode,
 		getTimestamp:getTimestamp,
 		dirExists:dirExists,
 		ensureDirectory:ensureDirectory,
