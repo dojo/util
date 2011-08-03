@@ -317,7 +317,7 @@ define([
 				delete result.log;
 			}
 			for (p in profile) {
-				if (/^(loader|xdDojoPath|symbol|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)) {
+				if (/^(loader|xdDojoPath|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)) {
 					bc.log("inputDeprecated", ["switch", p]);
 				}else if(p=="layers"){
 					result.rawLayers= profile[p];

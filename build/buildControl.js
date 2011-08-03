@@ -442,7 +442,7 @@ define([
 
 	var deprecated= [];
 	for(p in bc){
-		if(/^(loader|xdDojoPath|symbol|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)){
+		if(/^(loader|xdDojoPath|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)){
 			deprecated.push(p);
 			bc.log("inputDeprecated", ["switch", p]);
 		}

@@ -51,8 +51,8 @@ define(["./buildControlBase"], function(bc) {
 		transforms:{
 			trace:          ["build/transforms/trace", "read"],
 			read:           ["build/transforms/read", "read"],
-			copy:           ["build/transforms/copy", "copy"],
 			dojoPragmas:    ["build/transforms/dojoPragmas", "read"],
+			insertSymbols:  ["build/transforms/insertSymbols", "read"],
 			depsScan:       ["build/transforms/depsScan", "ast"],
 			hasFixup:       ["build/transforms/hasFixup", "ast"],
 			write:          ["build/transforms/write", "write"],
@@ -87,7 +87,7 @@ define(["./buildControlBase"], function(bc) {
 				function(resource) {
 					return resource.tag.report;
 				},
-				["dojoReport", "report"]
+				["dojoReport", "insertSymbols", "report"]
 			],[
 				// dojo.js, the loader
 				function(resource, bc) {
@@ -159,7 +159,7 @@ define(["./buildControlBase"], function(bc) {
 					}
 					return false;
 				},
-				["read", "dojoPragmas", "hasFindAll", "hasFixup", "depsScan", "writeAmd", "writeOptimized"]
+				["read", "dojoPragmas", "hasFindAll", "insertSymbols", "hasFixup", "depsScan", "writeAmd", "writeOptimized"]
 			],[
 				// a test resource; if !bc.copyTests then the resource was filtered in the first item; otherwise, if the resource is a potential module and building tests, then it was filtered above;
 				function(resource, bc) {
