@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if which -s node
+if which node > /dev/null 2>&1
 then
    node ../../dojo/dojo.js load=build "$@"
 else
