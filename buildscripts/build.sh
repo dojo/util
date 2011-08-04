@@ -41,7 +41,7 @@ if [ -z "$use_node" ]; then
     use_node=$?
 fi
 
-if [ "$use_node" == "0" ]; then
+if [ "$use_node" = "0" ]; then
     cmd="node"
     cmdflags="../../dojo/dojo.js"
 else
