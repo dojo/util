@@ -7,7 +7,7 @@ dependencies = {
 				"dijit._WidgetBase",
 				"dijit._Container",
 				"dijit._Contained",
-				"dijit._base.manager"
+				"dijit.registry"
 			]
 		},
 		{
