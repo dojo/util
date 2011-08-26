@@ -272,7 +272,7 @@ doh.registerTestType= function(name, initProc){
 	doh._testTypes[name]= initProc;
 };
 
-doh.registerTestType("perf", function(group, tObj){
+doh.registerTestType("perf", function(group, tObj, type){
 	//Augment the test with some specific options to make it identifiable as a
 	//particular type of test so it can be executed properly.
 	if(type === "perf" || tObj.testType === "perf"){

@@ -258,13 +258,13 @@ define(["dojo", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh) {
 									iAvgArray.push(fResults.trials[i].average);
 									tAvgArray.push(fResults.trials[i].executionTime);
 								}
-								results += "<b>AVERAGE TRIAL EXECUTION TIME: </b>" + doh.average(tAvgArray).toFixed(10) + "ms.<br>";
+								results += "<b>AVERAGE TRIAL EXECUTION TIME: </b>" + doh.mean(tAvgArray).toFixed(10) + "ms.<br>";
 								results += "<b>MAXIMUM TEST ITERATION TIME: </b>" + doh.max(iAvgArray).toFixed(10) + "ms.<br>";
 								results += "<b>MINIMUM TEST ITERATION TIME: </b>" + doh.min(iAvgArray).toFixed(10) + "ms.<br>";
-								results += "<b>AVERAGE TEST ITERATION TIME: </b>" + doh.average(iAvgArray).toFixed(10) + "ms.<br>";
+								results += "<b>AVERAGE TEST ITERATION TIME: </b>" + doh.mean(iAvgArray).toFixed(10) + "ms.<br>";
 								results += "<b>MEDIAN TEST ITERATION TIME: </b>" + doh.median(iAvgArray).toFixed(10) + "ms.<br>";
 								results += "<b>VARIANCE TEST ITERATION TIME: </b>" + doh.variance(iAvgArray).toFixed(10) + "ms.<br>";
-								results += "<b>STANDARD DEVIATION ON TEST ITERATION TIME: </b>" + doh.standardDeviation(iAvgArray).toFixed(10) + "ms.<br>";
+								results += "<b>STANDARD DEVIATION ON TEST ITERATION TIME: </b>" + doh.sd(iAvgArray).toFixed(10) + "ms.<br>";
 
 								//Okay, attach it all in.
 								div.innerHTML = results;
