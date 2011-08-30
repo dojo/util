@@ -149,7 +149,7 @@ tar -czvf dj-$1-dtk.tar.gz release-$1
 #Finished.
 outDirName=`pwd`
 echo "Build complete. Files are in: $outDirName"
-echo "A copy/paste command to push files to downloads.dojotoolkit.org with permission:"
-echo "scp dj-$1-dtk.tar.gz download.dojotoolkit.org:/srv/www/vhosts/download.dojotoolkit.org"
+echo "A copy/paste command to push files to download.dojotoolkit.org with permission:"
+echo "scp dj-$1-dtk.tar.gz download.dojotoolkit.org:/srv/www/vhosts.d/download.dojotoolkit.org"
 echo "... then extract in place and rm dj-$1-dtk.tar.gz"
 cd ../util/buildscripts
