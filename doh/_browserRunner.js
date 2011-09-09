@@ -224,11 +224,12 @@ define(["dojo", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh) {
 						var g;
 						var pBody = byId("perfTestsBody");
 						var chartsToRender = [];
-
-						if(doh.perfTestResults){
-							doh.showPerfTestsPage();
-						}
+						// store analytics for reading later
+						// keyed on test group name, each value is in turn an object keyed on test name
+						doh.perfTestAnalytics={};
+						doh.showPerfTestsPage();
 						for(g in doh.perfTestResults){
+							doh.perfTestAnalytics[g]={};
 							var grp = doh.perfTestResults[g];
 							var hdr = document.createElement("h1");
 							hdr.appendChild(document.createTextNode("Group: " + g));
@@ -258,13 +259,22 @@ define(["dojo", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh) {
 									iAvgArray.push(fResults.trials[i].average);
 									tAvgArray.push(fResults.trials[i].executionTime);
 								}
-								results += "<b>AVERAGE TRIAL EXECUTION TIME: </b>" + doh.mean(tAvgArray).toFixed(10) + "ms.<br>";
-								results += "<b>MAXIMUM TEST ITERATION TIME: </b>" + doh.max(iAvgArray).toFixed(10) + "ms.<br>";
-								results += "<b>MINIMUM TEST ITERATION TIME: </b>" + doh.min(iAvgArray).toFixed(10) + "ms.<br>";
-								results += "<b>AVERAGE TEST ITERATION TIME: </b>" + doh.mean(iAvgArray).toFixed(10) + "ms.<br>";
-								results += "<b>MEDIAN TEST ITERATION TIME: </b>" + doh.median(iAvgArray).toFixed(10) + "ms.<br>";
-								results += "<b>VARIANCE TEST ITERATION TIME: </b>" + doh.variance(iAvgArray).toFixed(10) + "ms.<br>";
-								results += "<b>STANDARD DEVIATION ON TEST ITERATION TIME: </b>" + doh.sd(iAvgArray).toFixed(10) + "ms.<br>";
+								var analytics=doh.perfTestAnalytics[g][f]={
+									averageTrialExecutionTime: doh.mean(tAvgArray),
+									maxTestIterationTime: doh.max(iAvgArray),
+									minTestIterationTime: doh.min(iAvgArray),
+									averageTestIterationTime: doh.mean(iAvgArray),
+									medianTestIterationTime: doh.median(iAvgArray),
+									varianceTestIterationTime: doh.variance(iAvgArray),
+									standardDeviationTestIterationTime: doh.sd(iAvgArray)
+								};
+								results += "<b>AVERAGE TRIAL EXECUTION TIME: </b>" + analytics.averageTrialExecutionTime.toFixed(10) + "ms.<br>";
+								results += "<b>MAXIMUM TEST ITERATION TIME: </b>" + analytics.maxTestIterationTime.toFixed(10) + "ms.<br>";
+								results += "<b>MINIMUM TEST ITERATION TIME: </b>" + analytics.minTestIterationTime.toFixed(10) + "ms.<br>";
+								results += "<b>AVERAGE TEST ITERATION TIME: </b>" + analytics.averageTestIterationTime.toFixed(10) + "ms.<br>";
+								results += "<b>MEDIAN TEST ITERATION TIME: </b>" + analytics.medianTestIterationTime.toFixed(10) + "ms.<br>";
+								results += "<b>VARIANCE TEST ITERATION TIME: </b>" + analytics.varianceTestIterationTime.toFixed(10) + "ms.<br>";
+								results += "<b>STANDARD DEVIATION ON TEST ITERATION TIME: </b>" +analytics.standardDeviationTestIterationTime.toFixed(10) + "ms.<br>";
 
 								//Okay, attach it all in.
 								div.innerHTML = results;
