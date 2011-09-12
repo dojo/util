@@ -120,6 +120,8 @@ function dojo_get_files($limit=null) {
 		$namespaces = _dojo_get_namespaces($limit);
 		$files = array();
 		foreach ($namespaces as $namespace) {
+				// skip util directory, parser chokes on util/less
+				if($namespace == "util") continue;
 				if (function_exists($namespace . '_code_location')) {
 					$location = _dojo_ensure_directory(call_user_func($namespace . '_code_location'));
 				}
