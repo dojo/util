@@ -177,7 +177,7 @@ for(var i= 0; i < srcLocaleList.length; i++){
 	}
 }
 
-fileUtil.saveUtf8File(logDir + '/specialLocale.log',logStr+'\n');
+//fileUtil.saveUtf8File(logDir + '/specialLocale.log',logStr+'\n');
 
 function validateDir(/*String*/dirPath){
 	//summary:make sure the dir exists
