@@ -204,7 +204,7 @@ if(!empty($_REQUEST['ns'])){
 		$waserror = FALSE;
 		$errorline = 0;
 		
-		$print .= "<h2>".$ns."/".$ifile."</h2><ul>";
+		$print .= "<h2>".htmlspecialchars($ns)."/".htmlspecialchars($ifile)."</h2><ul>";
 		foreach($apiData as $key => $val){
 			switch($key){
 				case "#resource" : break;
