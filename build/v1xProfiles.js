@@ -63,7 +63,7 @@ define([
 				//'config-publishRequireResult':1,
 				//'config-tlmSiblingOfDojo':1,
 
-				'dojo-1x-base':1,
+				'extend-dojo':1,
 				'dojo-amd-factory-scan':0,
 				'dojo-built':1,
 				'dojo-combo-api':0,
