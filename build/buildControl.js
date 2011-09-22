@@ -7,7 +7,8 @@ define([
 	"./v1xProfiles",
 	"./stringify",
 	"./process",
-	"dojo/text!./help.txt"], function(require, args, fs, fileUtils, bc, v1xProfiles, stringify, process, helpText) {
+	"./messages",
+	"dojo/text!./help.txt"], function(require, args, fs, fileUtils, bc, v1xProfiles, stringify, process, messages, helpText) {
 	//
 	// Process the arguments given on the command line to build up a build control object that is used to instruct and control
 	// the build process.
@@ -63,14 +64,24 @@ define([
 			// ...are mixed one level deep; packages and packagePaths require special handling; all others are over-written
 			// FIXME: the only way to modify the transformJobs vector is to create a whole new vector?
 			for (var p in src) {
-				if (!/(paths)|(pluginProcs)|(transforms)|(staticHasFeatures)|(packages)|(packagePaths)/.test(p)) {
+				if (!/paths|pluginProcs|messages|transforms|staticHasFeatures|packages|packagePaths/.test(p)) {
 					bc[p]= src[p];
 				}
 			}
+
 			// the one-level-deep mixers
 			["paths","pluginProcs","transforms","staticHasFeatures"].forEach(function(p) {
 				bc[p]= mix(bc[p], src[p]);
 			});
+
+			// messages require special handling
+			if(src.messageCategories){
+				for(p in src.messageCategories){
+					bc.addCategory(p, src.messageCategories[p]);
+				}
+			}
+			(src.messages || []).forEach(function(item){bc.addMessage.apply(bc, item);});
+
 
 			// packagePaths and packages require special processing to get their contents into packageMap; do that first...
 			// process packagePaths before packages before packageMap since packagePaths is less specific than
@@ -92,11 +103,27 @@ define([
 					mixPackage(packageInfo);
 			});
 		};
-
 	if(!args.buildControlScripts.length){
 		bc.log("pacify", "no profile or build control script provided; use the option --help for help");
 		process.exit(0);
 	}
+
+	// process all the packages given by package.json first since specific profiles are intended to override the defaults
+	(args["package"] || "").split(";").forEach(function(packageRoot){
+		// packageRoot gives a path to a location where a package.json rides
+		var packageJsonFilename = catPath(computePath(packageRoot, process.cwd()), "package.json"),
+		packageJson= readAndEval(packageJsonFilename, "package.json");
+		if(isEmpty(packageJson)){
+			bc.log("missingPackageJson", ["filename", packageJsonFilename]);
+		}else{
+			// use package.json to define a package config
+			packageJson.selfFilename = packageJsonFilename;
+			mixPackage({
+				name:packageJson.progName || packageJson.name,
+				packageJson:packageJson
+			});
+		}
+	});
 
 	// for each build control object or v1.6- profile in args, mix into bc in the order they appeared on the command line
 	// FIXME: rename "buildControlScript et al to profile...keep the peace
@@ -125,13 +152,12 @@ define([
 					}
 					break;
 				case "profileFile":
-					bc.log("inputDeprecatedProfileFile");
+					bc.log("inputDeprecatedProfileFile", ["filename", item[1]]);
 					item= processProfileFile(item[1], args);
 					break;
 			}
 		}
-		var
-			temp= mix({}, item),
+		var temp= mix({}, item),
 			build= item.build;
 		delete temp.build;
 		mixBuildControlObject(temp);
@@ -210,33 +236,38 @@ define([
 		bc.destPackageMap= {};
 		for (var packageName in bc.packages) {
 			var pack= bc.packages[packageName];
-
-			var filename = catPath(pack.location, "package.json"),
-				packageJson= readAndEval(filename, "package.json"),
-				defaultProfileFilename = pack.name + ".profile.js";
+			if(!pack.packageJson){
+				var packageJsonFilename = catPath(pack.location, "package.json"),
+					packageJson = readAndEval(packageJsonFilename, "package.json");
+				if(packageJson){
+					packageJson.selfFilename = packageJsonFilename;
+					pack.packageJson = packageJson;
+				}
+			}
+			packageJson = pack.packageJson;
 			if(isEmpty(packageJson)){
-				bc.log("inputMissingPackageJson", ["filename", filename]);
+				bc.log("inputMissingPackageJson", ["package", packageName]);
 			}else{
-				if(packageJson.main && !pack.main){
-					pack.main= packageJson.main;
-				}
-				if("dojoBuild" in packageJson){
-					// notice this allows setting defaultProfileFilename to "" which will prevent a default profile from being processed
-					defaultProfileFilename = packageJson.dojoBuild;
-				}
 				if(packageJson.version){
 					bc.log("packageVersion", ["package", packageName, "version", packageJson.version]);
 				}
-			}
-			if(defaultProfileFilename){
-				var defaultProfile = readAndEval(catPath(pack.location, defaultProfileFilename), "default profile");
-				for (var p in defaultProfile) {
-					if (!(p in pack)) {
-						pack[p]= defaultProfile[p];
-					}else if(p in {resourceTags:1}){
-						// these are mixed one level deep
-						// TODO: review all profile properties and see if there are any others than resourceTags that ought to go here
-						mix(pack[p], defaultProfile[p]);
+				if(packageJson.main && !pack.main){
+					pack.main= packageJson.main;
+				}
+				if(packageJson.directories.lib && !pack.location){
+					pack.location = catPath(getFilepath(packageJson.selfFilename), packageJson.directories.lib);
+				}
+				if("dojoBuild" in packageJson){
+					// notice this allows setting defaultProfileFilename to "" which will prevent a default profile from being processed
+					var defaultProfile =readAndEval(catPath(getFilepath(packageJson.selfFilename), packageJson.dojoBuild), "default profile");
+					for (var p in defaultProfile) {
+						if (!(p in pack)) {
+							pack[p]= defaultProfile[p];
+						}else if(p in {resourceTags:1}){
+							// these are mixed one level deep
+							// TODO: review all profile properties and see if there are any others than resourceTags that ought to go here
+							mix(pack[p], defaultProfile[p]);
+						}
 					}
 				}
 			}
@@ -345,7 +376,7 @@ define([
 		bc.layers= fixedLayers;
 	})();
 
-	bc.locales= bc.loaderConfig.locales || bc.locales || [];
+	bc.locales= bc.locales || [];
 
 	// for the static has flags, -1 means its not static; this gives a way of combining several static has flag sets
 	// and still allows later sets to delete flags set in earlier sets
@@ -374,7 +405,7 @@ define([
 		});
 	}
 
-	if(!bc.check && !bc.clean && !bc.release){
+	if(!bc.check && !bc.debugCheck && !bc.clean && !bc.release){
 		bc.log("pacify", "Nothing to do; you must explicitly instruct the application to do something; use the option --help for help.");
 		process.exit(0);
 	}
@@ -452,54 +483,75 @@ define([
 	});
 
 	// dump bc (if requested) before changing gateNames to gateIds below
-	if (bc.check) (function() {
-		bc.log("pacify", stringify(bc));
-if(0){
-		// don't dump out private properties used by build--they'll just generate questions
-		var
-			dump= {},
-			internalProps= {
-				buildControlScripts:1,
-				check:1,
+	if(bc.check){
+		(function() {
+			var toDump = {
+				basePath:1,
+				buildFlags:1,
+				buildReportDir:1,
+				buildReportFilename:1,
+				closureCompilerPath:1,
+				compactCssSet:1,
+				copyTests:1,
+				destBasePath:1,
 				destModules:1,
+				destPackageBasePath:1,
+				destPackageMap:1,
 				destPackageMapProg:1,
 				destPackages:1,
+				destPathTransforms:1,
 				destPathsMapProg:1,
-				errorCount:1,
-				getDestModuleInfo:1,
-				getSrcModuleInfo:1,
-				logInfo:1,
-				logError:1,
-				logWarn:1,
-				messages:1,
+				dirs:1,
+				discoveryProcs:1,
+				files:1,
+				internStringsSkipList:1,
+				layers:1,
+				locales:1,
+				maxOptimizationProcesses:1,
+				mini:1,
+				"package":1,
 				packageMap:1,
 				packageMapProg:1,
 				packages:1,
+				paths:1,
 				pathsMapProg:1,
-				resources:1,
-				resourcesByDest:1,
+				plugins:1,
+				replacements:1,
 				srcModules:1,
 				startTimestamp:1,
-				version:1,
-				warnCount:1
+				staticHasFeatures:1,
+				stripConsole:1,
+				trees:1
 			};
-		for (var p in bc) if (!internalProps[p]) {
-			dump[p]= bc[p];
-		}
-		var packages= dump.packages= [];
-		for (p in bc.packages) {
-			var
-				pack= bc.packages[p],
-				destPack= bc.destPackages[p];
-			packages.push({
-				name:pack.name, main:pack.main, location:pack.location, modules:pack.modules||{}, trees:pack.trees,
-				destName:destPack.name, destMain:destPack.main, destLocation:destPack.location
-			});
-		}
-		bc.log("pacify", stringify(dump));
-}
-	})();
+			for(var p in toDump){
+				toDump[p] = bc[p];
+			}
+			bc.log("pacify", stringify(toDump));
+		})();
+	}
 
+	if(bc.debugCheck){
+		(function(){
+			var toDump = {};
+			for(var p in bc){
+				if(bc[p]!==messages[p] && typeof bc[p]!="function"){
+					toDump[p] = bc[p];
+				}
+			}
+			console.log("profile:");
+			console.log(stringify(toDump));
+			toDump = {};
+			for(p in require){
+				if(p!="modules" && p!="module" && p!="rawConfig" && typeof require[p]!="function"){
+					toDump[p] = require[p];
+				}
+			}
+			console.log("require config:");
+			console.log(stringify(toDump));
+			console.log("require config:");
+			console.log(toDump);
+		})();
+	}
 
 	// clean up the gates and transforms
 	(function() {

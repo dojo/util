@@ -106,14 +106,15 @@ define(
 					filename+= ".bcs.js";
 				}
 			}
+			var f;
 			try {
 				src= fs.readFileSync(filename, "utf8");
 				if (scriptType=="loader") {
-					src= "(function(){var result, require= function(config){result=config;};" + src + "; return result;})();";
+					f = new Function("var result, require= function(config){result=config;};" + src + "; return result;");
 				} else if (scriptType=="require") {
-					src= src + ";require;";
+					f = new Function(src + "; return require;");
 				} else {
-					src= "(" + src + ")";
+					f = new Function("selfPath", "return eval(" + src + ")");
 				}
 			} catch (e) {
 				reportError("failed to read build control script " + filename);
@@ -122,7 +123,7 @@ define(
 			var e= 0;
 			try {
 				// build control script
-				var bcs= eval(src, filename);
+				var bcs= f(path);
 				if (bcs) {
 					if (bcs.basePath) {
 						bcs.basePath= computePath(bcs.basePath, path);
@@ -182,18 +183,23 @@ define(
 				result.check= true;
 				break;
 
-			case "--clean":
+			case "--debug-check":
 				// read, process, and send the configuration to the console and then exit
+				result.debugCheck= true;
+				break;
+
+			case "--clean":
+				// TODOC: deprecated
 				result.clean= true;
 				break;
 
 			case "--release":
-				// read, process, and send the configuration to the console and then exit
+				// do a build
 				result.release= true;
 				break;
 
 			case "--help":
-				// read, process, and send the configuration to the console and then exit
+				// print help message
 				printHelp= true;
 				console.log(help);
 				break;
@@ -238,7 +244,7 @@ define(
 				} else {
 					var parts= arg.split("=");
 					if (parts.length==2) {
-						if (/htmlFiles|htmlDir|profile|profileFile/.test(parts[0])) {
+						if (/htmlFiles|htmlDir|profile|profileFile|package/.test(parts[0])) {
 							buildControlScripts.push(parts);
 						} else {
 							result[parts[0]]= evalScriptArg(parts[1]);

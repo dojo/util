@@ -45,7 +45,7 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 			} else if (!lhs || !lhs.length) {
 				return rhs;
 			} else {
-				return (lhs + "/" + rhs).replace(/\/\/\/?/, "/");
+				return (lhs + "/" + rhs).replace(/\/\/\/?/g, "/");
 			}
 		},
 

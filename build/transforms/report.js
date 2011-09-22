@@ -9,6 +9,7 @@ define(["../buildControl", "../fileUtils", "../fs"], function(bc, fileUtils, fs)
 				content= content(bc);
 			};
 			bc.waiting++; // matches *1*
+			fileUtils.ensureDirectory(fileUtils.getFilepath(dest));
 			fs.writeFile(dest, content, "utf8", function(err){
 				if(err){
 					//TODO

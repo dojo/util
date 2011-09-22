@@ -1,5 +1,13 @@
 define([], function(){
-	var messages = [
+	var categories = {
+			warn:[[100, 199]],
+			info:[[200, 299]],
+			error:[[300, 399]],
+			report:[[400, 499]]
+		},
+
+		messages = [
+		// [order, numeric-id, symbolic-id, message]
 		// info 100-199
 		[1, 100, "legacyAssumed", "Assumed module uses legacy loader API."],
 		[1, 101, "legacyUsingLoadInitPlug", "Using dojo/loadInit plugin for module."],
@@ -67,11 +75,14 @@ define([], function(){
 		[1, 334, "amdCannotInstantiateLayer", "Cannot instantiate all modules in layer."],
 		[1, 335, "dojoPragmaEvalFail", "Failed to evaluate dojo pragma."],
 		[1, 336, "dojoPragmaInvalid", "Failed to find end marker for dojo pragma."],
-
+		[1, 337, "missingPackageJson", "Missing or empty package.json file at location specified by package flag."],
 
 		// reports 400-499
 		[1, 400, "hasReport", "Has Features Detected"],
 		[3, 499, "signoff", "Process completed normally:"]],
+
+		// 500-999, reserved by build programs
+		// 1000+, may be used by extension apps
 
 		lastReportId = 400,
 
@@ -103,24 +114,34 @@ define([], function(){
 			}
 		},
 
-		getPrefix = function(id){
-			if(100<id && id<199){
-				return "info(" + id + ")";
-			}else if(200<id && id<299){
-				return "warn(" + id + ")";
-			}else if(300<id && id<399){
-				return "error(" + id + ")";
-			}else if(400<id && id<499){
-				// reports
-				return "";
+		addCategory = function(name, range){
+			if(categories[name]){
+				categories[name].push(range);
 			}else{
-				return "message-id(" + id + ")";
+				categories[name] = [range];
 			}
+		},
+
+		getPrefix = function(id){
+			var result;
+			for(var p in categories){
+				if(categories[p].some(function(range){
+					if(range[0]<=id && id<range[1]){
+						return result = p + "(" + id + ")";
+					}
+					return 0;
+				})){
+					return result;
+				}
+			}
+			return "message-id(" + id + ")";
 		},
 
 		getArgs = function(args){
 			var result = "";
-			if(typeof args=="string"){
+			if(typeof args=="undefined"){
+				// nothing to decode
+			}else if(typeof args=="string"){
 				result+= args;
 			}else if(args.length==1){
 				result+= args[0];
@@ -216,6 +237,7 @@ define([], function(){
 		pacifySet:pacifySet,
 		getNewMessageId:getNewMessageId,
 		addMessage:addMessage,
+		addCategory:addCategory,
 		log:log,
 		logOptimizerOutput:logOptimizerOutput,
 		getOptimizerOutput:getOptimizerOutput,

@@ -266,7 +266,7 @@ define(["require", "dojo/has"], function(require, has) {
 			});
 		}
 
-		if(!bc.errorCount && !bc.check){
+		if(!bc.errorCount && !bc.check && !bc.debugCheck){
 			doBuild();
 		}
 	});

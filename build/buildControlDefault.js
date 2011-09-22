@@ -10,11 +10,6 @@ define(["./buildControlBase"], function(bc) {
 			// TODO
 		},
 
-		loaderConfig: {
-			host:"browser",
-			timeout:0
-		},
-
 		buildFlags:{
 			stripConsole:"error",
 			optimizeHas:1
