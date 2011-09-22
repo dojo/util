@@ -109,21 +109,23 @@ define([
 	}
 
 	// process all the packages given by package.json first since specific profiles are intended to override the defaults
-	(args["package"] || "").split(";").forEach(function(packageRoot){
-		// packageRoot gives a path to a location where a package.json rides
-		var packageJsonFilename = catPath(computePath(packageRoot, process.cwd()), "package.json"),
-		packageJson= readAndEval(packageJsonFilename, "package.json");
-		if(isEmpty(packageJson)){
-			bc.log("missingPackageJson", ["filename", packageJsonFilename]);
-		}else{
-			// use package.json to define a package config
-			packageJson.selfFilename = packageJsonFilename;
-			mixPackage({
-				name:packageJson.progName || packageJson.name,
-				packageJson:packageJson
-			});
-		}
-	});
+	if(args["package"]){
+		args["package"].split(";").forEach(function(packageRoot){
+			// packageRoot gives a path to a location where a package.json rides
+			var packageJsonFilename = catPath(computePath(packageRoot, process.cwd()), "package.json"),
+			packageJson= readAndEval(packageJsonFilename, "package.json");
+			if(isEmpty(packageJson)){
+				bc.log("missingPackageJson", ["filename", packageJsonFilename]);
+			}else{
+				// use package.json to define a package config
+				packageJson.selfFilename = packageJsonFilename;
+				mixPackage({
+					name:packageJson.progName || packageJson.name,
+					packageJson:packageJson
+				});
+			}
+		});
+	}
 
 	// for each build control object or v1.6- profile in args, mix into bc in the order they appeared on the command line
 	// FIXME: rename "buildControlScript et al to profile...keep the peace
@@ -254,7 +256,7 @@ define([
 				if(packageJson.main && !pack.main){
 					pack.main= packageJson.main;
 				}
-				if(packageJson.directories.lib && !pack.location){
+				if(packageJson.directories && packageJson.directories.lib && !pack.location){
 					pack.location = catPath(getFilepath(packageJson.selfFilename), packageJson.directories.lib);
 				}
 				if("dojoBuild" in packageJson){
