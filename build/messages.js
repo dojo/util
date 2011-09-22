@@ -37,6 +37,7 @@ define([], function(){
 		[1, 214, "ignoringReleaseDirName", "DestBasePath given; ignoring releaseDir and releaseName."],
 		[1, 215, "inputLoggerRemoved", "Logger has been removed; all calls ignored"],
 		[1, 216, "dojoHasUnresolvedMid", "dojo/has plugin resource could not be resolved during build-time."],
+		[1, 217, "cleanRemoved", "the clean action has been removed; use rm (*nix) or rmdir (Windows)"],
 
 		// error 300-399
 		[1, 300, "dojoHasMissingPlugin", "Missing dojo/has module."],

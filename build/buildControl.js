@@ -393,12 +393,13 @@ define([
 					break;
 				case "clean":
 					bc.clean= true;
+					bc.log("cleanRemoved");
 					break;
 				case "release":
 					bc.release= true;
 					break;
 				default:
-					bc.log("inputUnknownAction" ["action", action]);
+					bc.log("inputUnknownAction", ["action", action]);
 					process.exit(0);
 
 			}
@@ -408,13 +409,6 @@ define([
 	if(!bc.check && !bc.debugCheck && !bc.clean && !bc.release){
 		bc.log("pacify", "Nothing to do; you must explicitly instruct the application to do something; use the option --help for help.");
 		process.exit(0);
-	}
-
-	if(bc.clean!==undefined && !bc.clean){
-		// user said do NOT clean; honor that
-	}else if(bc.release && !bc.buildLayers){
-		// doing a complete build; therefore, autoclean unless told otherwise
-		bc.clean= true;
 	}
 
 	// understand stripConsole from dojo 1.3 and before
