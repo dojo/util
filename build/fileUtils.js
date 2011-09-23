@@ -182,6 +182,7 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 		ensureDirectoryByFilename:ensureDirectoryByFilename,
 		clearCheckedDirectoriesCache:clearCheckedDirectoriesCache,
 		readAndEval:readAndEval,
-		maybeRead:maybeRead
+		maybeRead:maybeRead,
+		fileExists:fileExists
 	};
 });

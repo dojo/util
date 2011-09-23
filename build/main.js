@@ -45,7 +45,6 @@ define(["require", "dojo/has"], function(require, has) {
 
 		// helps during dev or heavily async node...
 		debug= function(it, depth){
-console.log("check");
 			console.log(require.nodeRequire("util").inspect(it, false, depth));
 		};
 

@@ -140,31 +140,56 @@ define([
 	});
 	args.buildControlScripts.forEach(function(item) {
 		if (item instanceof Array) {
+			var htmlFiles= [], filename;
 			switch (item[0]) {
 				case "htmlDir":
-					var htmlFiles= [];
-					fs.readdirSync(item[1]).forEach(function(filename){
-						if(/\.html$/.test(filename)){
-							htmlFiles.push(item[1] + "/" + filename);
+					if(!fileUtils.dirExists(item[1])){
+						bc.log("inputHTMLDirDoesNotExist", ["directory", item[1]]);
+						return;
+					}else{
+						fs.readdirSync(item[1]).forEach(function(filename){
+							if(/\.html$/.test(filename)){
+								htmlFiles.push(item[1] + "/" + filename);
+							}
+						});
+						item = processHtmlFiles(htmlFiles, args);
+					}
+					break;
+				case "htmlFiles":
+					htmlFiles = item[1].split(",").filter(function(filename){
+						if(!fileUtils.fileExists(filename)){
+							bc.log("inputHTMLFileDoesNotExist", ["filename", filename]);
+							return 0;
+						}else{
+							return 1;
 						}
 					});
-					item = processHtmlFiles(htmlFiles, args);
-					break;
-
-				case "htmlFiles":
-					item = processHtmlFiles(item[1].split(","), args);
+					if(htmlFiles.length){
+						item = processHtmlFiles(htmlFiles, args);
+					}else{
+						return;
+					}
 					break;
 				case "profile":
 					// more relaxed than v1.6-; if it looks like a file, assume the profileFile behavior; this makes profileFile redundant
 					if(/\//.test(item[1])){
-						item= processProfileFile(item[1], args);
+						filename = item[1];
 					}else{
-						item= processProfileFile(require.baseUrl + "../util/buildscripts/profiles/" + item[1] + ".profile.js", args);
+						filename = require.baseUrl + "../util/buildscripts/profiles/" + item[1] + ".profile.js";
+					}
+					if(!fileUtils.fileExists(filename)){
+						bc.log("inputProfileDoesNotExist", ["filename", filename]);
+						return;
+					}else{
+						item= processProfileFile(filename, args);
 					}
 					break;
 				case "profileFile":
-					bc.log("inputDeprecatedProfileFile", ["filename", item[1]]);
-					if(!ignoreProfileFile){
+					!ignoreProfileFile && bc.log("inputDeprecatedProfileFile", ["filename", item[1]]);
+					if(!ignoreProfileFile && !fileUtils.fileExists(item[1])){
+						bc.log("inputProfileFileDoesNotExist", ["filename", item[1]]);
+						return;
+					}else if(!ignoreProfileFile){
 						item= processProfileFile(item[1], args);
 					}
 					break;

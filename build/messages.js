@@ -77,6 +77,10 @@ define([], function(){
 		[1, 335, "dojoPragmaEvalFail", "Failed to evaluate dojo pragma."],
 		[1, 336, "dojoPragmaInvalid", "Failed to find end marker for dojo pragma."],
 		[1, 337, "missingPackageJson", "Missing or empty package.json file at location specified by package flag."],
+		[1, 338, "inputProfileDoesNotExist", "Profile given for \"profile\" switch does not exist."],
+		[1, 338, "inputProfileFileDoesNotExist", "Profile file given for \"profileFile\" switch does not exist."],
+		[1, 338, "inputHTMLFileDoesNotExist", "HTML file given for \"htmlFiles\" switch does not exist."],
+		[1, 338, "inputHTMLDirDoesNotExist", "HTML directory file given for \"htmlDir\" switch does not exist."],
 
 		// reports 400-499
 		[1, 400, "hasReport", "Has Features Detected"],
