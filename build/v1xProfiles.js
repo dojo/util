@@ -124,7 +124,7 @@ define([
 			//     For example, myTopModule.mySubModule is assumed to reside at dojo/../myTopModule/mySubModule.js
 			//
 			// This has the net effect of forcing the assumption that build program is be executed from util/buildscripts.
-			// when relative paths are used; this may be convenient. The behavior is probably consequent to rhino's design
+			// when relative paths are used; this may be inconvenient. The behavior is probably consequent to rhino's design
 			// that does not report the full path of the script being executed. In order to help, the following v1.7+
 			// options are available:
 			//
@@ -183,6 +183,10 @@ define([
 				// use the loader to find the real dojo path
 				prefixMap.dojo= activeDojoPath;
 			}else{
+				if(profile.basePath && /^\./.test(profile.basePath)){
+					// basePath is relative to cwd; fix it up
+					profile.basePath = fileUtils.compactPath(fileUtils.catPath(process.cwd(), profile.basePath));
+				}
 				if (profile.basePath===undefined && /^\./.test(prefixMap.dojo) && compactPath(catPath(activeDojoPath, "../util/buildscripts"))!=process.cwd()){
 					bc.log("oddDojoPath");
 				}
@@ -383,9 +387,10 @@ define([
 			return processProfile(profile, args);
 		},
 
-		processHtmlFiles= function(files){
+		processHtmlFiles= function(files, args){
 			bc.log("processHtmlFiles", ["files", files.join(", ")]);
 			var
+				basePath = "",
 				layers = {},
 				prefix = "",
 				prefixes = {dijit: true, dojox: true};
@@ -407,12 +412,18 @@ define([
 						priorLayers.push(scriptName);
 					};
 
-				var html = fs.readFileSync(htmlFile);
+				var html = fs.readFileSync(htmlFile, "utf8");
 				html.replace(/<script [^>]*src=["']([^'"]+)["']/gi, function(t, scriptName){
 					// for each script tag
 					if(scriptName.indexOf("dojo/dojo.js") > -1){
 						// use dojo.js to determine the prefix for our namespaces
 						prefix = scriptName.substring(0, scriptName.indexOf("dojo/dojo.js"));
+
+						// the release dir is relative to the dir that contains the html file(s)
+						// the prefix, if relative, is relative to basePath
+						if(!basePath){
+							basePath = fileUtils.getFilepath(htmlFile);
+						}
 					}else{
 						// non-dojo.js script files, add it to our list of layers
 						addLayer(scriptName = scriptName.substring(prefix.length, scriptName.length - 3).replace(/\//g, '.'));
@@ -445,17 +456,18 @@ define([
 			}
 			var profileProperties = {
 				layers: layersArray,
-				prefixes: prefixPaths
+				prefixes: prefixPaths,
+				basePath:basePath
 			};
 			if(bc.profileFile){
-				fs.writeFileSync(bc.profileFile, "dependencies = " + dojo.toJson(profileProperties), "utf8");
+				fs.writeFileSync(bc.profileFile, "dependencies = " + dojo.toJson(profileProperties, true), "utf8");
 			}
-			processProfile(profileProperties);
+			return processProfile(profileProperties, args);
 		};
 
 	return {
 		processProfile:processProfile,
 		processProfileFile:processProfileFile,
-		processHtmlFile:processHtmlFiles
+		processHtmlFiles:processHtmlFiles
 	};
 });

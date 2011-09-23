@@ -37,7 +37,6 @@ define(["require", "dojo/has"], function(require, has) {
 
 	// host-dependent environment initialization
 	if (has("host-node")) {
-		debug= require.debug;
 		console.log("running under node.js");
 		define("commandLineArgs", function() {
 			//arg[0] is node; argv[1] is dojo.js; therefore, start with argv[2]
@@ -45,7 +44,10 @@ define(["require", "dojo/has"], function(require, has) {
 		});
 
 		// helps during dev or heavily async node...
-		debug= require.debug;
+		debug= function(it, depth){
+console.log("check");
+			console.log(require.nodeRequire("util").inspect(it, false, depth));
+		};
 
 		// TODO: make this real
 		has.add("is-windows", 0);

@@ -318,7 +318,7 @@ define(["./buildControl", "./fileUtils", "./fs", "./stringify", "dojo/has", "./p
 			var
 				layer= bc.layers[mid],
 				moduleInfo= bc.getSrcModuleInfo(mid),
-				resource= bc.amdResources[moduleInfo.mid];
+				resource= bc.resources[moduleInfo.url];
 			if (!resource) {
 				// this is a synthetic layer (just a set of real modules aggregated but doesn't exist in the source)
 				resource= {

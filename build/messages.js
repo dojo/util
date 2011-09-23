@@ -1,7 +1,7 @@
 define([], function(){
 	var categories = {
-			warn:[[100, 199]],
-			info:[[200, 299]],
+			info:[[100, 199]],
+			warn:[[200, 299]],
 			error:[[300, 399]],
 			report:[[400, 499]]
 		},
@@ -28,7 +28,7 @@ define([], function(){
 		[1, 205, "amdNotPureContainedNoLegacyApi", "Module not tagged as pure AMD yet it contains AMD API applications."],
 		[1, 206, "legacyMultipleProvides", "Module included multiple dojo.provide applications."],
 		[1, 207, "legacyImproperProvide", "dojo.provide application identifier inconsistent with module identifier."],
-		[1, 208, "inputDeprecatedProfileFile", "The \"profileFile\" switch has been deprecated; user \"profile\" instead."],
+		[1, 208, "inputDeprecatedProfileFile", "The \"profileFile\" switch has been deprecated; use \"profile\" instead."],
 		[1, 209, "inputMissingPackageJson", "Missing or empty package.json."],
 		[1, 210, "inputDeprecatedStripConsole", "Given strip console value is deprecated."],
 		[1, 211, "inputDeprecated", "Deprecated switch; ignored"],

@@ -129,6 +129,15 @@ define([
 
 	// for each build control object or v1.6- profile in args, mix into bc in the order they appeared on the command line
 	// FIXME: rename "buildControlScript et al to profile...keep the peace
+	var ignoreProfileFile = 0;
+	args.buildControlScripts.forEach(function(item) {
+		if(/^html/.test(item[0])){
+			ignoreProfileFile = 1;
+		}
+		if(item[0]=="profileFile"){
+			bc.profileFile = item[1];
+		}
+	});
 	args.buildControlScripts.forEach(function(item) {
 		if (item instanceof Array) {
 			switch (item[0]) {
@@ -136,14 +145,14 @@ define([
 					var htmlFiles= [];
 					fs.readdirSync(item[1]).forEach(function(filename){
 						if(/\.html$/.test(filename)){
-							htmlFiles.push(filename);
+							htmlFiles.push(item[1] + "/" + filename);
 						}
 					});
-					processHtmlFiles(htmlFiles);
+					item = processHtmlFiles(htmlFiles, args);
 					break;
 
 				case "htmlFiles":
-					processHtmlFiles(item[1].split(","));
+					item = processHtmlFiles(item[1].split(","), args);
 					break;
 				case "profile":
 					// more relaxed than v1.6-; if it looks like a file, assume the profileFile behavior; this makes profileFile redundant
@@ -155,7 +164,9 @@ define([
 					break;
 				case "profileFile":
 					bc.log("inputDeprecatedProfileFile", ["filename", item[1]]);
-					item= processProfileFile(item[1], args);
+					if(!ignoreProfileFile){
+						item= processProfileFile(item[1], args);
+					}
 					break;
 			}
 		}
@@ -239,7 +250,8 @@ define([
 		for (var packageName in bc.packages) {
 			var pack= bc.packages[packageName];
 			if(!pack.packageJson){
-				var packageJsonFilename = catPath(pack.location, "package.json"),
+				var guessPackLocation = computePath(pack.location || (pack.name ? "./" + pack.name : bc.basePath), bc.basePath),
+					packageJsonFilename = catPath(guessPackLocation, "package.json"),
 					packageJson = readAndEval(packageJsonFilename, "package.json");
 				if(packageJson){
 					packageJson.selfFilename = packageJsonFilename;
