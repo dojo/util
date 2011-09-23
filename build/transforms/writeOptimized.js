@@ -1,5 +1,4 @@
 define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "dojo"], function(bc, process, fs, fileUtils, has, dojo) {
-
 	var built = "//>>built\n";
 
 	// default to a no-op
@@ -109,14 +108,25 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 			return callback;
 		};
 	}
-
 	if(has("host-node") && (bc.optimize || bc.layerOptimize)){
 		// start up a few processes to compensate for the miserably slow closure compiler
+
+		// don't leave orphan child procs
+		global.process.on('uncaughtException', function (err) {
+			processes.forEach(function(proc){
+				proc.runner.kill();
+			});
+			console.log(err);
+			console.log(err.stack);
+			global.process.exit(0);
+		});
+
 		var
 			processesStarted = 0,
 			totalOptimizerOutput = "",
 			nextProcId = 0,
-			processes, i, //used in for loop
+			processes = [],
+			i, //used in for loop
 			sendJob = function(src, dest, optimizeSwitch, copyright){
 				processes[nextProcId++].write(src, dest, optimizeSwitch, copyright);
 				nextProcId= nextProcId % bc.maxOptimizationProcesses;
@@ -154,7 +164,7 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 				runJava = function(cb) { cb(); };
 			}
 		runJava(function(cp) {
-			for(processes = [], i = 0; i < bc.maxOptimizationProcesses; i++) {(function(){
+			for(i = 0; i < bc.maxOptimizationProcesses; i++) {(function(){
 				var
 					runner = child_process.spawn("java", ["-cp", javaClasses, "org.mozilla.javascript.tools.shell.Main", optimizerRunner]),
 					proc = {
@@ -231,6 +241,7 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 				processes.forEach(function(proc){
 					proc.write(".\n");
 				});
+				processes = [];
 			}
 		});
 
