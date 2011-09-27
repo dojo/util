@@ -44,8 +44,9 @@ define(["require", "dojo/has"], function(require, has) {
 		});
 
 		// helps during dev or heavily async node...
-		debug= function(it, depth){
-			console.log(require.nodeRequire("util").inspect(it, false, depth));
+		var util = require.nodeRequire("util");
+		debug= function(it, depth, inspect){
+			util.debug(inspect ? util.inspect(it, false, depth) : it);
 		};
 
 		// TODO: make this real
@@ -190,7 +191,7 @@ define(["require", "dojo/has"], function(require, has) {
 				dest= resource.dest;
 			if (bc.resourcesByDest[src]) {
 				// a dest is scheduled to overwrite a source
-				bc.log("overwrite", ["input", src, "resource destined for same location: ", bc.resources.byDest[src].src]);
+				bc.log("overwrite", ["input", src, "resource destined for same location: ", bc.resourcesByDest[src].src]);
 				return;
 			}
 			if (bc.resourcesByDest[dest]) {

@@ -421,7 +421,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 					nothing = [];
 
 				resource.text = resource.text.replace(interningGlobalDojoUriRegExp, function(matchString){
-				    
+
 					var parts = matchString.match(interningLocalDojoUriRegExp);
 
 					var textModuleInfo = bc.getSrcModuleInfo(fileUtils.catPath(parts[6].replace(/\./g, "/"), parts[9]), 0, true);
@@ -495,6 +495,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 				if(bc.internStrings){
 					internStrings();
 				}
+
 				var text =
 						// apply any replacements before processing
 						resource.getText(),

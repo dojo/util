@@ -19,6 +19,8 @@ define([], function(){
 		[1, 107, "packageVersion", "Package Version:"],
 		[1, 108, "internStrings", "Interning strings."],
 		[1, 109, "processHtmlFiles", "Processing HTML files."],
+		[1, 110, "userTrace", "User trace:"],
+		[1, 110, "userInfo", "User info:"],
 
 		// warn 200-299
 		[1, 200, "configUnresolvedValues", "Configuration contains unsolved values."],
@@ -29,7 +31,7 @@ define([], function(){
 		[1, 206, "legacyMultipleProvides", "Module included multiple dojo.provide applications."],
 		[1, 207, "legacyImproperProvide", "dojo.provide application identifier inconsistent with module identifier."],
 		[1, 208, "inputDeprecatedProfileFile", "The \"profileFile\" switch has been deprecated; use \"profile\" instead."],
-		[1, 209, "inputMissingPackageJson", "Missing or empty package.json."],
+		[1, 209, "missingPackageJson", "Missing or empty package.json."],
 		[1, 210, "inputDeprecatedStripConsole", "Given strip console value is deprecated."],
 		[1, 211, "inputDeprecated", "Deprecated switch; ignored"],
 		[1, 212, "oddDojoPath", "No profile.basePath provided, yet dojo path is relative and running build with the current working directory different than util/buildscripts"],
@@ -38,6 +40,9 @@ define([], function(){
 		[1, 215, "inputLoggerRemoved", "Logger has been removed; all calls ignored"],
 		[1, 216, "dojoHasUnresolvedMid", "dojo/has plugin resource could not be resolved during build-time."],
 		[1, 217, "cleanRemoved", "the clean action has been removed; use rm (*nix) or rmdir (Windows)"],
+		[1, 218, "inputProfileFileDeprecated", "the command line switch profileFile is deprectated; use profile for both files and profiles"],
+		[1, 219, "userWarn", "User warn:"],
+		[1, 220, "outputToProfileFileDeprecated", "Writing htmlFiles- or htmlDirs-derived profile via the profileFile option is deprecated; use the writeProfile option instead"],
 
 		// error 300-399
 		[1, 300, "dojoHasMissingPlugin", "Missing dojo/has module."],
@@ -76,11 +81,19 @@ define([], function(){
 		[1, 334, "amdCannotInstantiateLayer", "Cannot instantiate all modules in layer."],
 		[1, 335, "dojoPragmaEvalFail", "Failed to evaluate dojo pragma."],
 		[1, 336, "dojoPragmaInvalid", "Failed to find end marker for dojo pragma."],
-		[1, 337, "missingPackageJson", "Missing or empty package.json file at location specified by package flag."],
+		[1, 337, "inputMissingPackageJson", "Missing or empty package.json file at location specified by package flag."],
+		[1, 337, "inputMalformedPackageJson", "Malformed package.json file."],
 		[1, 338, "inputProfileDoesNotExist", "Profile given for \"profile\" switch does not exist."],
-		[1, 338, "inputProfileFileDoesNotExist", "Profile file given for \"profileFile\" switch does not exist."],
-		[1, 338, "inputHTMLFileDoesNotExist", "HTML file given for \"htmlFiles\" switch does not exist."],
-		[1, 338, "inputHTMLDirDoesNotExist", "HTML directory file given for \"htmlDir\" switch does not exist."],
+		[1, 339, "inputProfileFileDoesNotExist", "Profile file given for \"profileFile\" switch does not exist."],
+		[1, 340, "inputHTMLFileDoesNotExist", "HTML file given for \"htmlFiles\" switch does not exist."],
+		[1, 341, "inputHTMLDirDoesNotExist", "HTML directory given for \"htmlDir\" switch does not exist."],
+		[1, 342, "inputHTMLDirNoFiles","HTML directory given for \"htmlDir\" switch contains no HTML files."],
+		[1, 343, "inputIllegalCommandlineArg", "Illegal command line argument."],
+		[1, 344, "inputFileDoesNotExist", "File does not exist."],
+		[1, 345, "inputProcessingHtmlFileNotImplemented", "Pulling profiles from HTML files is not implemented."],
+		[1, 346, "inputFailedReadfile", "Failed to read input file."],
+		[1, 347, "inputFailedToEvalProfile", "Failed to evaluate profile file."],
+		[1, 348, "userError", "User error:"],
 
 		// reports 400-499
 		[1, 400, "hasReport", "Has Features Detected"],
@@ -249,6 +262,10 @@ define([], function(){
 		getAllNonreportMessages:getAllNonreportMessages,
 		getAllReportMessages:getAllReportMessages,
 		getWarnCount:function(){return warnCount;},
-		getErrorCount:function(){return errorCount;}
+		getErrorCount:function(){return errorCount;},
+		trace:function(message){log("userTrace", message);},
+		info:function(message){log("userInfo", message);},
+		warn:function(message){log("userWarn", message);},
+		error:function(message){log("userError", message);}
 	};
 });

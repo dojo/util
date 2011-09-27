@@ -65,7 +65,7 @@ define([
 				if (name=="dojo") {
 					result.location= ".";
 				} else {
-					result.location= computeLocation(bc.destPackageBasePath + "/dojo", destPack.location);
+					result.location= computeLocation(bc.destBasePath + "/dojo", destPack.location);
 				}
 				var packageDefaultConfig = bc.defaultConfig && bc.defaultConfig.packages && bc.defaultConfig.packages[name];
 				for(var p in packageDefaultConfig){
