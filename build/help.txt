@@ -1,3 +1,5 @@
+Read, process, and write a set of resources as constructed by a profile. 
+
 Usage with node.js:
 node path/to/dojo/dojo.js load=build [options] 
 
@@ -12,130 +14,53 @@ Usage with the build script on windows:
 IMPORTANT: the util/buildscripts directory must be the current working directory
 build.bat [options]
 
-WARNING:
-The default behavior of this program assumes the default directory structure provided with the standard dojo source
-release where the dojo and util directories are siblings and the build and buildscripts directories are immediate
-children of util. You can override this behavior by setting the variable basePath and providing and explicit package
-configuration. Consult TODO for details.
+IMPORTANT:
+This program assumes the default directory structure provided with the standard dojo source release.
+
+IMPORTANT:
+When using v1.6- profiles, this program assumes the current working directory is utils/buildscripts.
 
 Options:
---check                  print computed build script
+-p <filename>
+--profile <filename>      read profile for file
 
---release                process the build control script(s) and/or profile(s) and transform sources into a release
+-p <profile>
+--profile <profile>       read profile from profile in util/buildscripts/profiles
 
---clean                  delete the destination tree
-             
--b
---build <filename>       process build control script
+--package <path>          read profile from package.json located in the directory path
 
 -r
---require <filename>     process a loader configuration script
+--require <filename>
+--dojoConfig              read profile from loader configuration 
 
--l
---loader <filename>      process a loader configuration application
+--htmlFiles <file-list>   deduce profile from HTML file(s); file-list is a comma-separated list of filenames
 
--l
---htmlFile <filename>    An HTML file to generate the profile from. The HTML files will be scanned for script tags and
-                         require/dojo.require calls to create a set of layers. If a profile or profileFile is specified,
-                         the profile will be written to that destination and the build will continue.
+--htmlDir <path>          deduce profile from all HTML files in directory at path
 
--l
---htmlDir <filename>     A directory to use to get a list of HTML files for generating the profile
+--check                   print computed profile
 
--l
---profile <name>         The name of the profile to use for the build. It may include a path; if it does not, then the
-                         util/buildscripts/profiles/ directory is assumed. If name does not end in ".profile.js", then
-                         then .profile.js is appended to name.
+--debug-check             print computed profile, including internal structures
 
--profileFile <filename>  The file given exactly by filename (which usually includes a path) give the profile to use
-                         for the build.
-                         DEPRECATED: use profile
+--release                 process the build control script(s) and/or profile(s) and transform sources into a release
 
--v                       print the program's version number
+--releaseDir <path>       base directory for build output
 
---help                   this help message
+--releaseName <string>    path segment to append to releaseDir that gives base directory for build output
 
---action <action(s)>     run action(s); action(s) gives a comma separated list of action(s) to run; legal actions are 
-                         check, release, clean.
+--writeProfile <filename> write the processed profile to filename
 
---version <id>           stamp build with id; defaults to "0.0.0.dev"
+--version <id>            stamp build with id; defaults to "0.0.0.dev"
 
---releaseName <name>     set destination directory to name, a direct child of releaseDir; defaults to "dojo".
+--copyTests               Copy test files and the DOH package.
 
---releaseDir <path>      set destination directory root to path; defaults to release, a sibling of the dojo directory.
+--mini                    Ignore resources tagged as not mini (e.g. tests, demos dijit/bench, etc.)
 
---internStrings          cause text dependencies to be included with module (like a mini layer)
+-v                        print the program's version number
 
---optimize <flag>        Specifies how to optimize module files. If "comments" is specified, then code comments are 
-                         stripped. If "shrinksafe" is specified, then Dojo Shrinksafe will be used on the files, and
-                         line returns will be removed. If "shrinksafe.keepLines" is specified, then Dojo Shrinksafe 
-                         will be used on the files, and line returns will be preserved. See also "stripConsole". 
-                         Google Closure's compiler can be used by specifying "closure" as the value. It does not use
-                         the stripConsole build option, and it REQUIRES Java 6 to run, and it may make some complaints
-                         about the code and print out "errors", but if the build completes, then the code should work. 
-                         To use Closure compiler, download it from here:
-                         
-                         http://code.google.com/p/closure-compiler/downloads/list
-                         
-                         And place the compiler.jar file somewhere you can easily reference. Then use the following to 
-                         execute the build (remember Java 6):
-                         
-                         TODOC
+--help                    this help message
 
-                         and place your build arguments on the same line after that text. Change the ../closurecompiler
-                         path to the path where you keep Closure's compiler.jar.
+Scalar profile property values may also be specified as options with the syntax
 
---layerOptimize <flag>   Same as optimize, but applied to layer files only.
+     --<profile-property-name> <value>
 
---cssOptimize <flag>     Specifies how to optimize CSS files. If "comments" is specified, then code comments and line
-                         returns are stripped, and files referenced via @import are inlined. If "comments.keepLines" is
-                         specified, then code comments are stripped and @import calls are inlined, but line returns
-                         are preserved.
-
---cssImportIgnore <flag> If using cssOptimize="comments", then you can force the @import inlining step to ignore a set
-                         of files by using this option. The value of this option should be a comma separated list of CSS
-                         files names to ignore. The file names should match whatever strings are used for the @import calls.
-
---stripConsole <flag>    Strips console method calls from Javascript source. Applied to layers and individual modules resource 
-                         files. Valid values are 
-
-                             none    (default)leaves all console calls alone
-                             normal  strips all but console.warn and console.error applications
-                             warn    strips all but console.error applications
-                             all     strips all console calls
-
-                         NOTE: this option only has effect if optimize includes use of shrinksafe
-
---copyTests              Copy test files and the DOH package.
-
---mini                   Removes files like tests, demos dijit/bench, unfinished themes, and interned Dijit templates from 
-                         the build. Overrides the value set for copyTests.
-
---xdDojoPath             If the built dojo is being served from a xdomain the then the value of this option will be used to
-                         to register the dojo, dijit, dojox module paths.
-
---buildLayers            A comma-separated list of layer names to build. Using this option means that only those layers will
-                         be built. This helps if you are doing quick development and test cycles with layers. If you have 
-                         problems using this option, try removing it and doing a full build with action=clean,release. This 
-                         build option assumes you have done at least one full build first.
-
-The following configuration variables are deprecated and ignored:
-
-localeList: not needed with AMD bundle format
-loader: as of v1.7, there is only one loader
-log: the logger automatically prints errors, warning, and progress message, no more, no less
-expandProvide: all dojo.require/provide modules are automatically converted to AMD modules
-query: sizzle is no longer available from the dojo project
-addGuards: all modules are automatically converted to AMD modules
-removeDefaultNameSpaces: no longer supported
-
-
-See also
- project home: http://bdframework.org/bdBuild/index
- fossil: http://bdframework.org/bdBuild/repo
- github: https://github.com/altoviso/bdBuild
- docs: http://bdframework.org/bdBuild/docs
-
-
-TODOC: symbol, scopeDjConfig, scopeMap, xdScopeArgs, xdDojoScopeName
-
+See http://livedocs.dojotoolkit.org/developer/design/builder for the profile property reference.
