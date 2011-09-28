@@ -1,5 +1,5 @@
-define("doh/runner", ["dojo", "dojox/math/stats"], function(dojo, stats) {
-var doh= dojo.mixin({}, dojo, stats);
+define("doh/runner", ["dojo"], function(dojo) {
+var doh= dojo.mixin({}, dojo);
 
 // intentionally define global tests and global doh symbols
 // TODO: scrub these globals from tests and remove this pollution

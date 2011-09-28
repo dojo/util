@@ -21,7 +21,7 @@ var profile = {
 
 		amd: function(filename, mid){
 			return !testResourceRe.test(mid) && !copyOnly(mid) && /\.js$/.test(filename);
-		},
+		}
 	},
 
 	trees:[

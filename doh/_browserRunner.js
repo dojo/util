@@ -218,7 +218,9 @@ define(["dojo", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh) {
 			var plotResults = null;
 			var standby;
 			if(doh.perfTestResults){
-				require(["dojox/charting/Chart2D", "dojox/charting/DataChart", "dojox/charting/plot2d/Scatter", "dojox/charting/plot2d/Lines", "dojo/data/ItemFileReadStore"], function() {
+				require(["dojox/math/stats", "dojox/charting/Chart2D", "dojox/charting/DataChart", "dojox/charting/plot2d/Scatter", "dojox/charting/plot2d/Lines", "dojo/data/ItemFileReadStore"], function(stats) {
+					dojo.mixin(doh, stats);
+
 					plotResults = doh._dojoPlotPerfResults;
 					try{
 						var g;
