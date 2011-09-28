@@ -350,13 +350,13 @@ define([
 			case "--help":
 				// print help message
 				printHelp = true;
-				console.log(help);
+				messages.log("pacify", help);
 				break;
 
 			case "-v":
 				// print the version
 				printVersion = true;
-				console.log(version+"");
+				messages.log("pacify", version+"");
 				break;
 
 			case "--unit-test":
@@ -477,7 +477,7 @@ define([
 		process.exit(0);
 		return 0;
 	}else if(messages.getErrorCount()){
-		console.log("errors on command line; terminating application.");
+		messages.log("pacify", "errors on command line; terminating application.");
 		process.exit(-1);
 		return 0;
 	}else if(!result.profiles.length){
