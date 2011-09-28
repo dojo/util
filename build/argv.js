@@ -449,7 +449,6 @@ define([
 				}else{
 					filename = getAbsolutePath(item[1], cwd);
 				}
-console.log(filename);
 				profile = readProfile(item[0], filename);
 				break;
 			case "htmlDir":
@@ -476,14 +475,15 @@ console.log(filename);
 	if(((printHelp || printVersion) && argv.length==2) || (printHelp && printVersion && argv.length==3)){
 		//just asked for either help or version or both; don't do more work or reporting
 		process.exit(0);
-	}
-
-	if(messages.getErrorCount()){
+		return 0;
+	}else if(messages.getErrorCount()){
 		console.log("errors on command line; terminating application.");
 		process.exit(-1);
+		return 0;
 	}else if(!result.profiles.length){
 		messages.log("pacify", "no profile provided; use the option --help for help");
 		process.exit(-1);
+		return 0;
 	}
 
 	if(result.unitTest=="argv"){

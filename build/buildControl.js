@@ -17,6 +17,13 @@ define([
 	// easy to use for the remainder of the program. Readers are advised to tackle it top-to-bottom. There is no magic...just
 	// a whole bunch of imperative programming.
 	//
+
+	if(!isNaN(argv)){
+		// if argv is a number, then it's an exit code
+		bc.exitCode = argv;
+		return bc;
+	}
+
 	eval(require.scopeify("./fs, ./fileUtils, ./v1xProfiles"));
 	var
 		isString= function(it) {
@@ -361,19 +368,12 @@ define([
 					break;
 				default:
 					bc.log("inputUnknownAction", ["action", action]);
-					process.exit(0);
-
 			}
 		});
 	}
 
 	if(bc.clean){
 		bc.log("cleanRemoved");
-	}
-
-	if(!bc.check && !bc.debugCheck && !bc.clean && !bc.release){
-		bc.log("pacify", "Nothing to do; you must explicitly instruct the application to do something; use the option --help for help.");
-		process.exit(0);
 	}
 
 	// understand stripConsole from dojo 1.3 and before
@@ -508,8 +508,6 @@ define([
 			}
 			console.log("require config:");
 			console.log(stringify(toDump));
-			console.log("require config:");
-			console.log(toDump);
 		})();
 		bc.release = 0;
 	}
@@ -588,6 +586,10 @@ define([
 				delete bc.pacifySet[p];
 			}
 		})();
+	}
+
+	if(!bc.check && !bc.debugCheck && !bc.clean && !bc.release){
+		bc.log("pacify", "Nothing to do; you must explicitly instruct the application to do something; use the option --help for help.");
 	}
 
 	return bc;

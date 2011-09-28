@@ -179,7 +179,8 @@ define(["require", "dojo/has"], function(require, has) {
 					if (!resources.length) {
 						bc.log("discoveryFailed");
 					}
-					console.log("Process finished normally.\n\terrors: " + bc.getErrorCount() + "\n\twarnings: " + bc.getWarnCount() + "\n\tbuild time: " + ((new Date()).getTime() - bc.startTimestamp.getTime()) / 1000 + " seconds");
+					bc.log("pacify", "Process finished normally.\n\terrors: " + bc.getErrorCount() + "\n\twarnings: " + bc.getWarnCount() + "\n\tbuild time: " + ((new Date()).getTime() - bc.startTimestamp.getTime()) / 1000 + " seconds");
+					process.exit(bc.exitCode);
 					// that's all, folks...
 				}
 			};

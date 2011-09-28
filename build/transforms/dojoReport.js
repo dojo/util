@@ -34,7 +34,7 @@ define(["../buildControl", "../version", "../fileUtils"], function(bc, version, 
 
 				result+= bc.getAllReportMessages();
 
-				console.log("Report written to " + fileUtils.computePath(fileUtils.catPath(dir, filename), bc.destBasePath));
+				bc.log("pacify", "Report written to " + fileUtils.computePath(fileUtils.catPath(dir, filename), bc.destBasePath));
 
 				result+= "\n\nProcess finished normally\n";
 				result+= "\terrors: " + bc.getErrorCount() + "\n\twarnings: " + bc.getWarnCount() + "\n\tbuild time: " + ((new Date()).getTime() - bc.startTimestamp.getTime()) / 1000 + " seconds";

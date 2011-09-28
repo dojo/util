@@ -1,5 +1,7 @@
 define(["dojo", "./messages"], function(dojo, messages) {
 	var bc= {
+		exitCode:0,
+
 		// useful for dojo pragma including/excluding
 		built:true,
 

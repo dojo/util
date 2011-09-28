@@ -111,21 +111,32 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 	if(has("host-node") && (bc.optimize || bc.layerOptimize)){
 		// start up a few processes to compensate for the miserably slow closure compiler
 
+		var processes = [],
+			killAllRunners = function(){
+				processes.forEach(function(proc){
+					try{
+						proc.runner && proc.runner.kill();
+						proc.runner = 0;
+					}catch(e){
+						//squelch
+					}
+				});
+			};
+
 		// don't leave orphan child procs
-		global.process.on('uncaughtException', function (err) {
-			processes.forEach(function(proc){
-				proc.runner.kill();
-			});
+		global.process.on('exit', killAllRunners);
+		global.process.on('uncaughtException', function(err){
+			killAllRunners();
+			// TODO: log these via bc.log
 			console.log(err);
 			console.log(err.stack);
-			global.process.exit(0);
+			global.process.exit(-1);
 		});
 
 		var
 			processesStarted = 0,
 			totalOptimizerOutput = "",
 			nextProcId = 0,
-			processes = [],
 			i, //used in for loop
 			sendJob = function(src, dest, optimizeSwitch, copyright){
 				processes[nextProcId++].write(src, dest, optimizeSwitch, copyright);

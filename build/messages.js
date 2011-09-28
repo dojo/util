@@ -183,7 +183,12 @@ define([], function(){
 			return result;
 		},
 
+		stop = 0,
+
 		log = function(id, args){
+			if(stop){
+				return;
+			}
 			if(id=="pacify"){
 				console.log(args);
 			}else if(id in messageMap){
@@ -256,6 +261,7 @@ define([], function(){
 	pacifySet.signoff = 1;
 
 	return {
+		stop:function(){stop = 1;},
 		messages:messages,
 		messageMap:messageMap,
 		pacifySet:pacifySet,

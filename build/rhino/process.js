@@ -30,10 +30,6 @@ define([], function() {
 				bc.log("execFailed", ["message", errorMessage, "output", options.output+"", "error", e]);
 				callback && callback(-1, errorMessage + "\n" + options.output + "\n" + e);
 			}
-		},
-
-		spawn:function(){
-			console.log("ERROR: NOT IMPLEMENTED");
 		}
 	};
 });

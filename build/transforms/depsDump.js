@@ -8,9 +8,6 @@ define(["../buildControl", "../stringify"], function(bc, stringify) {
 		for (p in bc.resources) {
 			resource= bc.resources[p];
 			if (resource.deps && !resource.test && !/\/nls\//.test(resource.src) && resource.mid!="dojo/_base" && resource.mid!="dojo/_base/browser" && (resource.mid=="dojo/main" || /_base/.test(resource.mid))) {
-				resource.deps.forEach(function(module){
-					//console.log('"' + resource.mid + '" -> "' + module.mid + '";');
-				});
 				resource.uid= i;
 				midToId[bc.resources[p].mid]= i;
 				modules.push(resource);
@@ -38,8 +35,6 @@ define(["../buildControl", "../stringify"], function(bc, stringify) {
 			var parts= item.mid.split("/");
 			getItem(parts, idTree)["*"]= i;
 		});
-//console.log(stringify(depsTree));
-//console.log(stringify(idTree));
 
 		// depsTree and idTree now hold all the info need to pass to the client to do 100% client-side
 		// deps tracing
