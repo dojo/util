@@ -17,7 +17,6 @@ define([
 
 		defaultBuildProps= {
 			// v1.6- default values
-			version:"0.0.0.dev",
 			localeList:"ar,ca,cs,da,de-de,el,en-gb,en-us,es-es,fi-fi,fr-fr,he-il,hu,it-it,ja-jp,ko-kr,nl-nl,nb,pl,pt-br,pt-pt,ru,sk,sl,sv,th,tr,zh-tw,zh-cn",
 			internStrings:true,
 			internSkipList:[],
@@ -29,6 +28,10 @@ define([
 			scopeMap:[],
 			insertAbsMids:1,
 			applyDojoPragmas:1,
+
+			// new for 1.7, if version is not provided, the version of the dojo package is used; see ./buildControl
+			//version:"0.0.0.dev",
+
 
 			// these are computed explicitly in processProfile() below
 			//releaseName:"dojo",

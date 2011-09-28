@@ -106,7 +106,6 @@ define([
 					var minorValue = verSegments[2] || 0;
 					var patchValue = verSegments[3] || 0;
 					var flagValue  = verSegments[4] || "";
-
 					//Do the final version replacement.
 					return text.replace(
 							/major:\s*\d*,\s*minor:\s*\d*,\s*patch:\s*\d*,\s*flag:\s*".*?"\s*,/g,

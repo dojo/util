@@ -185,6 +185,9 @@ define([
 			if(packageJson){
 				if(packageJson.version){
 					bc.log("packageVersion", ["package", packName, "version", packageJson.version]);
+					if(typeof bc.version=="undefined" && packName=="dojo"){
+						bc.version = packageJson.version;
+					}
 				}
 				if(packageJson.main && !pack.main){
 					pack.main= packageJson.main;
