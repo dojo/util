@@ -43,6 +43,8 @@ define([], function(){
 		[1, 218, "inputProfileFileDeprecated", "the command line switch profileFile is deprectated; use profile for both files and profiles"],
 		[1, 219, "userWarn", "User warn:"],
 		[1, 220, "outputToProfileFileDeprecated", "Writing htmlFiles- or htmlDirs-derived profile via the profileFile option is deprecated; use the writeProfile option instead"],
+		[1, 221, "assumeLayerIsDojoModule", "Assumed layer is referencing a dojo module."],
+		[1, 222, "assumeLayerDependencyIsDojoModule", "Assumed layer is referencing a dojo module."],
 
 		// error 300-399
 		[1, 300, "dojoHasMissingPlugin", "Missing dojo/has module."],
@@ -94,6 +96,10 @@ define([], function(){
 		[1, 346, "inputFailedReadfile", "Failed to read input file."],
 		[1, 347, "inputFailedToEvalProfile", "Failed to evaluate profile file."],
 		[1, 348, "userError", "User error:"],
+		[1, 349, "missingPrefix", "Missing prefix for top-level module."],
+		[1, 350, "cannotDeduceModuleIdFrom16LayerName", "Cannot deduce module identifier from layer name"],
+		[1, 351, "cannotDeduceModuleIdFrom16LayerDependency", "Cannot deduce module identifier from layer dependency"],
+
 
 		// reports 400-499
 		[1, 400, "hasReport", "Has Features Detected"],
