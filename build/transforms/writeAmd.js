@@ -137,7 +137,7 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 			resource
 		){
 			var cache = [];
-			resource.deps.forEach(function(dep){
+			resource.deps && resource.deps.forEach(function(dep){
 				if(dep.internStrings){
 					cache.push(getCacheEntry(dep.internStrings()));
 				}
@@ -172,7 +172,7 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 				}
 				text= (bc.internStrings ? getStrings(resource) : "") + text;
 				resource.text= text;
-				copyright= resource.pack.copyright || "";
+				copyright= resource.pack && resource.pack.copyright || "";
 			}
 			fs.writeFile(getDestFilename(resource), copyright + "//>>built\n" + text, resource.encoding, function(err) {
 				callback(resource, err);

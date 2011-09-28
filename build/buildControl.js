@@ -31,7 +31,7 @@ define([
 				result= [computePath(item[0], srcBasePath), computePath(item[1], destBasePath)].concat(item.slice(2));
 			}
 			if (!isAbsolutePath(result[0]) || !isAbsolutePath(result[1])) {
-				bc.log("inputInvalidPath" ["path", item, "hint", hint]);
+				bc.log("inputInvalidPath", ["path", item, "hint", hint]);
 			}
 			return result;
 		},
@@ -480,7 +480,7 @@ define([
 	}
 
 	if(bc.writeProfile){
-		
+
 	}
 
 	if(bc.debugCheck){
