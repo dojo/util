@@ -310,6 +310,10 @@ define([
 	})();
 
 
+	if(bc.selectorEngine && bc.defaultConfig && bc.defaultConfig.hasCache){
+		bc.defaultConfig.hasCache["config-selectorEngine"] = bc.selectorEngine;
+	}
+
 	(function() {
 		// a layer is a module that should be written with all of its dependencies, as well as all modules given in
 		// the include vector together with their dependencies, excluding modules contained in the exclude vector and their dependencies
