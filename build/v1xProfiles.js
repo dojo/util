@@ -250,8 +250,8 @@ define([
 
 				transformLayerDependencies = function(list, layerName){
 					return list ? list.map(function(mid){
-						if(!/\//.test(mid)){
-							// not slash; therefore, must be a module name
+						if(!/\//.test(mid) && !/\.js$/.test(mid)){
+							// not a slash and doesn't end in .js; therefore, must be a module name
 							modulesSeen[mid.split(".")[0]] = 1;
 							return mid;
 						}

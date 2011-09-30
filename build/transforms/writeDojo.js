@@ -153,9 +153,11 @@ define([
 
 			//write any bootstraps; boots is a vector of resources that have been marked as bootable by the discovery process
 			resource.boots.forEach(function(item) {
-				// each item is a hash of include, exclude, boot, bootText
-				item.layerText= resource.layerText + writeAmd.getLayerText(item, item.layer.include, item.layer.exclude) + (item.bootText || "");
-				doWrite(writeAmd.getDestFilename(item), resource.layer.copyright + item.layerText);
+				if(item!==resource){
+					// each item is a hash of include, exclude, boot, bootText
+					item.layerText= resource.layerText + writeAmd.getLayerText(item, item.layer.include, item.layer.exclude) + (item.bootText || "");
+					doWrite(writeAmd.getDestFilename(item), resource.layer.copyright + item.layerText);
+				}
 			});
 
 			onWriteComplete(0); // matches *1*
