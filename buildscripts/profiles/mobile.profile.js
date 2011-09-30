@@ -3,7 +3,6 @@ dependencies = {
 	layers: [
 		{
 			name: "dojo.js",
-			customBase: true,
 			dependencies: [
 				"dijit._WidgetBase",
 				"dijit._Container",
