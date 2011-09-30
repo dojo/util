@@ -44,6 +44,7 @@ define([
 
 		printVersion = 0,
 		printHelp = 0,
+		checkArgs = 0,
 
 		illegalArgumentValue = function(argumentName, position){
 			messages.log("inputIllegalCommandlineArg", ["switch", argumentName, "position", position]);
@@ -131,44 +132,46 @@ define([
 				scriptType = "profile";
 			}
 
-			var f, profile;
+			var fixupBasePath = function(profile){
+					// relative basePath is relative to the directory in which the profile resides
+					// all other relative paths are relative to basePath or releaseDir, and releaseDir, if relative, is relative to basePath
+					var fixupBasePath = function(path, referencePath){
+						if(path){
+							path = computePath(path, referencePath);
+						}else if(typeof path == "undefined"){
+							path = referencePath;
+						}
+						return path;
+					};
+					profile.basePath = fixupBasePath(profile.basePath, path);
+					if(profile.build && profile.build.basePath){
+						profile.build.basePath = fixupBasePath(profile.build.basePath, path);
+					}
+				},
+				f, profile;
 			try{
 				src = fs.readFileSync(filename, "utf8");
 				if(scriptType=="require"){
 					f = new Function("var __result, require= function(config){__result=config;};" + src + "; return __result || require;");
 					profile = f();
+					fixupBasePath(profile);
 				}else if(scriptType=="dojoConfig"){
 					f = new Function(src + "; return dojoConfig;");
 					profile = f();
+					fixupBasePath(profile);
 				}else if(scriptType=="profile"){
-					//Remove the call to getDependencyList.js because it is not supported anymore.
-					if (/load\(("|')getDependencyList.js("|')\)/.test(src)) {
-						//messages.log("getDependencyListRemoved", ["profile", filename]);
-						src = src.replace(/load\(("|')getDependencyList.js("|')\)/, "");
-					}
-
-					f = new Function("selfPath", "logger", "profile", "dependencies", src + "; return {profile:profile, dependencies:dependencies};");
-					profile = f(path, messages, 0, 0);
+					f = new Function("selfPath", "logger", "profile", "dependencies",
+									 src + "; return {profile:profile, dependencies:dependencies}");
+					profile = f(path, messages, 0, 0, 0);
 					if(profile.profile){
-						var fixupBasePath = function(path, referencePath){
-							if(path){
-								path = computePath(path, referencePath);
-							}else if(typeof path == "undefined"){
-								path = referencePath;
-							}
-							return path;
-						};
 						profile = profile.profile;
-						// relative basePath is relative to the directory in which the profile resides
-						// all other relative paths are relative to basePath or releaseDir, and releaseDir is relative to basePath
-						profile.basePath = fixupBasePath(profile.basePath, path);
-						if(profile.build && profile.build.basePath){
-							profile.build.basePath = fixupBasePath(profile.build.basePath, path);
-						}
+						fixupBasePath(profile);
 					}else{
 						profile = v1xProfiles.processProfile(profile.dependencies, dojoPath, utilBuildscriptsPath);
+						// notice we do *not* fixup the basePath for legacy profiles since they have no concept of basePath
 					}
 				}
+				messages.log("pacify", "processing " + scriptType + " resource " + filename);
 				return profile;
 			}catch(e){
 				messages.log("inputFailedToEvalProfile", [scriptType, filename, "error", e]);
@@ -227,23 +230,21 @@ define([
 			return 0;
 		},
 
-		processPackageJson = function(arg){
+		processPackageJson = function(packageRoot){
 			// process all the packages given by package.json first since specific profiles are intended to override the defaults
-			arg.split(",").forEach(function(packageRoot){
-				// packageRoot gives a path to a location where a package.json rides
-				var packageJsonFilename = catPath(computePath(packageRoot, process.cwd()), "package.json"),
-					packageJson= readPackageJson(packageJsonFilename, "inputMissingPackageJson");
-				if(packageJson){
-					// use package.json to define a package config
-					packageJson.selfFilename = packageJsonFilename;
-					result.profiles.push({
-						packages:[{
-							name:packageJson.progName || packageJson.name,
-							packageJson:packageJson
-						}]
-					});
-				}
-			});
+			// packageRoot gives a path to a location where a package.json rides
+			var packageJsonFilename = catPath(packageRoot, "package.json"),
+				packageJson= readPackageJson(packageJsonFilename, "inputMissingPackageJson");
+			if(packageJson){
+				// use package.json to define a package config
+				packageJson.selfFilename = packageJsonFilename;
+				result.profiles.push({
+					packages:[{
+						name:packageJson.progName || packageJson.name,
+						packageJson:packageJson
+					}]
+				});
+			}
 		},
 
 		readCopyrightOrBuildNotice = function(filename, hint){
@@ -293,6 +294,7 @@ define([
 	//arg[0] is "load=build"; therefore, start with argv[1]
 	for (var arg, processVector = [], i = 1, end = argv.length; i<end;){
 		arg = argv[i++];
+console.log(arg);
 		switch (arg){
 			case "-p":
 			case "--profile":
@@ -304,7 +306,6 @@ define([
 				break;
 
 			case "--profileFile":
-			case "--package":
 			case "-r":
 			case "--require":
 			case "--dojoConfig":
@@ -314,6 +315,16 @@ define([
 			case "--buildNoticeFile":
 				if(i<end){
 					processVector.push([normalizeSwitch[arg], getAbsolutePath(argv[i++], cwd)]);
+				}else{
+					illegalArgumentValue(arg, i);
+				}
+				break;
+
+			case "--package":
+				if(i<end){
+					argv[i++].split(",").forEach(function(path){
+						processVector.push(["package", getAbsolutePath(path, cwd)]);
+					});
 				}else{
 					illegalArgumentValue(arg, i);
 				}
@@ -330,6 +341,11 @@ define([
 			case "--check":
 				// read, process, and send the profile to the console and then exit
 				result.check = true;
+				break;
+
+			case "--check-args":
+				// read, process, and send the profile to the console and then exit
+				checkArgs = true;
 				break;
 
 			case "--debug-check":
@@ -389,7 +405,7 @@ define([
 				if(match && i<end){
 					// all of the switches that take no values are listed above; therefore,
 					// *must* provide a value
-					result[match[1]] = argv[i++];
+					result[match[1]] = evalScriptArg(argv[i++]);
 				}else{
 					// the form switch=value does *not* provide an individual value arg (it's all one string)
 					var parts = arg.split("=");
@@ -400,8 +416,13 @@ define([
 								processVector.push([normalizeSwitch[parts[0]], parts[1]]);
 								break;
 
-							case "profileFile":
 							case "package":
+								parts[1].split(",").forEach(function(path){
+									processVector.push(["package", getAbsolutePath(path, cwd)]);
+								});
+								break;
+
+							case "profileFile":
 							case "r":
 							case "require":
 							case "dojoConfig":
@@ -442,9 +463,18 @@ define([
 			case "profile":
 				var type = getFiletype(item[1], true), filename;
 				if(type==""){
-					filename = catPath(utilBuildscriptsPath, "profiles/" + item[1] + ".profile.js");
+					// prefer a user profile, then the stock profiles
+					filename = getAbsolutePath(item[1] + ".profile.js", cwd);
+					if(!fileExists(filename) && !/\//.test(item[1])){
+						// the name given include no path; maybe it's a stock profile
+						filename = catPath(utilBuildscriptsPath, "profiles/" + item[1] + ".profile.js");
+					}
+					if(!fileExists(filename)){
+						messages.log("inputFileDoesNotExist", ["filename", filename]);
+						break;
+					}
 				}else if(/^(html|htm)$/.test(type)){
-					messages.log("inputProcessingHtmlFileNotImplemented", [scriptType, filename]);
+					messages.log("inputProcessingHtmlFileNotImplemented", ["profile", filename]);
 					return;
 				}else{
 					filename = getAbsolutePath(item[1], cwd);
@@ -474,6 +504,10 @@ define([
 
 	if(((printHelp || printVersion) && argv.length==2) || (printHelp && printVersion && argv.length==3)){
 		//just asked for either help or version or both; don't do more work or reporting
+		process.exit(0);
+		return 0;
+	}else if (checkArgs){
+		messages.log("pacify", stringify(result));
 		process.exit(0);
 		return 0;
 	}else if(messages.getErrorCount()){

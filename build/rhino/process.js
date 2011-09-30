@@ -7,7 +7,7 @@ define([], function() {
 		exit:function(resultCode) {
 			// no documented way to return an exit code in rhino
 			if (resultCode) {
-				throw new Error("exit with result code: " + resultCode);
+				java.lang.System.exit(resultCode);
 			}
 			quit();
 		},
