@@ -99,6 +99,7 @@ define([], function(){
 		[1, 349, "missingPrefix", "Missing prefix for top-level module."],
 		[1, 350, "cannotDeduceModuleIdFrom16LayerName", "Cannot deduce module identifier from layer name"],
 		[1, 351, "cannotDeduceModuleIdFrom16LayerDependency", "Cannot deduce module identifier from layer dependency"],
+		[1, 352, "optimizerReportedErrors", "Optimizer reported errors; consult build report for details."],
 
 
 		// reports 400-499
@@ -208,9 +209,22 @@ define([], function(){
 			}
 		},
 
+		optimizerReportedErrors = 0,
+
+		logOptimizerReportedErrors = function(){
+			if(!optimizerReportedErrors){
+				log("optimizerReportedErrors");
+				optimizerReportedErrors = 1;
+			}
+		},
+
 		optimizerOutput= "",
 
 		logOptimizerOutput = function(text){
+			if(/\sERROR\s/.test(text)){
+				// the google closure error format
+				logOptimizerReportedErrors();
+			}
 			optimizerOutput+= text;
 		},
 
