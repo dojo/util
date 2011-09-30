@@ -250,6 +250,11 @@ define([
 
 				transformLayerDependencies = function(list, layerName){
 					return list ? list.map(function(mid){
+						if(!/\//.test(mid)){
+							// not slash; therefore, must be a module name
+							modulesSeen[mid.split(".")[0]] = 1;
+							return mid;
+						}
 						var match;
 						if(/^\.\//.test(mid)){
 							mid = mid.substring(2);
@@ -267,7 +272,6 @@ define([
 							bc.log("assumeLayerDependencyIsDojoModule", ["layer dependency", mid]);
 							modulesSeen[match[1]] = 1;
 							return match[1];
-
 						}else{
 							bc.log("cannotDeduceModuleIdFrom16LayerDependency", ["layer name", layerName, "layer dependency name", mid]);
 							return "error";
