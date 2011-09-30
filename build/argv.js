@@ -294,7 +294,6 @@ define([
 	//arg[0] is "load=build"; therefore, start with argv[1]
 	for (var arg, processVector = [], i = 1, end = argv.length; i<end;){
 		arg = argv[i++];
-console.log(arg);
 		switch (arg){
 			case "-p":
 			case "--profile":
