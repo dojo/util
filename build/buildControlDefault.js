@@ -4,7 +4,6 @@ define(["./buildControlBase"], function(bc) {
 		dirs:[],
 		trees:[],
 		replacements:{},
-		compactCssSet:{},
 
 		staticHasFeatures:{
 			// TODO
@@ -55,7 +54,6 @@ define(["./buildControlBase"], function(bc) {
 			writeOptimized: ["build/transforms/writeOptimized", "write"],
 			copy:           ["build/transforms/copy", "write"],
 			writeDojo:      ["build/transforms/writeDojo", "write"],
-			compactCss:     ["build/transforms/compactCss", "optimize"],
 			optimizeCss:    ["build/transforms/optimizeCss", "optimize"],
 			writeCss:       ["build/transforms/writeCss", "write"],
 			hasFindAll:     ["build/transforms/hasFindAll", "read"],

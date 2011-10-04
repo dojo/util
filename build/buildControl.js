@@ -140,16 +140,6 @@ define([
 		}
 	})();
 
-	// cleanup the compactCssSet (if any)
-	(function() {
-		var cleanSet= {}, src, dest;
-		for (src in bc.compactCssSet) {
-			dest= bc.compactCssSet[src];
-			cleanSet[computePath(src, bc.basePath)]= isString(dest) ? computePath(dest, bc.destBasePath) : dest;
-		}
-		bc.compactCssSet= cleanSet;
-	})();
-
 	// cleanup the replacements (if any)
 	(function() {
 		var cleanSet= {}, src, dest;
@@ -237,7 +227,7 @@ define([
 				packageMap:pack.destPackageMap || pack.packageMap
 			};
 			require.computeMapProg(pack.destPackageMap, (destPack.mapProg= []));
-			delete pack.destname;
+			delete pack.destName;
 			delete pack.destMain;
 			delete pack.destLocation;
 			delete pack.destPackageMap;
