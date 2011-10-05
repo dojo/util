@@ -374,13 +374,13 @@ var
 		for(var i= 0; i<5; i++){
 			hint+= dumpArg(args[i]);
 		};
-		this.debug("ERROR:");
+		doh.debug("ERROR:");
 		if(testArgPosition){
-			this.debug("\tillegal arguments provided to dojo.register; the test at argument " + testArgPosition + " wasn't a test.");
+			doh.debug("\tillegal arguments provided to dojo.register; the test at argument " + testArgPosition + " wasn't a test.");
 		}else{
-			this.debug("\tillegal arguments provided to dojo.register");
+			doh.debug("\tillegal arguments provided to dojo.register");
 		}
-		this.debug(hint);
+		doh.debug(hint);
 	},
 
 	isUrl= function(arg){
