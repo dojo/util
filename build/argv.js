@@ -167,10 +167,11 @@ define([
 						profile = profile.profile;
 						fixupBasePath(profile);
 					}else{
-						profile = v1xProfiles.processProfile(profile.dependencies, dojoPath, utilBuildscriptsPath);
+						profile = v1xProfiles.processProfile(profile.dependencies, dojoPath, utilBuildscriptsPath, path);
 						// notice we do *not* fixup the basePath for legacy profiles since they have no concept of basePath
 					}
 				}
+				profile.selfFilename = filename;
 				messages.log("pacify", "processing " + scriptType + " resource " + filename);
 				return profile;
 			}catch(e){
@@ -270,9 +271,7 @@ define([
 			"--package":"package",
 			"package":"package",
 
-			"-r":"require",
 			"--require":"require",
-			"r":"require",
 			"require":"require",
 
 			"--dojoConfig":"dojoConfig",
@@ -305,7 +304,6 @@ define([
 				break;
 
 			case "--profileFile":
-			case "-r":
 			case "--require":
 			case "--dojoConfig":
 			case "--htmlDir":
@@ -331,7 +329,7 @@ define([
 
 			case "--writeProfile":
 				if(i<end){
-					result.wrieProfile = getAbsolutePath(argv[i++], cwd);
+					result.writeProfile = getAbsolutePath(argv[i++], cwd);
 				}else{
 					illegalArgumentValue(arg, i);
 				}
@@ -343,8 +341,14 @@ define([
 				break;
 
 			case "--check-args":
-				// read, process, and send the profile to the console and then exit
+				// read and process the command line args, send the profile to the console and then exit
 				checkArgs = true;
+				break;
+
+			case "--check-discovery":
+				// echo discovery and exit
+				result.checkDiscovery = true;
+				result.release = true;
 				break;
 
 			case "--debug-check":
@@ -357,6 +361,7 @@ define([
 				result.clean = true;
 				break;
 
+			case "-r":
 			case "--release":
 				// do a build
 				result.release = true;
@@ -422,7 +427,6 @@ define([
 								break;
 
 							case "profileFile":
-							case "r":
 							case "require":
 							case "dojoConfig":
 							case "htmlDir":
