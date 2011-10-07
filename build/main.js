@@ -37,7 +37,6 @@ define(["require", "dojo/has"], function(require, has) {
 
 	// host-dependent environment initialization
 	if (has("host-node")) {
-		console.log("running under node.js");
 		define("commandLineArgs", function() {
 			//arg[0] is node; argv[1] is dojo.js; therefore, start with argv[2]
 			return process.argv.slice(2);
@@ -52,7 +51,6 @@ define(["require", "dojo/has"], function(require, has) {
 		// TODO: make this real
 		has.add("is-windows", 0);
 	} else if (has("host-rhino")) {
-		console.log("running under rhino");
 		define("commandLineArgs", [], function() {
 			var result= [];
 			require.rawConfig.commandLineArgs.forEach(function(item) {

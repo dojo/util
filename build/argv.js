@@ -1,6 +1,7 @@
 define([
 	"require",
 	"dojo",
+	"dojo/has",
 	"./fs",
 	"./fileUtils",
 	"./process",
@@ -10,7 +11,7 @@ define([
 	"./messages",
 	"./v1xProfiles",
 	"dojo/text!./help.txt"
-], 	function(require, dojo, fs, fileUtils, process, argv, stringify, version, messages, v1xProfiles, help){
+], 	function(require, dojo, has, fs, fileUtils, process, argv, stringify, version, messages, v1xProfiles, help){
 	///
 	// AMD-ID build/argv
 	//
@@ -42,7 +43,7 @@ define([
 		dojoPath = computePath(require.toUrl("dojo/package.json").match(/(.+)\/package\.json$/)[1], cwd),
 		utilBuildscriptsPath = compactPath(catPath(dojoPath, "/../util/buildscripts")),
 
-		printVersion = 0,
+		printVersion = function(){},
 		printHelp = 0,
 		checkArgs = 0,
 
@@ -370,13 +371,13 @@ define([
 			case "--help":
 				// print help message
 				printHelp = true;
-				messages.log("pacify", help);
 				break;
 
 			case "-v":
 				// print the version
-				printVersion = true;
-				messages.log("pacify", version+"");
+				printVersion = function(){
+					messages.log("pacify", version+"");
+				};
 				break;
 
 			case "--unit-test":
@@ -505,19 +506,36 @@ define([
 		}
 	});
 
+
+
 	if(((printHelp || printVersion) && argv.length==2) || (printHelp && printVersion && argv.length==3)){
 		//just asked for either help or version or both; don't do more work or reporting
+		if(printHelp){
+			messages.log("pacify", help);
+			messages.log("pacify", version+"");
+			has("host-rhino") && messages.log("pacify", "running under rhino");
+			has("host-node") && messages.log("pacify", "running under node");
+		}
+		printVersion();
 		process.exit(0);
 		return 0;
-	}else if (checkArgs){
+	}
+
+	printVersion();
+
+	if (checkArgs){
 		messages.log("pacify", stringify(result));
 		process.exit(0);
 		return 0;
-	}else if(messages.getErrorCount()){
+	}
+
+	if(messages.getErrorCount()){
 		messages.log("pacify", "errors on command line; terminating application.");
 		process.exit(-1);
 		return 0;
-	}else if(!result.profiles.length){
+	}
+
+	if(!result.profiles.length){
 		messages.log("pacify", "no profile provided; use the option --help for help");
 		process.exit(-1);
 		return 0;
