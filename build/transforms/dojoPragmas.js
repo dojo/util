@@ -1,17 +1,5 @@
-///
-// \amd-mid build/lib/transforms/dojoPragmas
-//
-// A transform to apply dojo pragmas.
-//
-// TODO: allow a custom eval environment for dojo pragmas
-//
-// TODO: remove this before checkin to dojo
-// The function is derived from https://github.com/dojo/util/blob/master/buildscripts/jslib/buildUtil.js.
-// See https://github.com/dojo/util/blob/master/LICENSE for licensing.
-
 define(["../buildControl"], function(bc) {
-	var
-		evalPragma= function(code, kwArgs, fileName) {
+	var evalPragma= function(code, kwArgs, fileName) {
 			return !!eval("(" + code + ")");
 		};
 
