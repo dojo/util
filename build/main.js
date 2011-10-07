@@ -168,6 +168,11 @@ define(["require", "dojo/has"], function(require, has) {
 					return;
 				} //	else all processes have passed through bc.currentGate
 
+				if(bc.checkDiscovery){
+					//passing the first gate which is dicovery and just echoing discovery; therefore
+					process.exit(0);
+				}
+
 				if (bc.currentGate<bc.gates.length-1) {
 					advanceGate(bc.currentGate);
 					// hold the next gate until all resources have been advised
@@ -203,6 +208,11 @@ define(["require", "dojo/has"], function(require, has) {
 			// remember the resources in the global maps
 			bc.resources[resource.src]= resource;
 			bc.resourcesByDest[resource.dest]= resource;
+
+			if(bc.checkDiscovery){
+				bc.log("pacify", src + "-->" + dest);
+				return;
+			}
 
 			// find the transformJob and start it...
 			for (var i= 0; i<transformJobsLength; i++) {
