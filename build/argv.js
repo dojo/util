@@ -43,7 +43,7 @@ define([
 		dojoPath = computePath(require.toUrl("dojo/package.json").match(/(.+)\/package\.json$/)[1], cwd),
 		utilBuildscriptsPath = compactPath(catPath(dojoPath, "/../util/buildscripts")),
 
-		printVersion = function(){},
+		printVersion = 0,
 		printHelp = 0,
 		checkArgs = 0,
 
@@ -516,12 +516,12 @@ define([
 			has("host-rhino") && messages.log("pacify", "running under rhino");
 			has("host-node") && messages.log("pacify", "running under node");
 		}
-		printVersion();
+		printVersion && printVersion();
 		process.exit(0);
 		return 0;
 	}
 
-	printVersion();
+	printVersion && printVersion();
 
 	if (checkArgs){
 		messages.log("pacify", stringify(result));
