@@ -52,12 +52,14 @@ define([
 					if(dotModules[r.mid]==traceForDot){
 						foundOne = true;
 						dotModules[r.mid] = traceForDotDone;
-						r.deps.forEach(function(module){
-							dotOutput += '"' + r.mid + '" -> "' + module.mid + '";\n';
-							if (dotModules[module.mid]!==traceForDotDone){
-								dotModules[module.mid] = traceForDot;
-							}
-	 					});
+						if(r.deps){
+							r.deps.forEach(function(module){
+								dotOutput += '"' + r.mid + '" -> "' + module.mid + '";\n';
+								if (dotModules[module.mid]!==traceForDotDone){
+									dotModules[module.mid] = traceForDot;
+								}
+	 						});
+						}
 					}
 				}
 			}
