@@ -26,6 +26,9 @@ define([
 				if (!bc.userConfig) {
 					return "this.dojoConfig || this.djConfig || this.require || {}";
 				}
+				if(typeof bc.userConfig == "string"){
+					return bc.userConfig;
+				}
 				var result= stringify(bc.userConfig);
 				if (result.unsolved) {
 					bc.log("configUnresolvedValues");
