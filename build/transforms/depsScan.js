@@ -159,8 +159,12 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 						pluginModule = pluginModuleInfo &&  bc.amdResources[pluginModuleInfo.mid],
 						pluginId= pluginModule && pluginModule.mid,
 						pluginProc= bc.plugins[pluginId];
-					if(pluginModule && !pluginProc){
-						bc.log("missingPluginResolver", ["module", resource.mid, "plugin", pluginId]);
+					if(!pluginModule){
+						return 0;
+					}else if(!pluginProc){
+						if(!pluginModule.noBuildResolver){
+							bc.log("missingPluginResolver", ["module", resource.mid, "plugin", pluginId]);
+						}
 						return pluginModule;
 					}else{
 						return pluginProc.start(match[2], referenceModule, bc);

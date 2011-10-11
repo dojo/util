@@ -10,6 +10,7 @@ define(["../buildControl"], function(bc) {
 		if(typeof resource.text!="string"){
 			return;
 		}
+
 		var
 			foundIndex = -1,
 			startIndex = 0,
@@ -70,6 +71,8 @@ define(["../buildControl"], function(bc) {
 					bc.log("dojoPragmaInvalid", ["module", resource.mid, "expression", conditionLine]);
 					return;
 				}
+			}else if(/^\/\/>>\s*noBuildResolver\s*$/.test(conditionLine)){
+				resource.noBuildResolver = 1;
 			}
 		}
 		resource.text= text;
