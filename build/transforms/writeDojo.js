@@ -61,7 +61,7 @@ define([
 					result= {};
 				result.name = destPack.name;
 				if(destPack.main!="main"){
-					result.name = destPack.main;
+					result.main = destPack.main;
 				}
 				// everything relative to the dojo dir
 				// TODO: making everything relative to dojo needs to be optional
