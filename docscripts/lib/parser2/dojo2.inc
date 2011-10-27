@@ -120,6 +120,8 @@ function dojo_get_files($limit=null) {
 		$namespaces = _dojo_get_namespaces($limit);
 		$files = array();
 		foreach ($namespaces as $namespace) {
+				// skip util directory, parser chokes on util/less
+				if($namespace == "util") continue;
 				if (function_exists($namespace . '_code_location')) {
 					$location = _dojo_ensure_directory(call_user_func($namespace . '_code_location'));
 				}
@@ -143,6 +145,38 @@ function dojo_get_files($limit=null) {
 		return $files;
 }
 
+function _amd_pseudodoc_fix($matches){
+	// adds a pseudo-block of aliases to trick parser into believing the things inside of define() callbacks
+	// are in fact global
+//	$out = $matches[1];
+//	$args = trim($matches[2]);
+//	if($args != ""){
+//		$pseudo = "){\n\n/*=====\n";
+//		$newargs = array();
+//		foreach(explode(",", $args) as $arg){
+//			$arg = trim($arg);
+//			$newargs[] = "_$arg";
+//			$pseudo .= "\tvar _$arg = $arg;\n";
+//		}
+//		$out .= join(",", $newargs);
+//		$pseudo .= "\n=====*/\n\n";
+//		$out .= $pseudo;
+//	}else{
+//		$out .= "){";
+//	}
+//	
+//	return $out;
+
+	// turn (dojo, dijit) into (this.dojo, this.dijit);
+	$args = $matches[3];
+	$freshargs = preg_replace('/\w+/', "_$0", $args);
+	$newargs = $args; // preg_replace('/\w+/', "this.$0", $args);
+	$body = $matches[4];
+
+	return ";(function" . $freshargs . "{" . $body . "})" . $args . ";";
+	
+}
+
 function _amd_unwrap($text, $namespace, $file_name) {
 	// looking for something like...
 	//
@@ -160,22 +194,22 @@ function _amd_unwrap($text, $namespace, $file_name) {
 	}
 
 	$mid = trim($matches[2]);
-	if ($mid=="") {
+	if ($mid=="" || empty($mid)) {
 		// prefix the namespace; remove the .js filetype
 		if (preg_match('/(.+)\.js/', $file_name, $midMatches)) {
-			$mid= $namespace . "/" . $midMatches[1];
+			$mid = $namespace . "/" . $midMatches[1];
 		} else {
 			//print "not an AMD module\n\n\n";	//for debugging
 			return $text;
 		}
 	}
 
-	$requires= "";
+	$requires = "";
 	foreach (explode(",", $matches[3]) as $dep) {
 		// regex is looking for the trimmed contents of a quoted string
 		// if a plugin resource is given (e.g., "dojo/text!./path/to/template.html"), then return the plugin (e.g., "dojo/text")
 		if (preg_match('/[\'"]\s*([^\'"!]+)\!?[^\'"]*\s*[\'"]/', $dep, $match)) {
-			$dep= $match[1];
+			$dep = $match[1];
 			if (substr($dep, 0, 1)==".") {
 				// path is relative to mid
 				$dep = explode("/", $dep);
@@ -188,22 +222,31 @@ function _amd_unwrap($text, $namespace, $file_name) {
 						array_push($ref, $part);
 					} 
 				}
-				$dep= implode(".", $ref);
+				$dep = implode(".", $ref);
 			} else {
 				// absolute path
-				$dep= str_replace("/", ".", $dep);
+				$dep = str_replace("/", ".", $dep);
 			}
 			// don't dojo.require dojo or the CommonJs module lexical vars
 			if ($dep!="dojo" && $dep!="require" && $dep!="exports" && $dep!="module") {
 				$requires.= "dojo.require(\"" . $dep	. "\");\n";
 			}
 		} else {
-			print "failed to find dependency name in what looks like an AMD module (" .	 $namespace . "/" . $file_name . ").\n";
-			print $matches[0];
+			// print "failed to find dependency name in what looks like an AMD module (" .	 $namespace . "/" . $file_name . ").\n";
+			// print $matches[0];
 		}
 	}
-	$result= "dojo.provide(\"" . str_replace("/", ".", $mid)	. "\");\n" . $requires;
-
+	$result = "dojo.provide(\"" . str_replace("/", ".", $mid)	. "\");\n" . $requires; //
+	
+	// FIXME: temporary fix, inject pseudo-docs for AMD style define([], function(a,b,c))
+	// tricks parser into thinking a b and c are aliases to global objects:
+	// FIXME: regexp is really greedy. also breaks define statements in docs if doesn't match first one
+	// FIXME: will only break on define([ "eval!function() { return 'fml'; }" ); so don't do that.
+	$text = preg_replace_callback('/(define\((.*?)function(\s*\(.*?)\{(.*)\}\);)/s', "_amd_pseudodoc_fix", $text, 1);
+	
+	// old re:
+	// '/(define\(.*?function.*\()(.*)\)\s?\{/'
+	
 	//print $result . "\n\n"; //for debugging
 	return $result . $text;
 }
@@ -218,19 +261,40 @@ function dojo_get_contents($namespace, $file_name) {
 		$location = $_dojo_properties_modules[$namespace]['location'];
 	}
 
-	$filedata = file_get_contents($location . '/' . $file_name);
-	$filedata = _amd_unwrap($filedata, $namespace, $file_name);
-
-	$lines = preg_replace('%/\*={3,}|={3,}\*/%', '', $filedata);
-	$parser = new JavaScriptParser(JavaScriptLanguage::tokenize($lines));
-	// print '<pre>';
-	// $statements = $parser->statements();
-	// print $statements[0]->resolve();
-	// print '</pre>';
-	// die();
-	$package = new JavaScriptStatements($parser->statements());
-
 	$output = array();
+	$output['#debug'] = array();
+
+	$filedata = file_get_contents($location . '/' . $file_name);
+	$output['#raw_source'] = $filedata;
+	$filedata_amd = _amd_unwrap($filedata, $namespace, $file_name);
+	if($filedata_amd != $filedata){
+		$output['#unwrapped_source'] = $filedata_amd;
+	}
+	$filedata = $filedata_amd;
+	
+	$lines = preg_replace('%/\*={3,}|={3,}\*/%', '', $filedata);
+	
+	try{
+		$parser = new JavaScriptParser(JavaScriptLanguage::tokenize($lines));
+	}catch(Exception $e){
+		$output['#debug'][] = "Died parsing $file_name";
+		$output['#debug'][] = $e;
+		return $output;
+	}
+	
+//	print '<pre>';
+//	$statements = $parser->statements();
+//	print $statements[0]->resolve();
+//	print '</pre>';
+//	die();
+	
+	try{
+		$package = new JavaScriptStatements($parser->statements());		
+	}catch(Exception $e){
+		$output['#debug'][] = "Died parsing statements";
+		$output['#debug'][] = $e;
+		return $output;
+	}
 
 	// Handle dojo.provide calls
 	foreach ($package->function_calls(TRUE, 'dojo.provide') as $call) {
@@ -240,7 +304,7 @@ function dojo_get_contents($namespace, $file_name) {
 	}
 
 	$output['#resource'] = $file_name;
-
+	
 	// Handle dojo.require calls
 	foreach ($package->function_calls(TRUE, 'dojo.require') as $call) {
 		if ($module = $call->arguments()->getString(0)) {
@@ -249,9 +313,10 @@ function dojo_get_contents($namespace, $file_name) {
 	}
 
 	// Handle mixin/extend calls
-	foreach ($package->function_calls(TRUE, 'dojo.mixin', 'dojo.extend') as $call) {
+	foreach ($package->function_calls(TRUE, 'dojo.mixin', 'dojo.extend', 'lang.extend', 'lang.mixin', 'lang._mixin', 'dojo._mixin') as $call) {
 		$arguments = $call->arguments();
 		$assignment = $call->assignment();
+		$name = $call->name();
 		$root = NULL;
 		if ($constructor = $arguments->getFunction(0)) {
 			if ($assignment) {
@@ -260,13 +325,13 @@ function dojo_get_contents($namespace, $file_name) {
 		}
 		else {
 			$root = $arguments->getVariable(0, TRUE);
-			if ($call->name() == 'dojo.extend') {
+			if (endswith($name, 'extend')) {
 				$output[$root]['type'] = 'Function';
 			}
 		}
 
 		foreach (array_diff(array_unique(array($assignment, $root)), array(NULL)) as $root) {
-			$mixin = $call->name() == 'dojo.mixin';
+			$mixin = endswith($name, "mixin");
 			for ($i = 1; $i < $arguments->length; $i++) {
 				if ($arguments->getObject($i)) {
 					$keys = array();
@@ -300,11 +365,15 @@ function dojo_get_contents($namespace, $file_name) {
 		}
 	}
 
-	foreach ($package->function_calls(TRUE, 'dojo.declare') as $call) {
+	foreach ($package->function_calls(TRUE, 'dojo.declare', 'declare') as $call) {
 		$arguments = $call->arguments();
 		$name = $arguments->getString(0);
 		if (!$name) {
+			$assignment = $call->assignment();
+			$output['#debug'][] = "Found declare() without a name? check return value?" + $assignments;
 			continue;
+		} else{
+			// $output['#debug'][] = "Found declare w/ $name";
 		}
 		$output[$name]['type'] = 'Function';
 		if ($superclass = $arguments->getVariable(1)) {
@@ -449,4 +518,10 @@ function dojo_get_contents($namespace, $file_name) {
 	}
 
 	return $output;
+}
+
+function endswith($haystack, $needle){
+	$length = strlen($needle);
+	$start = $length * -1; 
+	return (substr($haystack, $start) === $needle);
 }

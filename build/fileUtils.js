@@ -45,22 +45,19 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 			} else if (!lhs || !lhs.length) {
 				return rhs;
 			} else {
-				return (lhs + "/" + rhs).replace(/\/\/\/?/, "/");
+				return (lhs + "/" + rhs).replace(/\/\/\/?/g, "/");
 			}
 		},
 
-
 		compactPath = function(path){
-			path= path.replace(/\\/g, "/");
-
-			var
-				result= [],
+			var result = [],
 				segment, lastSegment;
-		    path= path.split("/");
+			path = path.replace(/\\/g, '/').split('/');
 			while(path.length){
-				segment= path.shift();
+				segment = path.shift();
 				if(segment==".." && result.length && lastSegment!=".."){
 					result.pop();
+					lastSegment = result[result.length - 1];
 				}else if(segment!="."){
 					result.push(lastSegment= segment);
 				} // else ignore "."
@@ -100,11 +97,6 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 			return ts.getFullYear() + f(ts.getMonth()+1) + f(ts.getDate()) + f(ts.getHours()) + f(ts.getMinutes()) + f(ts.getSeconds());
 		},
 
-		getMode= function(octal) {
-			for (var result= 0, i= 0; i<octal.length; result= (result * 8) + octal.charCodeAt(i++) - 48);
-			return result;
-		},
-
 		dirExists= function(
 			filename
 		) {
@@ -130,13 +122,12 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 		clearCheckedDirectoriesCache= function() {
 			checkedDirectories= {};
 		},
-
 		ensureDirectory= function(path) {
 			if (!checkedDirectories[path]) {
 				if (!dirExists(path)) {
 					ensureDirectory(getFilepath(path));
 					try {
-						fs.mkdirSync(path, getMode("774"));
+						fs.mkdirSync(path, 0755);
 					} catch (e) {
 						//squelch
 					}
@@ -149,19 +140,26 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 			ensureDirectory(getFilepath(filename));
 		},
 
-		readJson= function(filename) {
+		readAndEval= function(filename, type) {
 			try {
 				if (fileExists(filename)) {
 					return eval("(" + fs.readFileSync(filename, "utf8") + ")");
 				}
 			} catch (e) {
-				bc.logError("failed to read package.json from " + filename + "; error follows...");
-				bc.logInfo(e);
+				bc.log("failedReadAndEval", ["filename", filename, "type", type, "error", e]);
 			}
 			return {};
+		},
+
+		maybeRead = function(filename) {
+			try {
+				if (fileExists(filename)) {
+					return fs.readFileSync(filename, "utf8");
+				}
+			} catch (e) {
+			}
+			return 0;
 		};
-
-
 
 
 	return {
@@ -175,12 +173,13 @@ define(["./fs", "./buildControlBase", "dojo/has"], function(fs, bc, has) {
 		catPath:catPath,
 		compactPath:compactPath,
 		computePath:computePath,
-		getMode:getMode,
 		getTimestamp:getTimestamp,
 		dirExists:dirExists,
 		ensureDirectory:ensureDirectory,
 		ensureDirectoryByFilename:ensureDirectoryByFilename,
 		clearCheckedDirectoriesCache:clearCheckedDirectoriesCache,
-		readJson:readJson
+		readAndEval:readAndEval,
+		maybeRead:maybeRead,
+		fileExists:fileExists
 	};
 });

@@ -26,9 +26,12 @@ define([
 				if (!bc.userConfig) {
 					return "this.dojoConfig || this.djConfig || this.require || {}";
 				}
+				if(typeof bc.userConfig == "string"){
+					return bc.userConfig;
+				}
 				var result= stringify(bc.userConfig);
 				if (result.unsolved) {
-					bc.logWarn("The user configuration contains unsolved values. This may or may not be an error.");
+					bc.log("configUnresolvedValues");
 				}
 				return result;
 			},
@@ -54,52 +57,45 @@ define([
 				// the purpose of this somewhat verbose routine is to write a minimal package object for each
 				// package, yet allow client code to pass extra (i.e., outside the scope of CJS specs) config
 				// information within the package object
-				var
-					 srcPack= bc.packages[name],
-					 destPack= bc.destPackages[name],
-					 result= {},
-					 p;
-				for (p in srcPack) result[p]= srcPack[p];
-				for (p in destPack) result[p]= destPack[p];
-
+				var destPack= bc.destPackages[name],
+					result= {};
+				result.name = destPack.name;
+				if(destPack.main!="main"){
+					result.main = destPack.main;
+				}
 				// everything relative to the dojo dir
 				// TODO: making everything relative to dojo needs to be optional
 				if (name=="dojo") {
 					result.location= ".";
 				} else {
-					result.location= computeLocation(bc.destPackageBasePath + "/dojo", destPack.location);
+					result.location= computeLocation(bc.destBasePath + "/dojo", destPack.location);
 				}
-
-				// delete the build garbage in the package object; no need for this in deployed code
-				delete result.mapProg;
-				delete result.trees;
-				delete result.dirs;
-				delete result.files;
-				delete result.resourceTags;
-				delete result.copyright;
-
-				// delete values that === default values
-				if (result.lib=="lib") delete result.lib;
-				if (result.main=="main") delete result.main;
-				if (!result.packageMap.length) delete result.packageMap;
-
+				var packageDefaultConfig = bc.defaultConfig && bc.defaultConfig.packages && bc.defaultConfig.packages[name];
+				for(var p in packageDefaultConfig){
+					result[p] = packageDefaultConfig[p];
+				}
 				return result;
 			},
 
 			getDefaultConfig= function() {
-				var config= bc.defaultConfig || {hasCache:[]};
-				config.packages= config.packages || [];
+				var p, config = {packages:[], hasCache:{}};
 				if (bc.baseUrl) {
 					config.baseUrl= bc.baseUrl;
 				}
-				for (var p in bc.packages) {
+				for (p in bc.packages) {
 					config.packages.push(getPackage(p));
 				}
-				var result= stringify(config);
-				if (result.unsolved) {
-					bc.logWarn("The default configuration contains unsolved values. This may or may not be an error.");
+				for(p in bc.defaultConfig){
+					if(p!=="packages"){
+						// per-package default config was handled above
+						config[p] = bc.defaultConfig[p];
+					}
 				}
-				return result;
+				config= stringify(config);
+				if (config.unsolved) {
+					bc.log("configUnresolvedValues");
+				}
+				return config;
 			},
 
 			stampVersion= function(text){
@@ -108,12 +104,11 @@ define([
 				version= bc.version;
 				if(version){
 					//First, break apart the version string.
-					var verSegments = version.match(/^(\d*)\.?(\d*)\.?(\d*)\.?(.*)$/);
+					var verSegments = (version+"").match(/^(\d*)\.?(\d*)\.?(\d*)\.?(.*)$/);
 					var majorValue = verSegments[1] || 0;
 					var minorValue = verSegments[2] || 0;
 					var patchValue = verSegments[3] || 0;
 					var flagValue  = verSegments[4] || "";
-
 					//Do the final version replacement.
 					return text.replace(
 							/major:\s*\d*,\s*minor:\s*\d*,\s*patch:\s*\d*,\s*flag:\s*".*?"\s*,/g,
@@ -161,9 +156,11 @@ define([
 
 			//write any bootstraps; boots is a vector of resources that have been marked as bootable by the discovery process
 			resource.boots.forEach(function(item) {
-				// each item is a hash of include, exclude, boot, bootText
-				item.layerText= resource.layerText + writeAmd.getLayerText(item, item.layer.include, item.layer.exclude) + (item.bootText || "");
-				doWrite(writeAmd.getDestFilename(item), resource.layer.copyright + item.layerText);
+				if(item!==resource){
+					// each item is a hash of include, exclude, boot, bootText
+					item.layerText= resource.layerText + writeAmd.getLayerText(item, item.layer.include, item.layer.exclude) + (item.bootText || "");
+					doWrite(writeAmd.getDestFilename(item), resource.layer.copyright + item.layerText);
+				}
 			});
 
 			onWriteComplete(0); // matches *1*

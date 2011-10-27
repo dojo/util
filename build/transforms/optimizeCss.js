@@ -27,8 +27,23 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 			return url;
 		},
 
-		flattenCss = function(/*String*/fileName, /*String*/text){
+		removeComments = function(text, fileName){
+			var startIndex = -1;
+			//Get rid of comments.
+			while((startIndex = text.indexOf("/*")) != -1){
+				var endIndex = text.indexOf("*/", startIndex + 2);
+				if(endIndex == -1){
+					throw "Improper comment in CSS file: " + fileName;
+				}
+				text = text.substring(0, startIndex) + text.substring(endIndex + 2, text.length);
+			}
+			return text;
+		},
+
+		flattenCss = function(/*String*/fileName, /*String*/text, cssImportIgnore){
 			//summary: inlines nested stylesheets that have @import calls in them.
+
+			text= removeComments(text, fileName);
 
 			// get the path of the reference resource
 			var referencePath = fileUtils.getFilepath(checkSlashes(fileName));
@@ -48,14 +63,13 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 
 				//Make sure we have a unix path for the rest of the operation.
 				importFileName = checkSlashes(importFileName);
-
 				var
 					fullImportFileName = importFileName.charAt(0) == "/" ? importFileName : fileUtils.compactPath(fileUtils.catPath(referencePath, importFileName)),
 					importPath= fileUtils.getFilepath(importFileName),
 					importModule= bc.resources[fullImportFileName],
-					importContents = importModule && importModule.text;
+					importContents = importModule && (importModule.rawText || importModule.text);
 				if(!importContents){
-					bc.logWarn("CSS import (" + importFileName + ")	 skipped in " + importFileName);
+					skipped.push([importFileName, fileName]);
 					return fullMatch;
 				}
 
@@ -73,48 +87,48 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 						//It is a relative URL, tack on the path prefix
 						urlMatch =  fileUtils.compactPath(fileUtils.catPath(importPath, fixedUrlMatch));
 					}else{
-						bc.logWarn("Non-relative URL (" + urlMatch + ") skipped in " + importFileName);
+						nonrelative.push([urlMatch, importFileName]);
 					}
 					return "url(" + fileUtils.compactPath(urlMatch) + ")";
 				});
 
 				return importContents;
 			});
-		};
+		},
+
+		skipped, nonrelative;
+
 
 	return function(resource, callback) {
 		if(!bc.cssOptimize){
 			return;
 		}
 
-		//bc.logInfo("Optimizing CSS file: " + resource.src);
+		skipped = [];
+		nonrelative = [];
 		var text = flattenCss(resource.src, resource.text, cssImportIgnore);
 
-		//Do comment removal.
 		try{
-			var startIndex = -1;
-			//Get rid of comments.
-			while((startIndex = text.indexOf("/*")) != -1){
-				var endIndex = text.indexOf("*/", startIndex + 2);
-				if(endIndex == -1){
-					throw "Improper comment in CSS file: " + resource.src;
-				}
-				text = text.substring(0, startIndex) + text.substring(endIndex + 2, text.length);
-			}
 			//Get rid of newlines.
 			if(/keepLines/i.test(bc.cssOptimize)){
+				//Remove multiple empty lines.
+				text = text.replace(/(\r\n)+/g, "\r\n");
+				text = text.replace(/(\n)+/g, "\n");
+			}else{
 				text = text.replace(/[\r\n]/g, "");
 				text = text.replace(/\s+/g, " ");
 				text = text.replace(/\{\s/g, "{");
 				text = text.replace(/\s\}/g, "}");
-			}else{
-				//Remove multiple empty lines.
-				text = text.replace(/(\r\n)+/g, "\r\n");
-				text = text.replace(/(\n)+/g, "\n");
 			}
+			resource.rawText = resource.text;
 			resource.text= text;
+			var messageArgs = ["file", resource.src];
+			skipped.length && messageArgs.push("skipped", skipped);
+			nonrelative.length && messageArgs.push("non-relative URLs skipped", nonrelative);
+
+			bc.log("cssOptimize", messageArgs);
 		}catch(e){
-			bc.logError("Could not optimized CSS file: " + resource.src + "; error follows...", e);
+			bc.log("cssOptimizeFailed", ["file", resource.src, "error", e]);
 		}
 	};
 });

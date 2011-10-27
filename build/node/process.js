@@ -1,8 +1,17 @@
-define(["../fileHandleThrottle"], function(fht) {
+define(["../fileHandleThrottle", "../messages"], function(fht, messages) {
 	var spawn= require.nodeRequire("child_process").spawn;
 	return {
 		cwd:process.cwd,
-		exit:process.exit,
+		exit:function(code){
+			// no more messages
+			messages.stop();
+
+			// allow whatever is in the stdout buffer to be pumped
+			process.stdout.on('close', function(){
+				process.exit(code);
+			});
+			process.stdout.end();
+		},
 
 		exec:function() {
 			// signature is (command, arg1, ..., argn, errorMessage, bc, callback)
@@ -20,8 +29,7 @@ define(["../fileHandleThrottle"], function(fht) {
 				process.on("exit", function(code){
 					fht.release();
 					if(code){
-						bc.logError(errorMessage);
-						bc.logError(text);
+						bc.log("execFailed", ["message", errorMessage, "output", text]);
 					}
 					callback && callback(code, text);
 				});
@@ -32,10 +40,6 @@ define(["../fileHandleThrottle"], function(fht) {
 					text+= data;
 				});
 			});
-		},
-
-		spawn:function(){
-			console.log("ERROR: NOT IMPLEMENTED");
 		}
 	};
 });

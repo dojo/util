@@ -1,21 +1,16 @@
-///
-// \amd-mid build/lib/transforms/dojoPragmas
-//
-// A transform to apply dojo pragmas.
-//
-// TODO: allow a custom eval environment for dojo pragmas
-//
-// TODO: remove this before checkin to dojo
-// The function is derived from https://github.com/dojo/util/blob/master/buildscripts/jslib/buildUtil.js.
-// See https://github.com/dojo/util/blob/master/LICENSE for licensing.
-
 define(["../buildControl"], function(bc) {
-	var
-		evalPragma= function(code, kwArgs, fileName) {
+	var evalPragma= function(code, kwArgs, fileName) {
 			return !!eval("(" + code + ")");
 		};
 
 	return function(resource) {
+		if(!bc.applyDojoPragmas){
+			return;
+		}
+		if(typeof resource.text!="string"){
+			return;
+		}
+
 		var
 			foundIndex = -1,
 			startIndex = 0,
@@ -42,7 +37,8 @@ define(["../buildControl"], function(bc) {
 				try{
 					isTrue = evalPragma(condition, bc, resource.src);
 				}catch(e){
-					return "error while applying dojo pragma (" + conditionLine + ")\n" + e + "\n";
+					bc.log("dojoPragmaEvalFail", ["module", resource.mid, "expression", conditionLine, "error", e]);
+					return;
 				}
 
 				//Find the endpoint marker.
@@ -72,12 +68,13 @@ define(["../buildControl"], function(bc) {
 					//where we need to look for more conditionals in the next while loop pass.
 					startIndex = foundIndex;
 				}else{
-					return "cannot find end marker while applying dojo pragma (" + conditionLine + ")";
+					bc.log("dojoPragmaInvalid", ["module", resource.mid, "expression", conditionLine]);
+					return;
 				}
+			}else if(/^\/\/>>\s*noBuildResolver\s*$/.test(conditionLine)){
+				resource.noBuildResolver = 1;
 			}
 		}
- 
 		resource.text= text;
-		return 0;
 	};
 });

@@ -20,7 +20,9 @@ define(["../buildControl", "../fileUtils", "../fs", "../replace"], function(bc, 
 				dtd:"utf8",
 				xml:"utf8",
 				png:undefined,
-				jpg:undefined
+				jpg:undefined,
+				jpeg:undefined,
+				gif:undefined
 			};
 
 	return function(resource, callback) {
@@ -34,11 +36,10 @@ define(["../buildControl", "../fileUtils", "../fs", "../replace"], function(bc, 
 			return this.text;
 		};
 
-		var
-			filetype= getFiletype(resource.src, 1),
-			// the expression is a little odd since undefined is a legitimate encodingMap value
-			encoding= resource.encoding || (!(filetype in encodingMap) && "utf8") || encodingMap[filetype];
-		fs.readFile(resource.src, encoding, function(err, data) {
+		var filetype= getFiletype(resource.src, 1);
+		// the expression is a little odd since undefined is a legitimate encodingMap value
+		resource.encoding= resource.encoding || (!(filetype in encodingMap) && "utf8") || encodingMap[filetype];
+		fs.readFile(resource.src, resource.encoding, function(err, data) {
 			if (!err) {
 				resource.text= data;
 			}

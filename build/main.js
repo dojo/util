@@ -34,25 +34,26 @@
 // docs: http://bdframework.org/bdBuild/docs
 
 define(["require", "dojo/has"], function(require, has) {
+
 	// host-dependent environment initialization
 	if (has("host-node")) {
-		debug= require.debug;
-		console.log("running under node.js");
 		define("commandLineArgs", function() {
 			//arg[0] is node; argv[1] is dojo.js; therefore, start with argv[2]
 			return process.argv.slice(2);
 		});
 
 		// helps during dev or heavily async node...
-		debug= require.debug;
+		var util = require.nodeRequire("util");
+		debug= function(it, depth, inspect){
+			util.debug(inspect ? util.inspect(it, false, depth) : it);
+		};
 
 		// TODO: make this real
 		has.add("is-windows", 0);
 	} else if (has("host-rhino")) {
-		console.log("running under rhino");
 		define("commandLineArgs", [], function() {
 			var result= [];
-			require.commandLineArgs.forEach(function(item) {
+			require.rawConfig.commandLineArgs.forEach(function(item) {
 				var parts= item.split("=");
 				if (parts[0]!="baseUrl") {
 					result.push(item);
@@ -78,6 +79,7 @@ define(["require", "dojo/has"], function(require, has) {
 		}
 		return text;
 	};
+
 	// run the build program
 	require(["./buildControl", "./process"], function(bc, process) {
 		var
@@ -91,7 +93,7 @@ define(["require", "dojo/has"], function(require, has) {
 			resources= [],
 
 			reportError= function(resource, err) {
-				bc.logError("error while transforming resource: " + resource.src + "\ntransform: " + resource.jobPos + "\n" + err);
+				bc.log("transformFailed", ["resource", resource.src, "transform", resource.jobPos, "error", err]);
 				resource.error= true;
 			},
 
@@ -148,7 +150,7 @@ define(["require", "dojo/has"], function(require, has) {
 			advanceGate= function(currentGate) {
 				while (1) {
 					bc.currentGate= ++currentGate;
-					bc.logInfo("starting " + bc.gates[bc.currentGate][2] + "...");
+					bc.log("pacify", "starting " + bc.gates[bc.currentGate][2] + "...");
 					gateListeners.forEach(function(listener){
 						listener(bc.gates[bc.currentGate][1]);
 					});
@@ -164,6 +166,11 @@ define(["require", "dojo/has"], function(require, has) {
 					return;
 				} //	else all processes have passed through bc.currentGate
 
+				if(bc.checkDiscovery){
+					//passing the first gate which is dicovery and just echoing discovery; therefore
+					process.exit(0);
+				}
+
 				if (bc.currentGate<bc.gates.length-1) {
 					advanceGate(bc.currentGate);
 					// hold the next gate until all resources have been advised
@@ -173,10 +180,10 @@ define(["require", "dojo/has"], function(require, has) {
 					passGate();
 				} else {
 					if (!resources.length) {
-						bc.logWarn("failed to discover any resources to transform. Nothing to do; terminating application");
+						bc.log("discoveryFailed");
 					}
-					bc.logInfo("Errors: " + bc.errorCount + ", Warnings: " + bc.warnCount);
-					bc.logInfo("Total build time: " + ((new Date()).getTime() - bc.startTimestamp.getTime()) / 1000 + " seconds");
+					bc.log("pacify", "Process finished normally.\n\terrors: " + bc.getErrorCount() + "\n\twarnings: " + bc.getWarnCount() + "\n\tbuild time: " + ((new Date()).getTime() - bc.startTimestamp.getTime()) / 1000 + " seconds");
+					process.exit(bc.exitCode);
 					// that's all, folks...
 				}
 			};
@@ -188,17 +195,22 @@ define(["require", "dojo/has"], function(require, has) {
 				dest= resource.dest;
 			if (bc.resourcesByDest[src]) {
 				// a dest is scheduled to overwrite a source
-				bc.logError(src + " will be overwritten by " + bc.resources.byDest[src].src);
+				bc.log("overwrite", ["input", src, "resource destined for same location: ", bc.resourcesByDest[src].src]);
 				return;
 			}
 			if (bc.resourcesByDest[dest]) {
 				// multiple srcs scheduled to write into a single dest
-				bc.logError(src + " and " + bc.resourcesByDest[dest].src + " are both attempting to write into " + dest);
+				bc.log("outputCollide", ["source-1", src, "source-2", bc.resourcesByDest[dest].src]);
 				return;
 			}
 			// remember the resources in the global maps
 			bc.resources[resource.src]= resource;
 			bc.resourcesByDest[resource.dest]= resource;
+
+			if(bc.checkDiscovery){
+				bc.log("pacify", src + "-->" + dest);
+				return;
+			}
 
 			// find the transformJob and start it...
 			for (var i= 0; i<transformJobsLength; i++) {
@@ -212,7 +224,7 @@ define(["require", "dojo/has"], function(require, has) {
 					return;
 				}
 			}
-			bc.logWarn("Resource (" + resource.src + ") was discovered, but there is no transform job specified.");
+			bc.log("noTransform", ["resoures", resource.src]);
 		};
 
 		function doBuild(){
@@ -251,21 +263,21 @@ define(["require", "dojo/has"], function(require, has) {
 					});
 				}
 				for (i=0; i<pluginNames.length;) {
-					bc.plugins[bc.getSrcModuleInfo(pluginNames[i++]).pqn]= arguments[argsPos++];
+					bc.plugins[bc.getSrcModuleInfo(pluginNames[i++]).mid]= arguments[argsPos++];
 				}
 
 				// start the transform engine: initialize bc.currentGate and bc.waiting, then discover and start each resource.
 				// note: discovery procs will call bc.start with each discovered resource, which will call advance, which will
 				// enter each resource in a race to the next gate, which will result in many bc.waiting incs/decs
 				bc.waiting= 1;  // matches *1*
-				bc.logInfo("discovering resources...");
+				bc.log("pacify", "discovering resources...");
 				advanceGate(-1);
 				discoveryProcs.forEach(function(proc) { proc(); });
 				passGate();  // matched *1*
 			});
 		}
 
-		if(!bc.errorCount && !bc.check){
+		if(!bc.errorCount && bc.release){
 			doBuild();
 		}
 	});

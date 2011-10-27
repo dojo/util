@@ -1,7 +1,8 @@
 (function(){
 	// must use this.require to make this work in node.js
 	var require = this.require;
+	// consume the cached dojo layer
+	require({cache:{}});
 	!require.async && require(["dojo"]);
-	require.bootRequire && require.apply(null, require.bootRequire);
-	require.bootReady && require.ready(require.bootReady);
+	require.boot && require.apply(null, require.boot);
 })();

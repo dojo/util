@@ -1,5 +1,5 @@
-define("doh/runner", ["dojo", "dojox/math/stats"], function(dojo, stats) {
-var doh= dojo.mixin({}, dojo, stats);
+define("doh/runner", ["dojo"], function(dojo) {
+var doh= dojo.mixin({}, dojo);
 
 // intentionally define global tests and global doh symbols
 // TODO: scrub these globals from tests and remove this pollution
@@ -272,7 +272,7 @@ doh.registerTestType= function(name, initProc){
 	doh._testTypes[name]= initProc;
 };
 
-doh.registerTestType("perf", function(group, tObj){
+doh.registerTestType("perf", function(group, tObj, type){
 	//Augment the test with some specific options to make it identifiable as a
 	//particular type of test so it can be executed properly.
 	if(type === "perf" || tObj.testType === "perf"){
@@ -374,13 +374,13 @@ var
 		for(var i= 0; i<5; i++){
 			hint+= dumpArg(args[i]);
 		};
-		this.debug("ERROR:");
+		doh.debug("ERROR:");
 		if(testArgPosition){
-			this.debug("\tillegal arguments provided to dojo.register; the test at argument " + testArgPosition + " wasn't a test.");
+			doh.debug("\tillegal arguments provided to dojo.register; the test at argument " + testArgPosition + " wasn't a test.");
 		}else{
-			this.debug("\tillegal arguments provided to dojo.register");
+			doh.debug("\tillegal arguments provided to dojo.register");
 		}
-		this.debug(hint);
+		doh.debug(hint);
 	},
 
 	isUrl= function(arg){
@@ -619,10 +619,10 @@ doh.register = function(a1, a2, a3, a4, a5){
 	//		test type suffix. The value character set for group names and AMD module indentifiers
 	//		is given by [A-Za-z0-9_/.-]. If provided, prefix and suffix are denoted by "!". If
 	//		provided, type must be a valid test type.
-	// testOrUrl: Array||Function||Object||String||falsy
-	//		When a function, implied a function that defines a single test. DOH passes the
+	// testOrTests: Array||Function||Object||String||falsy
+	//		When a function, implies a function that defines a single test. DOH passes the
 	//		DOH object to the function as the sole argument when the test is executed. When
-	//		a string, implies the definition of a single test given by `new Function("t", testOrUrl)`.
+	//		a string, implies the definition of a single test given by `new Function("t", testOrTests)`.
 	//		When an object that contains the method `runTest` (which *must* be a function),
 	//		implies a single test given by the value of the property `runTest`. In this case,
 	//		the object may also contain the methods `setup` and `tearDown`, and, if provided, these
@@ -635,6 +635,7 @@ doh.register = function(a1, a2, a3, a4, a5){
 	// timeoutOrSetUp: integer||Function?
 	//		If tests is a URL, then must be an integer giving the number milliseconds to wait for the test
 	//		page to load before signaling an error; otherwise, a function for initializing the test group.
+	//      If a tearDown function is given, then a setup function must also be given.
 	// tearDown: Function?
 	//		A function for deinitializing the test group.
 	// decription:
@@ -1524,7 +1525,7 @@ doh.run = function(){
 };
 
 doh.runOnLoad = function(){
-	require.ready(doh, "run");
+	dojo.ready(doh, "run");
 };
 
 return doh;

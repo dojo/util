@@ -142,6 +142,11 @@ foreach ($files as $set){
   $requires = $contents['#requires'];
   unset($contents['#requires']);
 
+  // set by debugging in parsing
+  unset($contents['#debug']);
+  unset($contents['#unwrapped_source']);
+  unset($contents['#raw_source']);
+
   foreach ($contents as $var => $content) {
     foreach ($content as $key_key => $key_value) {
       $key_type = 'undefined';

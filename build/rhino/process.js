@@ -7,7 +7,7 @@ define([], function() {
 		exit:function(resultCode) {
 			// no documented way to return an exit code in rhino
 			if (resultCode) {
-				throw new Error("exit with result code: " + resultCode);
+				java.lang.System.exit(resultCode);
 			}
 			quit();
 		},
@@ -27,15 +27,9 @@ define([], function() {
 				runCommand.apply(this, args);
 				callback && callback(0, options.output);
 			}catch(e){
-				bc.logError(errorMessage);
-				bc.logError(options.output);
-				bc.logError(e);
+				bc.log("execFailed", ["message", errorMessage, "output", options.output+"", "error", e]);
 				callback && callback(-1, errorMessage + "\n" + options.output + "\n" + e);
 			}
-		},
-
-		spawn:function(){
-			console.log("ERROR: NOT IMPLEMENTED");
 		}
 	};
 });

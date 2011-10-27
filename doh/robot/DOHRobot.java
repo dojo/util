@@ -11,6 +11,7 @@ import java.net.URL;
 import java.awt.datatransfer.*;
 import javax.swing.JOptionPane;
 import javax.swing.JDialog;
+import java.awt.image.*;
 
 public final class DOHRobot extends Applet{
 	// order of execution:
@@ -92,6 +93,10 @@ public final class DOHRobot extends Applet{
 	// save a pointer to doh.robot for fast access
 	JSObject dohrobot = null;
 
+	// trackingImage to visually track robot down
+	private BufferedImage trackingImage;
+	Point locationOnScreen = null;
+
 	// java.awt.Applet methods
 	public void stop(){
 		window = null;
@@ -104,6 +109,9 @@ public final class DOHRobot extends Applet{
 			// It plays nice and restores the old security manager.
 			AccessController.doPrivileged(new PrivilegedAction(){
 				public Object run(){
+					if(threadPool!=null){
+						threadPool.shutdownNow();
+					}
 					log("Stop");
 					securitymanager.checkTopLevelWindow(null);
 					log("Security manager reset");
@@ -119,6 +127,7 @@ public final class DOHRobot extends Applet{
 			if(key != -1){ return; }
 			Thread thread = new Thread(){
 				public void run(){
+					log("Document root: ~"+applet().getLocationOnScreen().toString());
 					window = (JSObject) JSObject.getWindow(applet());   
 					AccessController.doPrivileged(new PrivilegedAction(){
 						public Object run(){
@@ -143,16 +152,12 @@ public final class DOHRobot extends Applet{
 									}
 									log("Found old security manager");
 								}catch(Exception e){
-									e.printStackTrace();
 									log("Making new security manager");
 									securitymanager = new RobotSecurityManager(needsSecurityManager,
 											oldsecurity);
 									securitymanager.checkTopLevelWindow(null);
 									System.setSecurityManager(securitymanager);
 								}
-								// instantiate the Robot
-								robot = new Robot();
-								robot.setAutoWaitForIdle(true);
 							}catch(Exception e){
 								log("Error calling _init_: "+e.getMessage());
 								key = -2;
@@ -189,6 +194,8 @@ public final class DOHRobot extends Applet{
 		ProfilingThread jitProfile=new ProfilingThread ();
 		jitProfile.startProfiling();
 		jitProfile.endProfiling();
+		trackingImage=new BufferedImage(3,3,BufferedImage.TYPE_INT_RGB);
+		trackingImage.setRGB(0, 0, 3, 3, new int[]{new Color(255,174,201).getRGB(),new Color(255,127,39).getRGB(),new Color(0,0,0).getRGB(),new Color(237,28,36).getRGB(),new Color(63,72,204).getRGB(),new Color(34,177,76).getRGB(),new Color(181,230,29).getRGB(),new Color(255,255,255).getRGB(),new Color(200,191,231).getRGB()}, 0, 3);
 	}
 
 	// loading functions
@@ -200,20 +207,11 @@ public final class DOHRobot extends Applet{
 		}
 	}
 
-	private boolean mouseSecure() throws Exception{
-		// Use MouseInfo to ensure that mouse is inside browser.
-		// Only works in Java 1.5, but the DOHRobot must compile for 1.4.
-		if(!mouseSecurity){ return true; }
+	protected Point getDesktopMousePosition() throws Exception{
 		Class mouseInfoClass;
 		Class pointerInfoClass;
-		try{
-			mouseInfoClass = Class.forName("java.awt.MouseInfo");
-			pointerInfoClass = Class.forName("java.awt.PointerInfo");
-		}catch(ClassNotFoundException e){
-			// Java 1.4
-			e.printStackTrace();
-			return true;
-		}
+		mouseInfoClass = Class.forName("java.awt.MouseInfo");
+		pointerInfoClass = Class.forName("java.awt.PointerInfo");
 		Method getPointerInfo = mouseInfoClass.getMethod("getPointerInfo", new Class[0]);
 		Method getLocation = pointerInfoClass.getMethod("getLocation", new Class[0]);
 		Object pointer=null;
@@ -222,7 +220,23 @@ public final class DOHRobot extends Applet{
 		}catch(java.lang.reflect.InvocationTargetException e){
 			e.getTargetException().printStackTrace();
 		}
-		Point mousePosition = (Point)(getLocation.invoke(pointer,new Object[0]));
+		return (Point)(getLocation.invoke(pointer,new Object[0]));
+	}
+	
+	public Point getLocationOnScreen(){
+		return locationOnScreen==null? super.getLocationOnScreen(): locationOnScreen;
+	}
+	
+	private boolean mouseSecure() throws Exception{
+		// Use MouseInfo to ensure that mouse is inside browser.
+		// Only works in Java 1.5, but the DOHRobot must compile for 1.4.
+		if(!mouseSecurity){ return true; }
+		Point mousePosition=null;
+		try{
+			mousePosition=getDesktopMousePosition();
+		}catch(Exception e){
+			return true;
+		}
 		return mousePosition.x >= docScreenX
 			&& mousePosition.x <= docScreenXMax
 			&& mousePosition.y >= docScreenY
@@ -257,6 +271,71 @@ public final class DOHRobot extends Applet{
 				AccessController.doPrivileged(new PrivilegedAction(){
 					public Object run(){
 						Point p = getLocationOnScreen();
+						if(os.indexOf("MAC") != -1){
+							// Work around stupid Apple OS X bug affecting Safari 5.1 and FF4.
+							// Seems to have to do with the plugin they compile with rather than the jvm itself because Safari5.0 and FF3.6 still work.
+							p = new Point();
+							int screen=0;
+							int minscreen=-1;
+							int mindifference=Integer.MAX_VALUE;
+							GraphicsDevice[] screens=GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+							try{
+								for(screen=0; screen<screens.length; screen++){
+									// take picture
+									DisplayMode mode=screens[screen].getDisplayMode();
+									int width=mode.getWidth();
+									int height=mode.getHeight();
+									int twidth=trackingImage.getWidth();
+									int theight=trackingImage.getHeight();
+									Robot screenshooter=new Robot(screens[screen]);
+									log("screen dimensions: "+width+" "+height);
+									BufferedImage screenshot=screenshooter.createScreenCapture(new Rectangle(0,0,width,height));
+									// Ideally (in Windows) we would now slide trackingImage until we find an identical match inside screenshot.
+									// Unfortunately because the Mac (what we are trying to fix) does terrible, awful things to graphics it displays,
+									// we will need to find the "most similar" (smallest difference in pixels) square and click there.
+									int x=0,y=0;
+									for(x=0; x<=width-twidth; x++){
+										for(y=0; y<=height-theight; y++){
+											int count=0;
+											int difference=0;
+											scanImage:
+											for(int x2=0; x2<twidth; x2++){
+												for(int y2=0; y2<theight; y2++){
+													int rgbdiff=Math.abs(screenshot.getRGB(x+x2,y+y2)-trackingImage.getRGB(x2,y2));
+													difference=difference+rgbdiff;
+													// short circuit mismatches
+													if(difference>=mindifference){
+														break scanImage;
+													}
+												}
+											}
+											if(difference<mindifference){
+												p.x=x;
+												p.y=y;
+												mindifference=difference;
+												minscreen=screen;
+											}
+										}
+									}
+								}
+								// create temp robot to put mouse in right spot
+								robot=new Robot(screens[minscreen]);
+								robot.setAutoWaitForIdle(true);
+							}catch(Exception e){
+								e.printStackTrace();
+							}
+							if(p.x==0&&p.y==0){
+								// shouldn't happen...
+								throw new RuntimeException("Robot not found on screen");
+							}
+							locationOnScreen=p;
+						}else{
+							// create default temp robot that should work on non-Macs
+							try{
+								robot=new Robot();
+								robot.setAutoWaitForIdle(true);
+							}catch(Exception e){}
+						}
 						log("Document root: ~"+p.toString());
 						int x = p.x + 16;
 						int y = p.y + 8;
@@ -266,6 +345,9 @@ public final class DOHRobot extends Applet{
 						}catch(Exception e){};
 						robot.mouseMove(x, y);
 						try{
+							// mouse in right spot; restore control to original robot using browser's preferred coordinates
+							robot = new Robot();
+							robot.setAutoWaitForIdle(true);
 							Thread.sleep(100);
 						}catch(Exception e){};
 						robot.mousePress(InputEvent.BUTTON1_MASK);
@@ -719,6 +801,10 @@ public final class DOHRobot extends Applet{
 		});
 	}
 
+	protected boolean destinationInView(int x, int y){
+		return !(x > docScreenXMax || y > docScreenYMax || x < docScreenX || y < docScreenY);
+	}
+	
 	public void moveMouse(double sec, final int x1, final int y1, final int d, final int duration){
 		// called by doh.robot.mouseMove
 		// see it for details
@@ -729,7 +815,7 @@ public final class DOHRobot extends Applet{
 			public Object run(){
 				int x = x1 + docScreenX;
 				int y = y1 + docScreenY;
-				if(x > docScreenXMax || y > docScreenYMax || x < docScreenX || y < docScreenY){
+				if(!destinationInView(x,y)){
 					// TODO: try to scroll view
 					log("Request to mouseMove denied");
 					return null;
