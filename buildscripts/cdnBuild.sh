@@ -28,9 +28,6 @@ ant clean  # necessary until cldr scripts can handle existing AMD files
 ant
 cd ..
 
-# create dojo.xd.js file for back-compat
-cp ../../dojo/dojo.js ../../dojo/dojo.xd.js
-
 # Setup release area
 mkdir -p ../../release/$version-cdn
 
