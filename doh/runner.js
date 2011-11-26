@@ -1026,12 +1026,12 @@ doh._handleFailure = function(groupName, fixture, e){
 		this._failureCount++;
 		if(e["fileName"]){ out += e.fileName + ':'; }
 		if(e["lineNumber"]){ out += e.lineNumber + ' '; }
-		out += e+": "+e.message;
-		this.debug("\t_AssertFailure:", out);
+		out += e.message;
+		this.error("\t_AssertFailure:", out);
 	}else{
 		this._errorCount++;
+		this.error("\tError:", e.message || e); // printing Error on IE9 (and other browsers?) yields "[Object Error]"
 	}
-	this.error(e);
 	if(fixture.runTest["toSource"]){
 		var ss = fixture.runTest.toSource();
 		this.debug("\tERROR IN:\n\t\t", ss);
