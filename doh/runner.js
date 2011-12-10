@@ -1056,8 +1056,10 @@ doh._runPerfFixture = function(/*String*/groupName, /*Object*/fixture){
 	def.groupName = groupName;
 	def.fixture = fixture;
 
+	var threw = false;
 	def.addErrback(function(err){
 		doh._handleFailure(groupName, fixture, err);
+		threw = true;
 	});
 
 	// Set up the finalizer.
@@ -1067,7 +1069,7 @@ doh._runPerfFixture = function(/*String*/groupName, /*Object*/fixture){
 		if((!tg.inFlight)&&(tg.iterated)){
 			doh._groupFinished(groupName, !tg.failures);
 		}
-		doh._testFinished(groupName, fixture, def.results[0]);
+		doh._testFinished(groupName, fixture, !threw);
 		if(doh._paused){
 			doh.run();
 		}
@@ -1079,8 +1081,6 @@ doh._runPerfFixture = function(/*String*/groupName, /*Object*/fixture){
 	var to = fixture.timeout;
 	if(to > 0) {
 		timer = setTimeout(function(){
-			// ret.cancel();
-			// retEnd();
 			def.errback(new Error("test timeout in "+fixture.name.toString()));
 		}, to);
 	}
@@ -1302,15 +1302,17 @@ doh._runRegFixture = function(/*String*/groupName, /*Object*/fixture){
 		ret.groupName = groupName;
 		ret.fixture = fixture;
 
+		var threw = false;
 		ret.addErrback(function(err){
 			doh._handleFailure(groupName, fixture, err);
+			threw = true;
 		});
 
 		var retEnd = function(){
 
 			if(fixture["tearDown"]){ fixture.tearDown(doh); }
 			tg.inFlight--;
-			doh._testFinished(groupName, fixture, ret.results[0]);
+			doh._testFinished(groupName, fixture, !threw);
 			if((!tg.inFlight)&&(tg.iterated)){
 				doh._groupFinished(groupName, !tg.failures);
 			}
