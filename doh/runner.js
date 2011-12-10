@@ -94,12 +94,6 @@ doh.extend(doh.Deferred, {
 		return null;
 	},
 
-	makeCalled: function() {
-		var deferred = new doh.Deferred();
-		deferred.callback();
-		return deferred;
-	},
-
 	_nextId: (function(){
 		var n = 1;
 		return function(){ return n++; };
@@ -148,7 +142,6 @@ doh.extend(doh.Deferred, {
 				throw new Error("already called!");
 			}
 			this.silentlyCancelled = false;
-			return;
 		}
 	},
 
@@ -373,7 +366,7 @@ var
 		var hint= "\targuments: ";
 		for(var i= 0; i<5; i++){
 			hint+= dumpArg(args[i]);
-		};
+		}
 		doh.debug("ERROR:");
 		if(testArgPosition){
 			doh.debug("\tillegal arguments provided to dojo.register; the test at argument " + testArgPosition + " wasn't a test.");
@@ -381,12 +374,7 @@ var
 			doh.debug("\tillegal arguments provided to dojo.register");
 		}
 		doh.debug(hint);
-	},
-
-	isUrl= function(arg){
-		return dojo.isString(arg) && (/^url\:/.test(arg) || !/\(/.test(arg));
 	};
-
 
 doh._testRegistered = function(group, fixture){
 	// slot to be filled in
@@ -422,10 +410,10 @@ doh._registerTest = function(group, test, type){
 
 	// get, possibly create, the group object
 
-	var groupObj= this._groups[group];
+	var groupObj = this._groups[group];
 	if(!groupObj){
 		this._groupCount++;
-		groupObj= this._groups[group] = [];
+		groupObj = this._groups[group] = [];
 		groupObj.inFlight = 0;
 	}
 	if(!test){
@@ -438,7 +426,7 @@ doh._registerTest = function(group, test, type){
 		return createFixture(group, test, type) ? groupObj : 0;
 	}else if(dojo.isArray(test)){
 		// a vector of tests...
-		for(var i= 0; i<test.length; i++){
+		for(var i=0; i<test.length; i++){
 			tObj = createFixture(group, test[i], type);
 			if(!tObj){
 				this.debug("ERROR:");
@@ -450,12 +438,12 @@ doh._registerTest = function(group, test, type){
 	}else{
 		// a hash of tests...
 		for(var testName in test){
-			var theTest= test[testName];
+			var theTest = test[testName];
 			if(dojo.isFunction(theTest) || dojo.isString(theTest)){
 				tObj = createFixture(group, {name:testName, runTest:theTest}, type);
 			}else{
 				// should be an object
-				theTest.name= theTest.name || testName;
+				theTest.name = theTest.name || testName;
 				tObj = createFixture(group, theTest, type);
 			}
 			if(!tObj){
@@ -468,45 +456,45 @@ doh._registerTest = function(group, test, type){
 	}
 };
 
-doh._registerTestAndCheck= function(groupId, test, type, testArgPosition, args, setUp, tearDown){
-	var amdMid= 0;
+doh._registerTestAndCheck = function(groupId, test, type, testArgPosition, args, setUp, tearDown){
+	var amdMid = 0;
 	if(groupId){
 		if(type){
 			// explicitly provided type; therefore don't try to get type from groupId
-			var match= groupId.match(/([^\!]+)\!(.+)/);
+			var match = groupId.match(/([^\!]+)\!(.+)/);
 			if(match){
-				amdMid= match[1];
-				groupId= match[2];
+				amdMid = match[1];
+				groupId = match[2];
 			}
 		}else{
-			var parts= groupId && groupId.split("!");
-			if(parts.length==3){
-				amdMid= parts[0];
-				groupId= parts[1];
-				type= parts[2];
-			}else if(parts.length==2){
+			var parts = groupId && groupId.split("!");
+			if(parts.length == 3){
+				amdMid = parts[0];
+				groupId = parts[1];
+				type = parts[2];
+			}else if(parts.length == 2){
 				// either (amdMid, group) or (group, type)
 				if(parts[1] in doh._testTypes){
-					groupId= parts[0];
-					type= parts[1];
+					groupId = parts[0];
+					type = parts[1];
 				}else{
-					amdMid= parts[0];
-					groupId= parts[1];
+					amdMid = parts[0];
+					groupId = parts[1];
 				}
 			} // else, no ! and just a groupId
 		}
 	}
 
-	var group= doh._registerTest(groupId, test, type);
+	var group = doh._registerTest(groupId, test, type);
 	if(group){
 		if(amdMid){
-			group.amdMid= amdMid;
+			group.amdMid = amdMid;
 		}
 		if(setUp){
-			group.setUp= setUp;
+			group.setUp = setUp;
 		}
 		if(tearDown){
-			group.tearDown= tearDown;
+			group.tearDown = tearDown;
 		}
 	}else{
 		illegalRegister(arguments, testArgPosition);
@@ -519,10 +507,10 @@ doh._registerUrl = function(/*String*/ group, /*String*/ url, /*Integer*/ timeou
 	this.debug("\tNO registerUrl() METHOD AVAILABLE.");
 };
 
-var typeSigs= (function(){
+var typeSigs = (function(){
 	// Generate machinery to decode the many register signatures; these are the possible signatures.
 
-	var sigs= [
+	var sigs = [
 		// note: to===timeout, up===setUp, down===tearDown
 
 		// 1 arg
@@ -551,7 +539,7 @@ var typeSigs= (function(){
 		"url-type-args", function(args, a1, a2, a3){doh._registerUrl("ungrouped", a1, undefined, a2, a3);},
 
 		// 4 args
-		"group-test-type-up", function(args, a1, a2, a3, a4){doh._registerTestAndCheck(a1, a2, a3, 2, args, a3, 0);},
+		"group-test-type-up", function(args, a1, a2, a3, a4){doh._registerTestAndCheck(a1, a2, a3, 2, args, a4, 0);},
 		"group-test-up-down", function(args, a1, a2, a3, a4){doh._registerTestAndCheck(a1, a2, 0, 2, args, a3, a4);},
 		"test-type-up-down", function(args, a1, a2, a3, a4){doh._registerTestAndCheck("ungrouped", a1, 2, 0, args, a3, a4);},
 		"group-url-to-type", function(args, a1, a2, a3, a4){doh._registerUrl(a1, a2, a3, a4);},
@@ -561,7 +549,7 @@ var typeSigs= (function(){
 
 		// 5 args
 		"group-test-type-up-down", function(args, a1, a2, a3, a4, a5){doh._registerTestAndCheck(a1, a2, a3, 2, args, a4, a5);},
-		"group-url-to-type-args", function(args, a1, a2, a3, a4){doh._registerUrl(a1, a2, a3, a4, a5);}
+		"group-url-to-type-args", function(args, a1, a2, a3, a4, a5){doh._registerUrl(a1, a2, a3, a4, a5);}
 	];
 
 	// type-ids
@@ -573,7 +561,7 @@ var typeSigs= (function(){
 	// f - function
 	// n - number
     // see getTypeId inside doh.register
-	var argTypes= {
+	var argTypes = {
 		group:"st.sf.s",
 		test:"a.sf.o.f",
 		type:"st",
@@ -585,11 +573,11 @@ var typeSigs= (function(){
 	};
 	for(var p in argTypes){
 		argTypes[p]= argTypes[p].split(".");
-	};
+	}
 
 	function generateTypeSignature(sig, pattern, dest, func){
-		for(var nextPattern, reducedSig= sig.slice(1), typeList= argTypes[sig[0]], i= 0; i<typeList.length; i++){
-			nextPattern=  pattern + (pattern ? "-" : "") + typeList[i];
+		for(var nextPattern, reducedSig= sig.slice(1), typeList= argTypes[sig[0]], i=0; i<typeList.length; i++){
+			nextPattern =  pattern + (pattern ? "-" : "") + typeList[i];
 			if(reducedSig.length){
 				generateTypeSignature(reducedSig, nextPattern, dest, func);
 			}else{
@@ -598,11 +586,11 @@ var typeSigs= (function(){
 		}
 	}
 
-	var typeSigs= [];
-	for(var sig, func, dest, i= 0; i<sigs.length; i++){
-		sig= sigs[i++].split("-");
-		func= sigs[i];
-		dest= typeSigs[sig.length-1] || (typeSigs[sig.length-1]= []);
+	var typeSigs = [];
+	for(var sig, func, dest, i = 0; i<sigs.length; i++){
+		sig = sigs[i++].split("-");
+		func = sigs[i];
+		dest = typeSigs[sig.length-1] || (typeSigs[sig.length-1]= []);
 		generateTypeSignature(sig, "", dest, func);
 	}
 	return typeSigs;
@@ -769,15 +757,15 @@ doh.register = function(a1, a2, a3, a4, a5){
 	}
 
 	var
-		arity= arguments.length,
-		search= typeSigs[arity-1],
-		sig= [],
+		arity = arguments.length,
+		search = typeSigs[arity-1],
+		sig = [],
 		i;
-	for(i= 0; i<arity; i++){
+	for(i =0; i<arity; i++){
 		sig.push(getTypeId(arguments[i]));
 	}
-	sig= sig.join("-");
-	for(i= 0; i<search.length; i+= 2){
+	sig = sig.join("-");
+	for(i=0; i<search.length; i+= 2){
 		if(search[i]==sig){
 			search[i+1](arguments, a1, a2, a3, a4, a5);
 			return;
@@ -801,7 +789,7 @@ doh.registerDocTests = function(module){
 		var comment = "";
 		if (test.commands.length && test.commands[0].indexOf("//")!=-1) {
 			var parts = test.commands[0].split("//");
-			comment = ", "+parts[parts.length-1]; // Get all after the last //, so we dont get trapped by http:// or alikes :-).
+			comment = ", "+parts[parts.length-1]; // Get all after the last //, so we don't get trapped by http:// or alikes :-).
 		}
 		tests.push({
 			runTest: (function(test){
@@ -818,7 +806,7 @@ doh.registerDocTests = function(module){
 };
 
 //
-// depricated v1.6- register API follows
+// deprecated v1.6- register API follows
 //
 
 doh.registerTest = function(/*String*/ group, /*Array||Function||Object*/ test, /*String*/ type){
@@ -830,11 +818,11 @@ doh.registerTest = function(/*String*/ group, /*Array||Function||Object*/ test, 
 doh.registerGroup = function(/*String*/ group, /*Array||Function||Object*/ tests, /*Function*/ setUp, /*Function*/ tearDown, /*String*/ type){
 	// summary:
 	//		Deprecated.  Use doh.register(group/type, tests, setUp, tearDown) instead
-	var args= [(group ? group : "") + (type ? "!" + type : ""), tests];
+	var args = [(group ? group : "") + (type ? "!" + type : ""), tests];
 	setUp && args.push(setUp);
 	tearDown && args.push(tearDown);
 	doh.register.apply(doh, args);
-}
+};
 
 doh.registerTestNs = function(/*String*/ group, /*Object*/ ns){
 	// summary:
@@ -846,7 +834,7 @@ doh.registerTests = function(/*String*/ group, /*Array*/ testArr, /*String*/ typ
 	// summary:
 	//		Deprecated.  Use doh.register(group/type, testArr) instead
 	doh.register(group + (type ? "!" + type : ""), testArr);
-}
+};
 
 doh.registerUrl = function(/*String*/ group, /*String*/ url, /*Integer*/ timeout, /*String*/ type, /*Object*/ args){
 	// summary:
@@ -996,7 +984,7 @@ doh._objPropEq = function(expected, actual){
 		if(expected[x] === undefined){
 			return false;
 		}
-	};
+	}
 
 	for(x in expected){
 		if(!doh.assertEqual(expected[x], actual[x], 0, true)){
@@ -1098,7 +1086,7 @@ doh._runPerfFixture = function(/*String*/groupName, /*Object*/fixture){
 	}
 
 	// Set up the end calls to the test into the deferred we'll return.
-	def.addBoth(function(arg){
+	def.addBoth(function(){
 		if(timer){
 			clearTimeout(timer);
 		}
@@ -1136,7 +1124,6 @@ doh._runPerfFixture = function(/*String*/groupName, /*Object*/fixture){
 				// Set up our function to execute a block of tests
 				var start = new Date();
 				var tTimer = new doh.Deferred();
-				var tCountdown = iterations;
 
 				var tState = {
 					countdown: iterations
@@ -1339,7 +1326,7 @@ doh._runRegFixture = function(/*String*/groupName, /*Object*/fixture){
 
 		var timer = setTimeout(function(){ timeoutFunction(); }, fixture["timeout"]||1000);
 
-		ret.addBoth(function(arg){
+		ret.addBoth(function(){
 			timeoutFunction = function(){}; // in IE8, the clearTimeout does not always stop the timer, so clear the function as well
 			clearTimeout(timer);
 			fixture.endTime = new Date();
@@ -1421,7 +1408,7 @@ doh.runGroup = function(/*String*/ groupName, /*Integer*/ idx){
 
 	// FIXME: need to make fixture execution async!!
 
-	idx= idx || 0;
+	idx = idx || 0;
 	var tg = this._groups[groupName];
 	if(tg.skip === true){ return; }
 	if(this.isArray(tg)){
