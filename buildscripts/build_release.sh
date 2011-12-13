@@ -38,10 +38,13 @@ cd $buildName/util/buildscripts
 java -jar ../shrinksafe/js.jar changeVersion.js $version $svnRevision ../../dojo/_base/kernel.js
 java -jar ../shrinksafe/js.jar changeVersion.js $version $svnRevision ../../dojo/package.json
 java -jar ../shrinksafe/js.jar changeVersion.js $version $svnRevision ../../dijit/package.json
+java -jar ../shrinksafe/js.jar changeVersion.js $version $svnRevision ../../dojox/package.json
 cd ../../dojo
 svn commit -m "Updating dojo version for the tag. \!strict" package.json _base/kernel.js
 cd ../dijit
 svn commit -m "Updating dijit version for the tag. \!strict" package.json
+cd ../dojox
+svn commit -m "Updating dojox version for the tag. \!strict" package.json
 
 # Erase the SVN dir and replace with an exported SVN contents.
 cd ../..
