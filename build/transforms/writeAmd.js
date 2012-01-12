@@ -110,6 +110,7 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang"], function
 			boot
 		) {
 			var
+				newline = bc.newline,
 				cache= [],
 				pluginLayerText= "",
 				moduleSet= computeLayerContents(resource, include, exclude);
@@ -118,7 +119,7 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang"], function
 				if (module.internStrings) {
 					cache.push(getCacheEntry(module.internStrings()));
 				} else if(module.getText){
-					cache.push("'" + p + "':function(){\n" + module.getText() + "\n}");
+					cache.push("'" + p + "':function(){" + newline + module.getText() + newline + "}");
 				} else {
 					bc.log("amdMissingLayerModuleText", ["module", module.mid, "layer", resource.mid]);
 				}
@@ -133,20 +134,21 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang"], function
 			if(cache.length && boot){
 				cache.push("'*noref':1");
 			}
-			cache = cache.length ? "require({cache:{\n" + cache.join(",\n") + "}});\n" : "";
-			return cache + pluginLayerText + "\n" + text;
+			cache = cache.length ? "require({cache:{" + newline + cache.join("," + newline) + "}});" + newline : "";
+			return cache + pluginLayerText + newline + text;
 		},
 
 		getStrings= function(
 			resource
 		){
-			var cache = [];
+			var cache = [],
+				newline = bc.newline;
 			resource.deps && resource.deps.forEach(function(dep){
 				if(dep.internStrings){
 					cache.push(getCacheEntry(dep.internStrings()));
 				}
 			});
-			return cache.length ? "require({cache:{\n" + cache.join(",\n") + "}});\n" : "";
+			return cache.length ? "require({cache:{" + newline + cache.join("," + newline) + "}});" + newline : "";
 		},
 
 		getDestFilename= function(resource){
@@ -185,7 +187,7 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang"], function
 					copyright = "";
 				}
 			}
-			fs.writeFile(getDestFilename(resource), copyright + "//>>built\n" + text, resource.encoding, function(err) {
+			fs.writeFile(getDestFilename(resource), bc.newlineFilter(copyright + "//>>built" + bc.newline + text, resource, "writeAmd"), resource.encoding, function(err) {
 				callback(resource, err);
 			});
 			return callback;

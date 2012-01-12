@@ -135,7 +135,7 @@ define([
 			doWrite= function(filename, text) {
 				fileUtils.ensureDirectoryByFilename(filename);
 				waitCount++;
-				fs.writeFile(filename, text, "utf8", onWriteComplete);
+				fs.writeFile(filename, bc.newlineFilter(text, resource, "writeDojo"), "utf8", onWriteComplete);
 			};
 
 		// the writeDojo transform...
