@@ -106,7 +106,8 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang"], function
 		getLayerText= function(
 			resource,
 			include,
-			exclude
+			exclude,
+			boot
 		) {
 			var
 				cache= [],
@@ -128,6 +129,9 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang"], function
 				if(bc.insertAbsMids){
 					text= insertAbsMid(text, resource);
 				}
+			}
+			if(cache.length && boot){
+				cache.push("'*noref':1");
 			}
 			cache = cache.length ? "require({cache:{\n" + cache.join(",\n") + "}});\n" : "";
 			return cache + pluginLayerText + "\n" + text;
