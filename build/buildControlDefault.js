@@ -16,19 +16,6 @@ define(["./buildControlBase"], function(bc) {
 		// this is a dojo pragma
 		replaceLoaderConfig:1,
 
-		// use this variable for all newlines inserted by build transforms
-		newline:"\n",
-
-		// user profiles may replace this with a function from string to string that filters newlines
-		// however they desire. For example,
-		//
-		// newlineFilter: function(s){
-		//   // convert all DOS-style newlines to Unix-style newlines
-		//   return s.replace(/\r\n/g, "\n").replace(/\n\r/g, "\n");
-		// }
-		//
-		newlineFilter:function(s, resource, hint){return s;},
-
 		defaultConfig:{
 			hasCache:{
 				// these are the values given above, not-built client code may test for these so they need to be available

@@ -1,7 +1,7 @@
 ///
-// \amd-mid uild/stringify
+// \amd-mid build/stringify
 //
-define(["dojo", "./buildControl"], function(dojo, bc) {
+define(["dojo", "./buildControlBase"], function(dojo, bc) {
 var
 	spaces= "					 ",
 	indentFactor= 2,
