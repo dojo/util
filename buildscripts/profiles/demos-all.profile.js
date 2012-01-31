@@ -303,6 +303,12 @@ dependencies = {
 			dependencies:[
 				"demos.themePreviewer.src"
 			]
+		},
+		{
+			name: "../demos/tracTreemap/src.js",
+			dependencies:[
+				"demos.tracTreemap.src"
+			]
 		}
 	],
 
