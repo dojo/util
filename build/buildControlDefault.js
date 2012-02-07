@@ -23,6 +23,7 @@ define(["./buildControlBase"], function(bc) {
 				'dojo-loader':1,
 				'dom':1,
 				'host-browser':1,
+				"config-tlmSiblingOfDojo":1,
 
 				// default
 				"config-selectorEngine":"acme"
