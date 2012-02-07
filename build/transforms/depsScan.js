@@ -399,15 +399,16 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 			syncBundle= {},
 
 			evalNlsResource= function(text){
+				// TODO: this is fairly dangerous in that executing text could cause problems...consider sandboxing better
 				try{
-					(new Function("define", resource.text))(simulatedDefine);
+					(new Function("define", text))(simulatedDefine);
 					if(defineApplied){
 						return amdBundle;
 					}
 				}catch(e){
 				}
 				try{
-					var result= eval(text);
+					var result= eval("(" + text + ")");
 					if(lang.isObject(result)){
 						return syncBundle;
 					}
