@@ -388,7 +388,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 						}
 						return "define({root:\n" + text + ",\n" + availableLocales.join(",\n") + "\n});\n";
 					}else{
-						return "define(\n" + text + "\n);";
+						return "define(" + newline + text + newline + ");";
 					}
 				};
 			},
@@ -398,15 +398,16 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 			syncBundle= {},
 
 			evalNlsResource= function(text){
+				// TODO: this is fairly dangerous in that executing text could cause problems...consider sandboxing better
 				try{
-					(new Function("define", resource.text))(simulatedDefine);
+					(new Function("define", text))(simulatedDefine);
 					if(defineApplied){
 						return amdBundle;
 					}
 				}catch(e){
 				}
 				try{
-					var result= eval(text);
+					var result= eval("(" + text + ")");
 					if(lang.isObject(result)){
 						return syncBundle;
 					}
