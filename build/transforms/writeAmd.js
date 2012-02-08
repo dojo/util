@@ -108,15 +108,19 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 			return result;
 		},
 
+		getPreloadLocalizationsRootPath = function(dest){
+			var match= dest.match(/(.+)\/([^\/]+)(\.js)?$/);
+			return match[1] + "/nls/" + match[2];
+		},
+
 		getFlattenedNlsBundles = function(
 			resource,
 			rootBundles,
 			noref
 		){
 			var newline = bc.newline,
-				match= resource.dest.match(/(.+)\/([^\/]+)\.js$/),
-				rootPath = match[1] + "/nls/" + match[2],
-				result = {};
+				rootPath = getPreloadLocalizationsRootPath(resource.dest),
+				result = resource.flattenedNlsBundles = {};
 			bc.localeList.forEach(function(locale){
 				var locales = getDiscreteLocales(locale),
 					cache = [];
@@ -139,9 +143,8 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 				if(cache.length && noref){
 					cache.push("'*noref':1");
 				}
-				result[rootPath + "_" + locale + ".js"] = cache.length ? "require({cache:{" + newline + cache.join("," + newline) + "}});" + newline : "";
+				result[locale]  = [rootPath + "_" + locale + ".js", cache.length ? "require({cache:{" + newline + cache.join("," + newline) + "}});" + newline : ""];
 			});
-			return result;
 		},
 
 		getLayerText= function(
@@ -169,23 +172,41 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 					rootBundles.push(module);
 				}
 			}
-			var text= "";
-			if(resource){
-				text= insertAbsMid(resource.getText(), resource);
-			}
+
+			// construct the cache text
 			if(cache.length && noref){
 				cache.push("'*noref':1");
 			}
 			cache = cache.length ? "require({cache:{" + newline + cache.join("," + newline) + "}});" + newline : "";
 
-			text = cache + newline + text;
+			// compute the flattened NLS bundles if required
+			if(resource && bc.localeList && rootBundles.length && resource.flattenedNlsBundles===undefined){
+				getFlattenedNlsBundles(resource, rootBundles, noref);
+			}
+
+			// !resource implies a boot module; don't preloadLocalizations for that kind of new module since it is new in 1.7
+			// prefer the bc.preloadLocations switch, which allows turning off this feature
+			// default to include preloadLocalizations iff the config is synch mode
+			var preloadText = "";
+			if(resource && (bc.preloadLocalizations || (!("preloadLocalizations" in bc) && !bc.defaultConfig.async))){
+				var localeList = [];
+				for(p in resource.flattenedNlsBundles){
+					localeList.push('"' + p + '"');
+				}
+
+				preloadText = 'i18n._preloadLocalizations("' + getPreloadLocalizationsRootPath(resource.mid) + '", [' + localeList.join(",") + "]);" + newline;
+				preloadText = 'require(["dojo/i18n"], function(i18n){' + newline + preloadText + "});" + newline;
+			}
+
+			var text= "";
+			if(resource){
+				text= insertAbsMid(resource.getText(), resource);
+			}
+
+			text = cache + newline + preloadText + text;
 
 			if(resource && resource.layer && resource.layer.postscript){
 				text+= resource.layer.postscript;
-			}
-
-			if(resource && bc.localeList && rootBundles.length && resource.flattenedNlsBundles===undefined){
-				resource.flattenedNlsBundles = getFlattenedNlsBundles(resource, rootBundles, noref);
 			}
 
 			return text;
@@ -300,9 +321,10 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 
 			if(resource.flattenedNlsBundles){
 				for(var p in resource.flattenedNlsBundles){
+					var item = resource.flattenedNlsBundles[p];
 					waitCount++;
-					fileUtils.ensureDirectoryByFilename(p);
-					fs.writeFile(p, resource.flattenedNlsBundles[p], resource.encoding, onWriteComplete);
+					fileUtils.ensureDirectoryByFilename(item[0]);
+					fs.writeFile(item[0], item[1], resource.encoding, onWriteComplete);
 				}
 			}
 
