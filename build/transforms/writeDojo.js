@@ -18,8 +18,9 @@ define([
 	"../stringify",
 	"./writeAmd",
 	"../process",
+	"dojo/json",
 	"dojo/text!./dojoBoot.js"
-], function(bc, fileUtils, fs, stringify, writeAmd, process, dojoBootText) {
+], function(bc, fileUtils, fs, stringify, writeAmd, process, json, dojoBootText) {
 	return function(resource, callback) {
 		var
 			getUserConfig= function() {
@@ -148,10 +149,13 @@ define([
 				configText= "(" + getUserConfig() + ", " + getDefaultConfig() + ");",
 
 				// the construction of the layer is slightly different than standard, so don't pass a module to getLayerText
-				layerText= writeAmd.getLayerText(0, resource.layer.include, resource.layer.exclude);
+				layerText= writeAmd.getLayerText(0, resource.layer.include, resource.layer.exclude, resource.layer.noref),
+
+				// 1.6 compat chunk
+				compat = (resource.layer.compat=="1.6" && resource.layer.include.length) ? "require(" + json.stringify(resource.layer.include) + ");" + bc.newline : "";
 
 			// assemble and write the dojo layer
-			resource.layerText= resource.getText() + configText + stampVersion(layerText) + (bc.dojoBootText || dojoBootText);
+			resource.layerText= resource.getText() + configText + stampVersion(layerText) + (bc.dojoBootText || dojoBootText) + compat;
 			doWrite(writeAmd.getDestFilename(resource), resource.layer.copyright + resource.layerText);
 
 			//write any bootstraps; boots is a vector of resources that have been marked as bootable by the discovery process

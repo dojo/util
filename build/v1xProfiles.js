@@ -60,7 +60,7 @@ define([
 				result[p] = defaultBuildProps[p];
 			}
 			for(p in profile){
-				if(/^(loader|xdDojoPath|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards|localeList)$/.test(p)){
+				if(/^(loader|xdDojoPath|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)){
 					bc.log("inputDeprecated", ["switch", p]);
 				}else if(p=="staticHasFeatures"){
 					mix(result.staticHasFeatures, profile.staticHasFeatures);

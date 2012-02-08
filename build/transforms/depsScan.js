@@ -350,58 +350,13 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 				return amdCallCount;
 			},
 
-			processSyncNlsBundle = function(){
-				resource.tag.syncNls= 1;
-				var
-					match= resource.mid.match(/(^.*\/nls\/)(([a-zA-Z\-]+)\/)?([^\/]+)$/),
-					prefix= match[1],
-					locale= match[3],
-					bundle= match[4];
-				if(locale){
-					var
-						rootPath= prefix + bundle,
-						rootBundle= bc.amdResources[rootPath];
-					if(rootBundle){
-						var localizedSet= rootBundle.localizedSet || (rootBundle.localizedSet= {});
-						localizedSet[locale]= 1;
-					}else{
-						bc.log("i18nNoRoot" ["bundle", resource.mid]);
-					}
-				}
-
-				var getText= resource.getText;
-				resource.getText= function(){
-					var text= getText.call(this),
-						newline = bc.newline;
-
-					// this is frome the old builder...
-					// TODO: consider removing this
-					// If this is an nls bundle, make sure it does not end in a ; Otherwise, bad things happen.
-					if(text.match(/\/nls\//)){
-						text = text.replace(/;\s*$/, "");
-					}
-
-					if(this.localizedSet){
-						// this is the root bundle
-						var availableLocales= [];
-						for(var p in this.localizedSet){
-							availableLocales.push("\"" + p + "\":1");
-						}
-						return "define({root:" + newline + text + "," + newline + availableLocales.join("," + newline) + "}" + newline + ");" + newline;
-					}else{
-						return "define(" + newline + text + newline + ");";
-					}
-				};
-			},
-
 			amdBundle= {},
 
 			syncBundle= {},
 
 			evalNlsResource= function(text){
-				// TODO: this is fairly dangerous in that executing text could cause problems...consider sandboxing better
 				try{
-					(new Function("define", text))(simulatedDefine);
+					(new Function("define", resource.text))(simulatedDefine);
 					if(defineApplied){
 						return amdBundle;
 					}
@@ -415,6 +370,60 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 				}catch(e){
 				}
 				return 0;
+			},
+
+			processNlsBundle = function(){
+				// either a v1.x sync bundle or an AMD NLS bundle
+
+				// compute and remember the set of localized bundles; attach this info to the root bundle
+				var
+					match= resource.mid.match(/(^.*\/nls\/)(([^\/]+)\/)?([^\/]+)$/),
+					prefix= resource.prefix = match[1],
+					locale= resource.locale = match[3],
+					bundle= resource.bundle = match[4],
+					rootPath= prefix + bundle,
+					rootBundle= bc.amdResources[rootPath];
+				if(locale){
+					if(rootBundle){
+						var localizedSet= rootBundle.localizedSet || (rootBundle.localizedSet= {});
+						localizedSet[locale]= 1;
+					}else{
+						bc.log("i18nNoRoot" ["bundle", resource.mid]);
+					}
+				}
+
+				var nlsResult= evalNlsResource(resource.text);
+				if(nlsResult===syncBundle){
+					// transform a 1.6- bundle into and AMD-style bundle
+					var getText= resource.getText;
+					resource.getText= function(){
+						var text= getText.call(this),
+						newline = bc.newline;
+
+						// this is frome the old builder...
+						// TODO: consider removing this
+						// If this is an nls bundle, make sure it does not end in a ; Otherwise, bad things happen.
+						if(text.match(/\/nls\//)){
+							text = text.replace(/;\s*$/, "");
+						}
+
+						if(this.localizedSet){
+							// this is the root bundle
+							var availableLocales= [];
+							for(var p in this.localizedSet){
+								availableLocales.push("\"" + p + "\":1");
+							}
+							text = "define({root:" + newline + text + "," + newline + availableLocales.join("," + newline) + "}" + newline + ");" + newline;
+						}else{
+							text = "define(" + newline + text + newline + ");";
+						}
+						return resource.setText(text);
+					};
+				}else if(nlsResult===amdBundle){
+					processPureAmdModule();
+				}else{
+					bc.log("i18nImproperBundle", ["module", resource.mid]);
+				}
 			},
 
 			interningDojoUriRegExpString =
@@ -584,17 +593,10 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 				// need to use extractResult[0] since it may delete the dojo.loadInit applications
 				resource.getText = function(){ return "// wrapped by build app" + newline + "define(" + json.stringify(aggregateDeps) + ", function(" + names.join(",") + "){" + newline + extractResult[0] + newline + "});" + newline; };
 			};
+
 		// scan the resource for dependencies
 		if(resource.tag.nls){
-			// either a v1.x sync bundle or an AMD NLS bundle
-			var nlsResult= evalNlsResource(resource.text);
-			if(nlsResult===syncBundle){
-				processSyncNlsBundle();
-			}else if(nlsResult===amdBundle){
-				processPureAmdModule();
-			}else{
-				bc.log("i18nImproperBundle", ["module", resource.mid]);
-			}
+			processNlsBundle();
 		}else if(resource.tag.amd || /\/\/>>\s*pure-amd/.test(resource.text)) {
 			processPureAmdModule();
 		}else{
