@@ -143,7 +143,10 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 				if(cache.length && noref){
 					cache.push("'*noref':1");
 				}
-				result[locale]  = [rootPath + "_" + locale + ".js", cache.length ? "require({cache:{" + newline + cache.join("," + newline) + "}});" + newline : ""];
+				var
+					match = resource.mid.match(/(.+)\/([^\/]+)$/),
+					flattenedMid = match[1] + "/nls/" + match[2] + "_" + locale;
+				result[locale]  = [rootPath + "_" + locale + ".js", cache.length ? "require({cache:{" + newline + cache.join("," + newline) + "}});" + newline + 'define("' + flattenedMid + '", [], 1);' + newline : ""];
 			});
 		},
 
