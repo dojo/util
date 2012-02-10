@@ -109,7 +109,7 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 		},
 
 		getPreloadLocalizationsRootPath = function(dest){
-			var match= dest.match(/(.+)\/([^\/]+)(\.js)?$/);
+			var match= dest.match(/(.+)\/([^\/]+)$/);
 			return match[1] + "/nls/" + match[2];
 		},
 
@@ -119,7 +119,7 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 			noref
 		){
 			var newline = bc.newline,
-				rootPath = getPreloadLocalizationsRootPath(resource.dest),
+				rootPath = getPreloadLocalizationsRootPath(resource.dest.match(/(.+)(\.js)$/)[1]),
 				result = resource.flattenedNlsBundles = {};
 			bc.localeList.forEach(function(locale){
 				var locales = getDiscreteLocales(locale),
