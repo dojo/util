@@ -160,9 +160,11 @@ define([
 
 			//write any bootstraps; boots is a vector of resources that have been marked as bootable by the discovery process
 			resource.boots.forEach(function(item) {
+				// don't process the dojo layer, which is === resource
 				if(item!==resource){
 					// each item is a hash of include, exclude, boot, bootText
-					item.layerText= resource.layerText + writeAmd.getLayerText(item, item.layer.include, item.layer.exclude, true) + (item.bootText || "");
+					var compat = (item.layer.compat=="1.6" && item.layer.include.length) ? "require(" + json.stringify(item.layer.include) + ");" + bc.newline : "";
+					item.layerText= resource.layerText + writeAmd.getLayerText(item, item.layer.include, item.layer.exclude, true) + (item.bootText || "") + compat;
 					doWrite(writeAmd.getDestFilename(item), resource.layer.copyright + item.layerText);
 				}
 			});
