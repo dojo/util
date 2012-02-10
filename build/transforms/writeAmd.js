@@ -300,7 +300,7 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 				}
 				text= resource.layerText= getLayerText(resource, resource.layer.include, resource.layer.exclude, resource.layer.noref);
 				if(resource.layer.compat=="1.6"){
-					text+= "require(" + json.stringify(resource.layer.include) + ");" + bc.newline;
+					text= resource.layerText= text + "require(" + json.stringify(resource.layer.include) + ");" + bc.newline;
 				}
 
 				copyright= resource.layer.copyright || "";
