@@ -128,16 +128,16 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 					var prefix = bundleRoot.prefix,
 						bundle = "/" + bundleRoot.bundle;
 					locales.forEach(function(locale){
-						if(bundleRoot.localizedSet[locale]){
-							var mid = prefix + locale + bundle,
-								module = bc.amdResources[mid];
-							if(module){
-								cache.push("'" + mid + "':function(){" + newline + module.getText() + newline + "}");
-							}else{
-								//TODO real msg
-								console.log("NOT FOUND");
-							}
+						var mid = prefix + locale + bundle,
+							module = bc.amdResources[mid],
+							text = "define('" + mid + "',{});";
+						if(bundleRoot.localizedSet[locale] && module){
+							text = module.getText();
+						}else{
+							//TODO real msg
+							//console.log("NOT FOUND - 1: " + mid);
 						}
+						cache.push("'" + mid + "':function(){" + newline + text + newline + "}");
 					});
 				});
 				if(cache.length && noref){
