@@ -309,6 +309,12 @@ dependencies = {
 			dependencies:[
 				"demos.tracTreemap.src"
 			]
+		},
+		{
+			name: "../demos/calendar/src.js",
+			dependencies: [
+				"demos.calendar.src"
+			]
 		}
 	],
 
