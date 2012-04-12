@@ -4,6 +4,17 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 	// default to a no-op
 	var compile = function(){};
 
+	var stripConsoleRe= 0;
+	if(bc.stripConsole){
+		var consoleMethods = "assert|count|debug|dir|dirxml|group|groupEnd|info|profile|profileEnd|time|timeEnd|trace|log";
+		if(bc.stripConsole == "warn"){
+			consoleMethods += "|warn";
+		}else if(bc.stripConsole == "all"){
+			consoleMethods += "|warn|error";
+		}
+		stripConsoleRe= new RegExp("console\\.(" + consoleMethods + ")\\s*\\(", "g");
+	}
+
 	if(has("host-rhino") && (bc.optimize || bc.layerOptimize)){
 		function sscompile(text, dest, optimizeSwitch, copyright){
 			// decode the optimize switch
@@ -255,17 +266,6 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 				processes = [];
 			}
 		});
-
-		var stripConsoleRe= 0;
-		if(bc.stripConsole){
-			var consoleMethods = "assert|count|debug|dir|dirxml|group|groupEnd|info|profile|profileEnd|time|timeEnd|trace|log";
-			if(bc.stripConsole == "warn"){
-				consoleMethods += "|warn";
-			}else if(bc.stripConsole == "all"){
-				consoleMethods += "|warn|error";
-			}
-			stripConsoleRe= new RegExp("console\\.(" + consoleMethods + ")\\s*\\(", "g");
-		}
 
 		compile = function(resource, text, copyright, optimizeSwitch, callback){
 			copyright = copyright || "";
