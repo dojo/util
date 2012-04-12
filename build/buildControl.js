@@ -234,6 +234,8 @@ define([
 							mix(pack[p], defaultProfile[p]);
 						}
 					}
+				}else{
+					bc.log("missingProfile", ["package", packageJson.name]);
 				}
 			}
 
@@ -413,7 +415,6 @@ define([
 				}
 			}
 		}
-
 	})();
 
 
@@ -541,6 +542,8 @@ define([
 				localeList:1,
 				maxOptimizationProcesses:1,
 				mini:1,
+				optimize:1,
+				layerOptimize:1,
 				"package":1,
 				packageMap:1,
 				packageMapProg:1,

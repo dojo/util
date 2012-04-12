@@ -48,6 +48,7 @@ define([], function(){
 		[1, 223, "possibleLegacyModuleId", "Name in internStringsSkipList looks like a legacy module identifier."],
 		[1, 224, "missingPluginResolver", "A plugin dependency was encountered but there was not build-time plugin resolver."],
 		[1, 225, "missingDirDuringDiscovery", "A directory that was scheduled to be read during discovery did not exist."],
+		[1, 226, "missingProfile", "A package without a profile could throw errors or warnings."],
 
 		// error 300-399
 		[1, 300, "dojoHasMissingPlugin", "Missing dojo/has module."],
