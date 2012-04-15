@@ -1,50 +1,52 @@
 define(["doh/_browserRunner", "require"], function(doh, require){
 
-	// loading state
-	var _robot = null;
+// loading state
+var _robot = null;
 
-	var isSecure = (function(){
-		var key = Math.random();
-		return function(fcn){
-			return key;
+var isSecure = (function(){
+	var key = Math.random();
+	return function(fcn){
+		return key;
+	};
+})();
+
+// no dojo available
+// hijack doh.run instead
+var _run = doh.run;
+doh.run = function(){
+	if(!robot._runsemaphore.unlock()){
+		// hijack doh._onEnd to clear the applet
+		// have to do it here because browserRunner sets it in onload in standalone case
+		var __onEnd = doh._onEnd;
+		doh._onEnd = function(){
+			robot.killRobot();
+			doh._onEnd = __onEnd;
+			doh._onEnd();
 		};
-	})();
-
-	// no dojo available
-	// hijack doh.run instead
-	var _run = doh.run;
-	doh.run = function(){
-		if(!doh.robot._runsemaphore.unlock()){
-			// hijack doh._onEnd to clear the applet
-			// have to do it here because browserRunner sets it in onload in standalone case
-			var __onEnd = doh._onEnd;
-			doh._onEnd = function(){
-				doh.robot.killRobot();
-				doh._onEnd = __onEnd;
-				doh._onEnd();
-			};
-			doh.robot.startRobot();
-		}
-	};
-
-	var cleanup=function(){
-		doh.robot.killRobot();
+		robot.startRobot();
 	}
-	if(typeof dojo !== 'undefined'){
-		dojo.addOnUnload(cleanup)
-	}else{
-		window.onunload=cleanup;
-	}
-	var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ alt, /*Boolean*/ ctrl, /*Boolean*/ shift, /*Boolean*/ meta, /*Integer, optional*/ delay, /*Boolean*/ async){
-		// internal function to type one non-modifier key
+};
 
-		// typecasting Numbers helps Sun's IE plugin lookup methods that take int arguments
+var cleanup = function(){
+	robot.killRobot();
+};
+if(typeof dojo !== 'undefined'){
+	// TODO: require && require("dojo/_base/kernel"), or something like that
+	dojo.addOnUnload(cleanup);
+}else{
+	window.onunload=cleanup;
+}
+var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ alt, /*Boolean*/ ctrl, /*Boolean*/ shift, /*Boolean*/ meta, /*Integer, optional*/ delay, /*Boolean*/ async){
+	// internal function to type one non-modifier key
 
-		// otherwise JS will send a double and Sun will complain
-		_robot.typeKey(isSecure(), Number(charCode), Number(keyCode), Boolean(alt), Boolean(ctrl), Boolean(shift), Boolean(meta), Number(delay||0), Boolean(async||false));
-	};
+	// typecasting Numbers helps Sun's IE plugin lookup methods that take int arguments
 
-	doh.robot = {
+	// otherwise JS will send a double and Sun will complain
+	_robot.typeKey(isSecure(), Number(charCode), Number(keyCode), Boolean(alt), Boolean(ctrl), Boolean(shift), Boolean(meta), Number(delay||0), Boolean(async||false));
+};
+
+// For 2.0, remove code to set doh.robot.
+var robot = doh.robot = {
 	_robotLoaded: true,
 	_robotInitialized: false,
 	// prime the event pump for fast browsers like Google Chrome - it's so fast, it doesn't stop to listen for keypresses!
@@ -54,10 +56,10 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 	_killApplet: function(){}, // overridden by Robot.html
 
 	killRobot: function(){
-		if(doh.robot._robotLoaded){
-			doh.robot._robotLoaded = false;
+		if(robot._robotLoaded){
+			robot._robotLoaded = false;
 			document.documentElement.className = document.documentElement.className.replace(/ ?dohRobot/, "");
-			doh.robot._killApplet();
+			robot._killApplet();
 		}
 	},
 
@@ -86,8 +88,8 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 			this._robotInitialized = true;
 			// if the iframe requested the applet and got a 404, then _robot is obviously unavailable
 			// at least run the non-robot tests!
-			if(doh.robot._appletDead){
-				doh.robot._onKeyboard();
+			if(robot._appletDead){
+				robot._onKeyboard();
 			}else{
 				_robot._callLoaded(isSecure());
 			}
@@ -143,20 +145,21 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 	_assertRobot:function(){
 		// make sure the applet is there and cert accepted
 		// otherwise, skip the test requesting the robot action
-		if(doh.robot._appletDead){ throw new Error('doh.robot not available; skipping test.'); }
+		if(robot._appletDead){ throw new Error('robot not available; skipping test.'); }
 	},
 
 	_mouseMove: function(/*Number*/ x, /*Number*/ y, /*Boolean*/ absolute, /*Integer, optional*/ duration){
 		if(absolute){
 			var scroll = {y: (window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0),
-			x: (window.pageXOffset || (window["dojo"]?dojo._fixIeBiDiScrollLeft(document.documentElement.scrollLeft):undefined) || document.body.scrollLeft || 0)};
+			// TODO: replace dojo._fixIeBiDiScrollLeft with dojo-geometry:fixIeBidiScrollLeft
+			x: (window.pageXOffset || (window.dojo ? dojo._fixIeBiDiScrollLeft(document.documentElement.scrollLeft):undefined) || document.body.scrollLeft || 0)};
 			y -= scroll.y;
 			x -= scroll.x;
 		}
 		_robot.moveMouse(isSecure(), Number(x), Number(y), Number(0), Number(duration||100));
 	},
 
-	// Main doh.robot API
+	// Main robot API
 	sequence:function(/*Function*/ f, /*Integer, optional*/ delay, /*Integer, optional*/ duration){
 		// summary:
 		//		Defer an action by adding it to the robot's incrementally delayed queue of actions to execute.
@@ -168,20 +171,20 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			doh.robot.mouseClick({left:true}, 100) // first call; wait 100ms
-		//			doh.robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
+		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
+		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		//
 		// duration:
 		//		Delay to wait after firing.
 		//
 
 		var currentTime = (new Date()).getTime();
-		if(currentTime > (doh.robot._time || 0)){
-			doh.robot._time = currentTime;
+		if(currentTime > (robot._time || 0)){
+			robot._time = currentTime;
 		}
-		doh.robot._time += delay || 1;
-		setTimeout(f, doh.robot._time - currentTime);
-		doh.robot._time += duration || 0;
+		robot._time += delay || 1;
+		setTimeout(f, robot._time - currentTime);
+		robot._time += duration || 0;
 	},
 
 	typeKeys: function(/*String||Number*/ chars, /*Integer, optional*/ delay, /*Integer, optional*/ duration){
@@ -189,8 +192,8 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		//		Types a string of characters in order, or types a dojo.keys.* constant.
 		//
 		// description:
-		// 		Types a string of characters in order, or types a dojo.keys.* constant.
-		// 		Example: doh.robot.typeKeys("dijit.ed", 500);
+		//		Types a string of characters in order, or types a dojo.keys.* constant.
+		//		Example: robot.typeKeys("dijit.ed", 500);
 		//
 		// chars:
 		//		String of characters to type, or a dojo.keys.* constant
@@ -199,8 +202,8 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			doh.robot.mouseClick({left:true}, 100) // first call; wait 100ms
-		//			doh.robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
+		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
+		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		//
 		// duration:
 		//		Time, in milliseconds, to spend pressing all of the keys.
@@ -227,8 +230,8 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		//		Types a key combination, like SHIFT-TAB.
 		//
 		// description:
-		// 		Types a key combination, like SHIFT-TAB.
-		// 		Example: to press shift-tab immediately, call doh.robot.keyPress(dojo.keys.TAB, 0, {shift:true})
+		//		Types a key combination, like SHIFT-TAB.
+		//		Example: to press shift-tab immediately, call robot.keyPress(dojo.keys.TAB, 0, {shift:true})
 		//
 		// charOrCode:
 		//		char/JS keyCode/dojo.keys.* constant for the key you want to press
@@ -237,8 +240,8 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			doh.robot.mouseClick({left:true}, 100) // first call; wait 100ms
-		//			doh.robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
+		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
+		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		//
 		// modifiers:
 		//		JSON object that represents all of the modifier keys being pressed.
@@ -280,8 +283,8 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		//		Holds down a single key, like SHIFT or 'a'.
 		//
 		// description:
-		// 		Holds down a single key, like SHIFT or 'a'.
-		// 		Example: to hold down the 'a' key immediately, call doh.robot.keyDown('a')
+		//		Holds down a single key, like SHIFT or 'a'.
+		//		Example: to hold down the 'a' key immediately, call robot.keyDown('a')
 		//
 		// charOrCode:
 		//		char/JS keyCode/dojo.keys.* constant for the key you want to hold down
@@ -291,8 +294,8 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			doh.robot.mouseClick({left:true}, 100) // first call; wait 100ms
-		//			doh.robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
+		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
+		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		//
 
 		this._assertRobot();
@@ -307,8 +310,8 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		//		Releases a single key, like SHIFT or 'a'.
 		//
 		// description:
-		// 		Releases a single key, like SHIFT or 'a'.
-		// 		Example: to release the 'a' key immediately, call doh.robot.keyUp('a')
+		//		Releases a single key, like SHIFT or 'a'.
+		//		Example: to release the 'a' key immediately, call robot.keyUp('a')
 		//
 		// charOrCode:
 		//		char/JS keyCode/dojo.keys.* constant for the key you want to release
@@ -318,8 +321,8 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			doh.robot.mouseClick({left:true}, 100) // first call; wait 100ms
-		//			doh.robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
+		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
+		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		//
 
 		this._assertRobot();
@@ -333,25 +336,25 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 	mouseClick: function(/*Object*/ buttons, /*Integer, optional*/ delay){
 		// summary:
 		//		Convenience function to do a press/release.
-		//		See doh.robot.mousePress for more info.
+		//		See robot.mousePress for more info.
 		//
 		// description:
 		//		Convenience function to do a press/release.
-		//		See doh.robot.mousePress for more info.
+		//		See robot.mousePress for more info.
 		//
 
 		this._assertRobot();
-		doh.robot.mousePress(buttons, delay);
-		doh.robot.mouseRelease(buttons, 1);
+		robot.mousePress(buttons, delay);
+		robot.mouseRelease(buttons, 1);
 	},
 
 	mousePress: function(/*Object*/ buttons, /*Integer, optional*/ delay){
 		// summary:
-		// 		Presses mouse buttons.
+		//		Presses mouse buttons.
 		// description:
-		// 		Presses the mouse buttons you pass as true.
-		// 		Example: to press the left mouse button, pass {left:true}.
-		// 		Mouse buttons you don't specify keep their previous pressed state.
+		//		Presses the mouse buttons you pass as true.
+		//		Example: to press the left mouse button, pass {left:true}.
+		//		Mouse buttons you don't specify keep their previous pressed state.
 		//
 		// buttons:	JSON object that represents all of the mouse buttons being pressed.
 		//		It takes the following Boolean attributes:
@@ -363,8 +366,8 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			doh.robot.mouseClick({left:true}, 100) // first call; wait 100ms
-		//			doh.robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
+		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
+		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		//
 
 		this._assertRobot();
@@ -382,7 +385,7 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 
 	mouseMove: function(/*Number*/ x, /*Number*/ y, /*Integer, optional*/ delay, /*Integer, optional*/ duration, /*Boolean*/ absolute){
 		// summary:
-		// 		Moves the mouse to the specified x,y offset relative to the viewport.
+		//		Moves the mouse to the specified x,y offset relative to the viewport.
 		//
 		// x:
 		//		x offset relative to the viewport, in pixels, to move the mouse.
@@ -394,8 +397,8 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			doh.robot.mouseClick({left:true}, 100) // first call; wait 100ms
-		//			doh.robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
+		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
+		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		//
 		// duration:
 		//		Approximate time Robot will spend moving the mouse
@@ -411,19 +414,19 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		this._assertRobot();
 		duration = duration||100;
 		this.sequence(function(){
-			doh.robot._mouseMove(x, y, absolute, duration);
+			robot._mouseMove(x, y, absolute, duration);
 		},delay,duration);
 	},
 
 	mouseRelease: function(/*Object*/ buttons, /*Integer, optional*/ delay){
 		// summary:
-		// 		Releases mouse buttons.
+		//		Releases mouse buttons.
 		//
 		// description:
-		// 		Releases the mouse buttons you pass as true.
-		// 		Example: to release the left mouse button, pass {left:true}.
-		// 		Mouse buttons you don't specify keep their previous pressed state.
-		//		See doh.robot.mousePress for more info.
+		//		Releases the mouse buttons you pass as true.
+		//		Example: to release the left mouse button, pass {left:true}.
+		//		Mouse buttons you don't specify keep their previous pressed state.
+		//		See robot.mousePress for more info.
 		//
 
 		this._assertRobot();
@@ -447,24 +450,24 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		//		Spins the mouse wheel.
 		//
 		// description:
-		// 		Spins the wheel wheelAmt "notches."
-		// 		Negative wheelAmt scrolls up/away from the user.
-		// 		Positive wheelAmt scrolls down/toward the user.
-		// 		Note: this will all happen in one event.
-		// 		Warning: the size of one mouse wheel notch is an OS setting.
-		//		You can accesss this size from doh.robot.mouseWheelSize
+		//		Spins the wheel wheelAmt "notches."
+		//		Negative wheelAmt scrolls up/away from the user.
+		//		Positive wheelAmt scrolls down/toward the user.
+		//		Note: this will all happen in one event.
+		//		Warning: the size of one mouse wheel notch is an OS setting.
+		//		You can accesss this size from robot.mouseWheelSize
 		//
 		// wheelAmt:
 		//		Number of notches to spin the wheel.
-		// 		Negative wheelAmt scrolls up/away from the user.
-		// 		Positive wheelAmt scrolls down/toward the user.
+		//		Negative wheelAmt scrolls up/away from the user.
+		//		Positive wheelAmt scrolls down/toward the user.
 		//
 		// delay:
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			doh.robot.mouseClick({left:true}, 100) // first call; wait 100ms
-		//			doh.robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
+		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
+		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		//
 		// duration:
 		//		Approximate time Robot will spend moving the mouse
@@ -484,7 +487,7 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		//		Set clipboard content.
 		//
 		// description:
-		// 		Set data as clipboard content, overriding anything already there. The
+		//		Set data as clipboard content, overriding anything already there. The
 		//		data will be put to the clipboard using the given format.
 		//
 		// data:
@@ -500,24 +503,28 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 			_robot.setClipboardText(isSecure(),data);
 		}
 	}
-	};
+};
 
-	// the applet itself
-	// needs to be down here so the handlers are set up
-	var iframesrc;
-	var scripts = document.getElementsByTagName("script");
-	for(var x = 0; x<scripts.length; x++){
-		var s = scripts[x].getAttribute('src');
-		if(s && (s.substr(s.length-9) == "runner.js")){
-			iframesrc = s.substr(0, s.length-9)+'Robot.html';
-			break;
-		}
+// the applet itself
+// needs to be down here so the handlers are set up
+var iframesrc;
+var scripts = document.getElementsByTagName("script");
+for(var x = 0; x<scripts.length; x++){
+	var s = scripts[x].getAttribute('src');
+	if(s && (s.substr(s.length-9) == "runner.js")){
+		iframesrc = s.substr(0, s.length-9)+'Robot.html';
+		break;
 	}
-	// if loaded with dojo, there might not be a runner.js!
-	if(!iframesrc && window["dojo"]){
-		// if user set document.domain to something else, send it to the Robot too
-		iframesrc = require.toUrl("./Robot.html") + "?domain=" + escape(document.domain);
-	}
-	document.writeln('<div id="dohrobotview" style="border:0px none; margin:0px; padding:0px; position:absolute; bottom:0px; right:0px; width:1px; height:1px; overflow:hidden; visibility:hidden; background-color:red;"></div>'+
-		'<iframe application="true" style="border:0px none; z-index:32767; padding:0px; margin:0px; position:absolute; left:0px; top:0px; height:42px; width:200px; overflow:hidden; background-color:transparent;" tabIndex="-1" src="'+iframesrc+'" ALLOWTRANSPARENCY="true"></iframe>');
+}
+
+// if loaded with dojo, there might not be a runner.js!
+if(!iframesrc && window.dojo){
+	// if user set document.domain to something else, send it to the Robot too
+	iframesrc = require.toUrl("./Robot.html") + "?domain=" + escape(document.domain);
+}
+// TODO: replace document.writeln() with domConstruct.place() or something like that
+document.writeln('<div id="dohrobotview" style="border:0px none; margin:0px; padding:0px; position:absolute; bottom:0px; right:0px; width:1px; height:1px; overflow:hidden; visibility:hidden; background-color:red;"></div>'+
+	'<iframe application="true" style="border:0px none; z-index:32767; padding:0px; margin:0px; position:absolute; left:0px; top:0px; height:42px; width:200px; overflow:hidden; background-color:transparent;" tabIndex="-1" src="'+iframesrc+'" ALLOWTRANSPARENCY="true"></iframe>');
+
+return robot;
 });
