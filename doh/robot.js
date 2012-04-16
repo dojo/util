@@ -1,4 +1,7 @@
-define(["doh/_browserRunner", "require"], function(doh, require){
+define([
+	"doh/_browserRunner", "require",
+	"dojo/dom-construct", "dojo/dom-geometry", "dojo/ready", "dojo/_base/unload", "dojo/_base/window"
+], function(doh, require, construct, geom, ready, unload, win){
 
 // loading state
 var _robot = null;
@@ -10,32 +13,6 @@ var isSecure = (function(){
 	};
 })();
 
-// no dojo available
-// hijack doh.run instead
-var _run = doh.run;
-doh.run = function(){
-	if(!robot._runsemaphore.unlock()){
-		// hijack doh._onEnd to clear the applet
-		// have to do it here because browserRunner sets it in onload in standalone case
-		var __onEnd = doh._onEnd;
-		doh._onEnd = function(){
-			robot.killRobot();
-			doh._onEnd = __onEnd;
-			doh._onEnd();
-		};
-		robot.startRobot();
-	}
-};
-
-var cleanup = function(){
-	robot.killRobot();
-};
-if(typeof dojo !== 'undefined'){
-	// TODO: require && require("dojo/_base/kernel"), or something like that
-	dojo.addOnUnload(cleanup);
-}else{
-	window.onunload=cleanup;
-}
 var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ alt, /*Boolean*/ ctrl, /*Boolean*/ shift, /*Boolean*/ meta, /*Integer, optional*/ delay, /*Boolean*/ async){
 	// internal function to type one non-modifier key
 
@@ -45,7 +22,7 @@ var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ al
 	_robot.typeKey(isSecure(), Number(charCode), Number(keyCode), Boolean(alt), Boolean(ctrl), Boolean(shift), Boolean(meta), Number(delay||0), Boolean(async||false));
 };
 
-// For 2.0, remove code to set doh.robot.
+// For 2.0, remove code to set doh.robot global.
 var robot = doh.robot = {
 	_robotLoaded: true,
 	_robotInitialized: false,
@@ -151,8 +128,7 @@ var robot = doh.robot = {
 	_mouseMove: function(/*Number*/ x, /*Number*/ y, /*Boolean*/ absolute, /*Integer, optional*/ duration){
 		if(absolute){
 			var scroll = {y: (window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0),
-			// TODO: replace dojo._fixIeBiDiScrollLeft with dojo-geometry:fixIeBidiScrollLeft
-			x: (window.pageXOffset || (window.dojo ? dojo._fixIeBiDiScrollLeft(document.documentElement.scrollLeft):undefined) || document.body.scrollLeft || 0)};
+			x: (window.pageXOffset || geom.fixIeBiDiScrollLeft(document.documentElement.scrollLeft) || document.body.scrollLeft || 0)};
 			y -= scroll.y;
 			x -= scroll.x;
 		}
@@ -505,26 +481,53 @@ var robot = doh.robot = {
 	}
 };
 
-// the applet itself
-// needs to be down here so the handlers are set up
-var iframesrc;
-var scripts = document.getElementsByTagName("script");
-for(var x = 0; x<scripts.length; x++){
-	var s = scripts[x].getAttribute('src');
-	if(s && (s.substr(s.length-9) == "runner.js")){
-		iframesrc = s.substr(0, s.length-9)+'Robot.html';
-		break;
+// After page has finished loading, create the applet iframe.
+// Note: could eliminate dojo/ready dependency by tying this code to startRobot() call, but then users
+// are required to put doh.run() inside of a dojo/ready.   Probably they are already doing that though.
+ready(function(){
+	// console.log("creating applet iframe");
+	var iframesrc;
+	var scripts = document.getElementsByTagName("script");
+	for(var x = 0; x<scripts.length; x++){
+		var s = scripts[x].getAttribute('src');
+		if(s && (s.substr(s.length-9) == "runner.js")){
+			iframesrc = s.substr(0, s.length-9)+'Robot.html';
+			break;
+		}
 	}
-}
 
-// if loaded with dojo, there might not be a runner.js!
-if(!iframesrc && window.dojo){
-	// if user set document.domain to something else, send it to the Robot too
-	iframesrc = require.toUrl("./Robot.html") + "?domain=" + escape(document.domain);
-}
-// TODO: replace document.writeln() with domConstruct.place() or something like that
-document.writeln('<div id="dohrobotview" style="border:0px none; margin:0px; padding:0px; position:absolute; bottom:0px; right:0px; width:1px; height:1px; overflow:hidden; visibility:hidden; background-color:red;"></div>'+
-	'<iframe application="true" style="border:0px none; z-index:32767; padding:0px; margin:0px; position:absolute; left:0px; top:0px; height:42px; width:200px; overflow:hidden; background-color:transparent;" tabIndex="-1" src="'+iframesrc+'" ALLOWTRANSPARENCY="true"></iframe>');
+	if(!iframesrc){
+		// if user set document.domain to something else, send it to the Robot too
+		iframesrc = require.toUrl("./Robot.html") + "?domain=" + escape(document.domain);
+	}
+	construct.place('<div id="dohrobotview" style="border:0px none; margin:0px; padding:0px; position:absolute; bottom:0px; right:0px; width:1px; height:1px; overflow:hidden; visibility:hidden; background-color:red;"></div>',
+		win.body());
+
+	construct.place('<iframe application="true" style="border:0px none; z-index:32767; padding:0px; margin:0px; position:absolute; left:0px; top:0px; height:42px; width:200px; overflow:hidden; background-color:transparent;" tabIndex="-1" src="'+iframesrc+'" ALLOWTRANSPARENCY="true"></iframe>',
+		win.body());
+});
+
+// If user did not manually call startRobot(), then call it when doh.run() is called.
+var _run = doh.run;
+doh.run = function(){
+	if(!robot._runsemaphore.unlock()){
+		// hijack doh._onEnd to clear the applet
+		// have to do it here because browserRunner sets it in onload in standalone case
+		var __onEnd = doh._onEnd;
+		doh._onEnd = function(){
+			robot.killRobot();
+			doh._onEnd = __onEnd;
+			doh._onEnd();
+		};
+		robot.startRobot();
+	}
+};
+
+// Setup to kill robot on page unload.
+// Maybe this should be done from startRobot() instead?
+unload.addOnUnload(function(){
+	robot.killRobot();
+});
 
 return robot;
 });

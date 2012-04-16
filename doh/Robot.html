@@ -21,10 +21,11 @@
 		document.domain=domain;
 	}
 
-	// Setup global "doh" and "robot" variables to point to doh and doh/robot modules loaded in parent frame
+	// Setup global "doh" and "robot" variables to point to doh and doh/robot modules that have already
+	// been loaded in parent frame (ie, the main document)
 	var doc = window.frameElement.ownerDocument;
 	var w = doc.parentWindow || doc.defaultView || top;
-	doh  = w.require("util/doh/main");	// doh/main doesn't work here
+	doh  = w.require("doh/_browserRunner");
 	robot = w.require("doh/robot");
 
 	function init(){
@@ -132,7 +133,8 @@
 	};
 </script>
 </head>
-<body style="margin:0px; padding:0px; border:0px none;background-color:transparent;" onload="init()">
+<body id="robotBody"
+	  style="margin:0px; padding:0px; border:0px none;background-color:transparent;" onload="init()">
 <input type="text" tabIndex="-1" style="border:0px none;margin:0px;padding:0px;width:200px;height:42px;background-color:white;z-index:9998;opacity:0;filter:alpha(opacity=0);cursor:default;"
 	onmousewheel="_onmousewheel(arguments[0])"
 	onmousedown="_onmousedown(arguments[0])"
