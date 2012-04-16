@@ -14,15 +14,6 @@ var isSecure = (function(){
 	};
 })();
 
-var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ alt, /*Boolean*/ ctrl, /*Boolean*/ shift, /*Boolean*/ meta, /*Integer?*/ delay, /*Boolean*/ async){
-	// internal function to type one non-modifier key
-
-	// typecasting Numbers helps Sun's IE plugin lookup methods that take int arguments
-
-	// otherwise JS will send a double and Sun will complain
-	_robot.typeKey(isSecure(), Number(charCode), Number(keyCode), Boolean(alt), Boolean(ctrl), Boolean(shift), Boolean(meta), Number(delay||0), Boolean(async||false));
-};
-
 // Queue of pending actions plus the currently executing action registered via sequence().
 // Each action is a function that either:
 //		1. does a setTimeout()
@@ -47,6 +38,15 @@ aspect.before(doh, "_runFixture", function(){
 
 // Previous mouse position (from most recent mouseMoveTo() command)
 var lastMouse = {x: 5, y: 5};
+
+var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ alt, /*Boolean*/ ctrl, /*Boolean*/ shift, /*Boolean*/ meta, /*Integer, optional*/ delay, /*Boolean*/ async){
+	// internal function to type one non-modifier key
+
+	// typecasting Numbers helps Sun's IE plugin lookup methods that take int arguments
+
+	// otherwise JS will send a double and Sun will complain
+	_robot.typeKey(isSecure(), Number(charCode), Number(keyCode), Boolean(alt), Boolean(ctrl), Boolean(shift), Boolean(meta), Number(delay||0), Boolean(async||false));
+};
 
 // For 2.0, remove code to set doh.robot global.
 var robot = doh.robot = {
@@ -97,7 +97,17 @@ var robot = doh.robot = {
 				_robot._callLoaded(isSecure());
 			}
 		}
+
+		// When robot finishes initializing it types a key, firing the _onKeyboard() listener, which calls _run(),
+		// which resolves this Deferred.
+		return this._started;
 	},
+
+	// _loaded: Deferred
+	//		Deferred that resolves when the _initRobot() has been called.
+	//		Note to be confused with dojo/robotx.js, which defines initRobot() without an underscore
+	_loaded: new doh.Deferred(),
+
 	_initRobot: function(r){
 		// called from Robot
 		// Robot calls _initRobot in its startup sequence
@@ -112,15 +122,19 @@ var robot = doh.robot = {
 //		document.documentElement.scrollTop = document.documentElement.scrollLeft = 0;
 		_robot = r;
 		_robot._setKey(isSecure());
-		// lazy load
-		doh.run();
+		this._loaded.callback(true);
 	},
+
+	// _started: Deferred
+	//		Deferred that resolves when startRobot() has signaled completing by typing on the keyboard,
+	//		which in turn calls _run().
+	_started: new doh.Deferred(),
 
 	// some utility functions to help the iframe use private variables
 	_run: function(frame){
+		// called after the robot has been able to type on the keyboard, indicating that it's started
 		frame.style.visibility = "hidden";
-		doh.run = _run;
-		doh.run();
+		this._started.callback(true);
 	},
 
 	_initKeyboard: function(){
@@ -553,31 +567,46 @@ ready(function(){
 	construct.place('<div id="dohrobotview" style="border:0px none; margin:0px; padding:0px; position:absolute; bottom:0px; right:0px; width:1px; height:1px; overflow:hidden; visibility:hidden; background-color:red;"></div>',
 		win.body());
 
-	construct.place('<iframe application="true" style="border:0px none; z-index:32767; padding:0px; margin:0px; position:absolute; left:0px; top:0px; height:100px; width:200px; overflow:hidden; background-color:transparent;" tabIndex="-1" src="'+iframesrc+'" ALLOWTRANSPARENCY="true"></iframe>',
+	construct.place('<iframe application="true" style="border:0px none; z-index:32767; padding:0px; margin:0px; position:absolute; left:0px; top:0px; height:42px; width:200px; overflow:hidden; background-color:transparent;" tabIndex="-1" src="'+iframesrc+'" ALLOWTRANSPARENCY="true"></iframe>',
 		win.body());
 });
 
-// If user did not manually call startRobot(), then call it when doh.run() is called.
-var _run = doh.run;
-doh.run = function(){
-	if(!robot._runsemaphore.unlock()){
-		// hijack doh._onEnd to clear the applet
-		// have to do it here because browserRunner sets it in onload in standalone case
-		var __onEnd = doh._onEnd;
-		doh._onEnd = function(){
-			robot.killRobot();
-			doh._onEnd = __onEnd;
-			doh._onEnd();
-		};
-		robot.startRobot();
+// Start the robot as the first "test" when DOH runs.
+doh.registerGroup("initialize robot", [
+	{
+		name: "load robot",
+		timeout: 20000,
+		runTest: function(){
+			// first wait for robot to tell us it's loaded, i.e. that _initRobot() has been called
+			return robot._loaded;
+		}
+	},
+	{
+		name: "start robot",
+		timeout: 20000,
+		runTest: function(){
+			// then we call startRobot(), and wait it to asynchronously complete
+			return robot.startRobot();
+		}
 	}
-};
+]);
 
-// Setup to kill robot on page unload.
-// Maybe this should be done from startRobot() instead?
-unload.addOnUnload(function(){
-	robot.killRobot();
-});
+// Register the killRobot() command as the last "test" to run.
+// There's no good API to do this, so instead call doh.registerGroup() when the app first calls doh.run(),
+// since presumably all the real tests have already been registered.   Note that doh.run() is called multiple times,
+// so make sure to only call registerGroup() once.
+var _oldRun = doh.run;
+doh.run = function(){
+	doh.registerGroup("kill robot", {
+		name: "killRobot",
+		timeout: 10000,
+		runTest: function(){
+			robot.killRobot();
+		}
+	});
+	doh.run = _oldRun;
+	doh.run();
+};
 
 return robot;
 });
