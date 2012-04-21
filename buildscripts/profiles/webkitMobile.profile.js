@@ -158,7 +158,9 @@ var profile = {
 		// Behavior that varies by browser, but is constant across webkit mobile browsers
 		"events-keypress-typed": true,		// whether printable characters generate keypress event?
 		"events-mouseenter": false,		// this is set by mouse.html but never used
-		"touch": true
+		"touch": true,
+		"highcontrast": false,			// safari always displays background images, even when device in high-contrast mode
+		"textarea-needs-help-shrinking": true
 
 		// Values which can be different across mobile devices, so intentionally not specified in this list.
 		// "event-orientationchange": true,
