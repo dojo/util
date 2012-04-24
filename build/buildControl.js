@@ -483,7 +483,11 @@ define([
 	(function(){
 		var fixedScopeMap = {dojo:"dojo", dijit:"dijit", dojox:"dojox"};
 		(bc.scopeMap || []).forEach(function(pair){
-			fixedScopeMap[pair[0]] = pair[1];
+			if(!pair[1]){
+				delete fixedScopeMap[pair[0]];
+			}else{
+				fixedScopeMap[pair[0]] = pair[1];
+			}
 		});
 		bc.scopeMap = fixedScopeMap;
 
