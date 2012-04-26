@@ -271,7 +271,7 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 
 			text = insertAbsMid(rootResource.getText(), rootResource);
 			rootResource.setText(text);
-			fs.writeFile(getDestFilename(rootResource), bc.newlineFilter(copyright + "//>>built" + bc.newline + text, rootResource, "writeAmd"), module.encoding, onWriteComplete); // *1*
+			fs.writeFile(getDestFilename(rootResource), bc.newlineFilter(copyright + "//>>built" + bc.newline + text, rootResource, "writeAmd"), rootResource.encoding, onWriteComplete); // *1*
 			return callback;
 		},
 

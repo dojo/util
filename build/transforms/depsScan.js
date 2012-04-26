@@ -390,6 +390,8 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 					}else{
 						bc.log("i18nNoRoot" ["bundle", resource.mid]);
 					}
+				}else if(!resource.localizedSet){
+					resource.localizedSet = {};
 				}
 
 				var nlsResult= evalNlsResource(resource.text);
