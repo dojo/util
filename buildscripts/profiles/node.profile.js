@@ -27,8 +27,6 @@ var profile = (function(){
 			async:1
 		},
 
-		dojoBootText:"global.require.boot && global.require.apply(null, global.require.boot);",
-
 		// since this build it intended to be utilized with properly-expressed AMD modules;
 		// don't insert absolute module ids into the modules
 		insertAbsMids:0,
