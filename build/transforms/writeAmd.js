@@ -130,12 +130,13 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 					locales.forEach(function(locale){
 						var mid = prefix + locale + bundle,
 							module = bc.amdResources[mid],
-							text = "define('" + mid + "',{});";
+							text;
 						if(bundleRoot.localizedSet[locale] && module){
 							text = module.getText();
 						}else{
 							//TODO real msg
 							//console.log("NOT FOUND - 1: " + mid);
+							text = "define('" + mid + "',{});";
 						}
 						cache.push("'" + mid + "':function(){" + newline + text + newline + "}");
 					});
@@ -143,8 +144,7 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 				if(cache.length && noref){
 					cache.push("'*noref':1");
 				}
-				var
-					match = resource.mid.match(/(.+)\/([^\/]+)$/),
+				var match = resource.mid.match(/(.+)\/([^\/]+)$/),
 					flattenedMid = match[1] + "/nls/" + match[2] + "_" + locale;
 				result[locale]  = [rootPath + "_" + locale + ".js", cache.length ? "require({cache:{" + newline + cache.join("," + newline) + "}});" + newline + 'define("' + flattenedMid + '", [], 1);' + newline : ""];
 			});
@@ -197,7 +197,7 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 					localeList.push('"' + p + '"');
 				}
 
-				preloadText = 'i18n._preloadLocalizations("' + getPreloadLocalizationsRootPath(resource.mid) + '", [' + localeList.join(",") + "]);" + newline;
+				preloadText = 'i18n._preloadLocalizations("' + getPreloadLocalizationsRootPath(resource.mid) + '", [' + localeList.join(",") + "], 1);" + newline;
 				preloadText = 'require(["dojo/i18n"], function(i18n){' + newline + preloadText + "});" + newline;
 			}
 
