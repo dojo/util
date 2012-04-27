@@ -105,8 +105,7 @@ define([], function(){
 		[1, 351, "cannotDeduceModuleIdFrom16LayerDependency", "Cannot deduce module identifier from layer dependency"],
 		[1, 352, "optimizerReportedErrors", "Optimizer reported errors; consult build report for details."],
 		[1, 352, "failedToReadLayerCopyrightFile", "Failed to read copyright file given with layer."],
-
-
+		[1, 353, "i18nUnevaluableBundle", "I18n bundle was not evaluable in the build environment; therefore it will not be included in the flattening computations."],
 
 		// reports 400-499
 		[1, 400, "hasReport", "Has Features Detected"],

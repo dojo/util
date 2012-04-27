@@ -141,15 +141,12 @@ define([
 
 		// the writeDojo transform...
 		try {
-			// all layer modules compute moduleSet, which may be used for reporting
-			resource.moduleSet= writeAmd.computeLayerContents(0, resource.layer.include, resource.layer.exclude);
-
 			var
 				// the default application to the loader constructor is replaced with purpose-build user and default config values
 				configText= "(" + getUserConfig() + ", " + getDefaultConfig() + ");",
 
 				// the construction of the layer is slightly different than standard, so don't pass a module to getLayerText
-				layerText= writeAmd.getLayerText(0, resource.layer.include, resource.layer.exclude, resource.layer.noref),
+				layerText= writeAmd.getLayerText(resource, ""),
 
 				// 1.6 compat chunk
 				compat = (resource.layer.compat=="1.6" && resource.layer.include.length) ? "require(" + json.stringify(resource.layer.include) + ");" + bc.newline : "";
@@ -157,6 +154,14 @@ define([
 			// assemble and write the dojo layer
 			resource.layerText= resource.getText() + configText + stampVersion(layerText) + (bc.dojoBootText || dojoBootText) + compat;
 			doWrite(writeAmd.getDestFilename(resource), resource.layer.copyright + resource.layerText);
+
+			if(resource.flattenedNlsBundles){
+				for(var p in resource.flattenedNlsBundles){
+					var item = resource.flattenedNlsBundles[p];
+					doWrite(item[0], item[1]);
+				}
+			}
+
 
 			//write any bootstraps; boots is a vector of resources that have been marked as bootable by the discovery process
 			resource.boots.forEach(function(item) {

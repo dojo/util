@@ -101,118 +101,100 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 			return "'" + pair[0] + "':" + pair[1];
 		},
 
-		getDiscreteLocales = function(locale){
-			for(var locales = locale.split("-"), result = [], current = "", i= 0; i<locales.length; i++){
-				result.push(current += (i ? "-" : "") + locales[i]);
-			}
-			return result;
-		},
-
 		getPreloadLocalizationsRootPath = function(dest){
 			var match= dest.match(/(.+)\/([^\/]+)$/);
 			return match[1] + "/nls/" + match[2];
 		},
 
-		getFlattenedNlsBundles = function(
+		flattenRootBundle = function(resource){
+			if(resource.flattenedBundles){
+				return;
+			}
+			resource.flattenedBundles = {};
+			bc.localeList.forEach(function(locale){
+				var accumulator = lang.mixin({}, resource.bundleValue.root);
+				bc.localeList.discreteLocales[locale].forEach(function(discreteLocale){
+					var localizedBundle = resource.localizedSet[discreteLocale];
+					if(localizedBundle && localizedBundle.bundleValue){
+						lang.mixin(accumulator, localizedBundle.bundleValue);
+					}
+				});
+				resource.flattenedBundles[locale] = accumulator;
+			});
+		},
+
+		getFlattenedBundles = function(
 			resource,
-			rootBundles,
-			noref
+			rootBundles
 		){
+			if(resource.flattenedNlsBundles!==undefined){
+				console.log("UNUSUAL");
+				return;
+			}
+
+			rootBundles.forEach(flattenRootBundle);
+
 			var newline = bc.newline,
 				rootPath = getPreloadLocalizationsRootPath(resource.dest.match(/(.+)(\.js)$/)[1]),
-				result = resource.flattenedNlsBundles = {};
+				result = resource.flattenedNlsBundles = {},
+				p, cache;
 			bc.localeList.forEach(function(locale){
-				var locales = getDiscreteLocales(locale),
-					cache = [];
-				rootBundles.forEach(function(bundleRoot){
-					var prefix = bundleRoot.prefix,
-						bundle = "/" + bundleRoot.bundle;
-					locales.forEach(function(locale){
-						var mid = prefix + locale + bundle,
-							module = bc.amdResources[mid],
-							text;
-						if(bundleRoot.localizedSet[locale] && module){
-							text = module.getText();
-						}else{
-							//TODO real msg
-							//console.log("NOT FOUND - 1: " + mid);
-							text = "define('" + mid + "',{});";
-						}
-						cache.push("'" + mid + "':function(){" + newline + text + newline + "}");
-					});
+				cache = [];
+				rootBundles.forEach(function(rootResource){
+					cache.push("'" + rootResource.prefix + rootResource.bundle + "':" + json.stringify(rootResource.flattenedBundles[locale]) + newline);
 				});
-				if(cache.length && noref){
-					cache.push("'*noref':1");
-				}
-				var match = resource.mid.match(/(.+)\/([^\/]+)$/),
-					flattenedMid = match[1] + "/nls/" + match[2] + "_" + locale;
-				result[locale]  = [rootPath + "_" + locale + ".js", cache.length ? "require({cache:{" + newline + cache.join("," + newline) + "}});" + newline + 'define("' + flattenedMid + '", [], 1);' + newline : ""];
+				result[locale]  = [rootPath + "_" + locale + ".js", "define({" + newline + cache.join("," + newline) + "});"];
 			});
 		},
 
 		getLayerText= function(
 			resource,
-			include,
-			exclude,
-			noref
+			resourceText
 		) {
-			var
-				newline = bc.newline,
+			var newline = bc.newline,
 				rootBundles = [],
 				cache= [],
-				moduleSet= computeLayerContents(resource, include, exclude);
-			for (var p in moduleSet) if(!resource || p!=resource.mid){
-				var module= moduleSet[p];
-				if (module.internStrings) {
-					cache.push(getCacheEntry(module.internStrings()));
-				} else if(module.getText){
-					cache.push("'" + p + "':function(){" + newline + module.getText() + newline + "}");
-				} else {
-					bc.log("amdMissingLayerModuleText", ["module", module.mid, "layer", resource.mid]);
-				}
-				if(module.localizedSet){
-					// this is a root NLS bundle
+				moduleSet= computeLayerContents(resource, resource.layer.include, resource.layer.exclude);
+			for (var p in moduleSet) if(p!=resource.mid){
+				var module = moduleSet[p];
+				if(module.localizedSet && bc.localeList){
+					// this is a root NLS bundle and the profile is building flattened layer bundles;
+					// therefore, add this bundle to the set to be flattened, but don't write the root bundle
+					// to the cache since the loader will explicitly load the flattened bundle
 					rootBundles.push(module);
+				}else if(module.internStrings){
+					cache.push(getCacheEntry(module.internStrings()));
+				}else if(module.getText){
+					cache.push("'" + p + "':function(){" + newline + module.getText() + newline + "}");
+				}else{
+					bc.log("amdMissingLayerModuleText", ["module", module.mid, "layer", resource.mid]);
 				}
 			}
 
+			if(rootBundles.length){
+				// compute the flattened layer bundles
+				getFlattenedBundles(resource, rootBundles);
+				// push an *now into the cache that causes the flattened layer bundles to be loaded immediately
+				cache.push("'*now':function(r){r(['dojo/i18n!*preload*" + getPreloadLocalizationsRootPath(resource.mid) + "*" + json.stringify(bc.localeList) + "']);}" + newline);
+			}
+
 			// construct the cache text
-			if(cache.length && noref){
+			if(cache.length && resource.layer.noref){
 				cache.push("'*noref':1");
 			}
 			cache = cache.length ? "require({cache:{" + newline + cache.join("," + newline) + "}});" + newline : "";
 
-			// compute the flattened NLS bundles if required
-			if(resource && bc.localeList && rootBundles.length && resource.flattenedNlsBundles===undefined){
-				getFlattenedNlsBundles(resource, rootBundles, noref);
+			if(resourceText===undefined){
+				resourceText = insertAbsMid(resource.getText(), resource);
 			}
 
-			// !resource implies a boot module; don't preloadLocalizations for that kind of new module since it is new in 1.7
-			// prefer the bc.preloadLocations switch, which allows turning off this feature
-			// default to include preloadLocalizations iff the config is synch mode
-			var preloadText = "";
-			if(resource && (bc.preloadLocalizations || (!("preloadLocalizations" in bc) && !bc.defaultConfig.async))){
-				var localeList = [];
-				for(p in resource.flattenedNlsBundles){
-					localeList.push('"' + p + '"');
-				}
+			resourceText = cache + newline + resourceText;
 
-				preloadText = 'i18n._preloadLocalizations("' + getPreloadLocalizationsRootPath(resource.mid) + '", [' + localeList.join(",") + "], 1);" + newline;
-				preloadText = 'require(["dojo/i18n"], function(i18n){' + newline + preloadText + "});" + newline;
+			if(resource.layer.postscript){
+				resourceText+= resource.layer.postscript;
 			}
 
-			var text= "";
-			if(resource){
-				text= insertAbsMid(resource.getText(), resource);
-			}
-
-			text = cache + newline + preloadText + text;
-
-			if(resource && resource.layer && resource.layer.postscript){
-				text+= resource.layer.postscript;
-			}
-
-			return text;
+			return resourceText;
 		},
 
 		getStrings= function(
@@ -234,6 +216,35 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 			}else{
 				return resource.dest;
 			}
+		},
+
+		convertLegacyBundle = function(resource){
+			var newline = bc.newline;
+			if(bc.localeList){
+				if(resource.localizedSet){
+					for(var p in resource.localizedSet){
+						resource.bundleValue[p] = 1;
+					}
+				}
+				return resource.setText("define(" + newline + json.stringify(this.bundleValue) + newline + ");" + newline);
+			}else{
+				var text= resource.getText();
+
+				// this is from the old builder; apparently bundles were improperly written with trailing semicolons sometimes
+				text = text.replace(/;\s*$/, "");
+
+				if(resource.localizedSet){
+					// this is the root bundle
+					var availableLocales= [];
+					for(var p in resource.localizedSet){
+						availableLocales.push("\"" + p + "\":1");
+					}
+					text = "define({root:" + newline + text + "," + newline + availableLocales.join("," + newline) + "}" + newline + ");" + newline;
+				}else{
+					text = "define(" + newline + text + newline + ");";
+				}
+				return resource.setText(text);
+			};
 		},
 
 		writeNls = function(rootResource, copyright, callback){
@@ -298,7 +309,7 @@ define(["../buildControl", "../fileUtils", "../fs", "dojo/_base/lang", "dojo/jso
 					// resource.layer.boot layers are written by the writeDojo transform
 					return 0;
 				}
-				text= resource.layerText= getLayerText(resource, resource.layer.include, resource.layer.exclude, resource.layer.noref);
+				text= resource.layerText= getLayerText(resource);
 				if(resource.layer.compat=="1.6"){
 					text= resource.layerText= text + "require(" + json.stringify(resource.layer.include) + ");" + bc.newline;
 				}
