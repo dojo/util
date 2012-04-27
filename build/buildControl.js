@@ -188,10 +188,29 @@ define([
 		bc.copyTests = !!bc.copyTests;
 	}
 
+	function getDiscreteLocales(locale){
+		for(var locales = locale.split("-"), result = [], current = "", i= 0; i<locales.length; i++){
+			result.push(current += (i ? "-" : "") + locales[i]);
+		}
+		return result;
+	}
 	if(isString(bc.localeList)){
 		bc.localeList = bc.localeList.split(",");
 	}
-	bc.localeList = bc.localeList ? bc.localeList.map(lang.trim) : [];
+	if(bc.localeList && bc.localeList.length){
+		if(bc.localeList.indexOf("ROOT")==-1){
+			bc.localeList.push("ROOT");
+		}
+		var localeList = {};
+		bc.localeList.forEach(function(locale){
+			locale = lang.trim(locale);
+			localeList[locale] = getDiscreteLocales(locale);
+		});
+		bc.localeList.discreteLocales = localeList;
+	}else{
+		bc.localeList = false;
+	}
+
 
 	// clean up bc.packageMap and bc.paths so they can be used just as in dojo loader/bdLoad
 	(function() {

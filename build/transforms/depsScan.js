@@ -2,6 +2,8 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 	function(require, bc, fileUtils, removeComments, json, lang, syncLoader, fs) {
 	return function(resource) {
 		var
+			newline = bc.newline,
+
 			mix = function(dest, src){
 				dest = dest || {};
 				for(var p in src){
@@ -176,7 +178,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 				}
 			},
 
-			tagAbsMid = function(){
+			tagAbsMid = function(absMid){
 				if(absMid && absMid!=resource.mid){
 					bc.log("amdInconsistentMid", ["module", resource.mid, "specified", absMid]);
 				}
@@ -194,7 +196,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 						bc.log("amdPureContainedLegacyApi", ["module", resource.mid]);
 					}
 					(new Function("define", "require", resource.text))(simulatedDefine, simulatedRequire);
-					tagAbsMid();
+					tagAbsMid(absMid);
 				} catch (e) {
 					bc.log("amdFailedEval", ["module", resource.mid, "error", e]);
 				}
@@ -330,7 +332,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 						}
 						amdCallCount++;
 						(new Function("define", result))(simulatedDefine);
-						tagAbsMid();
+						tagAbsMid(absMid);
 					} catch (e) {
 						amdCallCount--;
 						bc.log("amdFailedDefineEval", ["module", resource.mid, "text", result, "error", e]);
@@ -350,26 +352,43 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 				return amdCallCount;
 			},
 
-			amdBundle= {},
-
-			syncBundle= {},
-
-			evalNlsResource= function(text){
+			evalNlsResource= function(resource){
+				var bundleValue= 0;
 				try{
+					function simulatedDefine(a1, a2){
+						if(lang.isString(a1) && lang.isObject(a2)){
+							tagAbsMid(a1);
+							bundleValue = a2;
+						}else if(lang.isObject(a1)){
+							bundleValue = a1;
+						}
+					}
 					(new Function("define", resource.text))(simulatedDefine);
-					if(defineApplied){
-						return amdBundle;
+					if(bundleValue){
+						resource.bundleValue = bundleValue;
+						resource.bundleType = "amd";
+						return;
 					}
 				}catch(e){
+					// TODO: consider a profile flag to cause errors to be logged
 				}
 				try{
-					var result= eval("(" + text + ")");
-					if(lang.isObject(result)){
-						return syncBundle;
+					bundleValue = (new Function("return " + resource.text + ";"))();
+					if(lang.isObject(bundleValue)){
+						resource.bundleValue = bundleValue;
+						resource.bundleType = "legacy";
+						return;
 					}
 				}catch(e){
+					// TODO: consider a profile flag to cause errors to be logged
 				}
-				return 0;
+
+				// if not building flattened layer bundles, then it's not necessary for the bundle
+				// to be evaluable; still run processPureAmdModule to compute possible dependencies
+				processPureAmdModule();
+				if(!defineApplied){
+					bc.log("i18nImproperBundle", ["module", resource.mid]);
+				}
 			},
 
 			processNlsBundle = function(){
@@ -383,48 +402,42 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 					bundle= resource.bundle = match[4],
 					rootPath= prefix + bundle,
 					rootBundle= bc.amdResources[rootPath];
-				if(locale){
-					if(rootBundle){
-						var localizedSet= rootBundle.localizedSet || (rootBundle.localizedSet= {});
-						localizedSet[locale]= 1;
-					}else{
-						bc.log("i18nNoRoot" ["bundle", resource.mid]);
-					}
-				}else if(!resource.localizedSet){
-					resource.localizedSet = {};
+
+				// if not root, don't process any localized bundles; a missing root bundle serves as a signal
+				// to other transforms (e.g., writeAmd) to ignore this bundle family
+				if(!rootBundle){
+					bc.log("i18nNoRoot" ["bundle", resource.mid]);
+					return;
 				}
 
-				var nlsResult= evalNlsResource(resource.text);
-				if(nlsResult===syncBundle){
-					// transform a 1.6- bundle into and AMD-style bundle
-					var getText= resource.getText;
-					resource.getText= function(){
-						var text= getText.call(this),
-						newline = bc.newline;
+				// accumulate all the localized versions in the root bundle
+				if(!rootBundle.localizedSet){
+					rootBundle.localizedSet = {};
+				}
+				if(locale){
+					rootBundle.localizedSet[locale] = resource;
+				}
 
-						// this is frome the old builder...
-						// TODO: consider removing this
-						// If this is an nls bundle, make sure it does not end in a ; Otherwise, bad things happen.
-						if(text.match(/\/nls\//)){
-							text = text.replace(/;\s*$/, "");
-						}
+				// try to compute the value of the bundle; sets properties bundleValue and bundleType
+				evalNlsResource(resource);
 
-						if(this.localizedSet){
-							// this is the root bundle
-							var availableLocales= [];
-							for(var p in this.localizedSet){
-								availableLocales.push("\"" + p + "\":1");
-							}
-							text = "define({root:" + newline + text + "," + newline + availableLocales.join("," + newline) + "}" + newline + ");" + newline;
-						}else{
-							text = "define(" + newline + text + newline + ");";
+				if(bc.localeList){
+					// profile is building flattened layer bundles; therefore, the bundle must have been evaluable
+					if(!resource.bundleValue){
+						rootBundle.error = true;
+						bc.log("i18nUnevaluableBundle", ["module", resource.mid]);
+					}else if(resource.bundleType=="legacy"){
+						if(!locale){
+							// writeAmd will insert the locale list into bundleValue
+							resource.bundleValue = {root:resource.bundleValue};
 						}
-						return resource.setText(text);
-					};
-				}else if(nlsResult===amdBundle){
-					processPureAmdModule();
+						resource.getText= function(){
+							return resource.setText("define(" + newline + json.stringify(this.bundleValue) + newline + ");");
+						};
+					}
 				}else{
-					bc.log("i18nImproperBundle", ["module", resource.mid]);
+					// no flattened bundles will be written; this path does can be executed with bundles that are not evaluable
+					// (for example, bundles that include calculations)
 				}
 			},
 
@@ -521,9 +534,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 					internStrings();
 				}
 
-				var newline = bc.newline,
-
-					text =
+				var text =
 						// apply any replacements before processing
 						resource.getText(),
 
