@@ -88,12 +88,12 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 
 			//Set up options
 			var options = new jscomp.CompilerOptions();
-			options.prettyPrint = optimizeSwitch.indexOf(".keepLines") !== -1;
-
+			options.prettyPrint = optimizeSwitch.indexOf(".keeplines") !== -1;
 			var FLAG_compilation_level = jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS;
 			FLAG_compilation_level.setOptionsForCompilationLevel(options);
 			var FLAG_warning_level = jscomp.WarningLevel.DEFAULT;
 			FLAG_warning_level.setOptionsForWarningLevel(options);
+
 
 			//Run the compiler
 			var compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);

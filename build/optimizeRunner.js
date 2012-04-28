@@ -98,7 +98,7 @@ function ccompile(src, dest, optimizeSwitch, copyright){
 
 	//Set up options
 	var options = new jscomp.CompilerOptions();
-	options.prettyPrint = optimizeSwitch.indexOf(".keepLines") !== -1;
+	options.prettyPrint = optimizeSwitch.indexOf(".keeplines") !== -1;
 
 	var FLAG_compilation_level = jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS;
 	FLAG_compilation_level.setOptionsForCompilationLevel(options);
