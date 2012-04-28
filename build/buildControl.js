@@ -62,6 +62,19 @@ define([
 			return true;
 		},
 
+		cleanDeprecated = function(o, inputFile){
+			var deprecated= [];
+			for(p in o){
+				if(/^(log|loader|xdDojoPath|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)){
+					deprecated.push(p);
+					bc.log("inputDeprecated", ["switch", p, inputFile]);
+				}
+			}
+			deprecated.forEach(function(p){
+				delete o[p];
+			});
+		},
+
 		mix= function(dest, src) {
 			dest= dest || {};
 			src= src || {};
@@ -76,6 +89,8 @@ define([
 
 		// mix a profile object into the global profile object
 		mixProfileObject= function(src) {
+			cleanDeprecated(src, src.selfFilename);
+
 			// the profile properties...
 			//	 paths, plugins, transforms, staticHasFeatures
 			// ...are mixed one level deep; messageCategories, messages, packages, and packagePaths require special handling; all others are over-written
@@ -137,6 +152,8 @@ define([
 		mixProfileObject(temp);
 		build && mixProfileObject(build);
 	});
+
+	cleanDeprecated(argv.args, "command line");
 
 	// lastly, explicit command line switches override any evaluated profile objects
 	for (var argName in argv.args) if (argName!="profiles") {
@@ -524,17 +541,6 @@ define([
 		fixedInternStringsSkipList[mid] = 1;
 	});
 	bc.internStringsSkipList = fixedInternStringsSkipList;
-
-	var deprecated= [];
-	for(p in bc){
-		if(/^(loader|xdDojoPath|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)){
-			deprecated.push(p);
-			bc.log("inputDeprecated", ["switch", p]);
-		}
-	}
-	deprecated.forEach(function(p){
-		delete bc[p];
-	});
 
 	// dump bc (if requested) before changing gate names to gate ids below
 	if(bc.check){
