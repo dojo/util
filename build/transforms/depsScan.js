@@ -1,6 +1,14 @@
-define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo/json", "dojo/_base/lang", "dojo/_base/loader", "../fs"],
-	function(require, bc, fileUtils, removeComments, json, lang, syncLoader, fs) {
-	return function(resource) {
+define([
+	"require",
+	"../buildControl",
+	"../fileUtils",
+	"../removeComments",
+	"dojo/json",
+	"dojo/_base/lang",
+	"dojo/_base/loader",
+	"../fs"
+], function(require, bc, fileUtils, removeComments, json, lang, syncLoader, fs){
+	return function(resource){
 		var
 			newline = bc.newline,
 
@@ -18,7 +26,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 
 			defineApplied = 0,
 
-			simulatedDefine= function(mid, dependencies, factory) {
+			simulatedDefine = function(mid, dependencies, factory){
 				defineApplied = 1;
 				var
 					arity = arguments.length,
@@ -26,19 +34,19 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 					defaultDeps = ["require", "exports", "module"];
 
 				// TODO: add the factory scan?
-				if (0) {
-					if (arity==1) {
-						dependencies= [];
+				if(0){
+					if(arity==1){
+						dependencies = [];
 						mid.toString()
 							.replace(/(\/\*([\s\S]*?)\*\/|\/\/(.*)$)/mg, "")
-							.replace(/require\(["']([\w\!\-_\.\/]+)["']\)/g, function (match, dep) {
+							.replace(/require\(["']([\w\!\-_\.\/]+)["']\)/g, function(match, dep){
 								dependencies.push(dep);
 							});
-						args= [0, defaultDeps.concat(dependencies), mid];
+						args = [0, defaultDeps.concat(dependencies), mid];
 					}
 				}
-				if (!args) {
-					args= arity==1 ? [0, defaultDeps, mid] :
+				if(!args){
+					args = arity==1 ? [0, defaultDeps, mid] :
 						(arity==2 ? (mid instanceof Array ? [0, mid, dependencies] : [mid, defaultDeps, dependencies]) :
 							[mid, dependencies, factory]);
 				}
@@ -48,16 +56,16 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 				}
 
 				absMid = args[0];
-				aggregateDeps= aggregateDeps.concat(args[1]);
+				aggregateDeps = aggregateDeps.concat(args[1]);
 			},
 
-			simulatedRequire= function(depsOrConfig, callbackOrDeps) {
+			simulatedRequire = function(depsOrConfig, callbackOrDeps){
 				// add contents of deps vector to aggregateDeps iff it contains no relative ids; do not process deps property in config
 				var hasRelativeIds = function(deps){ return deps.some(function(item){ return /^\./.test(item); }); };
-				if (lang.isArray(depsOrConfig) && !hasRelativeIds(depsOrConfig)){
-					aggregateDeps= aggregateDeps.concat(depsOrConfig);
-				} else if(lang.isArray(callbackOrDeps) && !hasRelativeIds(callbackOrDeps)){
-					aggregateDeps= aggregateDeps.concat(callbackOrDeps);
+				if(lang.isArray(depsOrConfig) && !hasRelativeIds(depsOrConfig)){
+					aggregateDeps = aggregateDeps.concat(depsOrConfig);
+				}else if(lang.isArray(callbackOrDeps) && !hasRelativeIds(callbackOrDeps)){
+					aggregateDeps = aggregateDeps.concat(callbackOrDeps);
 				}
 			},
 
@@ -80,16 +88,16 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 			simulatedDojo =
 				// the dojo legacy loader API
 				{
-					require:function(moduleName, omitModuleCheck) {
+					require:function(moduleName, omitModuleCheck){
 						dojoRequires.push(slashName(moduleName));
 					},
-					provide:function(moduleName) {
+					provide:function(moduleName){
 						dojoProvides.push(slashName(moduleName));
 					},
-					requireLocalization: function(moduleName, bundleName, locale) {
+					requireLocalization: function(moduleName, bundleName, locale){
 						aggregateDeps.push("dojo/i18n!" + slashName(moduleName) + "/nls/" + (!locale || /root/i.test(locale) ? "" : locale + "/") + slashName(bundleName));
 					},
-					platformRequire:function(modMap) {
+					platformRequire:function(modMap){
 						pluginStrategyRequired = 1;
 						(modMap.common || []).concat((bc.platform && modMap[bc.platform]) || []).forEach(function(item){
 							dojoRequires.push(lang.isArray(item) ? slashName(item[0]) : slashName(item));
@@ -99,11 +107,11 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 						pluginStrategyRequired = 1;
 						callback();
 					},
-					requireIf:function(expr, moduleName, omitModuleCheck) {
+					requireIf:function(expr, moduleName, omitModuleCheck){
 						pluginStrategyRequired = 1;
 						expr && dojoRequires.push(slashName(moduleName));
 					},
-					requireAfterIf:function(expr, moduleName, omitModuleCheck) {
+					requireAfterIf:function(expr, moduleName, omitModuleCheck){
 						pluginStrategyRequired = 1;
 						expr && dojoRequires.push(slashName(moduleName));
 					}
@@ -154,13 +162,13 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 			getAmdModule = function(
 				mid,
 				referenceModule
-			) {
-				var match= mid.match(/^([^\!]+)\!(.*)$/);
-				if (match) {
+			){
+				var match = mid.match(/^([^\!]+)\!(.*)$/);
+				if(match){
 					var pluginModuleInfo = bc.getSrcModuleInfo(match[1], referenceModule),
-						pluginModule = pluginModuleInfo &&  bc.amdResources[pluginModuleInfo.mid],
-						pluginId= pluginModule && pluginModule.mid,
-						pluginProc= bc.plugins[pluginId];
+						pluginModule = pluginModuleInfo &&	bc.amdResources[pluginModuleInfo.mid],
+						pluginId = pluginModule && pluginModule.mid,
+						pluginProc = bc.plugins[pluginId];
 					if(!pluginModule){
 						return 0;
 					}else if(!pluginProc){
@@ -171,9 +179,9 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 					}else{
 						return pluginProc.start(match[2], referenceModule, bc);
 					}
-				} else {
-					var moduleInfo= bc.getSrcModuleInfo(mid, referenceModule),
-						module= moduleInfo && bc.amdResources[moduleInfo.mid];
+				}else{
+					var moduleInfo = bc.getSrcModuleInfo(mid, referenceModule),
+						module = moduleInfo && bc.amdResources[moduleInfo.mid];
 					return module;
 				}
 			},
@@ -187,22 +195,22 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 				}
 			},
 
-			processPureAmdModule= function() {
+			processPureAmdModule = function(){
 				// find the dependencies for this resource using the fast path if the module says it's OK
 				// pure AMD says the module can be executed in the build environment
 				// note: the user can provide a build environment with TODO
-				try {
+				try{
 					if(resource.mid!="dojo/_base/loader" && /dojo\.(require|provide)\s*\(/.test(removeComments(resource.text))){
 						bc.log("amdPureContainedLegacyApi", ["module", resource.mid]);
 					}
 					(new Function("define", "require", resource.text))(simulatedDefine, simulatedRequire);
 					tagAbsMid(absMid);
-				} catch (e) {
+				}catch (e){
 					bc.log("amdFailedEval", ["module", resource.mid, "error", e]);
 				}
 			},
 
-			convertToStrings= function(text){
+			convertToStrings = function(text){
 				var strings = [],
 
 					// a DFA, the states...
@@ -219,7 +227,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 								return spaces;
 							}
 							if(c=="'" || c=='"'){
-								quoteType= c;
+								quoteType = c;
 								current = "";
 								return string;
 							}
@@ -256,7 +264,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 					quoteType, current;
 
 
-				for (var i= 0; i<text.length; i++){
+				for(var i = 0; i<text.length; i++){
 					state = dfa[state](text.charAt(i));
 					if(state==error){
 						return 0;
@@ -268,7 +276,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 				return 0;
 			},
 
-			processPossibleAmdWithRegExs= function(text) {
+			processPossibleAmdWithRegExs = function(text){
 				// look for AMD define and/or require; require must not have relative mids; require signature with config argument is not discovered
 				// (remember, a config could have a string or regex that could have an unmatched right "}", so there is not way to guarantee we can find the correct
 				// end of the config arg without parsing)
@@ -286,36 +294,36 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 						//	'define("test", ["test1"])',
 						//	'define("test", ["test1", "test2"])',
 						//	'define(["test1"])',
- 						//	'define(["test1", "test2"])',
+						//	'define(["test1", "test2"])',
 						//	'define("test", ["test1"], function(test){ hello;})',
 						//	'define("test", function(test){ hello;})',
 						//	'define(["test1"], function(test){ hello;})',
 						//	'define(function(test){ hello;})',
 						//	'define({a:1})'
 						// ]
-					    //                    2                   3      4                5
+						//					  2					  3		 4				  5
 						/(^|\s)define\s*\(\s*(["'][^'"]+['"])?\s*(,)?\s*(\[[^\]]*?\])?\s*(,)?/g,
 
 					result;
-				while((result= defineExp.exec(text)) != null) {
-					try {
+				while((result = defineExp.exec(text)) != null){
+					try{
 						if(result[2]){
 							// first arg a string
 							if(result[3]){
 								// first arg a module id
 								if(result[5]){
 									// (mid, deps, <factory>)
-									result= result[0] + "{})";
+									result = result[0] + "{})";
 								}else if(result[4]){
 									// (mid, <factory:array value>)
 									result = result[0] + ")";
-								}else {
+								}else{
 									// (mid, <factory>)
 									result = result[0] + "{})";
 								}
 							}else{
 								// (<factory:string-value>)
-								result= result[0]  + ")";
+								result = result[0]	+ ")";
 							}
 						}else if(result[4]){
 							// first arg an array
@@ -333,7 +341,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 						amdCallCount++;
 						(new Function("define", result))(simulatedDefine);
 						tagAbsMid(absMid);
-					} catch (e) {
+					}catch(e){
 						amdCallCount--;
 						bc.log("amdFailedDefineEval", ["module", resource.mid, "text", result, "error", e]);
 					}
@@ -342,18 +350,18 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 				var requireExp=
 						// look for require applications with an array for the first arg; notice the regex stops after the first arg and config signature is not processed
 						/(^|\s)require\s*\(\s*\[([^\]]*?)\]/g;
-				while((result= requireExp.exec(text)) != null) {
+				while((result = requireExp.exec(text)) != null){
 					var mids = convertToStrings(result[2]);
 					if(mids){
 						amdCallCount++;
-						aggregateDeps= aggregateDeps.concat(mids.filter(function(item){return item.charAt(0)!=".";}));
+						aggregateDeps = aggregateDeps.concat(mids.filter(function(item){return item.charAt(0)!=".";}));
 					}
 				}
 				return amdCallCount;
 			},
 
-			evalNlsResource= function(resource){
-				var bundleValue= 0;
+			evalNlsResource = function(resource){
+				var bundleValue = 0;
 				try{
 					function simulatedDefine(a1, a2){
 						if(lang.isString(a1) && lang.isObject(a2)){
@@ -396,12 +404,12 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 
 				// compute and remember the set of localized bundles; attach this info to the root bundle
 				var
-					match= resource.mid.match(/(^.*\/nls\/)(([^\/]+)\/)?([^\/]+)$/),
-					prefix= resource.prefix = match[1],
-					locale= resource.locale = match[3],
-					bundle= resource.bundle = match[4],
-					rootPath= prefix + bundle,
-					rootBundle= bc.amdResources[rootPath];
+					match = resource.mid.match(/(^.*\/nls\/)(([^\/]+)\/)?([^\/]+)$/),
+					prefix = resource.prefix = match[1],
+					locale = resource.locale = match[3],
+					bundle = resource.bundle = match[4],
+					rootPath = prefix + bundle,
+					rootBundle = bc.amdResources[rootPath];
 
 				// if not root, don't process any localized bundles; a missing root bundle serves as a signal
 				// to other transforms (e.g., writeAmd) to ignore this bundle family
@@ -443,7 +451,7 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 
 			interningDojoUriRegExpString =
 				// the following is a direct copy from the v1.6- build util; this is so janky, we dare not touch
-				//23                                 4                5                                                     6                      78                   9                         0           1
+				//23								 4				  5														6					   78					9						  0			  1
 				"(((templatePath|templateCssPath)\\s*(=|:)\\s*)dojo\\.(module)?Url\\(|dojo\\.cache\\s*\\(\\s*)\\s*?[\\\"\\']([\\w\\.\\/]+)[\\\"\\'](([\\,\\s]*)[\\\"\\']([\\w\\.\\/-]*)[\\\"\\'])?(\\s*,\\s*)?([^\\)]*)?\\s*\\)",
 
 			interningGlobalDojoUriRegExp = new RegExp(interningDojoUriRegExpString, "g"),
@@ -519,11 +527,11 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 				bc.log("internStrings", logArgs);
 			},
 
-			processWithRegExs = function() {
+			processWithRegExs = function(){
 				// try to figure out if the module is legacy or AMD and then process the loader applications found
 				//
 				// Warning: the process is flawed because regexs will find things that are not there and miss things that are
-				// there is no way around this without a proper parser.  Note however, this kind of process has been in use
+				// there is no way around this without a proper parser.	 Note however, this kind of process has been in use
 				// with the v1.x build system for a long time.
 				//
 				// TODO: replace this process with a parser
@@ -543,8 +551,8 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 
 					extractResult =
 						// a vector of legacy loader API applications as pairs of [function-name, complete-function-application-text] + the following two properties
-						//   * text: the original text with all dojo.loadInit applications preceeded by 0 &&, thereby causing those applications to be discarded by the minifier
-						//   * extractText: all legacy loader applications, with all dojo.loadInit applications moved to the beginning
+						//	 * text: the original text with all dojo.loadInit applications preceeded by 0 &&, thereby causing those applications to be discarded by the minifier
+						//	 * extractText: all legacy loader applications, with all dojo.loadInit applications moved to the beginning
 						// See dojo.js
 						syncLoader.extractLegacyApiApplications(text, removeComments(text));
 				if(!extractResult.extractText && processPossibleAmdWithRegExs(removeComments(text))){
@@ -563,12 +571,12 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 				applyLegacyCalls(extractResult[2]);
 
 				// check for multiple or irrational dojo.provides
-				if (dojoProvides.length) {
-					if (dojoProvides.length>1) {
+				if(dojoProvides.length){
+					if(dojoProvides.length>1){
 						bc.log("legacyMultipleProvides", ["module", resource.mid, "provides", dojoProvides]);
 					}
-					dojoProvides.forEach(function(item) {
-						if (item.replace(/\./g, "/")!=resource.mid) {
+					dojoProvides.forEach(function(item){
+						if(item.replace(/\./g, "/")!=resource.mid){
 							bc.log("legacyImproperProvide", ["module", resource.mid, "provide", item]);
 						}
 					});
@@ -591,9 +599,9 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 						src:resource.src.substring(0, resource.src.length-3) + "-loadInit.js",
 						dest:bc.getDestModuleInfo(mid).url,
 						mid:mid,
-						tag: {loadInitResource:1},
+						tag:{loadInitResource:1},
 						deps:[],
-						getText:function() { return pluginText; }
+						getText:function(){ return pluginText; }
 					}));
 					bc.start(pluginResource);
 
@@ -610,27 +618,27 @@ define(["require", "../buildControl", "../fileUtils", "../removeComments", "dojo
 		// scan the resource for dependencies
 		if(resource.tag.nls){
 			processNlsBundle();
-		}else if(resource.tag.amd || /\/\/>>\s*pure-amd/.test(resource.text)) {
+		}else if(resource.tag.amd || /\/\/>>\s*pure-amd/.test(resource.text)){
 			processPureAmdModule();
 		}else{
 			processWithRegExs();
 		}
 
 		// resolve the dependencies into modules
-		var deps= resource.deps;
+		var deps = resource.deps;
 		resource.aggregateDeps = aggregateDeps;
-		aggregateDeps.forEach(function(dep) {
-			if (!(/^(require|exports|module)$/.test(dep))) {
-				try {
-					var module= getAmdModule(dep, resource);
-					if (lang.isArray(module)) {
+		aggregateDeps.forEach(function(dep){
+			if(!(/^(require|exports|module)$/.test(dep))){
+				try{
+					var module = getAmdModule(dep, resource);
+					if(lang.isArray(module)){
 						module.forEach(function(module){ deps.push(module); });
-					} else if (module) {
+					}else if(module){
 						deps.push(module);
-					} else {
+					}else{
 						bc.log("amdMissingDependency", ["module", resource.mid, "dependency", dep]);
 					}
-				} catch (e) {
+				}catch(e){
 					bc.log("amdMissingDependency", ["module", resource.mid, "dependency", dep, "error", e]);
 				}
 			}

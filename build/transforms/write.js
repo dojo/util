@@ -1,4 +1,9 @@
-define(["../buildControl", "../fileUtils", "../fs", "../replace"], function(bc, fileUtils, fs, replace) {
+define([
+	"../buildControl",
+	"../fileUtils",
+	"../fs",
+	"../replace"
+], function(bc, fileUtils, fs, replace) {
 	return function(resource, callback) {
 		if(resource.tag.noWrite){
 			return 0;

@@ -1,4 +1,11 @@
-define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "dojo"], function(bc, process, fs, fileUtils, has, dojo) {
+define([
+	"../buildControl",
+	"../process",
+	"../fs",
+	"../fileUtils",
+	"dojo/has",
+	"dojo"
+], function(bc, process, fs, fileUtils, has, dojo) {
 	var built = "//>>built" + bc.newline;
 
 	// default to a no-op
@@ -56,7 +63,7 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 
 					//Replace the spaces with tabs.
 					//Ideally do this in the pretty printer rhino code.
-					text = text.replace(/    /g, "\t");
+					text = text.replace(/	 /g, "\t");
 				}else{
 					//Apply compression using custom compression call in Dojo-modified rhino.
 					text = new String(Packages.org.dojotoolkit.shrinksafe.Compressor.compressScript(text, 0, 1, strip));
@@ -67,7 +74,7 @@ define(["../buildControl", "../process", "../fs", "../fileUtils", "dojo/has", "d
 			}finally{
 				Packages.org.mozilla.javascript.Context.exit();
 			}
-			return copyright +  built + text;
+			return copyright +	built + text;
 		}
 
 		var JSSourceFilefromCode, closurefromCode, jscomp= 0;

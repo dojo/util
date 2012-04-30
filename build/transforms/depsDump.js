@@ -34,7 +34,7 @@ define([
 						if (dotModules[module.mid]!==traceForDotDone){
 							dotModules[module.mid] = traceForDot;
 						}
-	 				});
+					});
 				}
 				r.uid = i;
 				midToId[bc.resources[p].mid] = i;
@@ -58,7 +58,7 @@ define([
 								if (dotModules[module.mid]!==traceForDotDone){
 									dotModules[module.mid] = traceForDot;
 								}
-	 						});
+							});
 						}
 					}
 				}
