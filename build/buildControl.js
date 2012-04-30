@@ -539,14 +539,25 @@ define([
 		}
 	})();
 
-	var fixedInternStringsSkipList = {};
-	(bc.internSkipList || bc.internStringsSkipList || []).forEach(function(mid){
-		if(/.*\..*\./.test(mid)){
-			bc.log("possibleLegacyModuleId", ["name", mid]);
-		}
-		fixedInternStringsSkipList[mid] = 1;
-	});
-	bc.internStringsSkipList = fixedInternStringsSkipList;
+	bc.internSkip = function(){return false;};
+	if(bc.internSkipList){
+		bc.internSkip = function(mid, referenceModule){
+			return bc.internSkipList.some(function(item){
+				var result = false;
+				if(item instanceof RegExp){
+					result = item.test(mid);
+				}else if(item instanceof Function){
+					result = item(mid, referenceModule);
+				}else{
+					result = item==mid;
+				}
+				if(result){
+					bc.log("internStrings", ["module", referenceModule.mid, "skipping", mid]);
+				}
+				return result;
+			});
+		};
+	}
 
 	// dump bc (if requested) before changing gate names to gate ids below
 	if(bc.check){

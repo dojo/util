@@ -18,18 +18,23 @@ define(["dojo/json"], function(json){
 			if (!textResource){
 				throw new Error("text resource (" + moduleInfo.url + ") missing");
 			}
-			return [textPlugin, {
-				module:textResource,
-				pid:moduleInfo.pid,
-				mid:moduleInfo.mid,
-				deps:[],
-				getText:function(){
-					return json.stringify(this.module.text+"");
-				},
-				internStrings:function(){
-					return ["url:" + this.mid, json.stringify(this.module.text+"")];
-				}
-			}];
+
+			var result = [textPlugin];
+			if(bc.internStrings && !bc.internSkip(moduleInfo.mid, referenceModule)){
+				result.push({
+					module:textResource,
+					pid:moduleInfo.pid,
+					mid:moduleInfo.mid,
+					deps:[],
+					getText:function(){
+						return json.stringify(this.module.text+"");
+					},
+					internStrings:function(){
+						return ["url:" + this.mid, json.stringify(this.module.text+"")];
+					}
+				});
+			}
+			return result;
 		}
 	};
 });

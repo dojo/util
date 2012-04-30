@@ -471,8 +471,7 @@ define([
 					var parts = matchString.match(interningLocalDojoUriRegExp);
 
 					var textModuleInfo = bc.getSrcModuleInfo(fileUtils.catPath(parts[6].replace(/\./g, "/"), parts[9]), 0, true);
-					if(bc.internStringsSkipList[textModuleInfo.mid]){
-						skipping.push(textModuleInfo.url);
+					if(bc.internSkip(textModuleInfo.mid, resource)){
 						return matchString;
 					}
 
@@ -514,17 +513,19 @@ define([
 						return matchString;
 					}
 				});
-				var logArgs = ["module", resource.mid];
-				if(skipping.length){
-					logArgs.push("skipping", skipping);
+				if(skipping.length || notFound.length || nothing.length){
+					var logArgs = ["module", resource.mid];
+					if(skipping.length){
+						logArgs.push("skipping", skipping);
+					}
+					if(notFound.length){
+						logArgs.push("not found", notFound);
+					}
+					if(nothing.length){
+						logArgs.push("nothing to intern", nothing);
+					}
+					bc.log("internStrings", logArgs);
 				}
-				if(notFound.length){
-					logArgs.push("not found", notFound);
-				}
-				if(nothing.length){
-					logArgs.push("nothing to intern", nothing);
-				}
-				bc.log("internStrings", logArgs);
 			},
 
 			processWithRegExs = function(){
