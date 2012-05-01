@@ -106,6 +106,7 @@ define([], function(){
 		[1, 352, "optimizerReportedErrors", "Optimizer reported errors; consult build report for details."],
 		[1, 352, "failedToReadLayerCopyrightFile", "Failed to read copyright file given with layer."],
 		[1, 353, "i18nUnevaluableBundle", "I18n bundle was not evaluable in the build environment; therefore it will not be included in the flattening computations."],
+		[1, 354, "missingL10n", "Root bundle indicates localized bundles that don't exist."],
 
 		// reports 400-499
 		[1, 400, "hasReport", "Has Features Detected"],

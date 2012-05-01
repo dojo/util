@@ -242,35 +242,40 @@ define([
 			return resource.dest;
 		},
 
-		convertLegacyBundle = function(
+		processNlsBundle = function(
 			resource
 		){
-			var newline = bc.newline, p;
-			if(bc.localeList){
-				if(resource.localizedSet){
-					for(p in resource.localizedSet){
-						resource.bundleValue[p] = 1;
+			var newline = bc.newline, text, p;
+
+			if(resource.localizedSet && resource.bundleValue){
+				// do a check that all localizations mentioned in the root actually exist
+				var missing = [];
+				for(p in resource.bundleValue){
+					if(p!="root" && !resource.localizedSet[p]){
+						missing.push("'" + p + "'");
 					}
 				}
-				return setText(resource, "define(" + newline + json.stringify(this.bundleValue) + newline + ");" + newline);
-			}else{
-				var text = resource.getText();
-
-				// this is from the old builder; apparently bundles were improperly written with trailing semicolons sometimes
-				text = text.replace(/;\s*$/, "");
-
-				if(resource.localizedSet){
-					// this is the root bundle
-					var availableLocales = [];
-					for(p in resource.localizedSet){
-						availableLocales.push("\"" + p + "\":1");
+				if(missing.length){
+					missing.sort();
+					bc.log("missingL10n", "Root: " + resource.mid + "; missing bundles: " + missing.join(",") + ".");
+				}
+			}
+			if(resource.bundleType=="legacy"){
+				if(resource.bundleValue){
+					if(resource.localizedSet){
+						// this is the root bundle; augment with all available localizations
+						for(p in resource.localizedSet){
+							resource.bundleValue[p] = 1;
+						}
 					}
-					text = "define({root:" + newline + text + "," + newline + availableLocales.join("," + newline) + "}" + newline + ");" + newline;
+					text = json.stringify(resource.bundleValue);
 				}else{
-					text = "define(" + newline + text + newline + ");";
+					text = "// ERROR: builder was unable to evaluate source bundle; therefore, this empty conversion was written" + newline + "{}";
 				}
-				return setText(resource, text);
-			};
+				return "define(" + (bc.insertAbsMids ? "'" + resource.mid + "'," : "") + newline + text  + newline + ");";
+			}else{
+				return insertAbsMid(resource.getText(), resource);
+			}
 		},
 
 
@@ -295,7 +300,7 @@ define([
 
 			var text;
 			if(resource.tag.nls){
-				text = insertAbsMid(resource.getText(), resource);
+				text = processNlsBundle(resource);
 			}else if(resource.layer){
 				// don't insertAbsMid or internStrings since that's done in getLayerText
 				text= resource.layerText = getLayerText(resource);

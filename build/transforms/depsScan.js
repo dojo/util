@@ -403,8 +403,7 @@ define([
 				// either a v1.x sync bundle or an AMD NLS bundle
 
 				// compute and remember the set of localized bundles; attach this info to the root bundle
-				var
-					match = resource.mid.match(/(^.*\/nls\/)(([^\/]+)\/)?([^\/]+)$/),
+				var match = resource.mid.match(/(^.*\/nls\/)(([^\/]+)\/)?([^\/]+)$/),
 					prefix = resource.prefix = match[1],
 					locale = resource.locale = match[3],
 					bundle = resource.bundle = match[4],
@@ -417,35 +416,26 @@ define([
 					bc.log("i18nNoRoot" ["bundle", resource.mid]);
 					return;
 				}
-
 				// accumulate all the localized versions in the root bundle
 				if(!rootBundle.localizedSet){
 					rootBundle.localizedSet = {};
-				}
-				if(locale){
-					rootBundle.localizedSet[locale] = resource;
 				}
 
 				// try to compute the value of the bundle; sets properties bundleValue and bundleType
 				evalNlsResource(resource);
 
-				if(bc.localeList){
-					// profile is building flattened layer bundles; therefore, the bundle must have been evaluable
-					if(!resource.bundleValue){
-						rootBundle.error = true;
-						bc.log("i18nUnevaluableBundle", ["module", resource.mid]);
-					}else if(resource.bundleType=="legacy"){
-						if(!locale){
-							// writeAmd will insert the locale list into bundleValue
-							resource.bundleValue = {root:resource.bundleValue};
-						}
-						resource.getText= function(){
-							return resource.setText("define(" + newline + json.stringify(this.bundleValue) + newline + ");");
-						};
-					}
-				}else{
-					// no flattened bundles will be written; this path does can be executed with bundles that are not evaluable
-					// (for example, bundles that include calculations)
+				if((bc.localeList || resource.bundleType=="legacy") && !resource.bundleValue){
+					// profile is building flattened layer bundles or converting a legacy-style bundle
+					// to an AMD-style bundle; either way, we need the value of the bundle
+					bc.log("i18nUnevaluableBundle", ["module", resource.mid]);
+				}
+
+				if(resource.bundleType=="legacy" && resource===rootBundle && resource.bundleValue){
+					resource.bundleValue = {root:resource.bundleValue};
+				}
+
+				if(resource!==rootBundle){
+					rootBundle.localizedSet[locale] = resource;
 				}
 			},
 
