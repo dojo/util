@@ -1,4 +1,4 @@
-define(["dojo/main"], function(dojo) {
+define("doh/runner", ["dojo/main"], function(dojo) {
 var doh= dojo.mixin({}, dojo);
 
 // intentionally define global tests and global doh symbols
