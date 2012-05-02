@@ -1,4 +1,4 @@
-define(["dojo", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh) {
+define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh) {
 	doh.isBrowser= true;
 	var topdog;
 	try{
