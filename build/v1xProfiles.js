@@ -331,11 +331,6 @@ define([
 				prefixes: prefixPaths,
 				basePath:basePath
 			};
-
-			if(bc.writeProfile){
-				// FIXME: cann't use bc.newlineFilter here because profile has not been fully initialized; move this to buildControl.js
-				fs.writeFileSync(bc.writeProfile, "dependencies = " + dojo.toJson(profileProperties, true), "utf8");
-			}
 			return processProfile(profileProperties, dojoPath, utilBuildscriptsPath);
 		};
 

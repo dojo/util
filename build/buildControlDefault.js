@@ -75,11 +75,6 @@ define([
 			'host-rhino':0
 		},
 
-		buildFlags:{
-			stripConsole:"error",
-			optimizeHas:1
-		},
-
 		discoveryProcs:["build/discover"],
 
 		plugins:{

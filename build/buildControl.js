@@ -564,11 +564,9 @@ define([
 		(function(){
 			var toDump = {
 				basePath:1,
-				buildFlags:1,
 				buildReportDir:1,
 				buildReportFilename:1,
 				closureCompilerPath:1,
-				compactCssSet:1,
 				copyright:1,
 				copyrightLayers:1,
 				copyrightNonlayers:1,
@@ -612,7 +610,8 @@ define([
 	}
 
 	if(bc.writeProfile){
-
+		// TODO
+		// fs.writeFileSync(bc.writeProfile, "dependencies = " + dojo.toJson(profileProperties, true), "utf8");
 	}
 
 	if(bc.debugCheck){
