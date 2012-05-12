@@ -8,10 +8,10 @@
 
 var profile = {
 	// relative to this file
-	basePath:"../../..",
+	basePath: "../../..",
 
 	// relative to base path
-	releaseDir:"../webkitMobile",
+	releaseDir: "../webkitMobile",
 
 	stripConsole: "normal",
 
@@ -19,25 +19,25 @@ var profile = {
 	optimize: "closure",
 	layerOptimize: "closure",
 
-	packages:[
+	packages: [
 		{
-			name:"dojo",
-			location:"./dojo"
+			name: "dojo",
+			location: "./dojo"
 		},
 		{
-			name:"dijit",
-			location:"./dijit"
+			name: "dijit",
+			location: "./dijit"
 		},
 		{
-			name:"dojox",
-			location:"./dojox"
+			name: "dojox",
+			location: "./dojox"
 		}
 	],
 
-	// this is a "new-version" profile since is sets the variable "profile" rather than "depenencies"; therefore
-	// the layers property is a map from AMD module id to layer properies...
+	// this is a "new-version" profile since is sets the variable "profile" rather than "dependencies"; therefore
+	// the layers property is a map from AMD module id to layer properties...
 	layers: {
-		"dojo/dojo":{
+		"dojo/dojo": {
 			// the module dojo/dojo is the default loader (you can make multiple bootstraps with the new builder)
 			include: [
 				// the include vector gives the modules to include in this layer
@@ -47,10 +47,13 @@ var profile = {
 				"dijit/_Container",
 				"dijit/_Contained",
 				"dijit/registry"
-				// TODO: do we need to list dojo/selector/lite to avoid an extra request?
-			]
+			],
+			customBase: true
 		},
-		"dojox/mobile":{
+		"dojo/main": {
+			include: ["dojo/selector/lite"]
+		},
+		"dojox/mobile": {
 			include: [
 				"dojox/mobile"
 			],
@@ -74,7 +77,7 @@ var profile = {
 				"dojo/dojo"
 			]
 		},
-		"dojox/mobile/app":{
+		"dojox/mobile/app": {
 			include: [
 				"dojox/mobile/app"
 			],
@@ -90,39 +93,39 @@ var profile = {
 	staticHasFeatures: {
 		// Default settings for a browser, from dojo.js; apparently these get modified in special cases
 		// like when running under node, or against RequireJS, but nothing we need to worry about.
-		"host-browser":1,
+		"host-browser": true,
 		"host-node": false,
 		"host-rhino": false,
-		"dom":1,
-		"dojo-amd-factory-scan":1,
-		"dojo-loader":1,
-		"dojo-has-api":1,
-		"dojo-inject-api":1,
-		"dojo-timeout-api":1,
-		"dojo-trace-api":1,
-		"dojo-log-api":1,
-		"dojo-dom-ready-api":1,
-		"dojo-publish-privates":1,
-		"dojo-config-api":1,
-		"dojo-sniff":1,
-		"dojo-sync-loader":1,
-		"dojo-test-sniff":1,
-		"config-tlmSiblingOfDojo":1,
+		"dom": true,
+		"dojo-amd-factory-scan": true,
+		"dojo-loader": true,
+		"dojo-has-api": true,
+		"dojo-inject-api": true,
+		"dojo-timeout-api": true,
+		"dojo-trace-api": true,
+		"dojo-log-api": true,
+		"dojo-dom-ready-api": true,
+		"dojo-publish-privates": true,
+		"dojo-config-api": true,
+		"dojo-sniff": true,
+		"dojo-sync-loader": true,
+		"dojo-test-sniff": true,
+		"config-tlmSiblingOfDojo": true,
 
 		// Other configuration switches that are hardcoded in the source.
 		// Setting some of these to false may reduce code size, but unclear what they all mean.
-		"config-publishRequireResult": 1,
+		"config-publishRequireResult": true,
 		"dojo-config-addOnLoad": 1,		// hardcoded to 1 in the source
-		"dojo-config-require": 1,
+		"dojo-config-require": true,
 		"dojo-debug-messages": true,
-		"dojo-gettext-api": 1,			// apparently unused
-		"dojo-guarantee-console": 1,
-		"dojo-loader-eval-hint-url": 1,
-		"dojo-modulePaths": 1,
-		"dojo-moduleUrl": 1,
-		"dojo-v1x-i18n-Api": 1,
-		"dojo-xhr-factory": 1,	// if require.getXhr() exists (true for dojo's AMD loader, false for requireJS?)
-		"extend-dojo": 1,		// add functions to global dojo object
+		"dojo-gettext-api": true,			// apparently unused
+		"dojo-guarantee-console": true,
+		"dojo-loader-eval-hint-url": true,
+		"dojo-modulePaths": true,
+		"dojo-moduleUrl": true,
+		"dojo-v1x-i18n-Api": true,
+		"dojo-xhr-factory": true,	// if require.getXhr() exists (true for dojo's AMD loader, false for requireJS?)
+		"extend-dojo": true,		// add functions to global dojo object
 
 		// Browser flags
 		"webkit": true,	// this is actually a number like 525 but I don't think anyone is using it
@@ -169,14 +172,13 @@ var profile = {
 		// "wii": true
 	},
 
-	// Not sure if this is right?	We just want to use querySelectorAll().
-	selectorEngine:"lite",
+	selectorEngine: "lite",
 
-	defaultConfig:{
-		hasCache:{
+	defaultConfig: {
+		hasCache: {
 			// default
-			"config-selectorEngine":"lite"
+			"config-selectorEngine": "lite"
 		},
-		async:1
+		async: true
 	}
 };
