@@ -35,16 +35,14 @@ import java.util.regex.Pattern;
 
 import org.mozilla.javascript.CompilerEnvirons;
 import org.mozilla.javascript.Decompiler;
-import org.mozilla.javascript.ast.FunctionNode;
-import org.mozilla.javascript.ast.ScriptNode;
-import org.mozilla.javascript.IRFactory;
+import org.mozilla.javascript.FunctionNode;
 import org.mozilla.javascript.Interpreter;
 import org.mozilla.javascript.Kit;
 import org.mozilla.javascript.Parser;
+import org.mozilla.javascript.ScriptOrFnNode;
 import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.UintMap;
-import org.mozilla.javascript.ast.AstRoot;
 
 /**
  * @author rbackhouse
@@ -66,6 +64,7 @@ public class Compressor {
     private static String compress(String encodedSource, 
     		                       int flags, 
     		                       UintMap properties, 
+    		                       ScriptOrFnNode parseTree, 
     		                       boolean escapeUnicode,
     		                       String stripConsole,
     		                       TokenMapper tm,
@@ -985,11 +984,8 @@ public class Compressor {
 
         Parser parser = new Parser(compilerEnv, compilerEnv.getErrorReporter());
         
-        AstRoot ast = parser.parse(source, null, lineno);
-        IRFactory irf = new IRFactory(compilerEnv, compilerEnv.getErrorReporter());
-        ScriptNode tree = irf.transformTree(ast);
-        
-        String encodedSource = tree.getEncodedSource();
+        ScriptOrFnNode tree = parser.parse(source, null, lineno);
+        String encodedSource = parser.getEncodedSource();
    	 	if (encodedSource.length() == 0) { return ""; }
    	 	
         Interpreter compiler = new Interpreter();
@@ -1001,7 +997,7 @@ public class Compressor {
         Map replacedTokensLookup = collectReplacedTokens(encodedSource, escapeUnicode, tm);
         tm.reset();
         
-        String compressedSource = compress(encodedSource, 0, properties, escapeUnicode, stripConsole, tm, replacedTokensLookup);
+        String compressedSource = compress(encodedSource, 0, properties, tree, escapeUnicode, stripConsole, tm, replacedTokensLookup);
         if (debugData != null) {
         	debugData.append("[\n");
         	int count = 1;

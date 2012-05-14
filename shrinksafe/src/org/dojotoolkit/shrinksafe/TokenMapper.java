@@ -32,9 +32,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.mozilla.javascript.ScriptOrFnNode;
 import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Token;
-import org.mozilla.javascript.ast.ScriptNode;
 
 public class TokenMapper {
 	private List functionBracePositions = new ArrayList();
@@ -58,7 +58,7 @@ public class TokenMapper {
 
 	private int lastTokenCount = 0;
 	
-	public TokenMapper(ScriptNode parseTree) {
+	public TokenMapper(ScriptOrFnNode parseTree) {
 		collectFunctionMappings(parseTree);
 	}
 
@@ -170,7 +170,7 @@ public class TokenMapper {
 	 *            Mapping for each function node and corresponding parameters &
 	 *            variables names
 	 */
-	private void collectFunctionMappings(ScriptNode parseTree) {
+	private void collectFunctionMappings(ScriptOrFnNode parseTree) {
 		int level = -1;
 		collectFuncNodes(parseTree, level, null);
 	}
@@ -185,7 +185,7 @@ public class TokenMapper {
 	 * @param level
 	 *            scoping level
 	 */
-	private void collectFuncNodes(ScriptNode parseTree, int level, ScriptNode parent) {
+	private void collectFuncNodes(ScriptOrFnNode parseTree, int level, ScriptOrFnNode parent) {
 		level++;
 		
         DebugData debugData = new DebugData();
