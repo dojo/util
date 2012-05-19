@@ -1477,7 +1477,7 @@ doh.pause = function(){
 doh.run = function(){
 	// summary:
 	//		begins or resumes the test process.
-	// this.debug("STARTING");
+	
 	this._paused = false;
 	var cg = this._currentGroup;
 	var ct = this._currentTest;
