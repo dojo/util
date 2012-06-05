@@ -315,6 +315,12 @@ dependencies = {
 			dependencies: [
 				"demos.calendar.src"
 			]
+		},
+		{
+			name: "../demos/todoApp/src.js",
+			dependencies: [
+				"demos.todoApp.src"
+			]
 		}
 	],
 
