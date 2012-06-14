@@ -103,6 +103,10 @@ define(["../buildControl"], function(bc){
 	// This technique is employed to avoid attempting to parse and find the boundaries of "some really long painful has test" with regexs.
 	// Instead, this is left to an optimizer like the the closure compiler or uglify etc.
 
+	function stringifyString(s){
+		return typeof s === "string" ? '"' + s + '"' : s;
+	}
+
 	return function(resource){
 		resource.text = resource.text.replace(/([^\w\.])has\s*\(\s*["']([^'"]+)["']\s*\)/g, function(match, prefix, featureName){
 			if(featureName in bc.staticHasFeatures){
@@ -110,13 +114,14 @@ define(["../buildControl"], function(bc){
 			}else{
 				return match;
 			}
-		}).replace(/(has.add\s*\(\s*)["']([^'"]+)["']/g, function(match, prefix, featureName){
+		}).replace(/([^\w\.])((has.add\s*\(\s*)["']([^'"]+)["'])/g, function(match, prefix, hasAdd, notUsed, featureName){
 			if(featureName in bc.staticHasFeatures){
-				return " " + bc.staticHasFeatures[featureName] + (bc.staticHasFeatures[featureName] ? " || " : " && " ) +  match;
+				return prefix + " " + stringifyString(bc.staticHasFeatures[featureName]) + (bc.staticHasFeatures[featureName] ? " || " : " && " ) + hasAdd;
 			}else{
 				return match;
 			}
 		});
 		return 0;
 	};
+
 });
