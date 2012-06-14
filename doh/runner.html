@@ -1,8 +1,5 @@
-<html>
-	<!--
-		NOTE: we are INTENTIONALLY in quirks mode. It makes it much easier to
-		get a "full screen" UI w/ straightforward CSS.
-	-->
+<!DOCTYPE html>
+<html style="height:100%;">
 	<!--
 		// TODO: provide a UI for prompted tests
 	-->
@@ -66,11 +63,35 @@
 			document.write("<scr"+"ipt type='text/javascript' djConfig='isDebug: true' src='"+dojoUrl+"'></scr"+"ipt>");
 		</script>
 		<script type="text/javascript">
+			function getViewport(){
+				// Returns the dimensions and scroll position of the viewable area of a browser window
+				// (function borrowed from dijit/_base/place.js)
+			
+				var scrollRoot = (dojo.doc.compatMode == 'BackCompat')? dojo.body() : dojo.doc.documentElement;
+			
+				// get scroll position
+				var scroll = dojo._docScroll(); // scrollRoot.scrollTop/Left should work
+				return { w: scrollRoot.clientWidth, h: scrollRoot.clientHeight, l: scroll.x, t: scroll.y };
+			}
+			function fixHeight(){
+				// IE9 doesn't give test iframe height because no nodes have an explicit pixel height!
+				// Give outer table a pixel height.
+				if(dojo.isIE){
+					var headerHeight=0;
+					var rows=dojo.query('#testLayout > tbody > tr');
+					for(var i=0; i<rows.length-1; i++){
+						headerHeight+=dojo.position(rows[i]).h;
+					}
+					dojo.byId('testLayout').style.height=(getViewport().h-headerHeight)+"px";
+				}
+			}
+			
 			try{
 				dojo.require("doh.runner");
 			}catch(e){
 				document.write("<scr"+"ipt type='text/javascript' src='runner.js'></scr"+"ipt>");
 			}
+			dojo.addOnLoad(fixHeight);
 			if(testUrl.length){
 				document.write("<scr"+"ipt type='text/javascript' src='"+testUrl+".js'></scr"+"ipt>");
 			}
@@ -179,7 +200,7 @@
 				border: 1px solid black;
 				*/
 				position: relative;
-				height: 99%;
+				height: 100%;
 				width: 100%;
 				overflow: auto;
 			}
@@ -231,7 +252,7 @@
 			}
 		</style>
 	</head>
-	<body>
+	<body style="height: 100%;">
 		<table id="testLayout" cellpadding="0" cellspacing="0" style="margin: 0;">
 			<tr valign="top" height="40">
 				<td colspan="2" id="logoBar">
@@ -264,7 +285,7 @@
 				</td>
 			</tr>
 			<tr valign="top" style="border: 0; padding: 0; margin: 0;">
-				<td height="100%" style="border: 0; padding: 0; margin: 0;">
+				<td style="border: 0; padding: 0; margin: 0; height:100%;">
 					<div id="testListContainer">
 						<table cellpadding="0" cellspacing="0" border="0"
 							width="100%" id="testList" style="margin: 0;" onclick="doh._jumpToLog(arguments[0]);">
@@ -298,8 +319,8 @@
 						</table>
 					</div>
 				</td>
-				<td>
-					<div style="position: relative; width: 99%; height: 100%; top: 0px; left: 0px;">
+				<td style="height: 100%;">
+					<div style="position: relative; width: 100%; height: 100%; top: 0px; left: 0px;">
 						<div class="tabBody"
 							style="z-index: 1;">
 							<pre id="logBody"></pre>
