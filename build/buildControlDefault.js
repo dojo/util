@@ -104,24 +104,25 @@ define([
 		transformConfig: {},
 
 		transforms:{
-			trace:			["build/transforms/trace", "read"],
-			read:			["build/transforms/read", "read"],
-			dojoPragmas:	["build/transforms/dojoPragmas", "read"],
-			insertSymbols:	["build/transforms/insertSymbols", "read"],
-			depsScan:		["build/transforms/depsScan", "ast"],
-			hasFixup:		["build/transforms/hasFixup", "ast"],
-			write:			["build/transforms/write", "write"],
-			writeAmd:		["build/transforms/writeAmd", "write"],
-			writeOptimized: ["build/transforms/writeOptimized", "write"],
-			copy:			["build/transforms/copy", "write"],
-			writeDojo:		["build/transforms/writeDojo", "write"],
-			optimizeCss:	["build/transforms/optimizeCss", "optimize"],
-			writeCss:		["build/transforms/writeCss", "write"],
-			hasFindAll:		["build/transforms/hasFindAll", "read"],
-			hasReport:		["build/transforms/hasReport", "cleanup"],
-			depsDump:		["build/transforms/depsDump", "cleanup"],
-			dojoReport:		["build/transforms/dojoReport", "report"],
-			report:			["build/transforms/report", "report"]
+			trace:				["build/transforms/trace", "read"],
+			read:				["build/transforms/read", "read"],
+			dojoPragmas:		["build/transforms/dojoPragmas", "read"],
+			insertSymbols:		["build/transforms/insertSymbols", "read"],
+			depsDeclarative:	["build/transforms/depsDeclarative", "read"],
+			depsScan:			["build/transforms/depsScan", "ast"],
+			hasFixup:			["build/transforms/hasFixup", "ast"],
+			write:				["build/transforms/write", "write"],
+			writeAmd:			["build/transforms/writeAmd", "write"],
+			writeOptimized: 	["build/transforms/writeOptimized", "write"],
+			copy:				["build/transforms/copy", "write"],
+			writeDojo:			["build/transforms/writeDojo", "write"],
+			optimizeCss:		["build/transforms/optimizeCss", "optimize"],
+			writeCss:			["build/transforms/writeCss", "write"],
+			hasFindAll:			["build/transforms/hasFindAll", "read"],
+			hasReport:			["build/transforms/hasReport", "cleanup"],
+			depsDump:			["build/transforms/depsDump", "cleanup"],
+			dojoReport:			["build/transforms/dojoReport", "report"],
+			report:				["build/transforms/report", "report"]
 		},
 
 		transformJobs:[[
@@ -220,6 +221,13 @@ define([
 					return false;
 				},
 				["read", "dojoPragmas", "hasFindAll", "insertSymbols", "hasFixup", "depsScan", "writeAmd", "writeOptimized"]
+			],[
+				// Declarative Resource:
+				// This resource (usually HTML) should be scanned for declarative dependencies and copied.
+				function(resource, bc){
+					return resource.tag.declarative;
+				},
+				["read", "dojoPragmas", "depsDeclarative", "write"]
 			],[
 				// a test resource; if !bc.copyTests then the resource was filtered in the first item; otherwise, if the resource is a potential module and building tests, then it was filtered above;
 				function(resource, bc){
