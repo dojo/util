@@ -59,12 +59,21 @@
 		},0);
 	}
 
+	var receivedMouseDown = false;
 	function _onmousedown(e){
+		if(receivedMouseDown){
+			return;
+		}
+		receivedMouseDown=true;
+		console.log("received mouse down");
 		e = e||window.event;
 		if(e.screenX == 0||e.clientX == 0){ return; }
 		var docScreenX = e.screenX-e.clientX;
 		var docScreenY = e.screenY-e.clientY;
 		robot._setDocumentBounds(docScreenX, docScreenY);
+		if(e.stopPropagation()){ e.stopPropagation(); }
+		else { e.cancelBubble = false; }
+		return false;
 	}
 
 	function _onmousewheel(e){
@@ -135,7 +144,7 @@
 </head>
 <body id="robotBody"
 	  style="margin:0px; padding:0px; border:0px none;background-color:transparent;" onload="init()">
-<input type="text" tabIndex="-1" style="border:0px none;margin:0px;padding:0px;width:200px;height:42px;background-color:white;z-index:9998;opacity:0;filter:alpha(opacity=0);cursor:default;"
+<input type="text" tabIndex="-1" style="border:0px none;margin:0px;padding:0px;width:200px;height:100px;background-color:white;z-index:9998;opacity:0;filter:alpha(opacity=0);cursor:default;"
 	onmousewheel="_onmousewheel(arguments[0])"
 	onmousedown="_onmousedown(arguments[0])"
 	onkeypress="_onkeypress(arguments[0])"
@@ -155,7 +164,7 @@
 		(Math.max(navigator.appVersion.indexOf("WebKit"), navigator.appVersion.indexOf("Safari"), 0) > 0 && navigator.userAgent.indexOf("Chrome/") == -1 && parseFloat(navigator.appVersion.split("Version/")[1]) < 4) // Safari 3
 		|| (document.all && navigator.userAgent.indexOf("Opera") == -1 && parseFloat(navigator.appVersion.split("MSIE ")[1]) < 8)) // IE6,7
 		?"true":"false")+'">';
-	var appletString = '<applet width="1" height="1" code="DOHRobot.class" archive="robot/DOHRobot.jar" MAYSCRIPT style="position:absolute;left:0px;top:22px;"><param name="mayscript" value="true"><param name="scriptable" value="true"><param name="initial_focus" value="false">'+needsSecurityManager+'</applet>';
+	var appletString = '<applet width="1" height="1" code="DOHRobot.class" archive="robot/DOHRobot.jar" MAYSCRIPT style="position:absolute;left:0px;top:0px;"><param name="mayscript" value="true"><param name="scriptable" value="true"><param name="initial_focus" value="false">'+needsSecurityManager+'</applet>';
 	document.write(appletString);
 	// if no Java, the applet is officially dead
 	if(/MSIE/.test(navigator.appVersion)){
