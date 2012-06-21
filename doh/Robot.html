@@ -65,13 +65,12 @@
 			return;
 		}
 		receivedMouseDown=true;
-		console.log("received mouse down");
 		e = e||window.event;
 		if(e.screenX == 0||e.clientX == 0){ return; }
 		var docScreenX = e.screenX-e.clientX;
 		var docScreenY = e.screenY-e.clientY;
 		robot._setDocumentBounds(docScreenX, docScreenY);
-		if(e.stopPropagation()){ e.stopPropagation(); }
+		if("stopPropagation" in e){ e.stopPropagation(); }
 		else { e.cancelBubble = false; }
 		return false;
 	}
