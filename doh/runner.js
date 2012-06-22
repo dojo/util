@@ -1366,12 +1366,18 @@ doh._runFixture = function(groupName, fixture){
 				}
 			}
 		}
-		if(fixture["tearDown"]){ fixture.tearDown(this); }
 	}catch(e){
 		threw = true;
 		err = e;
 		if(!fixture.endTime){
 			fixture.endTime = new Date();
+		}
+	}finally{
+		// should try to tear down regardless whether test passed or failed...
+		try{
+			if(fixture["tearDown"]){ fixture.tearDown(this); }
+		}catch(e){
+			this.debug("Error tearing down test: "+e.message);
 		}
 	}
 	var d = new doh.Deferred();
