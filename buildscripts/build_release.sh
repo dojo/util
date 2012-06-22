@@ -120,12 +120,6 @@ mv $buildName ../../
 cd ..
 rm -rf release/
 
-# generate api.xml and api.json
-cd util/docscripts/
-php -q generate.php
-mv cache/api.* ../../../../build/
-cd ../../../../
-
 # make a folder structure appropriate for directly extracting on downloads.dojotoolkit.org
 mv build release-$1
 rm -rf release-$1/$srcName/
