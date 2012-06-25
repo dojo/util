@@ -45,11 +45,11 @@ load("cldrUtil.js");
 dojo.require("dojo.i18n");
 
 var _searchLocalePath = function(/*String*/locale, /*Boolean*/down, /*Function*/searchFunc){
-    //      summary:                                                                                                                   
-    //              A helper method to assist in searching for locale-based resources.                                                 
-    //              Will iterate through the variants of a particular locale, either up                                                
-    //              or down, executing a callback function.  For example, "en-us" and                                                  
-    //              true will try "en-us" followed by "en" and finally "ROOT".                                                         
+    // summary:
+    //		A helper method to assist in searching for locale-based resources.
+    //		Will iterate through the variants of a particular locale, either up
+    //		or down, executing a callback function.  For example, "en-us" and
+    //		true will try "en-us" followed by "en" and finally "ROOT".
 
     locale = dojo.i18n.normalizeLocale(locale);
 

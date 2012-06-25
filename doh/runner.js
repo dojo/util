@@ -632,7 +632,7 @@ doh.register = function(a1, a2, a3, a4, a5){
 	// timeoutOrSetUp: integer||Function?
 	//		If tests is a URL, then must be an integer giving the number milliseconds to wait for the test
 	//		page to load before signaling an error; otherwise, a function for initializing the test group.
-	//      If a tearDown function is given, then a setup function must also be given.
+	//		If a tearDown function is given, then a setup function must also be given.
 	// tearDown: Function?
 	//		A function for deinitializing the test group.
 	// example:
@@ -733,7 +733,7 @@ doh.register = function(a1, a2, a3, a4, a5){
 	// | doh.register("path/to/my/module!myGroup!perf", t1);
 	//
 	//	doh.register also supports Dojo, v1.6- signature (group, test, type), although this signature is deprecated.
-	}
+	};
 	=====*/
 
 	function getTypeId(a){
@@ -778,7 +778,7 @@ doh.registerDocTests = function(module){
 	// summary:
 	//		Get all the doctests from the given module and register each of them
 	//		as a single test case here.
-	//
+
 	var docTest = new dojox.testing.DocTest();
 	var docTests = docTest.getTests(module);
 	var len = docTests.length;

@@ -2,25 +2,28 @@ dojo.provide("shrinksafe.tests.module");
 
 // basic helper functions for running multiple tests.
 shrinksafe.tests.module.getContents = function(path){
-	// summary: Load a file from this /tests/ path into a variable
+	// summary:
+	//		Load a file from this /tests/ path into a variable
 	path = "../shrinksafe/tests/" + path;
 	return readFile(path); // String
-}
+};
 
 shrinksafe.tests.module.compress = function(source, stripConsole, escapeUnicode){
-	// summary: Shorthand to compress some String version of JS code
+	// summary:
+	//		Shorthand to compress some String version of JS code
 	return new String(Packages.org.dojotoolkit.shrinksafe.Compressor.compressScript(source, 0, 1, escapeUnicode, stripConsole)).toString();
-}
+};
 
 shrinksafe.tests.module.loader = function(path, stripConsole, escapeUnicode){
-	// summary: Simple function to load and compress some file. Returns and object
-	//	 with 'original' and 'compressed' members, respectively.
+	// summary:
+	//		Simple function to load and compress some file. Returns and object
+	//	 	with 'original' and 'compressed' members, respectively.
 	var s = shrinksafe.tests.module.getContents(path);
 	return {
 		original: s,
 		compressed: shrinksafe.tests.module.compress(s, stripConsole, escapeUnicode || false)
 	};
-}
+};
 
 try{
 	tests.register("shrinksafe",
