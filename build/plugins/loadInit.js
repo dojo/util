@@ -5,7 +5,7 @@ define(function() {
 			referenceModule,
 			bc
 		){
-			return bc.amdResources[bc.getSrcModuleInfo(mid, referenceModule).mid];
+			return [bc.amdResources["dojo/require"], bc.amdResources[bc.getSrcModuleInfo(mid, referenceModule).mid]];
 		}
 	};
 });

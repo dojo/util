@@ -5,7 +5,7 @@ define([], function(){
 			referenceModule,
 			bc
 		){
-			var result = [];
+			var result = [bc.amdResources["dojo/require"]];
 			mid.split(",").map(function(mid){
 				var module = bc.amdResources[mid];
 				if(!module){
