@@ -6,10 +6,7 @@ define(["../fileHandleThrottle", "../messages"], function(fht, messages){
 			// no more messages
 			messages.stop();
 
-			// allow whatever is in the stdout buffer to be pumped
-			process.stdout.on('close', function(){
-				process.exit(code);
-			});
+			process.exit(code);
 		},
 
 		exec:function() {
