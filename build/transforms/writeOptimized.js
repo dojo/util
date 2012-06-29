@@ -4,8 +4,8 @@ define([
 	"../fs",
 	"../fileUtils",
 	"dojo/has",
-	"dojo"
-], function(bc, process, fs, fileUtils, has, dojo) {
+	"dojo/json"
+], function(bc, process, fs, fileUtils, has, json) {
 	var built = "//>>built" + bc.newline;
 
 	// default to a no-op
@@ -203,7 +203,7 @@ define([
 						sent:[],
 						write:function(src, dest, optimizeSwitch, copyright){
 							proc.sent.push(dest);
-							runner.stdin.write(src + "\n" + dest + "\n" + optimizeSwitch + "\n" + dojo.toJson(copyright) + "\n");
+							runner.stdin.write(src + "\n" + dest + "\n" + optimizeSwitch + "\n" + json.stringify(copyright) + "\n");
 						},
 						sink:function(output){
 							proc.tempResults += output;

@@ -1,10 +1,8 @@
 define([
 	"require",
 	"./buildControlBase",
-	"./fs", "./fileUtils",
-	"./process",
-	"dojo"
-], function(require, bc, fs, fileUtils, process, dojo){
+	"./fs", "./fileUtils"
+], function(require, bc, fs, fileUtils){
 	eval(require.scopeify("./fs, ./fileUtils"));
 	var mix = function(dest, src){
 			dest = dest || {};

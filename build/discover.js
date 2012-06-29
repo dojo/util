@@ -1,11 +1,8 @@
 define([
 	"./buildControl",
 	"./fileUtils",
-	"./fs",
-	"./stringify",
-	"dojo/has",
-	"./process"
-], function(bc, fileUtils, fs, stringify, has, process){
+	"./fs"
+], function(bc, fileUtils, fs){
 	// find all files as given by files, dirs, trees, and packages
 	var
 		dirsProcessed =

@@ -1,6 +1,6 @@
 define([
 	"require",
-	"dojo",
+	"dojo/json",
 	"dojo/has",
 	"./fs",
 	"./fileUtils",
@@ -11,7 +11,7 @@ define([
 	"./messages",
 	"./v1xProfiles",
 	"dojo/text!./help.txt"
-], function(require, dojo, has, fs, fileUtils, process, argv, stringify, version, messages, v1xProfiles, help){
+], function(require, json, has, fs, fileUtils, process, argv, stringify, version, messages, v1xProfiles, help){
 	///
 	// AMD-ID build/argv
 	//
@@ -60,7 +60,7 @@ define([
 				}else if(arg=="null"){
 					return null;
 				}else if(isNaN(arg)){
-					return dojo.fromJson("{\"result\":\"" + arg + "\"}").result;
+					return json.parse("{\"result\":\"" + arg + "\"}").result;
 				}else{
 					return Number(arg);
 				}
@@ -222,7 +222,7 @@ define([
 				messages.log(missingMessageId, ["filename", filename]);
 			}else{
 				try{
-					var result = dojo.fromJson(fs.readFileSync(filename, "utf8"));
+					var result = json.parse(fs.readFileSync(filename, "utf8"));
 					result.selfFilename = filename;
 					return result;
 				}catch(e){
@@ -549,7 +549,7 @@ define([
 		}
 		result.unitTestParam = testId;
 		var expectedFilename = compactPath(utilBuildscriptsPath + "/../build/tests/argvTestsExpected.js"),
-			expected = dojo.fromJson(fs.readFileSync(expectedFilename, "utf8")),
+			expected = json.parse(fs.readFileSync(expectedFilename, "utf8")),
 			pathNormalize = utilBuildscriptsPath.match(/(.*)\/util\/buildscripts/)[1],
 			testResult = stringify(result).replace(RegExp(pathNormalize, "g"), "~"),
 			passed = 1;
@@ -559,7 +559,7 @@ define([
 			console.log("result:");
 			debug(testResult);
 			expected[result.unitTestParam] = testResult;
-			fs.writeFileSync(expectedFilename, dojo.toJson(expected), "utf8");
+			fs.writeFileSync(expectedFilename, json.stringify(expected), "utf8");
 		}else{
 			passed = testResult==expected[result.unitTestParam];
 			console.log(result.unitTestParam + ":" + (passed ? "PASSED" : "FAILED"));

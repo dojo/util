@@ -1,9 +1,8 @@
 define([
-	"dojo",
 	"./messages",
 	"dojo/text!./copyright.txt",
 	"dojo/text!./buildNotice.txt"
-], function(dojo, messages, defaultCopyright, defaultBuildNotice){
+], function(messages, defaultCopyright, defaultBuildNotice){
 	var bc = {
 		exitCode:0,
 

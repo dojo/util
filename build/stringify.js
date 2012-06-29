@@ -1,7 +1,7 @@
 define([
-	"dojo",
+	"dojo/json",
 	"./buildControlBase"
-], function(dojo, bc){
+], function(json, bc){
 var
 	spaces = "					 ",
 	indentFactor = 2,
@@ -63,7 +63,7 @@ var
 				break;
 
 			case "string":
-				text+= dojo.toJson(it);
+				text+= json.stringify(it);
 				break;
 
 			case "object":
