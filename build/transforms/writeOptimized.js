@@ -111,18 +111,23 @@ define([
 		compile= function(resource, text, copyright, optimizeSwitch, callback){
 			bc.log("optimize", ["module", resource.mid]);
 			copyright = copyright || "";
-			var result;
-			if(/closure/.test(optimizeSwitch)){
-				result= ccompile(stripConsoleRe ? text.replace(stripConsoleRe, "0 && $&") : text, resource.dest, optimizeSwitch, copyright);
-			}else{
-				result= sscompile(text, resource.dest, optimizeSwitch, copyright);
-			}
-			fs.writeFile(resource.dest, result, resource.encoding, function(err){
-				if(err){
-					bc.log("optimizeFailedWrite", ["filename", result.dest]);
+			var result = 0;
+			try{
+				if(/closure/.test(optimizeSwitch)){
+					result= ccompile(stripConsoleRe ? text.replace(stripConsoleRe, "0 && $&") : text, resource.dest, optimizeSwitch, copyright);
+				}else{
+					result= sscompile(text, resource.dest, optimizeSwitch, copyright);
 				}
-				callback(resource, err);
-			});
+				fs.writeFile(resource.dest, result, resource.encoding, function(err){
+					if(err){
+						bc.log("optimizeFailedWrite", ["filename", result.dest]);
+					}
+					callback(resource, err);
+				});
+			}catch(e){
+				bc.log("optimizeFailed", ["module identifier", resource.mid, "exception", e+""]);
+				callback(resource, 0);
+			}
 			return callback;
 		};
 	}
@@ -211,7 +216,7 @@ define([
 							while((match = proc.tempResults.match(doneRe))){
 								message = match[0];
 								if(/OPTIMIZER\sFAILED/.test(message)){
-									bc.log("optimizeFailed", [proc.sent.shift() + " " + message.substring(5)]);
+									bc.log("optimizeFailed", ["module identifier", proc.sent.shift(), "exception", message.substring(5)]);
 								}else{
 									bc.log("optimizeDone", [proc.sent.shift() + " " + message.substring(5)]);
 								}
