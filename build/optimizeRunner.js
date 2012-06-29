@@ -130,12 +130,17 @@ while(1){
 	optimizeSwitch = readLine();
 	copyright = eval(readLine());
 	print(dest + ":");
-	var start = (new Date()).getTime();
-	if(/closure/.test(optimizeSwitch)){
-		ccompile(src, dest, optimizeSwitch, copyright);
-	}else{
-		sscompile(src, dest, optimizeSwitch, copyright);
+	var start = (new Date()).getTime(),
+		exception = "";
+	try{
+		if(/closure/.test(optimizeSwitch)){
+			ccompile(src, dest, optimizeSwitch, copyright);
+		}else{
+			sscompile(src, dest, optimizeSwitch, copyright);
+		}
+	}catch(e){
+		exception = ". OPTIMIZER FAILED: " + e;
 	}
-	print("Done (compile time:" + ((new Date()).getTime()-start)/1000 + "s)");
+	print("Done (compile time:" + ((new Date()).getTime()-start)/1000 + "s)" + exception);
 }
 

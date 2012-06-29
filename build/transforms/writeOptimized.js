@@ -192,7 +192,7 @@ define([
 				//no waiting necessary, pass through
 				runJava = function(cb) { cb(); };
 			}
-		runJava(function(cp) {
+		runJava(function() {
 			for(i = 0; i < bc.maxOptimizationProcesses; i++) {(function(){
 				var
 					runner = child_process.spawn("java", ["-cp", javaClasses, "org.mozilla.javascript.tools.shell.Main", optimizerRunner]),
@@ -210,7 +210,11 @@ define([
 							var match, message, chunkLength;
 							while((match = proc.tempResults.match(doneRe))){
 								message = match[0];
-								bc.log("optimizeDone", [proc.sent.shift() + " " + message.substring(5)]);
+								if(/OPTIMIZER\sFAILED/.test(message)){
+									bc.log("optimizeFailed", [proc.sent.shift() + " " + message.substring(5)]);
+								}else{
+									bc.log("optimizeDone", [proc.sent.shift() + " " + message.substring(5)]);
+								}
 								chunkLength = match.index + message.length;
 								proc.results += proc.tempResults.substring(0, chunkLength);
 								proc.tempResults = proc.tempResults.substring(chunkLength);

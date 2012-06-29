@@ -108,6 +108,8 @@ define([], function(){
 		[1, 353, "i18nUnevaluableBundle", "I18n bundle was not evaluable in the build environment; therefore it will not be included in the flattening computations."],
 		[1, 354, "missingL10n", "Root bundle indicates localized bundles that don't exist."],
 		[1, 355, "declarativeRequireFailed", "Unable to convert declarative require."],
+		[1, 356, "optimizeFailed", "The optimizer threw an exception; the module probably contains syntax errors."],
+
 
 		// reports 400-499
 		[1, 400, "hasReport", "Has Features Detected"],
