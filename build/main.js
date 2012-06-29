@@ -183,6 +183,9 @@ define(["require", "dojo/has"], function(require, has){
 						bc.log("discoveryFailed");
 					}
 					bc.log("pacify", "Process finished normally.\n\terrors: " + bc.getErrorCount() + "\n\twarnings: " + bc.getWarnCount() + "\n\tbuild time: " + ((new Date()).getTime() - bc.startTimestamp.getTime()) / 1000 + " seconds");
+					if(!bc.exitCode && bc.getErrorCount()){
+						bc.exitCode = 1;
+					}
 					process.exit(bc.exitCode);
 					// that's all, folks...
 				}
