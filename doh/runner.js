@@ -440,7 +440,7 @@ doh._registerTest = function(group, test, type){
 		for(var testName in test){
 			var theTest = test[testName];
 			if(dojo.isFunction(theTest) || dojo.isString(theTest)){
-				tObj = createFixture(group, {name:testName, runTest:theTest}, type);
+				tObj = createFixture(group, {name: testName, runTest: theTest}, type);
 			}else{
 				// should be an object
 				theTest.name = theTest.name || testName;
@@ -667,7 +667,7 @@ doh.register = function(a1, a2, a3, a4, a5){
 	// |		// this is a test fixture and may be passed as a test
 	// |
 	// |		// runTest is always required...
-	// |		runTest:function(t){
+	// |		runTest: function(t){
 	// |			// the test...
 	// |		},
 	// |
@@ -675,12 +675,12 @@ doh.register = function(a1, a2, a3, a4, a5){
 	// |		name:"myTest",
 	// |
 	// |		// preamble is optional...
-	// |		setUp:function(){
+	// |		setUp: function(){
 	// |			// will be executed by DOH prior to executing the test
 	// |		},
 	// |
 	// |		// postscript is optional...
-	// |		tearDown:function(){ // op
+	// |		tearDown: function(){ // op
 	// |			// will be executed by DOH after executing the test
 	// |		}
 	// |	}
@@ -692,23 +692,23 @@ doh.register = function(a1, a2, a3, a4, a5){
 	// |
 	// |	t4= {
 	// |		// this is a map from test name to test or test fixture
-	// |		t5:function(t){
+	// |		t5: function(t){
 	// |			// etc.
 	// |		},
 	// |
-	// |		t6:{
-	// |			runTest:function(t){
+	// |		t6: {
+	// |			runTest: function(t){
 	// |			// etc.
 	// |			}
 	// |			// name will be automatically added as "t6"
 	// |		}
 	// |	},
 	// |
-	// |	aSetup:function(){
+	// |	aSetup: function(){
 	// |		// etc.
 	// |	},
 	// |
-	// |	aTearDown:function(){
+	// |	aTearDown: function(){
 	// |		// etc.
 	// |	};
 	// | // (test); note, can't provide setup/tearDown without a group

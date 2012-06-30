@@ -128,7 +128,7 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 					duration: 500,
 					properties:
 					{
-						backgroundColor: { start:hicolor, end: bgColor }
+						backgroundColor: { start: hicolor, end: bgColor }
 					},
 					onEnd: function(){
 						t.style.backgroundColor="";
@@ -139,7 +139,7 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 					duration: 500,
 					properties:
 					{
-						backgroundColor: { start:bgColor, end: hicolor }
+						backgroundColor: { start: bgColor, end: hicolor }
 					},
 					onEnd: function(){
 						unhilight.play();
@@ -260,7 +260,7 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 
 						var chart = new dojox.charting.DataChart(div, {
 							type: dojox.charting.plot2d.Lines,
-							displayRange:dataArray.length,
+							displayRange: dataArray.length,
 							xaxis: {min: 1, max: dataArray.length, majorTickStep: Math.ceil((dataArray.length - 1)/10), htmlLabels: false},
 							yaxis: {min: min, max: max, majorTickStep: step, vertical: true, htmlLabels: false}
 						});
@@ -276,7 +276,7 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 						doh.perfTestAnalytics={};
 						doh.showPerfTestsPage();
 						for(g in doh.perfTestResults){
-							doh.perfTestAnalytics[g]={};
+							doh.perfTestAnalytics[g] = {};
 							var grp = doh.perfTestResults[g];
 							var hdr = document.createElement("h1");
 							hdr.appendChild(document.createTextNode("Group: " + g));
@@ -306,7 +306,7 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 									iAvgArray.push(fResults.trials[i].average);
 									tAvgArray.push(fResults.trials[i].executionTime);
 								}
-								var analytics=doh.perfTestAnalytics[g][f]={
+								var analytics = doh.perfTestAnalytics[g][f] = {
 									averageTrialExecutionTime: doh.mean(tAvgArray),
 									maxTestIterationTime: doh.max(iAvgArray),
 									minTestIterationTime: doh.min(iAvgArray),

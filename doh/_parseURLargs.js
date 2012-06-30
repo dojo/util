@@ -1,13 +1,13 @@
 (function(){
 	var
-		boot=
+		boot =
 			// zero to many scripts to load a configuration and/or loader.
 			// i.e. path-to-util/doh/runner.html?boots=path-to/config.js,path-to/require.js
 			["../../dojo/dojo.js"],
 
-		standardDojoBoot= boot,
+		standardDojoBoot = boot,
 
-		test= 
+		test =
 			// zero to many AMD modules and/or URLs to load; provided by csv URL query parameter="test"
 			// For example, the URL...
 			//
@@ -45,7 +45,7 @@
 			// boolean; use a loader configuration that sandboxes the dojo and dojox objects used by doh
 			false,
 
-		trim= function(text){
+		trim = function(text){
 			if(text instanceof Array){
 				for (var result= [], i= 0; i<text.length; i++) {
 					result.push(trim(text[i]));
@@ -54,12 +54,12 @@
 			}else{
 				return text.match(/[^\s]*/)[0]; 
 			}
-		}
+		};
 
 		qstr = window.location.search.substr(1);
 
 	if(qstr.length){
-		for(var qparts= qstr.split("&"), x= 0; x<qparts.length; x++){
+		for(var qparts = qstr.split("&"), x = 0; x < qparts.length; x++){
 			var tp = qparts[x].split("="), name=tp[0], value=(tp[1]||"").replace(/[<>"':\(\)]/g, ""); // replace() to avoid XSS attack
 			//Avoid URLs that use the same protocol but on other domains, for security reasons.
 			if (value.indexOf("//") === 0 || value.indexOf("\\\\") === 0) {
@@ -138,51 +138,51 @@
 		config= {
 			paths: paths,
 			// this config uses the dojo loader's scoping features to sandbox the version of dojo used by doh
-			packages:[{
-				name:'doh',
-				location:'../util/doh',
+			packages: [{
+				name: 'doh',
+				location: '../util/doh',
 				// here's the magic...everytime doh asks for a "dojo" module, it gets mapped to a "dohDojo"
 				// module; same goes for dojox/dohDojox since doh uses dojox
-				packageMap:{dojo:"dohDojo", dojox:"dohDojox"} 
+				packageMap: {dojo:"dohDojo", dojox:"dohDojox"}
 			},{
 				// now define the dohDojo package...
-				name:'dohDojo',
-				location:'../dojo',
-				packageMap:{dojo:"dohDojo", dojox:"dohDojox"}
+				name: 'dohDojo',
+				location: '../dojo',
+				packageMap: {dojo: "dohDojo", dojox: "dohDojox"}
 			},{
 				// and the dohDojox package...
-				name:'dohDojox',
-				location:'../dojox',
+				name: 'dohDojox',
+				location: '../dojox',
 				// and dojox uses dojo...that is, dohDojox...which must be mapped to dohDojo in the context of dohDojox
-				packageMap:{dojo:"dohDojo", dojox:"dohDojox"} 
+				packageMap: {dojo: "dohDojo", dojox: "dohDojox"}
 			}],
 			
 			// next, we need to preposition a special configuration for dohDojo
-			cache:{
-				"dohDojo*_base/config":function(){
+			cache: {
+				"dohDojo*_base/config": function(){
 					define([], {
 						// this configuration keeps dojo, dijit, and dojox out of the global space
-						scopeMap:[["dojo", "dohDojo"], ["dijit", "dohDijit"], ["dojox", "dohDojox"]],
-						isDebug:true,
-						noGlobals:true
+						scopeMap: [["dojo", "dohDojo"], ["dijit", "dohDijit"], ["dojox", "dohDojox"]],
+						isDebug: true,
+						noGlobals: true
 					});
 				}
 			},
 
 			// control the loader; don't boot global dojo, doh will ask for dojo itself
-			has:{
-				"dojo-sniff":0,
-				"dojo-loader":1,
-				"dojo-boot":0,
-				"dojo-test-sniff":1
+			has: {
+				"dojo-sniff": 0,
+				"dojo-loader": 1,
+				"dojo-boot": 0,
+				"dojo-test-sniff": 1
 			},
 
 			// no sniffing; therefore, set the baseUrl
-			baseUrl:"../../dojo",
+			baseUrl: "../../dojo",
 
-			deps:["dohDojo", "doh", "dohDojo/window"],
+			deps: ["dohDojo", "doh", "dohDojo/window"],
 
-			callback:function(dohDojo, doh){
+			callback: function(dohDojo, doh){
 				dohDojo.ready(function(){
 					fixHeight(dohDojo);
 					doh.breakOnError= breakOnError;
@@ -191,13 +191,13 @@
 				});
 			},
 
-			async:async
+			async: async
 		};
 	}else{
 		config= {
 			paths: paths,
-			deps:["dojo", "doh", "dojo/window"],
-			callback:function(dojo, doh){
+			deps: ["dojo", "doh", "dojo/window"],
+			callback: function(dojo, doh){
 				dojo.ready(function(){
 					fixHeight(dojo);
 					doh.breakOnError= breakOnError;
@@ -205,29 +205,29 @@
 					dojo.ready(doh, "run");
 				});
 			},
-			async:async,
-			isDebug:1
+			async: async,
+			isDebug: 1
 		};
 	}
 	
 	// load all of the dohPlugins
 	if(dohPlugins){
-		var i=0;
-		for(i=0; i<dohPlugins.length; i++){
+		var i = 0;
+		for(i = 0; i < dohPlugins.length; i++){
 			config.deps.push(dohPlugins[i]);
 		}
 	}
 	
-	require= config;
+	require = config;
 
 	// now script inject any boots
-	for(var e, i= 0; i<boot.length; i++) {
+	for(var e, i = 0; i < boot.length; i++) {
 		if(boot[i]){
-			e= document.createElement("script");
-			e.type= "text/javascript";
-			e.src= boot[i];
-			e.charset= "utf-8";
+			e = document.createElement("script");
+			e.type = "text/javascript";
+			e.src = boot[i];
+			e.charset = "utf-8";
 			document.getElementsByTagName("head")[0].appendChild(e);
 		}
 	}
-})()
+})();

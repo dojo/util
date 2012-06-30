@@ -1,16 +1,16 @@
 var testResourceRe = /^doh\/tests/,
 	list = {
-		"doh/doh.profile":1,
-		"doh/package.json":1,
-		"doh/tests":1,
-		"doh/_parseURLargs":1
+		"doh/doh.profile": 1,
+		"doh/package.json": 1,
+		"doh/tests": 1,
+		"doh/_parseURLargs": 1
 	},
 	copyOnly = function(mid){
 		return (mid in list);
 	};
 
 var profile = {
-	resourceTags:{
+	resourceTags: {
 		test: function(filename, mid){
 			return testResourceRe.test(mid);
 		},
@@ -24,7 +24,7 @@ var profile = {
 		}
 	},
 
-	trees:[
+	trees: [
 		[".", ".", /(\/\.)|(~$)/]
 	]
 };

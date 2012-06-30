@@ -22,7 +22,7 @@
 					runTest: function(){
 						var d = new doh.Deferred();
 						robot.mouseMove(30, 30, 500);
-						robot.mouseClick({left:true}, 500);
+						robot.mouseClick({left: true}, 500);
 						robot.typeKeys(" again", 500, 2500);
 						robot.sequence(d.getTestCallback(function(){
 							doh.is("hi again", document.getElementById('textbox').value);
@@ -36,12 +36,12 @@
 					setUp: function(){
 						textbox.value="hi again";
 					},
-					runTest:function(){
+					runTest: function(){
 						var d = new doh.Deferred();
 						robot.keyPress(END,500);
 						// test shift+arrow with keyPress
 						for(var i=0; i<3; i++){
-							robot.keyPress(LEFT_ARROW,500,{shift:true});
+							robot.keyPress(LEFT_ARROW, 500, {shift: true});
 						}
 						// test shift+arrow with keyDown then keyUp
 						robot.keyDown(SHIFT,500);
