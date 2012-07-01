@@ -1,7 +1,8 @@
 define([
 	"doh/_browserRunner", "require",
-	"dojo/dom-construct", "dojo/dom-geometry", "dojo/ready", "dojo/_base/unload", "dojo/_base/window"
-], function(doh, require, construct, geom, ready, unload, win){
+	"dojo/aspect", "dojo/Deferred", "dojo/dom-construct", "dojo/dom-geometry", "dojo/_base/lang", "dojo/ready",
+	"dojo/_base/unload", "dojo/when", "dojo/_base/window"
+], function(doh, require, aspect, Deferred, construct, geom, lang, ready, unload, when, win){
 
 // loading state
 var _robot = null;
@@ -21,6 +22,23 @@ var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ al
 	// otherwise JS will send a double and Sun will complain
 	_robot.typeKey(isSecure(), Number(charCode), Number(keyCode), Boolean(alt), Boolean(ctrl), Boolean(shift), Boolean(meta), Number(delay||0), Boolean(async||false));
 };
+
+// Queue of pending actions registered via sequence(), plus the currently executing action.
+// Each action is a function that either:
+//		1. does a setTimeout()
+//		2. calls java Robot (mouse movement, typing a single letter, etc.)
+//		3. executes user defined function (for when app called sequence() directly).
+// Each function can return a Promise, or just a plain value if it executes synchronously.
+var seqCur, seqQueue = [];
+aspect.before(doh, "_runFixture", function(){
+	// At the start of each new test fixture, clear any leftover queued actions from the previous test fixture.
+	// This will happen when the previous test throws an error, or times out.
+	seqQueue = [];
+	if(seqCur && seqCur.isFullfilled && !seqCur.isFullfilled() && seqCur.cancel){
+		seqCur.cancel();
+		seqCur = null;
+	}
+});
 
 // For 2.0, remove code to set doh.robot global.
 var robot = doh.robot = {
@@ -114,8 +132,6 @@ var robot = doh.robot = {
 		_robot._notified(isSecure(), keystring);
 	},
 
-	_time: 0,
-
 	// if the applet is 404 or cert is denied, this becomes true and kills tests
 	_appletDead: false,
 
@@ -140,7 +156,8 @@ var robot = doh.robot = {
 		// summary:
 		//		Defer an action by adding it to the robot's incrementally delayed queue of actions to execute.
 		// f:
-		//		A function containing actions you want to defer.
+		//		A function containing actions you want to defer.  It can return a Promise
+		//		to delay further actions.
 		// delay:
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
@@ -150,13 +167,33 @@ var robot = doh.robot = {
 		// duration:
 		//		Delay to wait after firing.
 
-		var currentTime = (new Date()).getTime();
-		if(currentTime > (robot._time || 0)){
-			robot._time = currentTime;
+		function waitFunc(ms){
+			// Returns a function that returns a Promise that fires after ms milliseconds.
+			return function(){
+				var timer, d;
+				d = new Deferred(function(){ clearTimeout(timer); });
+				timer = setTimeout(function(){ d.resolve(true); }, ms);
+				return d;
+			};
 		}
-		robot._time += delay || 1;
-		setTimeout(f, robot._time - currentTime);
-		robot._time += duration || 0;
+
+		// Queue action to run specified function, plus optional "wait" actions for delay and duration.
+		if(delay){ seqQueue.push(waitFunc(delay)); }
+		seqQueue.push( function(){ return f() || true; } );	// todo: simplify
+		if(duration){ seqQueue.push(waitFunc(duration)); }
+
+		// Start the queue running if it isn't running already.
+		function run(){
+			if(!seqCur && seqQueue.length){
+				seqCur = seqQueue.shift();
+				function next(){
+					seqCur = null;
+					run();
+				}
+				when(seqCur(), next, next);		// advance on exceptions too
+			}
+		}
+		run();
 	},
 
 	typeKeys: function(/*String|Number*/ chars, /*Integer?*/ delay, /*Integer?*/ duration){
@@ -178,18 +215,17 @@ var robot = doh.robot = {
 		//		The default is (string length)*50 ms.
 
 		this._assertRobot();
-		this.sequence(function(){
-			var isNum = typeof(chars) == Number;
-			duration = duration||(isNum?50: chars.length*50);
-			if(isNum){
-				_keyPress(chars, chars, false, false, false, false, 0);
-			}else if(chars.length){
-				_keyPress(chars.charCodeAt(0), 0, false, false, false, false, 0);
-				for(var i = 1; i < chars.length; i++){
-					_keyPress(chars.charCodeAt(i), 0, false, false, false, false, Math.max(Math.floor(duration/chars.length), 0));
-				}
+		var isNum = typeof(chars) == Number;
+		duration = duration||(isNum?50: chars.length*50);
+		if(isNum){
+			this.sequence(lang.partial(_keyPress, chars, chars, false, false, false, false, 0, 0),
+				delay, duration);
+		}else{
+			for(var i = 0; i < chars.length; i++){
+				this.sequence(lang.partial(_keyPress, chars.charCodeAt(i), 0, false, false, false, false, 0, 0),
+					i == 0 ? delay : 0, Math.max(Math.ceil(duration/chars.length), 0));
 			}
-		}, delay, duration);
+		}
 	},
 
 	keyPress: function(/*Integer*/ charOrCode, /*Integer?*/ delay, /*Object*/ modifiers, /*Boolean*/ asynchronous){
@@ -237,7 +273,7 @@ var robot = doh.robot = {
 		}
 		this.sequence(function(){
 			_keyPress(isChar?charOrCode.charCodeAt(0):0, isChar?0:charOrCode, modifiers.alt, modifiers.ctrl, modifiers.shift, modifiers.meta, 0);
-		},delay);
+		}, delay);
 	},
 
 	keyDown: function(/*Integer*/ charOrCode, /*Integer?*/ delay){
@@ -260,7 +296,7 @@ var robot = doh.robot = {
 		this.sequence(function(){
 			var isChar = typeof(charOrCode)=="string";
 			_robot.downKey(isSecure(), isChar?charOrCode:0, isChar?0:charOrCode, 0);
-		},delay);
+		}, delay);
 	},
 
 	keyUp: function(/*Integer*/ charOrCode, /*Integer?*/ delay){
@@ -283,7 +319,7 @@ var robot = doh.robot = {
 		this.sequence(function(){
 			var isChar=typeof(charOrCode)=="string";
 			_robot.upKey(isSecure(), isChar?charOrCode:0, isChar?0:charOrCode, 0);
-		},delay);
+		}, delay);
 	},
 
 
@@ -331,7 +367,7 @@ var robot = doh.robot = {
 				}
 			}
 			_robot.pressMouse(isSecure(), Boolean(buttons.left), Boolean(buttons.middle), Boolean(buttons.right), Number(0));
-		},delay);
+		}, delay);
 	},
 
 	mouseMove: function(/*Number*/ x, /*Number*/ y, /*Integer?*/ delay, /*Integer?*/ duration, /*Boolean*/ absolute){
@@ -360,7 +396,7 @@ var robot = doh.robot = {
 		duration = duration||100;
 		this.sequence(function(){
 			robot._mouseMove(x, y, absolute, duration);
-		},delay,duration);
+		}, delay, duration);
 	},
 
 	mouseRelease: function(/*Object*/ buttons, /*Integer?*/ delay){
@@ -382,7 +418,7 @@ var robot = doh.robot = {
 				}
 			}
 			_robot.releaseMouse(isSecure(), Boolean(buttons.left), Boolean(buttons.middle), Boolean(buttons.right), Number(0));
-		},delay);
+		}, delay);
 	},
 
 	// mouseWheelSize: Integer value that determines the amount of wheel motion per unit
@@ -416,7 +452,7 @@ var robot = doh.robot = {
 		if(!wheelAmt){ return; }
 		this.sequence(function(){
 			_robot.wheelMouse(isSecure(), Number(wheelAmt), Number(0), Number(duration||0));
-		},delay,duration);
+		}, delay, duration);
 	},
 
 	setClipboard: function(/*String*/ data,/*String?*/ format){
@@ -432,9 +468,9 @@ var robot = doh.robot = {
 		//		Otherwise, data is treated as plaintext. By default, plaintext
 		//		is used.
 		if(format==='text/html'){
-			_robot.setClipboardHtml(isSecure(),data);
+			_robot.setClipboardHtml(isSecure(), data);
 		}else{
-			_robot.setClipboardText(isSecure(),data);
+			_robot.setClipboardText(isSecure(), data);
 		}
 	}
 };
