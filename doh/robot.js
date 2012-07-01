@@ -1,7 +1,8 @@
 define([
 	"doh/_browserRunner", "require",
-	"dojo/dom-construct", "dojo/dom-geometry", "dojo/ready", "dojo/_base/unload", "dojo/_base/window"
-], function(doh, require, construct, geom, ready, unload, win){
+	"dojo/aspect", "dojo/_base/Deferred", "dojo/dom-construct", "dojo/dom-geometry", "dojo/_base/lang", "dojo/ready",
+	"dojo/_base/unload", "dojo/_base/window"
+], function(doh, require, aspect, Deferred, construct, geom, lang, ready, unload, win){
 
 // loading state
 var _robot = null;
@@ -13,7 +14,7 @@ var isSecure = (function(){
 	};
 })();
 
-var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ alt, /*Boolean*/ ctrl, /*Boolean*/ shift, /*Boolean*/ meta, /*Integer, optional*/ delay, /*Boolean*/ async){
+var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ alt, /*Boolean*/ ctrl, /*Boolean*/ shift, /*Boolean*/ meta, /*Integer?*/ delay, /*Boolean*/ async){
 	// internal function to type one non-modifier key
 
 	// typecasting Numbers helps Sun's IE plugin lookup methods that take int arguments
@@ -21,6 +22,28 @@ var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ al
 	// otherwise JS will send a double and Sun will complain
 	_robot.typeKey(isSecure(), Number(charCode), Number(keyCode), Boolean(alt), Boolean(ctrl), Boolean(shift), Boolean(meta), Number(delay||0), Boolean(async||false));
 };
+
+// Queue of pending actions plus the currently executing action registered via sequence().
+// Each action is a function that either:
+//		1. does a setTimeout()
+//		2. calls java Robot (mouse movement, typing a single letter, etc.)
+//		3. executes user defined function (for when app called sequence() directly).
+// Each function can return a Promise, or just a plain value if it executes synchronously.
+var seqPromise;
+aspect.before(doh, "_runFixture", function(){
+	// At the start of each new test fixture, clear any leftover queued actions from the previous test fixture.
+	// This will happen when the previous test throws an error, or times out.
+	var _seqPromise = seqPromise;
+	// need setTimeout to avoid false error; seqPromise from passing test is not fulfilled until after this execution trace finishes!
+	// really we should not have both `seqPromise` here and `var d = new doh.Deferred()` in the test
+	setTimeout(function(){
+		if(_seqPromise){
+			_seqPromise.cancel(new Error("new test starting, cancelling pending & in-progress queued events from previous test")); 
+		}
+	},0);
+	seqPromise = new Deferred();
+	seqPromise.callback(true);
+});
 
 // For 2.0, remove code to set doh.robot global.
 var robot = doh.robot = {
@@ -47,8 +70,8 @@ var robot = doh.robot = {
 	// one (or more after the robot loads) from the test page
 	// one from either the applet or an error condition
 	_runsemaphore: {
-		lock:["lock"],
-		unlock:function(){
+		lock: ["lock"],
+		unlock: function(){
 			try{
 				return this.lock.shift();
 			}catch(e){
@@ -114,18 +137,16 @@ var robot = doh.robot = {
 		_robot._notified(isSecure(), keystring);
 	},
 
-	_time:0,
-
 	// if the applet is 404 or cert is denied, this becomes true and kills tests
-	_appletDead:false,
+	_appletDead: false,
 
-	_assertRobot:function(){
+	_assertRobot: function(){
 		// make sure the applet is there and cert accepted
 		// otherwise, skip the test requesting the robot action
 		if(robot._appletDead){ throw new Error('robot not available; skipping test.'); }
 	},
 
-	_mouseMove: function(/*Number*/ x, /*Number*/ y, /*Boolean*/ absolute, /*Integer, optional*/ duration){
+	_mouseMove: function(/*Number*/ x, /*Number*/ y, /*Boolean*/ absolute, /*Integer?*/ duration){
 		if(absolute){
 			var scroll = {y: (window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0),
 			x: (window.pageXOffset || geom.fixIeBiDiScrollLeft(document.documentElement.scrollLeft) || document.body.scrollLeft || 0)};
@@ -136,101 +157,94 @@ var robot = doh.robot = {
 	},
 
 	// Main robot API
-	sequence:function(/*Function*/ f, /*Integer, optional*/ delay, /*Integer, optional*/ duration){
+	sequence: function(/*Function*/ f, /*Integer?*/ delay, /*Integer?*/ duration){
 		// summary:
 		//		Defer an action by adding it to the robot's incrementally delayed queue of actions to execute.
-		//
 		// f:
-		//		A function containing actions you want to defer.
-		//
+		//		A function containing actions you want to defer.  It can return a Promise
+		//		to delay further actions.
 		// delay:
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
+		//			robot.mouseClick({left: true}, 100) // first call; wait 100ms
 		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
-		//
 		// duration:
 		//		Delay to wait after firing.
-		//
 
-		var currentTime = (new Date()).getTime();
-		if(currentTime > (robot._time || 0)){
-			robot._time = currentTime;
+		function waitFunc(ms){
+			// Returns a function that returns a Promise that fires after ms milliseconds.
+			return function(){
+				var timer, d;
+				d = new Deferred(function(){ clearTimeout(timer); });
+				timer = setTimeout(function(){ d.callback(true); }, ms);
+				return d;
+			};
 		}
-		robot._time += delay || 1;
-		setTimeout(f, robot._time - currentTime);
-		robot._time += duration || 0;
+
+		// Queue action to run specified function, plus optional "wait" actions for delay and duration.
+		if(delay){ seqPromise = seqPromise.then(waitFunc(delay)); }
+		seqPromise = seqPromise.then(f);
+		if(duration){ seqPromise = seqPromise.then(waitFunc(duration)); }
 	},
 
-	typeKeys: function(/*String||Number*/ chars, /*Integer, optional*/ delay, /*Integer, optional*/ duration){
+	typeKeys: function(/*String|Number*/ chars, /*Integer?*/ delay, /*Integer?*/ duration){
 		// summary:
 		//		Types a string of characters in order, or types a dojo.keys.* constant.
-		//
 		// description:
 		//		Types a string of characters in order, or types a dojo.keys.* constant.
 		//		Example: robot.typeKeys("dijit.ed", 500);
-		//
 		// chars:
 		//		String of characters to type, or a dojo.keys.* constant
-		//
 		// delay:
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
+		//			robot.mouseClick({left: true}, 100) // first call; wait 100ms
 		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
-		//
 		// duration:
 		//		Time, in milliseconds, to spend pressing all of the keys.
 		//		The default is (string length)*50 ms.
-		//
 
 		this._assertRobot();
-		this.sequence(function(){
-			var isNum = typeof(chars) == Number;
-			duration=duration||(isNum?50:chars.length*50);
-			if(isNum){
-				_keyPress(chars, chars, false, false, false, false, 0);
-			}else if(chars.length){
-				_keyPress(chars.charCodeAt(0), 0, false, false, false, false, 0);
-				for(var i = 1; i<chars.length; i++){
-					_keyPress(chars.charCodeAt(i), 0, false, false, false, false, Math.max(Math.floor(duration/chars.length), 0));
-				}
+		var isNum = typeof(chars) == Number;
+		duration = duration||(isNum?50: chars.length*50);
+		if(isNum){
+			this.sequence(lang.partial(_keyPress, chars, chars, false, false, false, false, 0, 0),
+				delay, duration);
+		}else{
+			for(var i = 0; i < chars.length; i++){
+				this.sequence(lang.partial(_keyPress, chars.charCodeAt(i), 0, false, false, false, false, 0, 0),
+					i == 0 ? delay : 0, Math.max(Math.ceil(duration/chars.length), 0));
 			}
-		}, delay, duration);
+		}
 	},
 
-	keyPress: function(/*Integer*/ charOrCode, /*Integer, optional*/ delay, /*Object*/ modifiers, /*Boolean*/ asynchronous){
+	keyPress: function(/*Integer*/ charOrCode, /*Integer?*/ delay, /*Object*/ modifiers, /*Boolean*/ asynchronous){
 		// summary:
 		//		Types a key combination, like SHIFT-TAB.
-		//
 		// description:
 		//		Types a key combination, like SHIFT-TAB.
-		//		Example: to press shift-tab immediately, call robot.keyPress(dojo.keys.TAB, 0, {shift:true})
-		//
+		//		Example: to press shift-tab immediately, call robot.keyPress(dojo.keys.TAB, 0, {shift: true})
 		// charOrCode:
 		//		char/JS keyCode/dojo.keys.* constant for the key you want to press
-		//
 		// delay:
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
+		//			robot.mouseClick({left: true}, 100) // first call; wait 100ms
 		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
-		//
 		// modifiers:
 		//		JSON object that represents all of the modifier keys being pressed.
 		//		It takes the following Boolean attributes:
+		//
 		//			- shift
 		//			- alt
 		//			- ctrl
 		//			- meta
-		//
 		// asynchronous:
 		//		If true, the delay happens asynchronously and immediately, outside of the browser's JavaScript thread and any previous calls.
 		//		This is useful for interacting with the browser's modal dialogs.
-		//
 
 		this._assertRobot();
 		if(!modifiers){
@@ -251,100 +265,89 @@ var robot = doh.robot = {
 		}
 		this.sequence(function(){
 			_keyPress(isChar?charOrCode.charCodeAt(0):0, isChar?0:charOrCode, modifiers.alt, modifiers.ctrl, modifiers.shift, modifiers.meta, 0);
-		},delay);
+		}, delay);
 	},
 
-	keyDown: function(/*Integer*/ charOrCode, /*Integer, optional*/ delay){
+	keyDown: function(/*Integer*/ charOrCode, /*Integer?*/ delay){
 		// summary:
 		//		Holds down a single key, like SHIFT or 'a'.
-		//
 		// description:
 		//		Holds down a single key, like SHIFT or 'a'.
 		//		Example: to hold down the 'a' key immediately, call robot.keyDown('a')
-		//
 		// charOrCode:
 		//		char/JS keyCode/dojo.keys.* constant for the key you want to hold down
 		//		Warning: holding down a shifted key, like 'A', can have unpredictable results.
-		//
 		// delay:
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
-		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
-		//
+		// |		robot.mouseClick({left: true}, 100) // first call; wait 100ms
+		// |		robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 
 		this._assertRobot();
 		this.sequence(function(){
 			var isChar = typeof(charOrCode)=="string";
 			_robot.downKey(isSecure(), isChar?charOrCode:0, isChar?0:charOrCode, 0);
-		},delay);
+		}, delay);
 	},
 
-	keyUp: function(/*Integer*/ charOrCode, /*Integer, optional*/ delay){
+	keyUp: function(/*Integer*/ charOrCode, /*Integer?*/ delay){
 		// summary:
 		//		Releases a single key, like SHIFT or 'a'.
-		//
 		// description:
 		//		Releases a single key, like SHIFT or 'a'.
 		//		Example: to release the 'a' key immediately, call robot.keyUp('a')
-		//
 		// charOrCode:
 		//		char/JS keyCode/dojo.keys.* constant for the key you want to release
 		//		Warning: releasing a shifted key, like 'A', can have unpredictable results.
-		//
 		// delay:
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
-		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
-		//
+		// |		robot.mouseClick({left: true}, 100) // first call; wait 100ms
+		// |		robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 
 		this._assertRobot();
 		this.sequence(function(){
 			var isChar=typeof(charOrCode)=="string";
 			_robot.upKey(isSecure(), isChar?charOrCode:0, isChar?0:charOrCode, 0);
-		},delay);
+		}, delay);
 	},
 
 
-	mouseClick: function(/*Object*/ buttons, /*Integer, optional*/ delay){
+	mouseClick: function(/*Object*/ buttons, /*Integer?*/ delay){
 		// summary:
 		//		Convenience function to do a press/release.
 		//		See robot.mousePress for more info.
-		//
 		// description:
 		//		Convenience function to do a press/release.
 		//		See robot.mousePress for more info.
-		//
 
 		this._assertRobot();
 		robot.mousePress(buttons, delay);
 		robot.mouseRelease(buttons, 1);
 	},
 
-	mousePress: function(/*Object*/ buttons, /*Integer, optional*/ delay){
+	mousePress: function(/*Object*/ buttons, /*Integer?*/ delay){
 		// summary:
 		//		Presses mouse buttons.
 		// description:
 		//		Presses the mouse buttons you pass as true.
-		//		Example: to press the left mouse button, pass {left:true}.
+		//		Example: to press the left mouse button, pass {left: true}.
 		//		Mouse buttons you don't specify keep their previous pressed state.
-		//
-		// buttons:	JSON object that represents all of the mouse buttons being pressed.
+		// buttons:
+		//		JSON object that represents all of the mouse buttons being pressed.
 		//		It takes the following Boolean attributes:
+		//
 		//			- left
 		//			- middle
 		//			- right
-		//
 		// delay:
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
-		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
-		//
+		// |		robot.mouseClick({left: true}, 100) // first call; wait 100ms
+		// |		robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 
 		this._assertRobot();
 		if(!buttons){ return; }
@@ -356,54 +359,46 @@ var robot = doh.robot = {
 				}
 			}
 			_robot.pressMouse(isSecure(), Boolean(buttons.left), Boolean(buttons.middle), Boolean(buttons.right), Number(0));
-		},delay);
+		}, delay);
 	},
 
-	mouseMove: function(/*Number*/ x, /*Number*/ y, /*Integer, optional*/ delay, /*Integer, optional*/ duration, /*Boolean*/ absolute){
+	mouseMove: function(/*Number*/ x, /*Number*/ y, /*Integer?*/ delay, /*Integer?*/ duration, /*Boolean*/ absolute){
 		// summary:
 		//		Moves the mouse to the specified x,y offset relative to the viewport.
-		//
 		// x:
 		//		x offset relative to the viewport, in pixels, to move the mouse.
-		//
 		// y:
 		//		y offset relative to the viewport, in pixels, to move the mouse.
-		//
 		// delay:
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
-		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
-		//
+		// |		robot.mouseClick({left: true}, 100) // first call; wait 100ms
+		// |		robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		// duration:
 		//		Approximate time Robot will spend moving the mouse
 		//		The default is 100ms. This also affects how many mousemove events will
 		//		be generated, which is the log of the duration.
-		//
 		// absolute:
 		//		Boolean indicating whether the x and y values are absolute coordinates.
 		//		If false, then mouseMove expects that the x,y will be relative to the window. (clientX/Y)
 		//		If true, then mouseMove expects that the x,y will be absolute. (pageX/Y)
-		//
 
 		this._assertRobot();
 		duration = duration||100;
 		this.sequence(function(){
 			robot._mouseMove(x, y, absolute, duration);
-		},delay,duration);
+		}, delay, duration);
 	},
 
-	mouseRelease: function(/*Object*/ buttons, /*Integer, optional*/ delay){
+	mouseRelease: function(/*Object*/ buttons, /*Integer?*/ delay){
 		// summary:
 		//		Releases mouse buttons.
-		//
 		// description:
 		//		Releases the mouse buttons you pass as true.
-		//		Example: to release the left mouse button, pass {left:true}.
+		//		Example: to release the left mouse button, pass {left: true}.
 		//		Mouse buttons you don't specify keep their previous pressed state.
 		//		See robot.mousePress for more info.
-		//
 
 		this._assertRobot();
 		if(!buttons){ return; }
@@ -415,68 +410,59 @@ var robot = doh.robot = {
 				}
 			}
 			_robot.releaseMouse(isSecure(), Boolean(buttons.left), Boolean(buttons.middle), Boolean(buttons.right), Number(0));
-		},delay);
+		}, delay);
 	},
 
 	// mouseWheelSize: Integer value that determines the amount of wheel motion per unit
 	mouseWheelSize: 1,
 
-	mouseWheel: function(/*Number*/ wheelAmt, /*Integer, optional*/ delay, /*Integer, optional*/ duration){
+	mouseWheel: function(/*Number*/ wheelAmt, /*Integer?*/ delay, /*Integer?*/ duration){
 		// summary:
 		//		Spins the mouse wheel.
-		//
 		// description:
 		//		Spins the wheel wheelAmt "notches."
 		//		Negative wheelAmt scrolls up/away from the user.
 		//		Positive wheelAmt scrolls down/toward the user.
 		//		Note: this will all happen in one event.
 		//		Warning: the size of one mouse wheel notch is an OS setting.
-		//		You can accesss this size from robot.mouseWheelSize
-		//
+		//		You can access this size from robot.mouseWheelSize
 		// wheelAmt:
 		//		Number of notches to spin the wheel.
 		//		Negative wheelAmt scrolls up/away from the user.
 		//		Positive wheelAmt scrolls down/toward the user.
-		//
 		// delay:
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			robot.mouseClick({left:true}, 100) // first call; wait 100ms
+		//			robot.mouseClick({left: true}, 100) // first call; wait 100ms
 		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
-		//
 		// duration:
 		//		Approximate time Robot will spend moving the mouse
 		//		By default, the Robot will wheel the mouse as fast as possible.
-		//
-
 
 		this._assertRobot();
 		if(!wheelAmt){ return; }
 		this.sequence(function(){
 			_robot.wheelMouse(isSecure(), Number(wheelAmt), Number(0), Number(duration||0));
-		},delay,duration);
+		}, delay, duration);
 	},
 
-	setClipboard: function(/*String*/data,/*String, optional*/format){
+	setClipboard: function(/*String*/ data,/*String?*/ format){
 		// summary:
 		//		Set clipboard content.
-		//
 		// description:
 		//		Set data as clipboard content, overriding anything already there. The
 		//		data will be put to the clipboard using the given format.
-		//
 		// data:
 		//		New clipboard content to set
-		//
 		// format:
 		//		Set this to "text/html" to put richtext to the clipboard.
 		//		Otherwise, data is treated as plaintext. By default, plaintext
 		//		is used.
 		if(format==='text/html'){
-			_robot.setClipboardHtml(isSecure(),data);
+			_robot.setClipboardHtml(isSecure(), data);
 		}else{
-			_robot.setClipboardText(isSecure(),data);
+			_robot.setClipboardText(isSecure(), data);
 		}
 	}
 };

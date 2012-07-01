@@ -1315,7 +1315,9 @@ public final class DOHRobot extends Applet{
 		}
 		public void run(){}
 	}
-	
+
+	// Unclear why we have to fire keypress in a separate thread.
+	// Since delay is no longer used, maybe this code can be simplified.
 	final private class KeyPressThread extends ProfilingThread{
 		private int charCode;
 		private int keyCode;

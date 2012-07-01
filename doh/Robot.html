@@ -55,7 +55,9 @@
 
 	function _onblur(e){
 		setTimeout(function(){
-			document.body.removeChild(_robotField);
+			if(_robotField && _robotField.parentNode == document.body){
+				document.body.removeChild(_robotField);
+			}
 		},0);
 	}
 
