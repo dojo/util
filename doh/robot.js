@@ -23,21 +23,21 @@ var _keyPress = function(/*Number*/ charCode, /*Number*/ keyCode, /*Boolean*/ al
 	_robot.typeKey(isSecure(), Number(charCode), Number(keyCode), Boolean(alt), Boolean(ctrl), Boolean(shift), Boolean(meta), Number(delay||0), Boolean(async||false));
 };
 
-// Queue of pending actions registered via sequence(), plus the currently executing action.
+// Queue of pending actions plus the currently executing action registered via sequence().
 // Each action is a function that either:
 //		1. does a setTimeout()
 //		2. calls java Robot (mouse movement, typing a single letter, etc.)
 //		3. executes user defined function (for when app called sequence() directly).
 // Each function can return a Promise, or just a plain value if it executes synchronously.
-var seqCur, seqQueue = [];
+var seqPromise;
 aspect.before(doh, "_runFixture", function(){
 	// At the start of each new test fixture, clear any leftover queued actions from the previous test fixture.
 	// This will happen when the previous test throws an error, or times out.
-	seqQueue = [];
-	if(seqCur && seqCur.isFullfilled && !seqCur.isFullfilled() && seqCur.cancel){
-		seqCur.cancel();
-		seqCur = null;
+	if(seqPromise && !seqPromise.isFulfilled()){
+		seqPromise.cancel();
 	}
+	seqPromise = new Deferred();
+	seqPromise.resolve(true);
 });
 
 // For 2.0, remove code to set doh.robot global.
@@ -178,22 +178,9 @@ var robot = doh.robot = {
 		}
 
 		// Queue action to run specified function, plus optional "wait" actions for delay and duration.
-		if(delay){ seqQueue.push(waitFunc(delay)); }
-		seqQueue.push( function(){ return f() || true; } );	// todo: simplify
-		if(duration){ seqQueue.push(waitFunc(duration)); }
-
-		// Start the queue running if it isn't running already.
-		function run(){
-			if(!seqCur && seqQueue.length){
-				seqCur = seqQueue.shift();
-				function next(){
-					seqCur = null;
-					run();
-				}
-				when(seqCur(), next, next);		// advance on exceptions too
-			}
-		}
-		run();
+		if(delay){ seqPromise = seqPromise.then(waitFunc(delay)); }
+		seqPromise = seqPromise.then(f);
+		if(duration){ seqPromise = seqPromise.then(waitFunc(duration)); }
 	},
 
 	typeKeys: function(/*String|Number*/ chars, /*Integer?*/ delay, /*Integer?*/ duration){
