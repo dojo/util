@@ -162,8 +162,8 @@ var robot = doh.robot = {
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			robot.mouseClick({left: true}, 100) // first call; wait 100ms
-		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
+		// |		robot.mouseClick({left: true}, 100) // first call; wait 100ms
+		// |		robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		// duration:
 		//		Delay to wait after firing.
 
@@ -195,8 +195,8 @@ var robot = doh.robot = {
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			robot.mouseClick({left: true}, 100) // first call; wait 100ms
-		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
+		// |		robot.mouseClick({left: true}, 100) // first call; wait 100ms
+		// |		robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		// duration:
 		//		Time, in milliseconds, to spend pressing all of the keys.
 		//		The default is (string length)*50 ms.
@@ -227,8 +227,8 @@ var robot = doh.robot = {
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			robot.mouseClick({left: true}, 100) // first call; wait 100ms
-		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
+		// |		robot.mouseClick({left: true}, 100) // first call; wait 100ms
+		// |		robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		// modifiers:
 		//		JSON object that represents all of the modifier keys being pressed.
 		//		It takes the following Boolean attributes:
@@ -429,8 +429,8 @@ var robot = doh.robot = {
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		//			robot.mouseClick({left: true}, 100) // first call; wait 100ms
-		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
+		// |		robot.mouseClick({left: true}, 100) // first call; wait 100ms
+		// |		robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		// duration:
 		//		Approximate time Robot will spend moving the mouse
 		//		By default, the Robot will wheel the mouse as fast as possible.
