@@ -135,13 +135,13 @@ define([
 				[]
 			],[
 				// if the tag says just copy, then just copy
-				function(resource){
+				function(resource, bc){
 					return resource.tag.copyOnly;
 				},
 				["copy"]
 			],[
 				// the synthetic report module
-				function(resource){
+				function(resource, bc){
 					return resource.tag.report;
 				},
 				["dojoReport", "insertSymbols", "report"]
@@ -162,7 +162,7 @@ define([
 				["read", "dojoPragmas", "hasFindAll", "hasFixup", "writeDojo", "writeOptimized"]
 			],[
 				// package has module
-				function(resource){
+				function(resource, bc){
 					if(/^\w+\/has$/.test(resource.mid)){
 						bc.amdResources[resource.mid] = resource;
 						return true;
@@ -172,13 +172,13 @@ define([
 				["read", "dojoPragmas", "hasFindAll", "hasFixup", "depsScan", "writeAmd", "writeOptimized", "hasReport", "depsDump"]
 			],[
 				// flattened nls bundles
-				function(resource){
+				function(resource, bc){
 					return !!resource.tag.flattenedNlsBundle;
 				},
 				["writeAmd", "writeOptimized"]
 			],[
 				// nls resources
-				function(resource){
+				function(resource, bc){
 					if(/\/nls\//.test(resource.mid) ||	/\/nls\/.+\.js$/.test(resource.src)){
 						resource.tag.nls = 1;
 						bc.amdResources[resource.mid] = resource;
@@ -189,7 +189,7 @@ define([
 				["read", "dojoPragmas", "hasFindAll", "hasFixup", "depsScan", "writeAmd", "writeOptimized"]
 			],[
 				// synthetic AMD modules (used to create layers on-the-fly
-				function(resource){
+				function(resource, bc){
 					if(resource.tag.synthetic && resource.tag.amd){
 						bc.amdResources[resource.mid] = resource;
 						return true;
@@ -201,7 +201,7 @@ define([
 			],[
 				// synthetic dojo/loadInit! resources
 				// FIXME: can't this be added to the previous transform?
-				function(resource){
+				function(resource, bc){
 					if(resource.tag.loadInitResource){
 						bc.amdResources[resource.mid] = resource;
 						return true;
@@ -215,7 +215,7 @@ define([
 				// already marked as an amd resource
 				// ...or...
 				// not dojo/dojo.js (filtered above), not package has module (filtered above), not nls bundle (filtered above), not test or building test, not build control script or profile script but still a Javascript resource...
-				function(resource){
+				function(resource, bc){
 					if(resource.tag.amd || (/\.js$/.test(resource.src) && (!resource.tag.test || bc.copyTests=="build") && !/\.(bcs|profile)\.js$/.test(resource.src))){
 						bc.amdResources[resource.mid] = resource;
 						return true;
@@ -250,7 +250,7 @@ define([
 				["read", "optimizeCss", "write"]
 			],[
 				// just copy everything else except tests which were copied above iff desired...
-				function(resource){
+				function(resource, bc){
 					return !resource.tag.test;
 				},
 				["copy"]
