@@ -13,7 +13,7 @@ define([
 		scopeMap:[],
 		insertAbsMids:1,
 		applyDojoPragmas:1,
-		localeList:"ar,ca,cs,da,de-de,el,en-gb,en-us,es-es,fi-fi,fr-fr,he-il,hu,it-it,ja-jp,ko-kr,nl-nl,nb,pl,pt-br,pt-pt,ru,sk,sl,sv,th,tr,zh-tw,zh-cn".split(","),
+		localeList:"ar,ca,cs,da,de,el,en-gb,en-us,es-es,fi-fi,fr-fr,he-il,hu,it-it,ja-jp,ko-kr,nl-nl,nb,pl,pt-br,pt-pt,ru,sk,sl,sv,th,tr,zh-tw,zh-cn".split(","),
 
 
 		// this is a dojo pragma
