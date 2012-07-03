@@ -233,10 +233,10 @@ var robot = doh.robot = {
 		//		JSON object that represents all of the modifier keys being pressed.
 		//		It takes the following Boolean attributes:
 		//
-		//			- shift
-		//			- alt
-		//			- ctrl
-		//			- meta
+		//		- shift
+		//		- alt
+		//		- ctrl
+		//		- meta
 		// asynchronous:
 		//		If true, the delay happens asynchronously and immediately, outside of the browser's JavaScript thread and any previous calls.
 		//		This is useful for interacting with the browser's modal dialogs.
@@ -334,9 +334,9 @@ var robot = doh.robot = {
 		//		JSON object that represents all of the mouse buttons being pressed.
 		//		It takes the following Boolean attributes:
 		//
-		//			- left
-		//			- middle
-		//			- right
+		//		- left
+		//		- middle
+		//		- right
 		// delay:
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
