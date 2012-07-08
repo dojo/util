@@ -45,11 +45,11 @@ define([], function() {
 		readFileSync:readFileSync,
 
 		readdirSync:function(path) {
-			// java returns the complete path with each filename in listFiles; node returns just the filename
 			// the item+"" is necessary because item is a java object that doesn't have the substring method
-			var l = path.length + 1;
-			return (new java.io.File(path)).listFiles().map(function(item){ return (item+"").substring(l); });
+			return (new java.io.File(path)).listFiles().map(function(item){ return (item.name+""); });
 		},
+
+
 
 		readFile:function(filename, encoding, cb) {
 			var result = readFileSync(filename, encoding);

@@ -310,7 +310,7 @@ define([
 
 			if(!pack.trees){
 				// copy the package tree; don't copy any hidden directorys (e.g., .git, .svn) or temp files
-				pack.trees = [[pack.location, destPack.location, /(\/\.)|(~$)/]];
+				pack.trees = [[pack.location, destPack.location, /(\/\.)|(^\.)|(~$)/]];
 			} // else the user has provided explicit copy instructions
 
 			// filenames, dirs, trees just like global, except relative to the pack.(src|dest)Location

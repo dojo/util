@@ -94,6 +94,7 @@ define([
 					if(stats.isDirectory()){
 						subdirs.push(fullFilename);
 					}else{
+console.log(fullFilename);
 						advise(fullFilename, destPath + "/" + filename);
 					}
 				}
