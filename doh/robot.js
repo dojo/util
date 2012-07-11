@@ -33,9 +33,14 @@ var seqPromise;
 aspect.before(doh, "_runFixture", function(){
 	// At the start of each new test fixture, clear any leftover queued actions from the previous test fixture.
 	// This will happen when the previous test throws an error, or times out.
-	if(seqPromise && !seqPromise.isFulfilled()){
-		seqPromise.cancel();
-	}
+	var _seqPromise = seqPromise;
+	// need setTimeout to avoid false error; seqPromise from passing test is not fulfilled until after this execution trace finishes!
+	// really we should not have both `seqPromise` here and `var d = new doh.Deferred()` in the test
+	setTimeout(function(){
+		if(_seqPromise && !_seqPromise.isFulfilled()){
+			_seqPromise.cancel(new Error("new test starting, cancelling pending & in-progress queued events from previous test")); 
+		}
+	},0);
 	seqPromise = new Deferred();
 	seqPromise.resolve(true);
 });
