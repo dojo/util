@@ -45,6 +45,9 @@ aspect.before(doh, "_runFixture", function(){
 	seqPromise.resolve(true);
 });
 
+// Previous mouse position (from most recent mouseMoveTo() command)
+var lastMouse = {x: 5, y: 5};
+
 // For 2.0, remove code to set doh.robot global.
 var robot = doh.robot = {
 	_robotLoaded: true,
@@ -148,6 +151,7 @@ var robot = doh.robot = {
 
 	_mouseMove: function(/*Number*/ x, /*Number*/ y, /*Boolean*/ absolute, /*Integer?*/ duration){
 		if(absolute){
+			// This branch is no longer used, but left for back-compat
 			var scroll = {y: (window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0),
 			x: (window.pageXOffset || geom.fixIeBiDiScrollLeft(document.documentElement.scrollLeft) || document.body.scrollLeft || 0)};
 			y -= scroll.y;
@@ -362,6 +366,74 @@ var robot = doh.robot = {
 		}, delay);
 	},
 
+	_positionMouseOnLine: function(start, end, idx, cnt){
+		// summary:
+		//		Instantly positions the mouse along a line.  Helper method for mouseMoveTo().
+		// description:
+		//		Start and end are points in the viewport, and represent the endpoints of a line with cnt discrete points
+		//		on it.   This function positions the mouse at the idx point, where idx is a number between 0 (which
+		//		represents the start point) and cnt-1 (which represents the end point).
+		// start: Point
+		//		Object with x and y attributes representing position in viewport where the line starts.
+		// end: Point
+		//		Object with x and y attributes representing position in viewport where the line ends.
+		// idx: Number
+		//		The point to position to.
+		// cnt: Number
+		//		Number of points along the line.
+
+		function easeInOutQuad(/*Number*/ t, /*Number*/ b, /*Number*/ c, /*Number*/ d){
+			t /= d / 2;
+			if(t < 1)
+				return c / 2 * t * t + b;
+			t--;
+			return Math.round(-c / 2 * (t * (t - 2) - 1) + b);
+		}
+
+		var x = idx == cnt-1 ? end.x : easeInOutQuad(idx, start.x, end.x - start.x, cnt-1),
+			y = idx == cnt-1 ? end.y : easeInOutQuad(idx, start.y, end.y - start.y, cnt-1);
+		robot._mouseMove(x, y, false, 1);
+	},
+
+	mouseMoveTo: function(/*Object*/ point, /*Integer?*/ delay, /*Integer?*/ duration, /*Boolean*/ absolute){
+		// summary:
+		//		Moves the mouse from the current position to the specified point.
+		//		See mouseMove() for details.
+		// point: Object
+		//		x, y position relative to viewport, or if absolute == true, to document
+
+		this._assertRobot();
+		duration = duration||100;
+
+		this.sequence(function(){
+			// This runs right before we start moving the mouse.   At this point (but not before) point is guaranteed
+			// to be filled w/data.
+			if(absolute){
+				// Adjust point to be relative to viewport
+				var scroll = {y: (window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0),
+					x: (window.pageXOffset || geom.fixIeBiDiScrollLeft(document.documentElement.scrollLeft) || document.body.scrollLeft || 0)};
+				point = { y: point.y - scroll.y, x: point.x - scroll.x };
+			}
+			//console.log("mouseMoveTo() start, going from (", lastMouse.x, lastMouse.y, "), (", point.x, point.y, "), delay = " +
+			//	delay + ", duration = " + duration);
+		}, delay || 0);
+
+		// IE6-8 timers have a granularity of 15ms, so only do one mouse move every 15ms
+		var steps = duration<=1 ? 1 : // duration==1 -> user wants to jump the mouse
+			(duration/15)|1; // |1 to ensure an odd # of intermediate steps for sensible interpolation
+		var stepDuration = Math.floor(duration/steps);
+
+		// Start from t=1 because there's no need to move the mouse to where it already is
+		for (var t = 1; t <= steps; t++){
+			this.sequence(lang.hitch(this, "_positionMouseOnLine", lastMouse, point, t, steps+1), 0, stepDuration);
+		}
+
+		this.sequence(function(){
+			// This runs right after we finish moving the mouse
+			lastMouse = point;
+		});
+	},
+
 	mouseMove: function(/*Number*/ x, /*Number*/ y, /*Integer?*/ delay, /*Integer?*/ duration, /*Boolean*/ absolute){
 		// summary:
 		//		Moves the mouse to the specified x,y offset relative to the viewport.
@@ -384,11 +456,7 @@ var robot = doh.robot = {
 		//		If false, then mouseMove expects that the x,y will be relative to the window. (clientX/Y)
 		//		If true, then mouseMove expects that the x,y will be absolute. (pageX/Y)
 
-		this._assertRobot();
-		duration = duration||100;
-		this.sequence(function(){
-			robot._mouseMove(x, y, absolute, duration);
-		}, delay, duration);
+		this.mouseMoveTo({x: x, y: y}, delay, duration, absolute);
 	},
 
 	mouseRelease: function(/*Object*/ buttons, /*Integer?*/ delay){
@@ -434,8 +502,8 @@ var robot = doh.robot = {
 		//		Delay, in milliseconds, to wait before firing.
 		//		The delay is a delta with respect to the previous automation call.
 		//		For example, the following code ends after 600ms:
-		// |		robot.mouseClick({left: true}, 100) // first call; wait 100ms
-		// |		robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
+		//			robot.mouseClick({left: true}, 100) // first call; wait 100ms
+		//			robot.typeKeys("dij", 500) // 500ms AFTER previous call; 600ms in all
 		// duration:
 		//		Approximate time Robot will spend moving the mouse
 		//		By default, the Robot will wheel the mouse as fast as possible.
