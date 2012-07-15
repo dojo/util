@@ -150,8 +150,8 @@ var robot = doh.robot = {
 	},
 
 	_mouseMove: function(/*Number*/ x, /*Number*/ y, /*Boolean*/ absolute, /*Integer?*/ duration){
+		// This function is no longer used, but left for back-compat
 		if(absolute){
-			// This branch is no longer used, but left for back-compat
 			var scroll = {y: (window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0),
 			x: (window.pageXOffset || geom.fixIeBiDiScrollLeft(document.documentElement.scrollLeft) || document.body.scrollLeft || 0)};
 			y -= scroll.y;
@@ -392,7 +392,8 @@ var robot = doh.robot = {
 
 		var x = idx == cnt-1 ? end.x : easeInOutQuad(idx, start.x, end.x - start.x, cnt-1),
 			y = idx == cnt-1 ? end.y : easeInOutQuad(idx, start.y, end.y - start.y, cnt-1);
-		robot._mouseMove(x, y, false, 1);
+
+		_robot.moveMouse(isSecure(), Number(x), Number(y), Number(0), Number(1));
 	},
 
 	mouseMoveTo: function(/*Object*/ point, /*Integer?*/ delay, /*Integer?*/ duration, /*Boolean*/ absolute){
@@ -425,6 +426,7 @@ var robot = doh.robot = {
 
 		// Start from t=1 because there's no need to move the mouse to where it already is
 		for (var t = 1; t <= steps; t++){
+			// Using lang.hitch() intentionally, to preserve value of "t" before the t++ executes
 			this.sequence(lang.hitch(this, "_positionMouseOnLine", lastMouse, point, t, steps+1), 0, stepDuration);
 		}
 
