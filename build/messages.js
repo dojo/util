@@ -46,7 +46,7 @@ define([], function(){
 		[1, 221, "assumeLayerIsDojoModule", "Assumed layer is referencing a dojo module."],
 		[1, 222, "assumeLayerDependencyIsDojoModule", "Assumed layer is referencing a dojo module."],
 		[1, 223, "possibleLegacyModuleId", "Name in internStringsSkipList looks like a legacy module identifier."],
-		[1, 224, "missingPluginResolver", "A plugin dependency was encountered but there was not build-time plugin resolver."],
+		[1, 224, "missingPluginResolver", "A plugin dependency was encountered but there was no build-time plugin resolver."],
 		[1, 225, "missingDirDuringDiscovery", "A directory that was scheduled to be read during discovery did not exist."],
 		[1, 226, "missingProfile", "A package without a profile could throw errors or warnings."],
 		[1, 227, "symbolsLeak", "Inserting symbols (by setting the profile variable 'symbol') causes leaks in IE."],
