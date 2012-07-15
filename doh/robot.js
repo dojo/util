@@ -406,8 +406,8 @@ var robot = doh.robot = {
 		duration = duration||100;
 
 		this.sequence(function(){
-			// This runs right before we start moving the mouse.   At this point (but not before) point is guaranteed
-			// to be filled w/data.
+			// This runs right before we start moving the mouse.   At this time (but not before), point is guaranteed
+			// to be filled w/the correct data.
 			if(absolute){
 				// Adjust point to be relative to viewport
 				var scroll = {y: (window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0),
@@ -429,8 +429,11 @@ var robot = doh.robot = {
 		}
 
 		this.sequence(function(){
-			// This runs right after we finish moving the mouse
-			lastMouse = point;
+			// This runs right after we finish moving the mouse.   Be careful to update contents of lastMouse rather
+			// replacing it with a new Object, because other moveTo() commands may be in the queue, pointing to the
+			// current lastMouse Object.
+			lastMouse.x = point.x;
+			lastMouse.y = point.y;
 		});
 	},
 
