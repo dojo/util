@@ -229,14 +229,7 @@ define([
 	}
 
 
-	// clean up bc.packageMap and bc.paths so they can be used just as in dojo loader/bdLoad
 	(function(){
-		// so far, we've been using bc.packageMap to accumulate package info as it is provided by packagePaths and/or packages
-		// in zero to many profile scripts. This routine moves each package config into bc.packages which is a map
-		// from package name to package config (this is different from the array the user uses to pass package config info). Along
-		// the way, each package config object is cleaned up and all default values are calculated. Finally, the
-		// global packageMap (a map from package name to package name) is computed.
-
 		function processPackage(pack){
 			var packName = pack.name,
 				basePath = pack.basePath || bc.basePath;
@@ -285,8 +278,6 @@ define([
 			}
 
 			pack.location = computePath(pack.location || ("./" + packName), basePath);
-			pack.packageMap = pack.packageMap || 0;
-			require.computeMapProg(pack.packageMap, (pack.mapProg = []));
 
 			pack.copyright = isNonemptyString(pack.copyright) ?
 				(maybeRead(computePath(pack.copyright, pack.location)) || maybeRead(computePath(pack.copyright, bc.basePath)) || pack.copyright) :
@@ -298,14 +289,11 @@ define([
 			var destPack = bc.destPackages[packName] = {
 				name:pack.destName || packName,
 				main:pack.destMain || pack.main,
-				location:computePath(pack.destLocation || ("./" + (pack.destName || packName)), bc.destBasePath),
-				packageMap:pack.destPackageMap || pack.packageMap
+				location:computePath(pack.destLocation || ("./" + (pack.destName || packName)), bc.destBasePath)
 			};
-			require.computeMapProg(pack.destPackageMap, (destPack.mapProg = []));
 			delete pack.destName;
 			delete pack.destMain;
 			delete pack.destLocation;
-			delete pack.destPackageMap;
 
 
 			if(!pack.trees){
@@ -319,14 +307,15 @@ define([
 					return cleanupFilenamePair(item, pack.location, destPack.location, property + " in package " + packName);
 				});
 			}
-			bc.packageMap[packName] = packName;
-			bc.destPackageMap[destPack.name] = destPack.name;
 		}
 
+		// so far, we've been using bc.packageMap to accumulate package info as it is provided by packagePaths and/or packages
+		// in zero to many profile scripts. This routine moves each package config into bc.packages which is a map
+		// from package name to package config (this is different from the array the user uses to pass package config info). Along
+		// the way, each package config object is cleaned up and all default values are calculated.
 		bc.packages = bc.packageMap;
+		delete bc.packageMap;
 		bc.destPackages = {};
-		bc.packageMap = {};
-		bc.destPackageMap = {};
 		for(var packageName in bc.packages){
 			var pack = bc.packages[packageName];
 			pack.name = pack.name || packageName;
@@ -343,10 +332,6 @@ define([
 			processPackage(bc.packages.doh);
 		}
 
-		// now that bc.packageMap is initialized...
-		require.computeMapProg(bc.packageMap, (bc.packageMapProg = []));
-		require.computeMapProg(bc.destPackageMap, (bc.destPackageMapProg = []));
-
 		// get this done too...
 		require.computeMapProg(bc.paths, (bc.pathsMapProg = []));
 		require.computeMapProg(bc.destPaths || bc.paths, (bc.destPathsMapProg = []));
@@ -361,32 +346,31 @@ define([
 
 		bc.getSrcModuleInfo = function(mid, referenceModule, ignoreFileType){
 			if(ignoreFileType){
-				var result = require.getModuleInfo(mid+"/x", referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", bc.packageMapProg, bc.pathsMapProg, true);
+				var result = require.getModuleInfo(mid+"/x", referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", {}, [], true);
+				result.mid = trimLastChars(result.mid, 2);
 				if(result.pid!==0){
 					// trim /x.js
-					result.mid = trimLastChars(result.mid, 2);
 					result.url = trimLastChars(result.url, 5);
 				}
 				return result;
 			}else{
-				return require.getModuleInfo(mid, referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", bc.packageMapProg, bc.pathsMapProg, true);
+				return require.getModuleInfo(mid, referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", {}, [], true);
 			}
 		};
-
 
 
 		bc.getDestModuleInfo = function(mid, referenceModule, ignoreFileType){
 			// note: bd.destPagePath should never be required; but it's included for completeness and up to the user to provide it if some transform does decide to use it
 			if(ignoreFileType){
-				var result = require.getModuleInfo(mid+"/x", referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", bc.destPackageMapProg, bc.destPathsMapProg, true);
+				var result = require.getModuleInfo(mid+"/x", referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", {}, [], true);
+				result.mid = trimLastChars(result.mid, 2);
 				if(result.pid!==0){
 					// trim /x.js
-					result.mid = trimLastChars(result.mid, 2);
 					result.url = trimLastChars(result.url, 5);
 				}
 				return result;
 			}else{
-				return require.getModuleInfo(mid, referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", bc.destPackageMapProg, bc.destPathsMapProg, true);
+				return require.getModuleInfo(mid, referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", {}, [], true);
 			}
 		};
 	})();
@@ -573,8 +557,6 @@ define([
 				copyTests:1,
 				destBasePath:1,
 				destModules:1,
-				destPackageMap:1,
-				destPackageMapProg:1,
 				destPackages:1,
 				destPathTransforms:1,
 				destPathsMapProg:1,
@@ -589,8 +571,6 @@ define([
 				optimize:1,
 				layerOptimize:1,
 				"package":1,
-				packageMap:1,
-				packageMapProg:1,
 				packages:1,
 				paths:1,
 				pathsMapProg:1,
