@@ -72,6 +72,8 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 					skipped.push([importFileName, fileName]);
 					return fullMatch;
 				}
+				// remove any BOM
+				importContents = importContents.replace(/^\uFEFF/, '');
 
 				//Make sure to flatten any nested imports.
 				importContents = flattenCss(fullImportFileName, importContents);
@@ -107,7 +109,6 @@ define(["../buildControl", "../fileUtils"], function(bc, fileUtils) {
 		skipped = [];
 		nonrelative = [];
 		var text = flattenCss(resource.src, resource.text, cssImportIgnore);
-
 		try{
 			//Get rid of newlines.
 			if(/keepLines/i.test(bc.cssOptimize)){
