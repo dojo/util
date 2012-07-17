@@ -26,7 +26,6 @@ dependencies = {
 				"dijit.dijit-all"
 			]
 		},
-/*
 		// Here are the various demos with promotion:
 		{
 			name: "../demos/editor/layer.js",
@@ -315,7 +314,7 @@ dependencies = {
 			dependencies: [
 				"demos.calendar.src"
 			]
-		},*/
+		},
 		{
 			name: "../demos/todoApp/src.js",
 			dependencies: [
