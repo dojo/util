@@ -110,7 +110,11 @@ define([], function(){
 		[1, 354, "missingL10n", "Root bundle indicates localized bundles that don't exist."],
 		[1, 355, "declarativeRequireFailed", "Unable to convert declarative require."],
 		[1, 356, "optimizeFailed", "The optimizer threw an exception; the module probably contains syntax errors."],
-
+		[1, 357, "cssOptimizeUnableToResolveURL", "While optimizing a CSS file, it was impossible to compute the destination location of a relative URL."],
+		[1, 358, "cssOptimizeImproperComment", "While optimizing a CSS file, an improper comment was encountered."],
+		[1, 359, "cssOptimizeIgnored", "While optimizing a CSS file, an import directive was not expanded as instructed by the profile."],
+		[1, 360, "cssOptimizeIgnoredMultiMediaTypes", "While optimizing a CSS file, an import directive was not expanded because it indicated multiple media types."],
+		[1, 361, "cssOptimizeIgnoredNoResource", "While optimizing a CSS file, an import directive was not expanded because the source for the import was not available to the builder."],
 
 		// reports 400-499
 		[1, 400, "hasReport", "Has Features Detected"],
