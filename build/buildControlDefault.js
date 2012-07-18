@@ -69,6 +69,7 @@ define([
 			'dojo-undef-api':0,
 			'dojo-v1x-i18n-Api':1,
 			'dojo-xhr-factory':1,
+			"dojo-fast-sync-require":1,
 			'config-useDeferredInstrumentation':0,
 			'config-deferredInstrumentation':0,
 			'dom':1,
