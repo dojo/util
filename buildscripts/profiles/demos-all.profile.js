@@ -337,6 +337,7 @@ dependencies = {
 				"dojox/mobile/SimpleDialog",
 				"dojox/mobile/DatePicker",
 				"dojox/mobile/Opener",
+				"dojox/mobile/SpinWheelDatePicker",
 				"dojo/date/stamp",
 				"dojox/app/widgets/Container",
 				"dojo/store/Memory",
