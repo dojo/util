@@ -3,16 +3,18 @@
 var fileUtil = {};
 
 fileUtil.getLineSeparator = function(){
-	//summary: Gives the line separator for the platform.
-	//For web builds override this function.
+	// summary:
+	//		Gives the line separator for the platform.
+	//		For web builds override this function.
 	return java.lang.System.getProperty("line.separator"); //Java String
 }
 
 fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilters, /*boolean?*/makeUnixPaths, /*boolean?*/startDirIsJavaObject, /*boolean?*/dontRecurse){
-	//summary: Recurses startDir and finds matches to the files that match regExpFilters.include
-	//and do not match regExpFilters.exclude. Or just one regexp can be passed in for regExpFilters,
-	//and it will be treated as the "include" case.
-	//Ignores files/directories that start with a period (.).
+	// summary:
+	//		Recurses startDir and finds matches to the files that match regExpFilters.include
+	//		and do not match regExpFilters.exclude. Or just one regexp can be passed in for regExpFilters,
+	//		and it will be treated as the "include" case.
+	//		Ignores files/directories that start with a period (.).
 	var files = [];
 
 	var topDir = startDir;
@@ -60,8 +62,9 @@ fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilt
 
 
 fileUtil.copyDir = function(/*String*/srcDir, /*String*/destDir, /*RegExp*/regExpFilter, /*boolean?*/onlyCopyNew){
-	//summary: copies files from srcDir to destDir using the regExpFilter to determine if the
-	//file should be copied. Returns a list file name strings of the destinations that were copied.
+	// summary:
+	//		copies files from srcDir to destDir using the regExpFilter to determine if the
+	//		file should be copied. Returns a list file name strings of the destinations that were copied.
 	var fileNames = fileUtil.getFilteredFileList(srcDir, regExpFilter, true);
 	var copiedFiles = [];
 	
@@ -148,8 +151,9 @@ fileUtil.transformAsyncModule= function(filename, contents) {
 };
 
 fileUtil.copyFile = function(/*String*/srcFileName, /*String*/destFileName, /*boolean?*/onlyCopyNew){
-	//summary: copies srcFileName to destFileName. If onlyCopyNew is set, it only copies the file if
-	//srcFileName is newer than destFileName. Returns a boolean indicating if the copy occurred.
+	// summary:
+	//		copies srcFileName to destFileName. If onlyCopyNew is set, it only copies the file if
+	//		srcFileName is newer than destFileName. Returns a boolean indicating if the copy occurred.
 	var destFile = new java.io.File(destFileName);
 
 	//logger.trace("Src filename: " + srcFileName);
@@ -187,7 +191,8 @@ fileUtil.copyFile = function(/*String*/srcFileName, /*String*/destFileName, /*bo
 }
 
 fileUtil.readFile = function(/*String*/path, /*String?*/encoding){
-	//summary: reads a file and returns a string
+	// summary:
+	//		reads a file and returns a string
 	encoding = encoding || "utf-8";
 	var file = new java.io.File(path);
 	var lineSeparator = fileUtil.getLineSeparator();
@@ -220,12 +225,14 @@ fileUtil.readFile = function(/*String*/path, /*String?*/encoding){
 }
 
 fileUtil.saveUtf8File = function(/*String*/fileName, /*String*/fileContents){
-	//summary: saves a file using UTF-8 encoding.
+	// summary:
+	//		saves a file using UTF-8 encoding.
 	fileUtil.saveFile(fileName, fileContents, "utf-8");
 }
 
 fileUtil.saveFile = function(/*String*/fileName, /*String*/fileContents, /*String?*/encoding){
-	//summary: saves a file.
+	// summary:
+	//		saves a file.
 	var outFile = new java.io.File(fileName);
 	var outWriter;
 	
@@ -251,7 +258,8 @@ fileUtil.saveFile = function(/*String*/fileName, /*String*/fileContents, /*Strin
 }
 
 fileUtil.deleteFile = function(/*String*/fileName){
-	//summary: deletes a file or directory if it exists.
+	// summary:
+	//		deletes a file or directory if it exists.
 	var file = new java.io.File(fileName);
 	if(file.exists()){
 		if(file.isDirectory()){

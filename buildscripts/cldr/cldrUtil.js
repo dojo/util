@@ -26,9 +26,10 @@ function isLocaleAliasSrc(prop, bundle){
 }
 
 function getNativeBundle(filePath){
-	//summary: get native bundle content with utf-8 encoding
-	//	native means the content of this bundle is not flattened with parent
-	//	returns empty object if file not found
+	// summary:
+	//		get native bundle content with utf-8 encoding.
+	//		native means the content of this bundle is not flattened with parent.
+	//		returns empty object if file not found.
 	try{
 		var content = readFile(filePath, "utf-8");
 		return (!content || !content.length) ? {} : dojo.fromJson(content);
@@ -38,7 +39,8 @@ function getNativeBundle(filePath){
 }
 
 function compare(a/*String or Array*/, b/*String or Array*/){
-	//summary: simple comparison
+	// summary:
+	//		simple comparison
 	if(dojo.isArray(a) && dojo.isArray(b)){
 		for(var i = 0; i < a.length; i++){
 			if(a[i] != b[i]){ return false; }

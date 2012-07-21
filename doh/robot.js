@@ -197,7 +197,8 @@ var robot = doh.robot = {
 		//		Types a string of characters in order, or types a dojo.keys.* constant.
 		// description:
 		//		Types a string of characters in order, or types a dojo.keys.* constant.
-		//		Example: robot.typeKeys("dijit.ed", 500);
+		// example:
+		// |	robot.typeKeys("dijit.ed", 500);
 		// chars:
 		//		String of characters to type, or a dojo.keys.* constant
 		// delay:
@@ -229,7 +230,8 @@ var robot = doh.robot = {
 		//		Types a key combination, like SHIFT-TAB.
 		// description:
 		//		Types a key combination, like SHIFT-TAB.
-		//		Example: to press shift-tab immediately, call robot.keyPress(dojo.keys.TAB, 0, {shift: true})
+		// example:
+		//		to press shift-tab immediately, call robot.keyPress(dojo.keys.TAB, 0, {shift: true})
 		// charOrCode:
 		//		char/JS keyCode/dojo.keys.* constant for the key you want to press
 		// delay:
@@ -277,7 +279,8 @@ var robot = doh.robot = {
 		//		Holds down a single key, like SHIFT or 'a'.
 		// description:
 		//		Holds down a single key, like SHIFT or 'a'.
-		//		Example: to hold down the 'a' key immediately, call robot.keyDown('a')
+		// example:
+		//		to hold down the 'a' key immediately, call robot.keyDown('a')
 		// charOrCode:
 		//		char/JS keyCode/dojo.keys.* constant for the key you want to hold down
 		//		Warning: holding down a shifted key, like 'A', can have unpredictable results.
@@ -300,7 +303,8 @@ var robot = doh.robot = {
 		//		Releases a single key, like SHIFT or 'a'.
 		// description:
 		//		Releases a single key, like SHIFT or 'a'.
-		//		Example: to release the 'a' key immediately, call robot.keyUp('a')
+		// example:
+		//		to release the 'a' key immediately, call robot.keyUp('a')
 		// charOrCode:
 		//		char/JS keyCode/dojo.keys.* constant for the key you want to release
 		//		Warning: releasing a shifted key, like 'A', can have unpredictable results.

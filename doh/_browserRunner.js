@@ -44,7 +44,7 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 		// Over-ride or implement base runner.js-provided methods
 		//
 		var escapeXml = function(str){
-			//summary:
+			// summary:
 			//		Adds escape sequences for special characters in XML: &<>"'
 			//		Optionally skips escapes for single quotes
 			return str.replace(/&/gm, "&amp;").replace(/</gm, "&lt;").replace(/>/gm, "&gt;").replace(/"/gm, "&quot;"); // string

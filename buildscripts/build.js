@@ -258,8 +258,9 @@ function release(){
 
 //********* Start _copyToRelease *********
 function _copyToRelease(/*String*/prefixName, /*String*/prefixPath, /*Object*/kwArgs, /*Array?*/buildLayers){
-	//summary: copies modules and supporting files from the prefix path to the release
-	//directory. Also adds code guards to module resources.
+	// summary:
+	//		copies modules and supporting files from the prefix path to the release
+	//		directory. Also adds code guards to module resources.
 	var prefixSlashName = prefixName.replace(/\./g, "/");
 	var releasePath = kwArgs.releaseDir + "/"  + prefixSlashName;
 	var copyRegExps = {
@@ -344,8 +345,9 @@ function _optimizeReleaseDirs(
 	/*Object*/kwArgs,
 	/*RegExp*/layerIgnoreRegExp,
 	/*RegExp*/nlsIgnoreRegExp){
-	//summary: runs intern strings, i18n bundle flattening and xdomain file generation
-	//on the files in a release directory, if those options are enabled.
+	// summary:
+	//		runs intern strings, i18n bundle flattening and xdomain file generation
+	//		on the files in a release directory, if those options are enabled.
 	var releasePath = kwArgs.releaseDir + "/"  + prefixName.replace(/\./g, "/");
 	var prefixes = kwArgs.profileProperties.dependencies.prefixes;
 

@@ -181,7 +181,8 @@ for(var i= 0; i < srcLocaleList.length; i++){
 //fileUtil.saveUtf8File(logDir + '/specialLocale.log',logStr+'\n');
 
 function validateDir(/*String*/dirPath){
-	//summary:make sure the dir exists
+	// summary:
+	//		make sure the dir exists
 	var dir = new java.io.File(dirPath);
 	if(!dir.exists()){
 		dir.mkdir();

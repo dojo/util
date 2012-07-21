@@ -2,12 +2,15 @@
 var buildUtilXd = {};
 
 buildUtilXd.setXdDojoConfig = function(/*String*/fileContents, /*String*/url){
-	//summary: sets sets up xdomain loading for a particular URL.
-	//parameters:
-	//		fileContents: be a built dojo.js (can be uncompressed or compressed).
-	//		url: value should be the url to the directory that contains the dojo,
+	// summary:
+	//		sets sets up xdomain loading for a particular URL.
+	// fileContents:
+	//		be a built dojo.js (can be uncompressed or compressed).
+	// url:
+	//		value should be the url to the directory that contains the dojo,
 	//		dijit and dojox directories.
-	//			Example: "http://some.domain.com/dojo090" (no ending slash)
+	//		Example: "http://some.domain.com/dojo090" (no ending slash)
+
 	//This function will inject some contents after the dojo.registerModulePath() definition.
 	//The contents of fileName should have been a dojo.js that includes the contents
 	//of loader_xd.js (specify loader=xdomain in the build command).
@@ -46,7 +49,8 @@ buildUtilXd.xdgen = function(
 	/*RegExp*/optimizeIgnoreRegExp,
 	/*Object*/kwArgs
 ){
-	//summary: generates the .xd.js files for a build.
+	// summary:
+	//		generates the .xd.js files for a build.
 	var jsFileNames = fileUtil.getFilteredFileList(prefixPath, /\.js$/, true);
 	
 	//Construct a regexp to avoid xd generating loader_xd.js, since shrinksafe

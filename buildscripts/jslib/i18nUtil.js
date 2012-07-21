@@ -1,7 +1,8 @@
 i18nUtil = {};
 
 i18nUtil.setup = function(/*Object*/kwArgs){
-	//summary: loads dojo so we can use it for i18n bundle flattening.
+	// summary:
+	//		loads dojo so we can use it for i18n bundle flattening.
 	
 	//Do the setup only if it has not already been done before.
 	if(typeof djConfig == "undefined" || !(typeof dojo != "undefined" && dojo["i18n"])){
@@ -25,7 +26,7 @@ i18nUtil.setup = function(/*Object*/kwArgs){
 }
 
 i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/fileContents, /*Object*/kwArgs){
-	//summary:
+	// summary:
 	//		This little utility is invoked by the build to flatten all of the JSON resource bundles used
 	//		by dojo.requireLocalization(), much like the main build itself, to optimize so that multiple
 	//		web hits will not be necessary to load these resources.  Normally, a request for a particular
@@ -35,13 +36,13 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/fileCo
 	//		memory, then flatten the object and spit it out using dojo.toJson.  The bootstrap
 	//		will be modified to download exactly one of these files, whichever is closest to the user's
 	//		locale.
-	//fileName:
+	// fileName:
 	//		The name of the file to process (like dojo.js). This function will use
 	//		it to determine the best resource name to give the flattened bundle.
-	//fileContents:
+	// fileContents:
 	//		The contents of the file to process (like dojo.js). This function will look in
 	//		the contents for dojo.requireLocation() calls.
-	//kwArgs:
+	// kwArgs:
 	//		The build's kwArgs.
 	
 	var destDirName = fileName.replace(/\/[^\/]+$/, "/") + "nls";
@@ -156,9 +157,10 @@ i18nUtil.flattenLayerFileBundles = function(/*String*/fileName, /*String*/fileCo
 i18nUtil.preloadInsertionRegExp = /\/\/INSERT dojo.i18n._preloadLocalizations HERE/;
 
 i18nUtil.flattenDirBundles = function(/*String*/prefixName, /*String*/prefixDir, /*Object*/kwArgs, /*RegExp*/nlsIgnoreRegExp){
-	//summary: Flattens the i18n bundles inside a directory so that only request
-	//is needed per bundle. Does not handle resource flattening for dojo.js or
-	//layered build files.
+	// summary:
+	//		Flattens the i18n bundles inside a directory so that only request
+	//		is needed per bundle. Does not handle resource flattening for dojo.js or
+	//		layered build files.
 
 	i18nUtil.setup(kwArgs);
 	var fileList = fileUtil.getFilteredFileList(prefixDir, /\.js$/, true);
@@ -182,9 +184,10 @@ i18nUtil.flattenDirBundles = function(/*String*/prefixName, /*String*/prefixDir,
 }
 
 i18nUtil.modifyRequireLocalization = function(/*String*/fileContents, /*Array*/prefixes){
-	//summary: Modifies any dojo.requireLocalization calls in the fileContents to have the
-	//list of supported locales as part of the call. This allows the i18n loading functions
-	//to only make request(s) for locales that actually exist on disk.
+	// summary:
+	//		Modifies any dojo.requireLocalization calls in the fileContents to have the
+	//		list of supported locales as part of the call. This allows the i18n loading functions
+	//		to only make request(s) for locales that actually exist on disk.
 	var dependencies = [];
 	
 	//Make sure we have a JS string, and not a Java string.
@@ -224,7 +227,8 @@ i18nUtil.modifyRequireLocalization = function(/*String*/fileContents, /*Array*/p
 }
 
 i18nUtil.makeFlatBundleContents = function(prefix, prefixPath, srcFileName){
-	//summary: Given a nls file name, flatten the bundles from parent locales into the nls bundle.
+	// summary:
+	//		Given a nls file name, flatten the bundles from parent locales into the nls bundle.
 	var bundleParts = i18nUtil.getBundlePartsFromFileName(prefix, prefixPath, srcFileName);
 	if(!bundleParts){
 		return null;
@@ -271,8 +275,9 @@ i18nUtil.getLocalesForBundle = function(moduleName, bundleName, prefixes){
 }
 
 i18nUtil.getRequireLocalizationArgsFromString = function(argString){
-	//summary: Given a string of the arguments to a dojo.requireLocalization
-	//call, separate the string into individual arguments.
+	// summary:
+	//		Given a string of the arguments to a dojo.requireLocalization
+	//		call, separate the string into individual arguments.
 	var argResult = {
 		moduleName: null,
 		bundleName: null,

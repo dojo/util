@@ -20,7 +20,7 @@ var
 
 
 	changeVersion = function(/*String*/version, /*String*/fileContents){
-		//summary:
+		// summary:
 		//		Changes the version number for dojo. Input should be the fileContents
 		//		of a file that contains the version number.
 

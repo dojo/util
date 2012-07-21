@@ -4,7 +4,8 @@
 
 
 function buildTreeData(/*Object*/obj, /*String*/nodeName){
-	//summary: makes a TreeV3-friendly data structure.
+	// summary:
+	//		makes a TreeV3-friendly data structure.
 	
 	var result = null;
 	var childNames = [];

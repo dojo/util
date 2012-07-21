@@ -108,12 +108,14 @@ function _calculateAliasPath(bundle, name/*String*/){
 }
 
 function _processLocaleAlias(localeAliasPaths/*Array*/, bundle/*JSON Obj*/, nativeSrcBundle/*JSON Obj*/,locale/*String*/){
-	//Summary: Update all properties as defined by 'locale' alias mapping
-	//		   E.g.'months-format-abbr@localeAlias6':{'target':"months-format-wide", 'bundle':"gregorian"},
-	//		   means the array values of 'months-format-abbr' in current bundle should be
-	//		   merged with(inherit or overwrite) that of 'months-format-wide' in 'gregorian' bundle
+	// summary:
+	//		Update all properties as defined by 'locale' alias mapping
+	//		E.g.'months-format-abbr@localeAlias6':{'target':"months-format-wide", 'bundle':"gregorian"},
+	//		means the array values of 'months-format-abbr' in current bundle should be
+	//		merged with(inherit or overwrite) that of 'months-format-wide' in 'gregorian' bundle
 	//
-	//Note:	   Currently no bundle recognition, always assume 'gregorian'.
+	//		Note:	   Currently no bundle recognition, always assume 'gregorian'.
+
 	var processed = {};
 	for(var i = 0; i < localeAliasPaths.length; i++){
 		var path = localeAliasPaths[i];

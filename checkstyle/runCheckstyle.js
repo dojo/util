@@ -38,9 +38,10 @@ if(arguments[0] == "help"){
 
 // Take from old buildUtil.js in 1.6
 function convertArrayToObject(/*Array*/ary){
-	//summary: converts an array that has String members of "name=value"
-	//into an object, where the properties on the object are the names in the array
-	//member name/value pairs.
+	// summary:
+	//		converts an array that has String members of "name=value"
+	//		into an object, where the properties on the object are the names in the array
+	//		member name/value pairs.
 	var result = {};
 	for(var i = 0; i < ary.length; i++){
 		var separatorIndex = ary[i].indexOf("=");
