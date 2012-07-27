@@ -20,7 +20,10 @@ define([], function(){
 		[1, 108, "internStrings", "Interning strings."],
 		[1, 109, "processHtmlFiles", "Processing HTML files."],
 		[1, 110, "userTrace", "User trace:"],
-		[1, 110, "userInfo", "User info:"],
+		[1, 111, "userInfo", "User info:"],
+		[1, 112, "cssOptimizeIgnored", "While optimizing a CSS file, an import directive was not expanded as instructed by the profile."],
+		[1, 113, "cssOptimizeIgnoredMultiMediaTypes", "While optimizing a CSS file, an import directive was not expanded because it indicated multiple media types."],
+
 
 		// warn 200-299
 		[1, 200, "configUnresolvedValues", "Configuration contains unsolved values."],
@@ -112,9 +115,7 @@ define([], function(){
 		[1, 356, "optimizeFailed", "The optimizer threw an exception; the module probably contains syntax errors."],
 		[1, 357, "cssOptimizeUnableToResolveURL", "While optimizing a CSS file, it was impossible to compute the destination location of a relative URL."],
 		[1, 358, "cssOptimizeImproperComment", "While optimizing a CSS file, an improper comment was encountered."],
-		[1, 359, "cssOptimizeIgnored", "While optimizing a CSS file, an import directive was not expanded as instructed by the profile."],
-		[1, 360, "cssOptimizeIgnoredMultiMediaTypes", "While optimizing a CSS file, an import directive was not expanded because it indicated multiple media types."],
-		[1, 361, "cssOptimizeIgnoredNoResource", "While optimizing a CSS file, an import directive was not expanded because the source for the import was not available to the builder."],
+		[1, 359, "cssOptimizeIgnoredNoResource", "While optimizing a CSS file, an import directive was not expanded because the source for the import was not available to the builder."],
 
 		// reports 400-499
 		[1, 400, "hasReport", "Has Features Detected"],
