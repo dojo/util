@@ -115,7 +115,7 @@ define([
 				// even if not expanding, make sure relative urls are adjusted correctly
 				if(ignore){
 					if(isRelative(importUrl) && (fixedRelativeUrl = getDestRelativeUrlFromSrcUrl(dest, fullSrcFilename, ["CSS file", src, "import directive", fullMatch]))){
-						return "@import url(" + fixedRelativeUrl + ")" + (mediaTypes || "");
+						return '@import url("' + fixedRelativeUrl + '")' + (mediaTypes || "") + ";";
 					}else{
 						// right or wrong, this is our only choice at this point
 						return fullMatch;
@@ -143,7 +143,7 @@ define([
 						if(!relativeResource){
 							bc.log("cssOptimizeUnableToResolveURL", ["CSS file", src, "import", importResource.src, "relative URL", fullMatch]);
 						}else{
-							return "url(" + getDestRelativeFilename(resource.dest, relativeResource) + ")";
+							return 'url("' + getDestRelativeFilename(resource.dest, relativeResource) + '");';
 						}
 					}
 					// right or wrong, this is our only choice at this point
