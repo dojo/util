@@ -35,8 +35,8 @@ var
 		// Do the final version replacement.
 		if(/package/.test(filename)){
 			fileContents = fileContents.replace(
-				/['"]version['"]\s*\:\s*['"][\w\.\-]+?["']/,
-				'"version":"' + version + '"'
+				/['"](version|dojo|dijit)['"]\s*\:\s*['"][\w\.\-]+?["']/g,
+				'"$1":"' + version + '"'
 			);
 		}else{
 			fileContents = fileContents.replace(
