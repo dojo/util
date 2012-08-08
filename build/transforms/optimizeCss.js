@@ -143,7 +143,7 @@ define([
 						if(!relativeResource){
 							bc.log("cssOptimizeUnableToResolveURL", ["CSS file", src, "import", importResource.src, "relative URL", fullMatch]);
 						}else{
-							return 'url("' + getDestRelativeFilename(resource.dest, relativeResource) + '");';
+							return 'url("' + getDestRelativeFilename(resource.dest, relativeResource) + '")';
 						}
 					}
 					// right or wrong, this is our only choice at this point
