@@ -1,8 +1,8 @@
 define([
 	"doh/_browserRunner", "require",
-	"dojo/aspect", "dojo/Deferred", "dojo/dom-construct", "dojo/dom-geometry", "dojo/_base/lang", "dojo/ready",
+	"dojo/aspect", "dojo/Deferred", "dojo/dom-class", "dojo/dom-construct", "dojo/dom-geometry", "dojo/_base/lang", "dojo/ready",
 	"dojo/_base/unload", "dojo/when", "dojo/_base/window"
-], function(doh, require, aspect, Deferred, construct, geom, lang, ready, unload, when, win){
+], function(doh, require, aspect, Deferred, domClass, construct, geom, lang, ready, unload, when, win){
 
 // loading state
 var _robot = null;
@@ -61,7 +61,7 @@ var robot = doh.robot = {
 	killRobot: function(){
 		if(robot._robotLoaded){
 			robot._robotLoaded = false;
-			document.documentElement.className = document.documentElement.className.replace(/ ?dohRobot/, "");
+			domClass.remove(document.documentElement, "dohRobot");
 			robot._killApplet();
 		}
 	},
@@ -107,7 +107,7 @@ var robot = doh.robot = {
 		doh._initRobotCalled = true;
 
 		// add dohRobot class to HTML element so tests can use that in CSS rules if desired
-		document.documentElement.className += " dohRobot";
+		domClass.add(document.documentElement, "dohRobot");
 		window.scrollTo(0, 0);
 //		document.documentElement.scrollTop = document.documentElement.scrollLeft = 0;
 		_robot = r;
