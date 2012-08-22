@@ -1,8 +1,8 @@
 define([
 	"doh/_browserRunner", "require",
 	"dojo/aspect", "dojo/Deferred", "dojo/dom-class", "dojo/dom-construct", "dojo/dom-geometry", "dojo/_base/lang", "dojo/ready",
-	"dojo/_base/unload", "dojo/when", "dojo/_base/window"
-], function(doh, require, aspect, Deferred, domClass, construct, geom, lang, ready, unload, when, win){
+	"dojo/_base/unload", "dojo/when", "dojo/_base/window", "dojo/sniff", "dojo/has", "dojo/has!android?doh/plugins/android-webdriver-robot"
+], function(doh, require, aspect, Deferred, domClass, construct, geom, lang, ready, unload, when, win, sniff, has, webdriver){
 
 // loading state
 var _robot = null;
@@ -125,6 +125,12 @@ var robot = doh.robot = {
 
 	_initKeyboard: function(){
 		_robot._initKeyboard(isSecure());
+	},
+	
+	_onKeyboard: function(){
+		// replaced by iframe when applet present.
+		// remote robots don't have frames so pass a mock frame.
+		this._run({style:{visibility:""}});
 	},
 
 	_initWheel: function(){
@@ -557,8 +563,23 @@ ready(function(){
 	construct.place('<div id="dohrobotview" style="border:0px none; margin:0px; padding:0px; position:absolute; bottom:0px; right:0px; width:1px; height:1px; overflow:hidden; visibility:hidden; background-color:red;"></div>',
 		win.body());
 
-	construct.place('<iframe application="true" style="border:0px none; z-index:32767; padding:0px; margin:0px; position:absolute; left:0px; top:0px; height:100px; width:200px; overflow:hidden; background-color:transparent;" tabIndex="-1" src="'+iframesrc+'" ALLOWTRANSPARENCY="true"></iframe>',
-		win.body());
+	if(!has("doh-custom-robot")){
+		// load default robot when not custom def given
+		construct.place('<iframe application="true" style="border:0px none; z-index:32767; padding:0px; margin:0px; position:absolute; left:0px; top:0px; height:100px; width:200px; overflow:hidden; background-color:transparent;" tabIndex="-1" src="'+iframesrc+'" ALLOWTRANSPARENCY="true"></iframe>',
+			win.body());
+	}else{
+		// custom def given
+		console.log("using custom robot");
+		_robot = webdriver;
+		// mix in exports
+		for(var i in _robot){
+			if(robot[i]&&_robot[i]){
+				robot[i]=_robot[i];
+			}
+		}
+		// continue init instead of waiting on frame
+		robot._initRobot(_robot);
+	}
 });
 
 // If user did not manually call startRobot(), then call it when doh.run() is called.
