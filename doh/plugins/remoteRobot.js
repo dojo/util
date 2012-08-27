@@ -1,6 +1,7 @@
-// Plugin that bridges the doh.robot and WebDriver APIs.
-(function(){
-function d(dojo, doh){
+define("doh/plugins/remoteRobot", ["doh/runner"], function(runner){
+	// summary:
+	//	Plugin that bridges the doh.robot and WebDriver APIs.
+	
 	// read in the test and port parameters from the URL
 	var remoteRobotURL="";
 	var value="";
@@ -40,10 +41,4 @@ function d(dojo, doh){
 		});
 	})(doh._registerUrl);
 	return remoteRobotURL;
-};
-
-//this is guaranteed in the global scope, not matter what kind of eval is thrown at us
-define(["dojo","doh/runner"], function(dojo, runner){
-	return d(dojo, this.doh);
 });
-}).call(null);
