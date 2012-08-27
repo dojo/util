@@ -1,10 +1,17 @@
-define("doh/runner", ["dojo/main"], function(dojo) {
-var doh= dojo.mixin({}, dojo);
+define("doh/runner", ["dojo/main"], function(dojo){
+
+var doh = {
+	// summary:
+	//		Functions for registering and running automated tests.
+};
+
+// Remove for 2.0
+dojo.mixin(doh, dojo);
 
 // intentionally define global tests and global doh symbols
-// TODO: scrub these globals from tests and remove this pollution
+// TODO: scrub these globals from tests and remove this pollution for 2.0
 tests = doh;
-this.doh= doh;
+this.doh = doh;
 
 doh._line = "------------------------------------------------------------";
 
@@ -1527,6 +1534,7 @@ return doh;
 // backcompat hack: if in the browser, then loading doh/runner implies loading doh/_browserRunner. This is the
 // behavior of 1.6- and is leveraged on many test documents that dojo.require("doh.runner"). Note that this
 // hack will only work in synchronous mode; but if you're not in synchronous mode, you don't care about this.
+// Remove for 2.0.
 if (typeof window!="undefined" && typeof location!="undefined" && typeof document!="undefined" && window.location==location && window.document==document) {
 	require(["doh/_browserRunner"]);
 }

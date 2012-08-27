@@ -1,16 +1,21 @@
 define("doh/plugins/remoteRobot", ["doh/runner"], function(runner){
+
+/*=====
+return {
 	// summary:
-	//	Plugin that bridges the doh.robot and WebDriver APIs.
+	//		Plugin that bridges the doh.robot and WebDriver APIs.
+};
+=====*/
 	
 	// read in the test and port parameters from the URL
-	var remoteRobotURL="";
-	var value="";
-	var paths="";
+	var remoteRobotURL = "";
+	var value = "";
+	var paths = "";
 	var qstr = window.location.search.substr(1);
 	if(qstr.length){	
 	var qparts = qstr.split("&");
 		for(var x=0; x<qparts.length; x++){
-			var tp = qparts[x].split("="), name=tp[0], value=tp[1].replace(/[<>"'\(\)]/g, "");	// replace() to avoid XSS attack
+			var tp = qparts[x].split("="), name = tp[0], value = tp[1].replace(/[<>"'\(\)]/g, "");	// replace() to avoid XSS attack
 			//Avoid URLs that use the same protocol but on other domains, for security reasons.
 			if (value.indexOf("//") === 0 || value.indexOf("\\\\") === 0) {
 				throw "Insupported URL";
@@ -26,14 +31,14 @@ define("doh/plugins/remoteRobot", ["doh/runner"], function(runner){
 		}
 	}
 	// override doh runner so that it appends the remote robot url to each test
-	doh._registerUrl=(function(oi){
+	doh._registerUrl = (function(oi){
 		return doh.hitch(doh, function(group, url, timeout, type, dohArgs){
 			// append parameter, or specify new query string if appropriate
 			if(remoteRobotURL){
-				url+=(/\?/.test(url)?"&":"?")+"remoteRobotURL="+remoteRobotURL
+				url += (/\?/.test(url)?"&":"?") + "remoteRobotURL=" + remoteRobotURL
 			}
 			if(paths){
-				url+=(/\?/.test(url)?"&":"?")+"paths="+paths;
+				url += (/\?/.test(url)?"&":"?") + "paths=" + paths;
 			}
 			top.console.log(group);
 			top.console.log(url);

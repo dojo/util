@@ -1,4 +1,12 @@
-define(["doh/runner", "require"], function(doh, require) {
+define(["doh/runner", "require"], function(doh, require){
+	/*=====
+	return {
+		// summary:
+		//		Module for running DOH tests in node (as opposed to a browser).
+		//		Augments return value from doh/runner.
+	};
+	=====*/
+
 	doh.debug= console.log;
 	doh.error= console.log;
 
