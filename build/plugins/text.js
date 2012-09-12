@@ -1,4 +1,4 @@
-define(["dojo/json"], function(json){
+define(["dojo/json", "../fs"], function(json, fs){
 	return {
 		start:function(
 			mid,
@@ -27,10 +27,15 @@ define(["dojo/json"], function(json){
 					mid:moduleInfo.mid,
 					deps:[],
 					getText:function(){
-						return json.stringify(this.module.text+"");
+						var text = this.module.getText ? this.module.getText() : this.module.text;
+						if(text===undefined){
+							// the module likely did not go through the read transform; therefore, just read it manually
+							text= fs.readFileSync(this.module.src, "utf8");
+						}
+						return json.stringify(text+"");
 					},
 					internStrings:function(){
-						return ["url:" + this.mid, json.stringify(this.module.text+"")];
+						return ["url:" + this.mid, this.getText()];
 					}
 				});
 			}
