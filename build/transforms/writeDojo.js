@@ -149,7 +149,7 @@ define([
 				if(item!==resource){
 					// each item is a hash of include, exclude, boot, bootText
 					var compat = (item.layer.compat=="1.6" && item.layer.include.length) ? "require(" + json.stringify(item.layer.include) + ");" + bc.newline : "";
-					item.layerText= resource.layerText + writeAmd.getLayerText(item, item.layer.include, item.layer.exclude, true) + (item.bootText || "") + compat;
+					item.layerText= resource.layerText + writeAmd.getLayerText(item) + (item.bootText || "") + compat;
 					doWrite(writeAmd.getDestFilename(item), resource.layer.copyright + item.layerText);
 				}
 			});
