@@ -162,7 +162,6 @@ define(["dojo/has", "dojo/_base/xhr", "doh/runner", "dojo/sniff", "doh/plugins/r
 				response=response.replace(/\{/g,"({").replace(/\}/g,"})");
 				response=response.replace(/[^ -~]/g, "");
 				//response=response.substring(0,response.lastIndexOf(")")+1);
-				top.console.log(response);
 				var json=dojo.fromJson(response);
 				var activeElement=json.value.ELEMENT;
 				// send keys to active element
@@ -185,7 +184,6 @@ define(["dojo/has", "dojo/_base/xhr", "doh/runner", "dojo/sniff", "doh/plugins/r
 			});
 			// get active element to send keys to
 			// strangely, this request is a POST in the WebDriver API??
-			top.console.log("active element: "+(dojo.doc.activeElement.id||dojo.doc.activeElement.name));
 			robotXHR({
 				method:"POST",
 				commandString:"execute",
@@ -224,7 +222,6 @@ define(["dojo/has", "dojo/_base/xhr", "doh/runner", "dojo/sniff", "doh/plugins/r
 			lastY=y;
 			mouse.style.left=(lastX+5)+"px";
 			mouse.style.top=(lastY+5)+"px";
-			//top.alert("robot mouseMove to: ("+x+","+y+")");
 			robotXHR({
 				method:"POST",
 				commandString:"touch/move",
@@ -276,7 +273,6 @@ define(["dojo/has", "dojo/_base/xhr", "doh/runner", "dojo/sniff", "doh/plugins/r
 				response=response.replace(/\{/g,"({").replace(/\}/g,"})");
 				response=response.replace(/[^ -~]/g, "");
 				//response=response.substring(0,response.lastIndexOf(")")+1);
-				top.console.log(response);
 				var json=dojo.fromJson(response);
 				var activeElement=json.value.ELEMENT;
 				// send keys to active element
@@ -295,7 +291,6 @@ define(["dojo/has", "dojo/_base/xhr", "doh/runner", "dojo/sniff", "doh/plugins/r
 			});
 			// get active element to send keys to
 			// strangely, this request is a POST in the WebDriver API??
-			top.console.log("active element: "+(dojo.doc.activeElement.id||dojo.doc.activeElement.name));
 			if(dojo.doc.activeElement!=lastElement.node){
 				lastElement={node:dojo.doc.activeElement,reference:null};
 				robotXHR({
