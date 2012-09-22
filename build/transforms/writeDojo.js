@@ -130,17 +130,19 @@ define([
 		// the writeDojo transform...
 		try{
 			var
+				loaderText = resource.getText(),
+
 				// the default application to the loader constructor is replaced with purpose-build user and default config values
 				configText = "(" + getUserConfig() + ", " + getDefaultConfig() + ");",
 
 				// the construction of the layer is slightly different than standard, so don't pass a module to getLayerText
-				layerText = writeAmd.getLayerText(resource, ""),
+				dojoLayerText = stampVersion(writeAmd.getLayerText(resource, "")),
 
 				// 1.6 compat chunk
-				compat = (resource.layer.compat=="1.6" && resource.layer.include.length) ? "require(" + json.stringify(resource.layer.include) + ");" + bc.newline : "";
+				dojoLayerCompat = (resource.layer.compat=="1.6" && resource.layer.include.length) ? "require(" + json.stringify(resource.layer.include) + ");" + bc.newline : "";
 
 			// assemble and write the dojo layer
-			resource.layerText = resource.getText() + configText + stampVersion(layerText) + (bc.dojoBootText || dojoBootText) + compat;
+			resource.layerText = loaderText + configText + dojoLayerText + (bc.dojoBootText || dojoBootText) + dojoLayerCompat;
 			doWrite(writeAmd.getDestFilename(resource), resource.layer.copyright + resource.layerText);
 
 			//write any bootstraps; boots is a vector of resources that have been marked as bootable by the discovery process
@@ -149,11 +151,10 @@ define([
 				if(item!==resource){
 					// each item is a hash of include, exclude, boot, bootText
 					var compat = (item.layer.compat=="1.6" && item.layer.include.length) ? "require(" + json.stringify(item.layer.include) + ");" + bc.newline : "";
-					item.layerText= resource.layerText + writeAmd.getLayerText(item) + (item.bootText || "") + compat;
+					item.layerText= loaderText + configText + dojoLayerText + writeAmd.getLayerText(item, false) + (item.bootText || bc.dojoBootText || dojoBootText) + dojoLayerCompat + compat;
 					doWrite(writeAmd.getDestFilename(item), resource.layer.copyright + item.layerText);
 				}
 			});
-
 			onWriteComplete(0); // matches *1*
 		}catch(e){
 			if(waitCount){

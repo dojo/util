@@ -29,14 +29,15 @@ define([
 		){
 			// add property layerSet (a set of mid) to layerModule that...
 			//
+			//	 * includes the layerModule itself
 			//	 * includes dependency tree of layerModule
 			//	 * includes all modules in layerInclude and their dependency trees
 			//	 * excludes all modules in layerExclude and their dependency trees
-			//	 * excludes layerModule itself
 			//
 			// note: layerSet is built exactly as given above, so included modules that are later excluded
 			// are *not* in result layerSet
-			if(layerModule && computingLayers[layerModule.mid]){
+
+			if(computingLayers[layerModule.mid]){
 				bc.log("amdCircularDependency", ["module", layerModule.mid]);
 				return {};
 			}
@@ -75,13 +76,11 @@ define([
 
 			visited = {};
 			includePhase = true;
-			if(layerModule){
-				traverse(layerModule);
-			}
+			traverse(layerModule);
 			include.forEach(function(mid){
 				var module = bc.amdResources[bc.getSrcModuleInfo(mid, layerModule).mid];
 				if(!module){
-					bc.log("amdMissingLayerIncludeModule", ["missing", mid, "layer", layerModule && layerModule.mid]);
+					bc.log("amdMissingLayerIncludeModule", ["missing", mid, "layer", layerModule.mid]);
 				}else{
 					traverse(module);
 				}
@@ -92,17 +91,21 @@ define([
 			exclude.forEach(function(mid){
 				var module = bc.amdResources[bc.getSrcModuleInfo(mid, layerModule).mid];
 				if(!module){
-					bc.log("amdMissingLayerExcludeModule", ["missing", mid, "layer", layerModule && layerModule.mid]);
+					bc.log("amdMissingLayerExcludeModule", ["missing", mid, "layer", layerModule.mid]);
 				}else{
 					traverse(module);
 				}
 			});
 
-			if(layerModule){
-				layerModule.moduleSet = includeSet;
-				delete computingLayers[layerModule.mid];
+			layerModule.moduleSet = includeSet;
+			delete computingLayers[layerModule.mid];
+
+			// return a copy so that clients can not mutate layerModule.moduleSet
+			var result = {};
+			for(var p in includeSet){
+				result[p] = includeSet[p];
 			}
-			return includeSet;
+			return result;
 		},
 
 		insertAbsMid = function(
@@ -181,25 +184,30 @@ define([
 
 		getLayerText = function(
 			resource,
-			resourceText
+			resourceText // ===false => put the resource in the cache
+						 // ===undefined => AMD define() the resource at the end of the layer
+						 // otherwise write the value of resourceText at the end of the layer (so far only used in the writeDojo transform)
 		){
 			var newline = bc.newline,
 				rootBundles = [],
 				cache = [],
 				moduleSet = computeLayerContents(resource, resource.layer.include, resource.layer.exclude);
-			for(var p in moduleSet) if(p!=resource.mid){
-				var module = moduleSet[p];
-				if(module.localizedSet && bc.localeList){
-					// this is a root NLS bundle and the profile is building flattened layer bundles;
-					// therefore, add this bundle to the set to be flattened, but don't write the root bundle
-					// to the cache since the loader will explicitly load the flattened bundle
-					rootBundles.push(module);
-				}else if(module.internStrings){
-					cache.push(getCacheEntry(module.internStrings()));
-				}else if(module.getText){
-					cache.push("'" + p + "':function(){" + newline + module.getText() + newline + "}");
-				}else{
-					bc.log("amdMissingLayerModuleText", ["module", module.mid, "layer", resource.mid]);
+			for(var p in moduleSet){
+				// always put modules!=resource in the cache; put resource in the cache if it's a boot layer and an explicit resourceText wasn't given
+				if(p!=resource.mid || resourceText===false){
+					var module = moduleSet[p];
+					if(module.localizedSet && bc.localeList){
+						// this is a root NLS bundle and the profile is building flattened layer bundles;
+						// therefore, add this bundle to the set to be flattened, but don't write the root bundle
+						// to the cache since the loader will explicitly load the flattened bundle
+						rootBundles.push(module);
+					}else if(module.internStrings){
+						cache.push(getCacheEntry(module.internStrings()));
+					}else if(module.getText){
+						cache.push("'" + p + "':function(){" + newline + module.getText() + newline + "}");
+					}else{
+						bc.log("amdMissingLayerModuleText", ["module", module.mid, "layer", resource.mid]);
+					}
 				}
 			}
 
@@ -216,7 +224,7 @@ define([
 			}
 
 			return	(cache.length ? "require({cache:{" + newline + cache.join("," + newline) + "}});" + newline : "") +
-				(resourceText===undefined ?	 insertAbsMid(resource.getText(), resource) : resourceText) +
+				(resourceText===undefined ?	 insertAbsMid(resource.getText(), resource) : (resourceText==false ? "" : resourceText)) +
 				(resource.layer.postscript ? resource.layer.postscript : "");
 		},
 
