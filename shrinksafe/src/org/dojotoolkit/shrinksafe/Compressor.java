@@ -945,7 +945,7 @@ public class Compressor {
                 sb.append('\\');
                 sb.append(escapeQuote);
             } else {
-            	if (escapeUnicode || c == 0) { // always escape the null character (#5027)
+            	if (escapeUnicode || c == 0 || c == 65534 || c == 65535) { // always escape non-characters (#5027,#15969)
 	                int hexSize;
 	                if (c < 256) {
 	                    // 2-digit hex

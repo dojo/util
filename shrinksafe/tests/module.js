@@ -152,10 +152,18 @@ try{
 		function escapeUnicode(t){
 			var src = shrinksafe.tests.module.loader("escapeunicode.js", null);
 			t.assertTrue(src.compressed.indexOf('"\u03b1";') == 0);
+			t.assertTrue(src.compressed.indexOf('_\\x00_') > 0);
+			t.assertTrue(src.compressed.indexOf('_\ufffd_') > 0);
+			t.assertTrue(src.compressed.indexOf('_\\ufffe_') > 0);
+			t.assertTrue(src.compressed.indexOf('_\\uffff_') > 0);
 //			t.is('"\u03b1 \u03c9";', src.compressed); // extended test isn't working... encoding problem with input?
 
 			src = shrinksafe.tests.module.loader("escapeunicode.js", null, true);
 			t.assertTrue(src.compressed.indexOf('"\\u03b1";') == 0);
+			t.assertTrue(src.compressed.indexOf('_\\x00_') > 0);
+			t.assertTrue(src.compressed.indexOf('_\\ufffd_') > 0);
+			t.assertTrue(src.compressed.indexOf('_\\ufffe_') > 0);
+			t.assertTrue(src.compressed.indexOf('_\\uffff_') > 0);
 //			t.is('"\\u03b1 \\u03c9";', src.compressed);
 		},
 
