@@ -1,10 +1,12 @@
-define(["dojo/has", "dojo/_base/xhr", "doh/runner", "dojo/sniff", "doh/plugins/remoteRobot"], function(has, xhr, doh, sniff, remoteRobotURL){
+define(["dojo/has", "dojo/_base/xhr", "doh/runner", "dojo/sniff", "dojo/dom-geometry", "doh/plugins/remoteRobot"], function(has, xhr, doh, sniff, geom, remoteRobotURL){
 	// summary:
 	//		Wraps WebDriver APIs around doh.robot API.
 	//		Should be loaded as a doh plugin.
 	//		In theory, with a change to the base URL, this same file could also be used for iOS WebDriver.
 	// 		WebDriver must be modified to accept cross-domain requests (currently it sends incomplete headers).
 	//
+	
+	var top=window.parent?window.parent:window;
 	
 	// short-term FIFO command queue, similar to the one in the applet
 	var commands=[];
@@ -14,7 +16,7 @@ define(["dojo/has", "dojo/_base/xhr", "doh/runner", "dojo/sniff", "doh/plugins/r
 		var commandString=args.commandString;
 		var deferred=args.deferred;
 		var immediate=args.immediate;
-		console.debug("remote url: "+remoteRobotURL+"/"+commandString);
+		//console.debug("remote url: "+remoteRobotURL+"/"+commandString);
 		if(immediate||!_inFlight){
 			_inFlight=true;
 			xhr(args.method,{
@@ -22,7 +24,7 @@ define(["dojo/has", "dojo/_base/xhr", "doh/runner", "dojo/sniff", "doh/plugins/r
 				headers: { "Content-Type": "application/json"},
 				postData:args.postData,
 				load:function(response){
-					console.debug("success sending webdriver command: ", response);
+					//console.debug("success sending webdriver command: ", response);
 					_inFlight=false;
 					if(deferred){
 						deferred.callback(response);
@@ -125,10 +127,6 @@ define(["dojo/has", "dojo/_base/xhr", "doh/runner", "dojo/sniff", "doh/plugins/r
 			// shouldn't be called
 		},
 		
-		setRemoteDocumentBounds:function(sec, pageX, pageY, width, height){
-			// shouldn't be called
-		},
-		
 		_initKeyboard:function(sec){
 			// shouldn't be called
 		},
@@ -203,13 +201,15 @@ define(["dojo/has", "dojo/_base/xhr", "doh/runner", "dojo/sniff", "doh/plugins/r
 		},
 		
 		moveMouse:function(sec, x, y, delay, duration){
+			// x,y are not being computed relative to the mobile screen for some reason (probably iframe)
 			x=Math.round(x);
 			y=Math.round(y);
 			if(!mouse){
 				// create fake mouse
 				mouse=dojo.doc.createElement("div");
 				dojo.style(mouse, {
-					position:"absolute",
+					// x, y relative to screen (same coordinates as WebDriver)
+					position:"fixed",
 					left:"0px",
 					top:"0px",
 					width:"5px",
@@ -218,14 +218,18 @@ define(["dojo/has", "dojo/_base/xhr", "doh/runner", "dojo/sniff", "doh/plugins/r
 				});
 				dojo.body().appendChild(mouse);
 			}
-			lastX=x;
-			lastY=y;
-			mouse.style.left=(lastX+5)+"px";
-			mouse.style.top=(lastY+5)+"px";
+			// fix x and y
+			lastX=x-top.scrollX;
+			lastY=y-top.scrollY;
+			// cursor needs to be away from center of event or else the cursor itself will interfere with the event!
+			mouse.style.left=(x+5)+"px";
+			mouse.style.top=(y+5)+"px";
+			//mouse.style.left=((lastX+top.scrollX+dojo.global.scrollX)+5)+"px";
+			//mouse.style.top=((lastY+top.scrollY+dojo.global.scrollY)+5)+"px";
 			robotXHR({
 				method:"POST",
 				commandString:"touch/move",
-				postData:'{"x":'+x+',"y":'+y+'}',
+				postData:'{"x":'+lastX+',"y":'+lastX+'}',
 				//content:{x:x,y:y},
 				deferred:null,
 				immediate:false
@@ -241,7 +245,7 @@ define(["dojo/has", "dojo/_base/xhr", "doh/runner", "dojo/sniff", "doh/plugins/r
 			robotXHR({
 				method:"POST",
 				commandString:"touch/down",
-				postData:'{"x":'+lastX+',"y":'+lastY+'}',
+				postData:'{"x":'+(lastX)+',"y":'+(lastY)+'}',
 				//content:{x:lastX,y:lastY},
 				deferred:deferred,
 				immediate:false
@@ -305,9 +309,24 @@ define(["dojo/has", "dojo/_base/xhr", "doh/runner", "dojo/sniff", "doh/plugins/r
 			}
 		},
 		
-		_setRemoteDocumentBounds:function(pageX, pageY){
-			var robotView = document.getElementById("dohrobotview");
-			_robot.setRemoteDocumentBounds(isSecure(), Number(pageX), Number(pageY), Number(robotView.offsetLeft), Number(robotView.offsetTop));
+		_scrollIntoView:function(node){
+			// for whatever reason, scrollIntoView does not work...
+			//node.scrollIntoView(true);
+			p = geom.position(node);
+			// scrolling the iframe doesn't seem to do anything
+			//dojo.global.scrollTo(p.x,p.y);
+			// this seems to work
+			top.scrollTo(p.x,p.y);
+			// this is also reasonable
+			/*var scrollBy={dx:p.x-top.scrollX,dy:p.y-top.scrollY};
+			robotXHR({
+				method:"POST",
+				commandString:"touch/scroll",
+				// TODO: add codes to sent array for press and release modifiers
+				postData:'{"xoffset":'+scrollBy.dx+', "yoffset":'+scrollBy.dy+'}',
+				deferred:null,
+				immediate:false
+			});*/
 		}
 	};
 	
