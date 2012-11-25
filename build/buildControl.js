@@ -492,7 +492,7 @@ define([
 		if(value){
 			value = value + "";
 			value = value.toLowerCase();
-			if(!/^((comments|shrinksafe)(\.keeplines)?)|(closure(\.keeplines)?)$/.test(value)){
+			if(!/^((comments|shrinksafe)(\.keeplines)?)|(closure(\.keeplines)?|uglify(\.keeplines)?)$/.test(value)){
 				bc.log("inputUnknownOptimize", ["value", value]);
 				value = 0;
 			}else{

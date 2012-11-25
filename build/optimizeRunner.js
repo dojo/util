@@ -1,5 +1,7 @@
+/*jshint rhino:true white:false */
+/*global Packages:false com:false */
 function writeFile(filename, contents, encoding, cb) {
-	if (arguments.length==3 && typeof encoding!="string") {
+	if (arguments.length === 3 && typeof encoding !== "string") {
 		cb = encoding;
 		encoding = 0;
 	}
@@ -20,7 +22,7 @@ function writeFile(filename, contents, encoding, cb) {
 	}
 	if (cb) {
 		cb(0);
-	};
+	}
 }
 
 var built = "//>>built\n";
@@ -53,12 +55,13 @@ function sscompile(src, dest, optimizeSwitch, copyright){
 	}
 
 	//Use rhino to help do minifying/compressing.
-	var context = Packages.org.mozilla.javascript.Context.enter();
+	var context = Packages.org.mozilla.javascript.Context.enter(),
+		text;
 	try{
 		// Use the interpreter for interactive input (copied this from Main rhino class).
 		context.setOptimizationLevel(-1);
 
-		var text = readFile(src, "utf-8");
+		text = readFile(src, "utf-8");
 		if(comments){
 			//Strip comments
 			var script = context.compileString(text, dest, 1, null);
@@ -81,10 +84,10 @@ function sscompile(src, dest, optimizeSwitch, copyright){
 }
 
 var JSSourceFilefromCode, closurefromCode, jscomp = 0;
-function ccompile(src, dest, optimizeSwitch, copyright){
+function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions){
 	if(!jscomp){
 		// don't do this unless demanded...it may not be available
-		JSSourceFilefromCode=java.lang.Class.forName('com.google.javascript.jscomp.JSSourceFile').getMethod('fromCode',[java.lang.String,java.lang.String]);
+		JSSourceFilefromCode=java.lang.Class.forName("com.google.javascript.jscomp.JSSourceFile").getMethod("fromCode", [java.lang.String, java.lang.String]);
 		closurefromCode = function(filename,content){
 			return JSSourceFilefromCode.invoke(null,[filename,content]);
 		};
@@ -98,16 +101,24 @@ function ccompile(src, dest, optimizeSwitch, copyright){
 
 	//Set up options
 	var options = new jscomp.CompilerOptions();
-	options.prettyPrint = optimizeSwitch.indexOf(".keeplines") !== -1;
+	for(var k in optimizeOptions){
+		options[k] = optimizeOptions[k];
+	}
+	if(optimizeSwitch.indexOf(".keeplines") !== -1){
+		options.prettyPrint = true;
+	}
 
 	var FLAG_compilation_level = jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS;
 	FLAG_compilation_level.setOptionsForCompilationLevel(options);
 	var FLAG_warning_level = jscomp.WarningLevel.DEFAULT;
 	FLAG_warning_level.setOptionsForWarningLevel(options);
 
+	//Prevent too-verbose logging output
+	Packages.com.google.javascript.jscomp.Compiler.setLoggingLevel(java.util.logging.Level.SEVERE);
+
 	//Run the compiler
 	var compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
-	var result = compiler.compile(externSourceFile, jsSourceFile, options);
+	compiler.compile(externSourceFile, jsSourceFile, options);
 	writeFile(dest, copyright + built + compiler.toSource(), "utf-8");
 }
 
@@ -118,29 +129,30 @@ var
 		// the + "" convert to a Javascript string
 		return console.readLine() + "";
 	},
-	src, dest, optimizeSwitch, copyright;
+	src,
+	dest,
+	optimizeSwitch;
 
 while(1){
 	// the + "" convert to a Javascript string
 	src = readLine();
-	if(src=="."){
+	if(src === "."){
 		break;
 	}
 	dest = readLine();
 	optimizeSwitch = readLine();
-	copyright = eval(readLine());
+	var options = eval("(" + readLine() + ")");
 	print(dest + ":");
 	var start = (new Date()).getTime(),
 		exception = "";
 	try{
 		if(/closure/.test(optimizeSwitch)){
-			ccompile(src, dest, optimizeSwitch, copyright);
+			ccompile(src, dest, optimizeSwitch, options.copyright, options.options);
 		}else{
-			sscompile(src, dest, optimizeSwitch, copyright);
+			sscompile(src, dest, optimizeSwitch, options.copyright);
 		}
 	}catch(e){
 		exception = ". OPTIMIZER FAILED: " + e;
 	}
 	print("Done (compile time:" + ((new Date()).getTime()-start)/1000 + "s)" + exception);
 }
-
