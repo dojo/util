@@ -27,7 +27,7 @@ define([
 
 		process.nextTick(function(){
 			try{
-				var result = copyright + "//>>built" + bc.newline + uglify(stripConsole(text));
+				var result = copyright + "//>>built" + bc.newline + uglify(stripConsole(text), options);
 
 				fs.writeFile(resource.dest, result, resource.encoding, function(err){
 					if(err){
