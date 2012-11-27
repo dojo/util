@@ -127,6 +127,11 @@ var robot = doh.robot = {
 		_robot._initKeyboard(isSecure());
 	},
 
+	// _keyboardReady: Deferred
+	//		Deferred that resolves when the keyboard has finished initializing
+	_keyboardReady: new doh.Deferred(),
+
+		this._keyboardReady.callback(true);
 	_initWheel: function(){
 		_robot._initWheel(isSecure());
 	},
@@ -562,6 +567,7 @@ ready(function(){
 });
 
 // If user did not manually call startRobot(), then call it when doh.run() is called.
+// TODO: instead of this, why not automatically register startRobot() as the first test, like how initRobot() works?
 var _run = doh.run;
 doh.run = function(){
 	if(!robot._runsemaphore.unlock()){
