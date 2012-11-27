@@ -1,8 +1,8 @@
 define([
 	"doh/_browserRunner", "require",
-	"dojo/aspect", "dojo/Deferred", "dojo/dom-class", "dojo/dom-construct", "dojo/dom-geometry", "dojo/_base/lang", "dojo/ready",
-	"dojo/_base/unload", "dojo/when", "dojo/_base/window"
-], function(doh, require, aspect, Deferred, domClass, construct, geom, lang, ready, unload, when, win){
+	"dojo/aspect", "dojo/_base/Deferred", "dojo/dom-class", "dojo/dom-construct", "dojo/dom-geometry", "dojo/_base/lang", "dojo/ready",
+	"dojo/_base/unload", "dojo/_base/window"
+], function(doh, require, aspect, Deferred, domClass, construct, geom, lang, ready, unload, win){
 
 // loading state
 var _robot = null;
@@ -37,7 +37,7 @@ aspect.before(doh, "_runFixture", function(){
 	// need setTimeout to avoid false error; seqPromise from passing test is not fulfilled until after this execution trace finishes!
 	// really we should not have both `seqPromise` here and `var d = new doh.Deferred()` in the test
 	setTimeout(function(){
-		if(_seqPromise && !_seqPromise.isFulfilled()){
+		if(_seqPromise){
 			_seqPromise.cancel(new Error("new test starting, cancelling pending & in-progress queued events from previous test")); 
 		}
 	},0);
