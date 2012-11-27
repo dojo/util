@@ -122,6 +122,11 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 		_robot._initKeyboard(isSecure());
 	},
 
+	// _keyboardReady: Deferred
+	//		Deferred that resolves when the keyboard has finished initializing
+	_keyboardReady: new doh.Deferred(),
+
+		this._keyboardReady.callback(true);
 	_initWheel: function(){
 		_robot._initWheel(isSecure());
 	},
@@ -520,4 +525,5 @@ define(["doh/_browserRunner", "require"], function(doh, require){
 	}
 	document.writeln('<div id="dohrobotview" style="border:0px none; margin:0px; padding:0px; position:absolute; bottom:0px; right:0px; width:1px; height:1px; overflow:hidden; visibility:hidden; background-color:red;"></div>'+
 		'<iframe application="true" style="border:0px none; z-index:32767; padding:0px; margin:0px; position:absolute; left:0px; top:0px; height:42px; width:200px; overflow:hidden; background-color:transparent;" tabIndex="-1" src="'+iframesrc+'" ALLOWTRANSPARENCY="true"></iframe>');
+// TODO: instead of this, why not automatically register startRobot() as the first test, like how initRobot() works?
 });
