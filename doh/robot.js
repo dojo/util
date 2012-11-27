@@ -126,10 +126,15 @@ var robot = doh.robot = {
 	_initKeyboard: function(){
 		_robot._initKeyboard(isSecure());
 	},
-	
+
+	// _keyboardReady: Deferred
+	//		Deferred that resolves when the keyboard has finished initializing
+	_keyboardReady: new doh.Deferred(),
+
 	_onKeyboard: function(){
 		// replaced by iframe when applet present.
 		// remote robots don't have frames so pass a mock frame.
+		this._keyboardReady.callback(true);
 		this._run({style:{visibility:""}});
 	},
 
@@ -583,6 +588,7 @@ ready(function(){
 });
 
 // If user did not manually call startRobot(), then call it when doh.run() is called.
+// TODO: instead of this, why not automatically register startRobot() as the first test, like how initRobot() works?
 var _run = doh.run;
 doh.run = function(){
 	if(!robot._runsemaphore.unlock()){
