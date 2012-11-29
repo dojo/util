@@ -97,7 +97,17 @@ var robot = doh.robot = {
 				_robot._callLoaded(isSecure());
 			}
 		}
+
+		// When robot finishes initializing it types a key, firing the _onKeyboard() listener, which calls _run(),
+		// which resolves this Deferred.
+		return this._started;
 	},
+
+	// _loaded: Deferred
+	//		Deferred that resolves when the _initRobot() has been called.
+	//		Note to be confused with dojo/robotx.js, which defines initRobot() without an underscore
+	_loaded: new doh.Deferred(),
+
 	_initRobot: function(r){
 		// called from Robot
 		// Robot calls _initRobot in its startup sequence
@@ -112,29 +122,28 @@ var robot = doh.robot = {
 //		document.documentElement.scrollTop = document.documentElement.scrollLeft = 0;
 		_robot = r;
 		_robot._setKey(isSecure());
-		// lazy load
-		doh.run();
+		this._loaded.resolve(true);
 	},
+
+	// _started: Deferred
+	//		Deferred that resolves when startRobot() has signaled completing by typing on the keyboard,
+	//		which in turn calls _run().
+	_started: new doh.Deferred(),
 
 	// some utility functions to help the iframe use private variables
 	_run: function(frame){
+		// called after the robot has been able to type on the keyboard, indicating that it's started
 		frame.style.visibility = "hidden";
-		doh.run = _run;
-		doh.run();
+		this._started.resolve(true);
 	},
 
 	_initKeyboard: function(){
 		_robot._initKeyboard(isSecure());
 	},
 
-	// _keyboardReady: Deferred
-	//		Deferred that resolves when the keyboard has finished initializing
-	_keyboardReady: new doh.Deferred(),
-
 	_onKeyboard: function(){
 		// replaced by iframe when applet present.
 		// remote robots don't have frames so pass a mock frame.
-		this._keyboardReady.callback(true);
 		this._run({style:{visibility:""}});
 	},
 
@@ -587,28 +596,43 @@ ready(function(){
 	}
 });
 
-// If user did not manually call startRobot(), then call it when doh.run() is called.
-// TODO: instead of this, why not automatically register startRobot() as the first test, like how initRobot() works?
-var _run = doh.run;
-doh.run = function(){
-	if(!robot._runsemaphore.unlock()){
-		// hijack doh._onEnd to clear the applet
-		// have to do it here because browserRunner sets it in onload in standalone case
-		var __onEnd = doh._onEnd;
-		doh._onEnd = function(){
-			robot.killRobot();
-			doh._onEnd = __onEnd;
-			doh._onEnd();
-		};
-		robot.startRobot();
+// Start the robot as the first "test" when DOH runs.
+doh.registerGroup("initialize robot", [
+	{
+		name: "load robot",
+		timeout: 10000,
+		runTest: function(){
+			// first wait for robot to tell us it's loaded, i.e. that _initRobot() has been called
+			return robot._loaded;
+		}
+	},
+	{
+		name: "start robot",
+		timeout: 10000,
+		runTest: function(){
+			// then we call startRobot(), and wait it to asynchronously complete
+			return robot.startRobot();
+		}
 	}
+]);
+
+// Register the killRobot() command as the last "test" to run.
+// There's no good API to do this, so instead call doh.registerGroup() when the app first calls doh.run(),
+// since presumably all the real tests have already been registered.   Note that doh.run() is called multiple times,
+// so make sure to only call registerGroup() once.
+var _oldRun = doh.run;
+doh.run = function(){
+	doh.registerGroup("kill robot", {
+		name: "killRobot",
+		timeout: 10000,
+		runTest: function(){
+			robot.killRobot();
+		}
+	});
+	doh.run = _oldRun;
+	doh.run();
 };
 
-// Setup to kill robot on page unload.
-// Maybe this should be done from startRobot() instead?
-unload.addOnUnload(function(){
-	robot.killRobot();
-});
 
 return robot;
 });
