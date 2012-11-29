@@ -138,7 +138,6 @@
 		// need to untie from Java thread with setTimeout
 		setTimeout(function(){
 			rf.style.visibility = "hidden";
-			robot._keyboardReady.callback(true);
 			robot._run(window.frameElement);
  		}, 0);
 	};
