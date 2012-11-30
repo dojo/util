@@ -1409,6 +1409,10 @@ doh._runRegFixture = function(/*String*/ groupName, /*Object*/ fixture){
 		};
 
 		var timer = setTimeout(function(){
+			if(!timer){
+				// we already called clearTimeout(), but it fired anyway, due to IE bug; just ignore.
+				return;
+			}
 			// Note: cannot call ret.reject() because ret may be a readonly promise
 			doh._handleFailure(groupName, fixture, new Error("test timeout in " + fixture.name.toString()));
 			threw = true;
@@ -1417,6 +1421,7 @@ doh._runRegFixture = function(/*String*/ groupName, /*Object*/ fixture){
 
 		var always = function(){
 			clearTimeout(timer);
+			timer = null;
 			retEnd();
 		};
 		ret.then(always,always);
