@@ -48,8 +48,7 @@ define(["require", "dojo/has"], function(require, has){
 			util.debug(inspect ? util.inspect(it, false, depth) : it);
 		};
 
-		// TODO: make this real
-		has.add("is-windows", 0);
+		has.add("is-windows", /win/.test(process.platform));
 	}else if(has("host-rhino")){
 		define("commandLineArgs", [], function(){
 			var result = [];
