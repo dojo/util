@@ -103,8 +103,6 @@ define(["../buildControl"], function(bc){
 	// This technique is employed to avoid attempting to parse and find the boundaries of "some really long painful has test" with regexs.
 	// Instead, this is left to an optimizer like the the closure compiler or uglify etc.
 
-	// Should probably get rid of this function and use dojo/json::stringify().   No need to reinvent the wheel, and
-	// dojo/json::stringify() will handle corner cases like strings that contain quotes.
 	function stringifyString(s){
 		return typeof s === "string" ? '"' + s + '"' : s;
 	}
@@ -112,7 +110,7 @@ define(["../buildControl"], function(bc){
 	return function(resource){
 		resource.text = resource.text.replace(/([^\w\.])has\s*\(\s*["']([^'"]+)["']\s*\)/g, function(match, prefix, featureName){
 			if(featureName in bc.staticHasFeatures){
-				return prefix + " " + stringifyString(bc.staticHasFeatures[featureName]) + " ";
+				return prefix + " " + bc.staticHasFeatures[featureName] + " ";
 			}else{
 				return match;
 			}
