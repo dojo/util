@@ -40,8 +40,6 @@ return {
 			if(paths){
 				url += (/\?/.test(url)?"&":"?") + "paths=" + paths;
 			}
-			top.console.log(group);
-			top.console.log(url);
 			oi.apply(doh, [group, url, timeout, type, dohArgs]);
 		});
 	})(doh._registerUrl);
