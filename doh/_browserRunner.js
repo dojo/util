@@ -1,4 +1,8 @@
-define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh) {
+define([
+	"dojo/dom-style", "dojo/_base/fx", "dojo/_base/lang", "dojo/ready",
+	"doh/runner",
+	"dojo/_firebug/firebug"
+], function(domStyle, baseFx, lang, ready, doh){
 	doh.isBrowser= true;
 	var topdog;
 	try{
@@ -27,8 +31,8 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 			}
 			var enclosedFunc = function(){ return funcRef.apply(scope, arguments); };
 
-			if((window["dojo"])&&(type == "load")){
-				dojo.addOnLoad(enclosedFunc);
+			if(ready && type == "load"){
+				ready(enclosedFunc);
 			}else{
 				if(window["attachEvent"]){
 					window.attachEvent("on"+type, enclosedFunc);
@@ -120,10 +124,10 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 			if(window.dojo){
 				//t.parentNode.parentNode is <div class="tabBody">, only it has a explicitly set background-color,
 				//all children of it are transparent
-				var bgColor = dojo.style(t.parentNode.parentNode,'backgroundColor');
+				var bgColor = domStyle.get(t.parentNode.parentNode,'backgroundColor');
 				//node.parentNode is the tr which has background-color set explicitly
-				var hicolor = dojo.style(node.parentNode,'backgroundColor');
-				var unhilight = dojo.animateProperty({
+				var hicolor = domStyle.get(node.parentNode,'backgroundColor');
+				var unhilight = baseFx.animateProperty({
 					node: t,
 					duration: 500,
 					properties:
@@ -134,7 +138,7 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 						t.style.backgroundColor="";
 					}
 				});
-				var hilight = dojo.animateProperty({
+				var hilight = baseFx.animateProperty({
 					node: t,
 					duration: 500,
 					properties:
@@ -217,8 +221,9 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 			//of any performance tests.
 
 			if(doh.perfTestResults){
-				require(["dojox/math/stats", "dojox/charting/DataChart", "dojox/charting/plot2d/Scatter", "dojox/charting/plot2d/Lines", "dojo/data/ItemFileReadStore"], function(stats) {
-					dojo.mixin(doh, stats);
+				require(["dojox/math/stats", "dojox/charting/DataChart", "dojox/charting/plot2d/Scatter", "dojox/charting/plot2d/Lines", "dojo/data/ItemFileReadStore"],
+						function(stats, DataChart, Scatter, Lines, ItemFileReadStore){
+					lang.mixin(doh, stats);
 
 					var plotResults = function(div, name, dataArray) {
 						// Performance report generating functions!
@@ -237,7 +242,7 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 								{name: "Median", trials: medarray}
 							]
 						};
-						var ifs = new dojo.data.ItemFileReadStore({data: data});
+						var ifs = new ItemFileReadStore({data: data});
 
 						var min = Math.floor(doh.min(dataArray));
 						var max = Math.ceil(doh.max(dataArray));
@@ -258,8 +263,8 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 						}
 						step = (max - min)/10;
 
-						var chart = new dojox.charting.DataChart(div, {
-							type: dojox.charting.plot2d.Lines,
+						var chart = new DataChart(div, {
+							type: Lines,
 							displayRange: dataArray.length,
 							xaxis: {min: 1, max: dataArray.length, majorTickStep: Math.ceil((dataArray.length - 1)/10), htmlLabels: false},
 							yaxis: {min: min, max: max, majorTickStep: step, vertical: true, htmlLabels: false}
@@ -330,8 +335,8 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 								div.innerHTML = "<h3>Average Test Execution Time (in milliseconds, with median line)</h3>";
 								ind.appendChild(div);
 								div = document.createElement("div");
-								dojo.style(div, "width", "600px");
-								dojo.style(div, "height", "250px");
+								domStyle.set(div, "width", "600px");
+								domStyle.set(div, "height", "250px");
 								ind.appendChild(div);
 								chartsToRender.push({
 									div: div,
@@ -343,8 +348,8 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 								div.innerHTML = "<h3>Average Trial Execution Time (in milliseconds, with median line)</h3>";
 								ind.appendChild(div);
 								div = document.createElement("div");
-								dojo.style(div, "width", "600px");
-								dojo.style(div, "height", "250px");
+								domStyle.set(div, "width", "600px");
+								domStyle.set(div, "height", "250px");
 								ind.appendChild(div);
 								chartsToRender.push({
 									div: div,
@@ -829,9 +834,9 @@ define(["dojo/main", "doh/runner", "dojo/_firebug/firebug"], function(dojo, doh)
 				fixture.name = _thisUrl+"::"+arguments[0]+"::"+fixture.name;
 				_doh._updateTestList(_thisGroup, fixture);
 			};
-			doh.debug = doh.hitch(_doh, "debug");
-			doh.error = doh.hitch(_doh, "error");
-			doh.registerUrl = doh.hitch(_doh, "registerUrl");
+			doh.debug = lang.hitch(_doh, "debug");
+			doh.error = lang.hitch(_doh, "error");
+			doh.registerUrl = lang.hitch(_doh, "registerUrl");
 			doh._testStarted = function(group, fixture){
 				_doh._testStarted(_thisGroup, fixture);
 			};
