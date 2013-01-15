@@ -37,7 +37,7 @@
 			false,
 
 		async = 
-			// boolean; config require.asyc==true before loading boot; this will have the effect of making
+			// boolean; config require.async==true before loading boot; this will have the effect of making
 			// version 1.7+ dojo bootstrap/loader operating in async mode
 			false,
 
@@ -112,26 +112,6 @@
 		}
 	}
 
-	function fixHeight(dojo){
-		// IE9 doesn't give test iframe height because no nodes have an explicit pixel height!
-		// Give outer table a pixel height.
-		if(dojo.isIE){
-			var headerHeight=0;
-			var rows=dojo.query('#testLayout > tbody > tr');
-			for(var i=0; i<rows.length-1; i++){
-				headerHeight+=dojo.position(rows[i]).h;
-			}
-			try{
-				// we subtract the headerHeight from the window height because the table row containing the tests is height:100% so they will stretch the table to the intended height.
-				dojo.byId('testLayout').style.height=(dojo.window.getBox().h-headerHeight)+"px";
-			}catch(e){
-				// An obscure race condition when you load the runner in IE from the command line causes the window reported height to be 0.
-				// Try to recover after the window finishes rendering.
-				setTimeout(function(){ fixHeight(dojo); },0);
-			}
-		}
-	}
-
 	var config;
 	if(sandbox){
 		// configure the loader assuming the dojo loader; of course the injected boot(s) can override this config
@@ -141,7 +121,7 @@
 			packages: [{
 				name: 'doh',
 				location: '../util/doh',
-				// here's the magic...everytime doh asks for a "dojo" module, it gets mapped to a "dohDojo"
+				// here's the magic...every time doh asks for a "dojo" module, it gets mapped to a "dohDojo"
 				// module; same goes for dojox/dohDojox since doh uses dojox
 				packageMap: {dojo:"dohDojo", dojox:"dohDojox"}
 			},{
@@ -180,14 +160,15 @@
 			// no sniffing; therefore, set the baseUrl
 			baseUrl: "../../dojo",
 
-			deps: ["dohDojo", "doh", "dohDojo/window"],
+			deps: ["dohDojo/domReady", "doh"],
 
-			callback: function(dohDojo, doh){
-				dohDojo.ready(function(){
-					fixHeight(dohDojo);
+			callback: function(domReady, doh){
+				domReady(function(){
+					doh._fixHeight();
 					doh.breakOnError= breakOnError;
-					require(test);
-					dohDojo.ready(doh, "run");
+					require(test, function(){
+						doh.run();
+					});
 				});
 			},
 
@@ -196,13 +177,14 @@
 	}else{
 		config= {
 			paths: paths,
-			deps: ["dojo", "doh", "dojo/window"],
-			callback: function(dojo, doh){
-				dojo.ready(function(){
-					fixHeight(dojo);
+			deps: ["dojo/domReady", "doh"],
+			callback: function(domReady, doh){
+				domReady(function(){
+					doh._fixHeight();
 					doh.breakOnError= breakOnError;
-					require(test);
-					dojo.ready(doh, "run");
+					require(test, function(){
+						doh.run();
+					});
 				});
 			},
 			async: async,

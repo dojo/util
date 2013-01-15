@@ -813,8 +813,8 @@ doh.register = function(a1, a2, a3, a4, a5){
 
 doh.registerDocTests = function(module){
 	// summary:
-	//		Get all the doctests from the given module and register each of them
-	//		as a single test case here.
+	//		Deprecated.    Won't work unless you manually load dojox.testing.DocTest, and likely not even then.
+	//		Gets all the doctests from the given module and register each of them as a single test case here.
 
 	var docTest = new dojox.testing.DocTest();
 	var docTests = docTest.getTests(module);

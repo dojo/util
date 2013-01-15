@@ -1,8 +1,9 @@
 define([
-	"dojo/dom-style", "dojo/_base/fx", "dojo/_base/lang", "dojo/ready",
+	"dojo/dom", "dojo/dom-geometry", "dojo/dom-style",
+	"dojo/_base/fx", "dojo/_base/lang", "dojo/query", "dojo/ready", "dojo/sniff", "dojo/window",
 	"doh/runner",
 	"dojo/_firebug/firebug"
-], function(domStyle, baseFx, lang, ready, doh){
+], function(dom, domGeom, domStyle, baseFx, lang, query, ready, has, win, doh){
 	doh.isBrowser= true;
 	var topdog;
 	try{
@@ -121,7 +122,7 @@ define([
 			}
 			var t = lb.childNodes[_t];
 			t.scrollIntoView();
-			if(window.dojo){
+			if(domStyle && baseFx){
 				//t.parentNode.parentNode is <div class="tabBody">, only it has a explicitly set background-color,
 				//all children of it are transparent
 				var bgColor = domStyle.get(t.parentNode.parentNode,'backgroundColor');
@@ -875,5 +876,26 @@ define([
 			};
 		}
 	}
+
+	var fixHeight = doh._fixHeight = function(){
+		// IE9 doesn't give test iframe height because no nodes have an explicit pixel height!
+		// Give outer table a pixel height.
+		if(has("ie")){
+			var headerHeight = 0;
+			var rows = query('#testLayout > tbody > tr');
+			for(var i = 0; i < rows.length-1; i++){
+				headerHeight += domGeom.position(rows[i]).h;
+			}
+			try{
+				// we subtract the headerHeight from the window height because the table row containing the tests is height:100% so they will stretch the table to the intended height.
+				dom.byId('testLayout').style.height = (win.getBox().h - headerHeight)+"px";
+			}catch(e){
+				// An obscure race condition when you load the runner in IE from the command line causes the window reported height to be 0.
+				// Try to recover after the window finishes rendering.
+				setTimeout(function(){ fixHeight(); },0);
+			}
+		}
+	};
+
 	return doh;
 });
