@@ -1,8 +1,8 @@
 define([
 	"dojo/dom", "dojo/dom-geometry", "dojo/dom-style",
-	"dojo/_base/fx", "dojo/_base/lang", "dojo/query", "dojo/ready", "dojo/sniff", "dojo/window",
+	"dojo/_base/fx", "dojo/_base/lang", "dojo/query", "dojo/domReady", "dojo/sniff", "dojo/window",
 	"doh/runner"
-], function(dom, domGeom, domStyle, baseFx, lang, query, ready, has, win, doh){
+], function(dom, domGeom, domStyle, baseFx, lang, query, domReady, has, win, doh){
 	doh.isBrowser= true;
 	var topdog;
 	try{
@@ -31,8 +31,8 @@ define([
 			}
 			var enclosedFunc = function(){ return funcRef.apply(scope, arguments); };
 
-			if(ready && type == "load"){
-				ready(enclosedFunc);
+			if(domReady && type == "load"){
+				domReady(enclosedFunc);
 			}else{
 				if(window["attachEvent"]){
 					window.attachEvent("on"+type, enclosedFunc);
