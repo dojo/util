@@ -73,7 +73,7 @@ $showall = isset($_REQUEST['showall']);
 				}
 			</style>
 			
-			<script type="text/javascript" src="../../dojo/dojo.js" djConfig="parseOnLoad:true"></script>
+			<script type="text/javascript" src="../../dojo/dojo.js" data-dojo-config="parseOnLoad:true"></script>
 			<script type="text/javascript">
 				dojo.require("dojo.data.ItemFileReadStore");
 				dojo.require("dojo.hash");
