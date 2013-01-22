@@ -23,7 +23,7 @@ var logDir = arguments[1];
 var logStr = "";
 
 //Add new bundles to the list so that they will be aliased according to the ldml spec.
-var BUNDLES = ['gregorian','hebrew','islamic','islamic-civil','buddhist'];
+var BUNDLES = ['gregorian','hebrew','islamic','islamic-civil','buddhist','persian'];
 
 var LOCALE_ALIAS_MARK = '@localeAlias';
 var LOCALE_ALIAS_SOURCE_PROPERTY = 'source';
