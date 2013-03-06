@@ -1,11 +1,21 @@
 define(["../buildControl", "require"], function(bc, require){
 	var optimizers = {};
+
+	function resolveComments(optimizer) {
+		// This is for back-compat of comments and comments.keepLines,
+		// after the refactor to separate optimizers placed this logic in shrinksafe.
+		// TODO: remove @ 2.0 (along with shrinksafe entirely, perhaps)
+		return /^comments/.test(optimizer) ? "shrinksafe." + optimizer : optimizer;
+	}
+
 	if(bc.optimize){
+		bc.optimize = resolveComments(bc.optimize);
 		require(["./optimizer/" + bc.optimize.split(".")[0]], function(optimizer){
 			optimizers[bc.optimize] = optimizer;
 		});
 	}
 	if(bc.layerOptimize){
+		bc.layerOptimize = resolveComments(bc.layerOptimize);
 		require(["./optimizer/" + bc.layerOptimize.split(".")[0]], function(optimizer){
 			optimizers[bc.layerOptimize] = optimizer;
 		});
