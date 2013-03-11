@@ -1,8 +1,9 @@
 /*jshint node:true */
 define([
 	"../../buildControl",
-	"../../fileUtils"
-], function(bc, fileUtils){
+	"../../fileUtils",
+	"dojo/has"
+], function(bc, fileUtils, has){
 	// start up a few processes to compensate for the miserably slow closure compiler
 
 	var processes = [],
@@ -42,31 +43,44 @@ define([
 		runJava, //function, defined later
 		oldSendJob = sendJob, //preserves reference if sendJob is replaced
 		child_process = require.nodeRequire("child_process"),
-		javaClasses = fileUtils.catPath(buildRoot, "closureCompiler/compiler.jar") + ":" + fileUtils.catPath(buildRoot, "shrinksafe/js.jar") + ":" + fileUtils.catPath(buildRoot, "shrinksafe/shrinksafe.jar");
-		if(global.process.platform === "cygwin"){
-			//assume we're working with Windows Java, and need to translate paths
-			runJava = function(cb){
-				child_process.exec("cygpath -wp '" + javaClasses + "'", function(err, stdout){
-					javaClasses = stdout.trim();
-					child_process.exec("cygpath -w '" + optimizerRunner + "'", function(err, stdout){
-						optimizerRunner = stdout.trim();
-						cb();
-					});
+		isCygwin = global.process.platform === 'cygwin',
+		separator = has("is-windows") ? ";" : ":",
+		javaClasses = fileUtils.catPath(buildRoot, "closureCompiler/compiler.jar") + separator + fileUtils.catPath(buildRoot, "shrinksafe/js.jar") + separator + fileUtils.catPath(buildRoot, "shrinksafe/shrinksafe.jar");
+	if(isCygwin){
+		//assume we're working with Windows Java, and need to translate paths
+		runJava = function(cb){
+			child_process.exec("cygpath -wp '" + javaClasses + "'", function(err, stdout){
+				javaClasses = stdout.trim();
+				child_process.exec("cygpath -w '" + optimizerRunner + "'", function(err, stdout){
+					optimizerRunner = stdout.trim();
+					cb();
 				});
-			};
-			//wrap sendJob calls to convert to windows paths first
-			sendJob = function(src, dest, optimizeSwitch, copyright){
-				child_process.exec("cygpath -wp '" + src + "'", function(err, srcstdout){
-					child_process.exec("cygpath -wp '" + dest + "'", function(err, deststdout){
-						oldSendJob(srcstdout.trim(), deststdout.trim(),
-							optimizeSwitch, copyright);
-					});
+			});
+		};
+		//wrap sendJob calls to convert to windows paths first
+		sendJob = function(src, dest, optimizeSwitch, copyright){
+			child_process.exec("cygpath -wp '" + src + "'", function(err, srcstdout){
+				child_process.exec("cygpath -wp '" + dest + "'", function(err, deststdout){
+					oldSendJob(srcstdout.trim(), deststdout.trim(),
+						optimizeSwitch, copyright);
 				});
-			};
-		}else{
-			//no waiting necessary, pass through
-			runJava = function(cb) { cb(); };
-		}
+			});
+		};
+	}else if(has("is-windows")){
+		runJava = function(cb){
+			javaClasses = fileUtils.normalize(javaClasses);
+			optimizerRunner = fileUtils.normalize(optimizerRunner);
+			cb();
+		};
+		sendJob = function(src, dest, optimizeSwitch, copyright){
+			var wsrc = fileUtils.normalize(src);
+			var wdest = fileUtils.normalize(dest);
+			oldSendJob(wsrc, wdest, optimizeSwitch, copyright);
+		};
+	}else{
+		//no waiting necessary, pass through
+		runJava = function(cb) { cb(); };
+	}
 	runJava(function() {
 		for(i = 0; i < bc.maxOptimizationProcesses; i++) {(function(){
 			var
