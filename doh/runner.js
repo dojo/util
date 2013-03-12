@@ -1018,12 +1018,15 @@ doh._objPropEq = function(expected, actual){
 	var x;
 	// Make sure ALL THE SAME properties are in both objects!
 	for(x in actual){ // Lets check "actual" here, expected is checked below.
-		if(expected[x] === undefined){
+		if(!(x in expected)){
 			return false;
 		}
 	}
 
 	for(x in expected){
+		if(!(x in actual)){
+			return false;
+		}
 		if(!doh.assertEqual(expected[x], actual[x], 0, true)){
 			return false;
 		}
