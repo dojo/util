@@ -566,6 +566,7 @@ define([
 				internStringsSkipList:1,
 				layers:1,
 				localeList:1,
+				includeLocales: 1,
 				maxOptimizationProcesses:1,
 				mini:1,
 				optimize:1,

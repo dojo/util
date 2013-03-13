@@ -191,7 +191,9 @@ define([
 			var newline = bc.newline,
 				rootBundles = [],
 				cache = [],
-				moduleSet = computeLayerContents(resource, resource.layer.include, resource.layer.exclude);
+				layer = resource.layer,
+				moduleSet = computeLayerContents(resource, layer.include, layer.exclude),
+				includeLocales = "includeLocales" in layer ? layer.includeLocales : bc.includeLocales;			
 			for(var p in moduleSet){
 				// always put modules!=resource in the cache; put resource in the cache if it's a boot layer and an explicit resourceText wasn't given
 				if(p!=resource.mid || resourceText===false){
@@ -201,6 +203,22 @@ define([
 						// therefore, add this bundle to the set to be flattened, but don't write the root bundle
 						// to the cache since the loader will explicitly load the flattened bundle
 						rootBundles.push(module);
+						if(includeLocales){
+							// include the ROOT always
+							cache.push("'" + p + "':function(){" + newline + module.getText() + newline + "}");
+							// now include each locale in the layer
+							includeLocales.forEach(function(locale){
+								var parts = locale.split("-");
+								for(var i = parts.length; i > 0; i--){
+									var localizedSet = module.localizedSet[parts.slice(0, i).join("-")];
+									// see if the localized set is there
+									if(localizedSet){
+										// put the bundle in the cache
+										cache.push("'" + localizedSet.mid + "':function(){" + newline + localizedSet.getText() + newline + "}");
+									}
+								}
+							});
+						}
 					}else if(module.internStrings){
 						cache.push(getCacheEntry(module.internStrings()));
 					}else if(module.getText){
@@ -215,7 +233,10 @@ define([
 			if(rootBundles.length){
 				getFlattenedBundles(resource, rootBundles);
 				// push an *now into the cache that causes the flattened layer bundles to be loaded immediately
-				cache.push("'*now':function(r){r(['dojo/i18n!*preload*" + getPreloadL10nRootPath(resource.mid) + "*" + json.stringify(bc.localeList) + "']);}" + newline);
+				cache.push("'*now':function(r){r(['dojo/i18n!*preload*" + getPreloadL10nRootPath(resource.mid) + "*" + 
+					json.stringify(bc.localeList.filter(function(locale){
+						return !includeLocales || (includeLocales.indexOf(locale) == -1 && locale != "ROOT");
+					})) + "']);}" + newline);
 			}
 
 			// construct the cache text
