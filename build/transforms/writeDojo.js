@@ -151,7 +151,7 @@ define([
 				if(item!==resource){
 					// each item is a hash of include, exclude, boot, bootText
 					var compat = (item.layer.compat=="1.6" && item.layer.include.length) ? "require(" + json.stringify(item.layer.include) + ");" + bc.newline : "";
-					item.layerText= loaderText + configText + dojoLayerText + writeAmd.getLayerText(item, false) + (item.bootText || bc.dojoBootText || dojoBootText) + dojoLayerCompat + compat;
+					item.layerText= loaderText + configText + dojoLayerText + writeAmd.getLayerText(item, false) + (item.layer.bootText || bc.dojoBootText || dojoBootText) + dojoLayerCompat + compat;
 					doWrite(writeAmd.getDestFilename(item), resource.layer.copyright + item.layerText);
 				}
 			});
