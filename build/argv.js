@@ -151,7 +151,6 @@ define([
 				},
 				f, profile;
 			try{
-				src = fs.readFileSync(filename, "utf8");
 				if(scriptType=="require"){
 					f = new Function("var __result, require= function(config){__result=config;};" + src + "; return __result || require;");
 					profile = f();
@@ -163,7 +162,7 @@ define([
 				}else if(scriptType=="profile"){
 					f = new Function("selfPath", "logger", "profile", "dependencies",
 									 src + "; return {profile:profile, dependencies:dependencies}");
-					profile = f(path, messages, 0, 0, 0);
+					profile = f(path, messages, 0, 0);
 					if(profile.profile){
 						profile = profile.profile;
 						fixupBasePath(profile);

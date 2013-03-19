@@ -8,13 +8,11 @@ define([
 	"dojo/has"
 ], function(bc, sendJob, fs, fileUtils, stripConsole, lang, has){
 	if(has("host-node")){
-		var tempFileDirs = {};
 		return function(resource, text, copyright, optimizeSwitch, callback){
 			copyright = copyright || "";
 			if(bc.stripConsole){
 				var tempFilename = resource.dest + ".consoleStripped.js";
 				text = stripConsole(text);
-				tempFileDirs[fileUtils.getFilepath(tempFilename)] = 1;
 				fs.writeFile(tempFilename, bc.newlineFilter(text, resource, "closureStripConsole"), resource.encoding, function(err){
 					if(!err){
 						sendJob(tempFilename, resource.dest, optimizeSwitch, copyright);
@@ -38,7 +36,6 @@ define([
 			/*jshint rhino:true */
 			/*global com:false Packages:false */
 			if(!jscomp){
-				// don't do this unless demanded...it may not be available
 				JSSourceFilefromCode = java.lang.Class.forName("com.google.javascript.jscomp.JSSourceFile").getMethod("fromCode", [ java.lang.String, java.lang.String ]);
 				closurefromCode = function(filename,content){
 					return JSSourceFilefromCode.invoke(null, [filename, content]);
@@ -49,11 +46,15 @@ define([
 			var externSourceFile = closurefromCode("fakeextern.js", " ");
 
 			//Set up source input
-			var jsSourceFile = closurefromCode(String(dest), String(text));
+			var destFilename = dest.split("/").pop(),
+				jsSourceFile = closurefromCode(destFilename + ".uncompressed.js", String(text));
 
 			//Set up options
 			var options = new jscomp.CompilerOptions();
 			lang.mixin(options, bc.optimizeOptions);
+			// Must have non-null path to trigger source map generation, also fix version
+			options.setSourceMapOutputPath("");
+			options.setSourceMapFormat(jscomp.SourceMap.Format.V3);
 			if(optimizeSwitch.indexOf(".keeplines") !== -1){
 				options.prettyPrint = true;
 			}
@@ -65,10 +66,20 @@ define([
 			//Prevent too-verbose logging output
 			Packages.com.google.javascript.jscomp.Compiler.setLoggingLevel(java.util.logging.Level.SEVERE);
 
-			//Run the compiler
-			var compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
-			compiler.compile(externSourceFile, jsSourceFile, options);
-			return copyright + "//>>built" + bc.newline + compiler.toSource();
+			// Run the compiler
+			// File name and associated map name
+			var map_tag = "//@ sourceMappingURL=" + destFilename + ".map";
+            var compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
+            compiler.compile(externSourceFile, jsSourceFile, options);
+            var result = copyright + "//>>built" + bc.newline + compiler.toSource() + bc.newline + map_tag;
+
+			var sourceMap = compiler.getSourceMap();
+			sourceMap.setWrapperPrefix(copyright + "//>>built");
+			var sb = new java.lang.StringBuffer();
+			sourceMap.appendTo(sb, destFilename);
+			fs.writeFile(dest + ".map", sb.toString(), "utf-8");
+
+			return result;
 		};
 
 		return function(resource, text, copyright, optimizeSwitch, callback){

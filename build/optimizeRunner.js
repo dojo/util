@@ -86,24 +86,29 @@ function sscompile(src, dest, optimizeSwitch, copyright){
 var JSSourceFilefromCode, closurefromCode, jscomp = 0;
 function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions){
 	if(!jscomp){
-		// don't do this unless demanded...it may not be available
 		JSSourceFilefromCode=java.lang.Class.forName("com.google.javascript.jscomp.JSSourceFile").getMethod("fromCode", [java.lang.String, java.lang.String]);
 		closurefromCode = function(filename,content){
 			return JSSourceFilefromCode.invoke(null,[filename,content]);
 		};
 		jscomp = com.google.javascript.jscomp;
 	}
+
 	//Fake extern
 	var externSourceFile = closurefromCode("fakeextern.js", " ");
 
 	//Set up source input
-	var jsSourceFile = closurefromCode(String(dest), String(readFile(src, "utf-8")));
+	// it is possible dest could have backslashes on windows (particularly with cygwin)
+	var destFilename = dest.match(/^.+[\\\/](.+)$/)[1],
+		jsSourceFile = closurefromCode(destFilename + ".uncompressed.js", String(readFile(src, "utf-8")));
 
 	//Set up options
 	var options = new jscomp.CompilerOptions();
 	for(var k in optimizeOptions){
 		options[k] = optimizeOptions[k];
 	}
+	// Must have non-null path to trigger source map generation, also fix version
+	options.setSourceMapOutputPath("");
+	options.setSourceMapFormat(jscomp.SourceMap.Format.V3);
 	if(optimizeSwitch.indexOf(".keeplines") !== -1){
 		options.prettyPrint = true;
 	}
@@ -116,10 +121,18 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions){
 	//Prevent too-verbose logging output
 	Packages.com.google.javascript.jscomp.Compiler.setLoggingLevel(java.util.logging.Level.SEVERE);
 
-	//Run the compiler
-	var compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
+	// Run the compiler
+	// File name and associated map name
+	var map_tag = "//@ sourceMappingURL=" + destFilename + ".map",
+		compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
 	compiler.compile(externSourceFile, jsSourceFile, options);
 	writeFile(dest, copyright + built + compiler.toSource(), "utf-8");
+
+	var sourceMap = compiler.getSourceMap();
+	sourceMap.setWrapperPrefix(copyright + "//>>built");
+	var sb = new java.lang.StringBuffer();
+	sourceMap.appendTo(sb, destFilename);
+	writeFile(dest + ".map", sb.toString(), "utf-8");
 }
 
 
@@ -134,7 +147,6 @@ var
 	optimizeSwitch;
 
 while(1){
-	// the + "" convert to a Javascript string
 	src = readLine();
 	if(src === "."){
 		break;
