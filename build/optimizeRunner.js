@@ -126,7 +126,7 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions){
 	var map_tag = "//@ sourceMappingURL=" + destFilename + ".map",
 		compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
 	compiler.compile(externSourceFile, jsSourceFile, options);
-	writeFile(dest, copyright + built + compiler.toSource(), "utf-8");
+	writeFile(dest, copyright + built + compiler.toSource() + "\n" + map_tag, "utf-8");
 
 	var sourceMap = compiler.getSourceMap();
 	sourceMap.setWrapperPrefix(copyright + "//>>built");
