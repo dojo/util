@@ -28,35 +28,41 @@ define([
 
 			simulatedDefine = function(mid, dependencies, factory){
 				defineApplied = 1;
-				var
-					arity = arguments.length,
+				var arity = arguments.length,
 					args = 0,
 					defaultDeps = ["require", "exports", "module"];
 
 				// TODO: add the factory scan?
-				if(0){
-					if(arity==1){
-						dependencies = [];
-						mid.toString()
-							.replace(/(\/\*([\s\S]*?)\*\/|\/\/(.*)$)/mg, "")
-							.replace(/require\(["']([\w\!\-_\.\/]+)["']\)/g, function(match, dep){
-								dependencies.push(dep);
-							});
-						args = [0, defaultDeps.concat(dependencies), mid];
-					}
+				if(bc.factoryScan && arity == 1 && typeof mid === 'function'){
+					dependencies = [];
+					mid.toString()
+						.replace(/(\/\*([\s\S]*?)\*\/|\/\/(.*)$)/mg, "")
+						.replace(/require\(["']([\w\!\-_\.\/]+)["']\)/g, function(match, dep){
+							dependencies.push(dep);
+						});
+					args = [0, defaultDeps.concat(dependencies), mid];
+					resource.text = resource.text.replace(/define\s*\(/, 'define(["' + args[1].join('","') + '"],');
 				}
+
 				if(!args){
-					args = arity==1 ? [0, defaultDeps, mid] :
-						(arity==2 ? (mid instanceof Array ? [0, mid, dependencies] : [mid, defaultDeps, dependencies]) :
+					args = arity == 1 ? [0, defaultDeps, mid] :
+						(arity == 2 ? (mid instanceof Array ? [0, mid, dependencies] : [mid, defaultDeps, dependencies]) :
 							[mid, dependencies, factory]);
 				}
 
-				if(args[1].some(function(item){return !lang.isString(item);})){
+				if(args[1].some(function(item){
+					return !lang.isString(item);
+				})){
 					throw new Error("define dependency vector contains elements that are not of type string.");
 				}
 
 				absMid = args[0];
 				aggregateDeps = aggregateDeps.concat(args[1]);
+			},
+
+			_tag_simulatedDefine = simulatedDefine.amd = {
+				vendor:"dojotoolkit.org",
+				context:"build"
 			},
 
 			simulatedRequire = function(depsOrConfig, callbackOrDeps){
