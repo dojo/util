@@ -1,4 +1,4 @@
-define("doh/plugins/remoteRobot", ["doh/runner"], function(runner){
+define("doh/plugins/remoteRobot", ["doh/runner", "dojo/_base/lang"], function(runner, lang){
 
 /*=====
 return {
@@ -9,7 +9,6 @@ return {
 	
 	// read in the test and port parameters from the URL
 	var remoteRobotURL = "";
-	var value = "";
 	var paths = "";
 	var qstr = window.location.search.substr(1);
 	if(qstr.length){	
@@ -31,8 +30,8 @@ return {
 		}
 	}
 	// override doh runner so that it appends the remote robot url to each test
-	doh._registerUrl = (function(oi){
-		return doh.hitch(doh, function(group, url, timeout, type, dohArgs){
+	runner._registerUrl = (function(oi){
+		return lang.hitch(runner, function(group, url, timeout, type, dohArgs){
 			// append parameter, or specify new query string if appropriate
 			if(remoteRobotURL){
 				url += (/\?/.test(url)?"&":"?") + "remoteRobotURL=" + remoteRobotURL
@@ -40,8 +39,8 @@ return {
 			if(paths){
 				url += (/\?/.test(url)?"&":"?") + "paths=" + paths;
 			}
-			oi.apply(doh, [group, url, timeout, type, dohArgs]);
+			oi.apply(runner, [group, url, timeout, type, dohArgs]);
 		});
-	})(doh._registerUrl);
+	})(runner._registerUrl);
 	return remoteRobotURL;
 });
