@@ -492,7 +492,7 @@ define([
 		if(value){
 			value = value + "";
 			value = value.toLowerCase();
-			if(!/^((comments|shrinksafe)(\.keeplines)?)|(closure(\.keeplines)?|uglify(\.keeplines)?)$/.test(value)){
+			if(!/^(((comments|shrinksafe)(\.keeplines)?)|(closure(\.keeplines)?|uglify(\.keeplines)?))$/.test(value)){
 				bc.log("inputUnknownOptimize", ["value", value]);
 				value = 0;
 			}else{
@@ -563,6 +563,7 @@ define([
 				dirs:1,
 				discoveryProcs:1,
 				files:1,
+				insertAbsMids:1,
 				internStringsSkipList:1,
 				layers:1,
 				localeList:1,
