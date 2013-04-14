@@ -31,7 +31,9 @@ doh.error = function(){
 
 doh._AssertFailure = function(msg, hint){
 	if (doh.breakOnError) {
+		//>>excludeStart("debuggerCrashesRhino", /^shrinksafe.comments/.test(kwArgs.optimize));
 		debugger;
+		//>>excludeEnd("debuggerCrashesRhino")
 	}
 	if(!(this instanceof doh._AssertFailure)){
 		return new doh._AssertFailure(msg, hint);
