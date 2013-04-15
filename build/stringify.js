@@ -70,7 +70,7 @@ var
 				if(it===null){
 					text+= "null";
 				}else if(it instanceof RegExp){
-					text+= RegExp.toString();
+					text+= it.toString();
 				}else if(it instanceof Array){
 					if(it.length>1){
 						text+= "[" + newline;
