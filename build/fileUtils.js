@@ -43,13 +43,13 @@ define([
 		catPath = function(lhs, rhs){
 			if(arguments.length>2){
 				for(var args = [], i = 1; i<arguments.length; args.push(arguments[i++]));
-				return catPath(lhs, catPath.apply(this, args));
+				return catPath(cleanupPath(lhs), catPath.apply(this, args));
 			}else if(!rhs || !rhs.length){
-				return lhs;
+				return cleanupPath(lhs);
 			}else if(!lhs || !lhs.length){
-				return rhs;
+				return cleanupPath(rhs);
 			}else{
-				return (lhs + "/" + rhs).replace(/\/\/\/?/g, "/");
+				return (cleanupPath(lhs) + "/" + cleanupPath(rhs)).replace(/\/\/\/?/g, "/");
 			}
 		},
 

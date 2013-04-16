@@ -60,7 +60,7 @@ define([
 				}else if(arg=="null"){
 					return null;
 				}else if(isNaN(arg)){
-					return json.parse("{\"result\":\"" + arg + "\"}").result;
+					return arg+"";
 				}else{
 					return Number(arg);
 				}
