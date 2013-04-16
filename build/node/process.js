@@ -5,8 +5,6 @@ define(["../fileHandleThrottle", "../messages"], function(fht, messages){
 		versionMinor = Number(match[2]),
 		versionPatch = Number(match[3]),
 		spawn = require.nodeRequire("child_process").spawn;
-	console.log(process.version);
-	console.log(versionMajor + "." + versionMinor + "." + versionPatch);
 	return {
 		cwd:process.cwd,
 		exit:function(code){
