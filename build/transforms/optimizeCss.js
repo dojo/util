@@ -13,7 +13,7 @@ define([
 	// it to falsy.
 
 	var cssImportRegExp = /\@import\s+(url\()?\s*([^);]+)\s*(\))?([\w, ]*)(;)?/g,
-		cssUrlRegExp = /\url\(\s*([^\)]+)\s*\)?/g,
+		cssUrlRegExp = /url\(\s*([^\)]+)\s*\)?/g,
 
 		checkSlashes = function(name){
 			return name.replace(/\\/g, "/");
@@ -136,14 +136,21 @@ define([
 				// these urls need to be adjusted with respect to resource
 				var importResourceDestPath = fileUtils.getFilepath(importResource.dest);
 				return importContents.replace(cssUrlRegExp, function(fullMatch, urlMatch){
-					var fixedUrl = checkSlashes(cleanCssUrlQuotes(urlMatch));
+					var fixedUrl = checkSlashes(cleanCssUrlQuotes(urlMatch)),
+						queryString = "",
+						queryStart = fixedUrl.indexOf("?");
+					if(queryStart > 0){
+						queryString = fixedUrl.slice(queryStart);
+						fixedUrl = fixedUrl.slice(0, queryStart);
+					}
+
 					if(isRelative(fixedUrl)){
 						var fullDestFilename = fileUtils.compactPath(fileUtils.catPath(importResourceDestPath, fixedUrl)),
 							relativeResource = bc.resourcesByDest[fullDestFilename];
 						if(!relativeResource){
 							bc.log("cssOptimizeUnableToResolveURL", ["CSS file", src, "import", importResource.src, "relative URL", fullMatch]);
 						}else{
-							return 'url("' + getDestRelativeFilename(resource.dest, relativeResource) + '")';
+							return 'url("' + getDestRelativeFilename(resource.dest, relativeResource) + queryString + '")';
 						}
 					}
 					// right or wrong, this is our only choice at this point
