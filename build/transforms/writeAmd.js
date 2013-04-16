@@ -308,7 +308,6 @@ define([
 			}
 		},
 
-
 		write = function(
 			resource,
 			callback

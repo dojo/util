@@ -454,7 +454,7 @@ define([
 
 			interningLocalDojoUriRegExp = new RegExp(interningDojoUriRegExpString),
 
-			internStrings = function(){
+			internStrings = function() {
 				var getText = function(src){
 						return fs.readFileSync(src, "utf8");
 					},
