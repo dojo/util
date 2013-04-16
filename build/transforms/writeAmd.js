@@ -6,18 +6,6 @@ define([
 	"dojo/json"
 ], function(bc, fileUtils, fs, lang, json){
 	var
-		setText = function(resource, text){
-			if(!resource.setText){
-				resource.setText = function(text){
-					resource.text = text;
-					resource.getText = function(){ return this.text; };
-					return text;
-				};
-			}
-			resource.setText(text);
-			return text;
-		},
-
 		computingLayers
 			// the set of layers being computed; use this to detect circular layer dependencies
 			= {},
@@ -116,10 +104,20 @@ define([
 				text : text.replace(/(define\s*\(\s*)(.*)/, "$1\"" + resource.mid + "\", $2");
 		},
 
-		getCacheEntry = function(
+		pushString = function(
+			strings,
 			pair
 		){
-			return "'" + pair[0] + "':" + pair[1];
+			strings[pair[0]] = pair[1];
+		},
+
+		appendStringsToCache = function(
+			strings,
+			cache
+		) {
+			for(var p in strings){
+				cache.push("'" + p + "':" + strings[p])
+			}
 		},
 
 		getPreloadL10nRootPath = function(
@@ -184,12 +182,13 @@ define([
 
 		getLayerText = function(
 			resource,
-			resourceText // ===false => put the resource in the cache
-						 // ===undefined => AMD define() the resource at the end of the layer
+			resourceText // ===undefined (normal case) => AMD define() the resource at the end of the layer
+						 // ===false => put the resource in the cache
 						 // otherwise write the value of resourceText at the end of the layer (so far only used in the writeDojo transform)
 		){
 			var newline = bc.newline,
 				rootBundles = [],
+				strings = {},
 				cache = [],
 				layer = resource.layer,
 				moduleSet = computeLayerContents(resource, layer.include, layer.exclude),
@@ -220,7 +219,7 @@ define([
 							});
 						}
 					}else if(module.internStrings){
-						cache.push(getCacheEntry(module.internStrings()));
+						pushString(strings, module.internStrings());
 					}else if(module.getText){
 						cache.push("'" + p + "':function(){" + newline + module.getText() + newline + "}");
 					}else{
@@ -228,6 +227,7 @@ define([
 					}
 				}
 			}
+			appendStringsToCache(strings, cache);
 
 			// compute the flattened layer bundles (if any)
 			if(rootBundles.length){
@@ -243,7 +243,6 @@ define([
 			if(cache.length && resource.layer.noref){
 				cache.push("'*noref':1");
 			}
-
 			return	(cache.length ? "require({cache:{" + newline + cache.join("," + newline) + "}});" + newline : "") +
 				(resourceText===undefined ?	 insertAbsMid(resource.getText(), resource) : (resourceText==false ? "" : resourceText)) +
 				(resource.layer.postscript ? resource.layer.postscript : "");
@@ -252,13 +251,15 @@ define([
 		getStrings = function(
 			resource
 		){
-			var cache = [],
+			var strings = {},
+				cache = [],
 				newline = bc.newline;
 			resource.deps && resource.deps.forEach(function(dep){
 				if(dep.internStrings){
-					cache.push(getCacheEntry(dep.internStrings()));
+					pushString(strings, dep.internStrings());
 				}
 			});
+			appendStringsToCache(strings, cache);
 			return cache.length ? "require({cache:{" + newline + cache.join("," + newline) + "}});" + newline : "";
 		},
 
@@ -332,20 +333,24 @@ define([
 				text = processNlsBundle(resource);
 			}else if(resource.layer){
 				// don't insertAbsMid or internStrings since that's done in getLayerText
-				text= resource.layerText = getLayerText(resource);
+				text= getLayerText(resource);
 				if(resource.layer.compat=="1.6"){
-					text = resource.layerText= text + "require(" + json.stringify(resource.layer.include) + ");" + bc.newline;
+					text += "require(" + json.stringify(resource.layer.include) + ");" + bc.newline;
 				}
 				copyright = resource.layer.copyright || "";
 			}else{
 				text = insertAbsMid(resource.getText(), resource);
-				text = (bc.internStrings ? getStrings(resource) : "") + text;
+				if(bc.internStrings){
+					text += getStrings(resource);
+				}
 			}
 
-			setText(resource, text);
+			// remember the uncompressed text for the optimizer
+			resource.uncompressedText = text;
+
 			var destFilename = getDestFilename(resource);
 			fileUtils.ensureDirectoryByFilename(destFilename);
-			fs.writeFile(destFilename, bc.newlineFilter(resource.getText(), resource, "writeAmd"), resource.encoding, function(err){
+			fs.writeFile(destFilename, bc.newlineFilter(text, resource, "writeAmd"), resource.encoding, function(err){
 				callback(resource, err);
 			});
 			return callback;

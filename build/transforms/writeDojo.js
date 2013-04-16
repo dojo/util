@@ -142,8 +142,8 @@ define([
 				dojoLayerCompat = (resource.layer.compat=="1.6" && resource.layer.include.length) ? "require(" + json.stringify(resource.layer.include) + ");" + bc.newline : "";
 
 			// assemble and write the dojo layer
-			resource.layerText = loaderText + configText + dojoLayerText + (bc.dojoBootText || dojoBootText) + dojoLayerCompat;
-			doWrite(writeAmd.getDestFilename(resource), resource.layer.copyright + resource.layerText);
+			resource.uncompressedText = loaderText + configText + dojoLayerText + (bc.dojoBootText || dojoBootText) + dojoLayerCompat;
+			doWrite(writeAmd.getDestFilename(resource), resource.layer.copyright + resource.uncompressedText);
 
 			//write any bootstraps; boots is a vector of resources that have been marked as bootable by the discovery process
 			resource.boots.forEach(function(item){
@@ -151,8 +151,8 @@ define([
 				if(item!==resource){
 					// each item is a hash of include, exclude, boot, bootText
 					var compat = (item.layer.compat=="1.6" && item.layer.include.length) ? "require(" + json.stringify(item.layer.include) + ");" + bc.newline : "";
-					item.layerText= loaderText + configText + dojoLayerText + writeAmd.getLayerText(item, false) + (item.layer.bootText || bc.dojoBootText || dojoBootText) + dojoLayerCompat + compat;
-					doWrite(writeAmd.getDestFilename(item), resource.layer.copyright + item.layerText);
+					item.uncompressedText= loaderText + configText + dojoLayerText + writeAmd.getLayerText(item, false) + (item.layer.bootText || bc.dojoBootText || dojoBootText) + dojoLayerCompat + compat;
+					doWrite(writeAmd.getDestFilename(item), resource.layer.copyright + item.uncompressedText);
 				}
 			});
 			onWriteComplete(0); // matches *1*
