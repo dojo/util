@@ -60,9 +60,20 @@ OPTIONS
      --releaseDir <path>       base directory for build output
      
      --releaseName <string>    path segment to append to releaseDir that gives base directory for build output
-     
-     --writeProfile <filename> write the processed profile to filename
-     
+
+     --layerOptimize <arg>     process all layer resources in order to minimize resource size; arg as follows:
+                                   comments             => remove comments with ShrinkSafe
+                                   comments.keeplines   => as above, but don't remove newlines
+                                   shrinksafe           => minimize with ShrinkSafe
+                                   shrinksafe.keeplines => as above, but don't remove newlines
+                                   closure              => minimize with the Google Closure compiler
+                                   closure.keeplines    => as above, but don't remove newlines
+                                   uglify               => minimize with Uglify
+                                   uglify.keeplines     => as above, but don't remove newlines
+                               (note: all args are case-insensitive)
+
+     --optimize <arg>          analogous to --layerOptimize, but applied to non-layer resources
+
      --copyTests <arg>         copy test files and the DOH package; arg as follows:
                                    false => don't copy tests
                                    true  => copy test resources, but don't apply any transforms
