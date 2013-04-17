@@ -98,7 +98,7 @@ define([], function(){
 		[1, 340, "inputHTMLFileDoesNotExist", "HTML file given for \"htmlFiles\" switch does not exist."],
 		[1, 341, "inputHTMLDirDoesNotExist", "HTML directory given for \"htmlDir\" switch does not exist."],
 		[1, 342, "inputHTMLDirNoFiles","HTML directory given for \"htmlDir\" switch contains no HTML files."],
-		[1, 343, "inputIllegalCommandlineArg", "Illegal command line argument."],
+		[1, 343, "inputIllegalCommandlineArg", "Illegal or missing argument for command line flag."],
 		[1, 344, "inputFileDoesNotExist", "File does not exist."],
 		[1, 345, "inputProcessingHtmlFileNotImplemented", "Pulling profiles from HTML files is not implemented."],
 		[1, 346, "inputFailedReadfile", "Failed to read input file."],

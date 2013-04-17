@@ -409,7 +409,11 @@ define([
 				if(match && i<end){
 					// all of the switches that take no values are listed above; therefore,
 					// *must* provide a value
-					result[match[1]] = evalScriptArg(argv[i++]);
+					if(i<=end){
+						result[match[1]] = evalScriptArg(argv[i++]);
+					}else{
+						illegalArgumentValue(arg, i);
+					}
 				}else{
 					// the form switch=value does *not* provide an individual value arg (it's all one string)
 					var parts = arg.split("=");
