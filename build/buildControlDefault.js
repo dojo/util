@@ -179,7 +179,7 @@ define([
 			],[
 				// nls resources
 				function(resource, bc){
-					if(/\/nls\//.test(resource.mid) ||	/\/nls\/.+\.js$/.test(resource.src)){
+					if((/\/nls\//.test(resource.mid) || /\/nls\/.+\.js$/.test(resource.src)) && ((!resource.tag.test || bc.copyTests=="build"))){
 						resource.tag.nls = 1;
 						bc.amdResources[resource.mid] = resource;
 						return true;
