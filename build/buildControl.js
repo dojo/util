@@ -114,7 +114,6 @@ define([
 			}
 			(src.messages || []).forEach(function(item){bc.addMessage.apply(bc, item);});
 
-
 			// packagePaths and packages require special processing to get their contents into packageMap; do that first...
 			// process packagePaths before packages before packageMap since packagePaths is less specific than
 			// packages is less specific than packageMap. Notice that attempts to edit an already-existing package
@@ -333,8 +332,8 @@ define([
 		}
 
 		// get this done too...
+		require.computeAliases(bc.aliases, (bc.aliasesMap = []));
 		require.computeMapProg(bc.paths, (bc.pathsMapProg = []));
-		require.computeMapProg(bc.destPaths || bc.paths, (bc.destPathsMapProg = []));
 
 		// add some methods to bc to help with resolving AMD module info
 		bc.srcModules = {};
@@ -345,8 +344,9 @@ define([
 		};
 
 		bc.getSrcModuleInfo = function(mid, referenceModule, ignoreFileType){
+			// notice that aliases and paths are applied, but map is not (and never will be)
 			if(ignoreFileType){
-				var result = require.getModuleInfo(mid+"/x", referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", {}, [], true);
+				var result = require.getModuleInfo(mid+"/x", referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", [], bc.pathsMapProg, bc.aliasesMap, true);
 				result.mid = trimLastChars(result.mid, 2);
 				if(result.pid!==0){
 					// trim /x.js
@@ -354,15 +354,15 @@ define([
 				}
 				return result;
 			}else{
-				return require.getModuleInfo(mid, referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", {}, [], true);
+				return require.getModuleInfo(mid, referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", [], bc.pathsMapProg, bc.aliasesMap, true);
 			}
 		};
 
 
 		bc.getDestModuleInfo = function(mid, referenceModule, ignoreFileType){
-			// note: bd.destPagePath should never be required; but it's included for completeness and up to the user to provide it if some transform does decide to use it
+			// notice no mapping, paths, aliases in the dest getModuleInfo....just send stuff to where it should go without manipulation
 			if(ignoreFileType){
-				var result = require.getModuleInfo(mid+"/x", referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", {}, [], true);
+				var result = require.getModuleInfo(mid+"/x", referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", [], [], [], true);
 				result.mid = trimLastChars(result.mid, 2);
 				if(result.pid!==0){
 					// trim /x.js
@@ -370,7 +370,7 @@ define([
 				}
 				return result;
 			}else{
-				return require.getModuleInfo(mid, referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", {}, [], true);
+				return require.getModuleInfo(mid, referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", [], [], [], true);
 			}
 		};
 	})();
@@ -547,6 +547,7 @@ define([
 	if(bc.check){
 		(function(){
 			var toDump = {
+				aliases:1,
 				basePath:1,
 				buildReportDir:1,
 				buildReportFilename:1,
@@ -559,7 +560,6 @@ define([
 				destModules:1,
 				destPackages:1,
 				destPathTransforms:1,
-				destPathsMapProg:1,
 				dirs:1,
 				discoveryProcs:1,
 				files:1,

@@ -185,6 +185,7 @@ define([
 				}else if(filename==mainModuleFilename){
 					maybeAmdModules[packName] = mainModuleInfo;
 				}else{
+					// notice that this may result in mapping the module to a different location
 					maybeAmdModules[mid] = moduleInfo;
 				}
 			});
