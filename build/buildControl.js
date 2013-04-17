@@ -390,8 +390,8 @@ define([
 			layer.include = layer.include || [];
 			layer.boot = !!layer.boot;
 			layer.discard = !!layer.discard;
-			layer.noref = !!(layer.noref!==undefined ? layer.noref : bc.noref);
 			layer.compat = layer.compat!==undefined ? layer.compat : (bc.layerCompat ||"");
+			layer.noref = !!(layer.noref!==undefined ? layer.noref : (layer.compat=="1.6" ? true : bc.noref));
 
 			var tlm = mid.split("/")[0],
 				pack = bc.packages[tlm],
