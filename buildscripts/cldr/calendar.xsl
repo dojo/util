@@ -49,8 +49,8 @@
                         <xsl:for-each select="calendars">
                             <xsl:call-template name="top"></xsl:call-template>
                         </xsl:for-each>
-                    </xsl:if>                 
-                </xsl:otherwise>
+                    </xsl:if>
+				</xsl:otherwise>
             </xsl:choose>
          </xsl:otherwise>
     </xsl:choose>        
@@ -82,12 +82,19 @@
         </xsl:when>
         <xsl:otherwise>
             <xsl:apply-templates/>
-        </xsl:otherwise>
+
+			<!-- <fields> used to be under <calendar> but now it's a sibling of <calendars> -->
+			<xsl:for-each select="../../fields">
+				<xsl:call-template name="fields">
+					<xsl:with-param name="width" select="@type"></xsl:with-param>
+				</xsl:call-template>
+			</xsl:for-each>
+		</xsl:otherwise>
     </xsl:choose>
 </xsl:template>
 
 <!-- process months | days | quarters | dayPeriods -->
-    <xsl:template name="months_days_quarters_dayPeriods" match="months | days | quarters | dayPeriods">
+<xsl:template name="months_days_quarters_dayPeriods" match="months | days | quarters | dayPeriods">
     <xsl:param name="name" select="name()"/>
     <xsl:param name="width" select="@type"/>
     <xsl:param name="ctx" select="../@type"/>
@@ -207,26 +214,26 @@
     </xsl:choose>
 </xsl:template>
   
-    <!-- template for inserting 'locale' alias information, 
-           e.g. for     <calendar type="buddhist">
-                                <months>
-                                    <alias source="locale" path="../../calendar[@type='gregorian']/months"/>
-                                </months>
-                                      ......
-         alias info will be recorded as 'months@localeAlias' : {'target':"months", 'bundle' : 'gregorian'}    -->
-    <xsl:template name="insert_alias_info">
-        <!-- alias source node name-->
-        <xsl:param name="sourceName" select="name()"></xsl:param>
-        <!-- alias target node name, same as source node by default-->
-        <xsl:param name="targetName" select="$sourceName"></xsl:param>
-        <!-- alias target bundle-->
-        <xsl:param name="bundle" select="../@type"></xsl:param>
-        <xsl:call-template name="insert_comma"/>
-	'<xsl:value-of select="$sourceName"/><xsl:text>@localeAlias</xsl:text>
-		<xsl:value-of select="$index"/><saxon:assign name="index" select="sum($index + 1)"/>
-		<xsl:text>':{'target':"</xsl:text><xsl:value-of select="$targetName"/><xsl:text>", 'bundle':"</xsl:text>
-        <xsl:value-of select="$bundle"/><xsl:text>"}</xsl:text>
-    </xsl:template>
+<!-- template for inserting 'locale' alias information,
+	   e.g. for     <calendar type="buddhist">
+							<months>
+								<alias source="locale" path="../../calendar[@type='gregorian']/months"/>
+							</months>
+								  ......
+	 alias info will be recorded as 'months@localeAlias' : {'target':"months", 'bundle' : 'gregorian'}    -->
+<xsl:template name="insert_alias_info">
+	<!-- alias source node name-->
+	<xsl:param name="sourceName" select="name()"></xsl:param>
+	<!-- alias target node name, same as source node by default-->
+	<xsl:param name="targetName" select="$sourceName"></xsl:param>
+	<!-- alias target bundle-->
+	<xsl:param name="bundle" select="../@type"></xsl:param>
+	<xsl:call-template name="insert_comma"/>
+'<xsl:value-of select="$sourceName"/><xsl:text>@localeAlias</xsl:text>
+	<xsl:value-of select="$index"/><saxon:assign name="index" select="sum($index + 1)"/>
+	<xsl:text>':{'target':"</xsl:text><xsl:value-of select="$targetName"/><xsl:text>", 'bundle':"</xsl:text>
+	<xsl:value-of select="$bundle"/><xsl:text>"}</xsl:text>
+</xsl:template>
     
 	
 <!--process am & noon & pm for <dayPeriod> -->
