@@ -362,6 +362,7 @@ dependencies = {
 				"dojox/mvc/Output",
 				"dojox/mvc/at",
 				"dojox/app/main",
+				"demos/todoApp/utils/utils",
 				"demos.todoApp.src"
 			]
 		}
