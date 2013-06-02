@@ -6,8 +6,6 @@ function factory(uglify){
 		//uglify2, provide a uglify-1 compatible uglify function
 		var UglifyJS = uglify;
 		uglify = function(code, options){
-			//try to map options for uglify to uglify2
-
 			//parse
 			var ast = UglifyJS.parse(code, options);
 			ast.figure_out_scope();
@@ -38,11 +36,7 @@ if(global.define){
 	process.on("message", function(data){
 		var result = "", error = "";
 		try{
-			var options = data.options || {};
-			if(!options.filename){
-				options.filename = data.src;
-			}
-			var result = uglify(data.text, options);
+			var result = uglify(data.text, data.options);
 		}catch(e){
 			error = e.toString() + " " + e.stack;
 		}

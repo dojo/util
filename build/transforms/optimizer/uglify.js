@@ -18,7 +18,6 @@ define([
 			fork = nodeReq("child_process").fork,
 			proc, jobs = {}, currentIndex = 0, queue = [],
 			worker = require.toUrl("./uglify_worker.js");
-		//bc.log("Using multiprocess="+cpus);
 		for(var i = 0; i < cpus; i++){
 			proc = fork(worker);
 			proc.on("message", function(data){
@@ -37,6 +36,8 @@ define([
 
 		var options = bc.optimizeOptions || {};
 
+		options.filename = resource.src;
+
 		if(optimizeSwitch.indexOf(".keeplines") > -1){
 			options.gen_options = options.gen_options || {};
 			options.gen_options.beautify = true;
@@ -51,7 +52,7 @@ define([
 				if(data.error){
 					throw data.error;
 				}
-				var result = copyright + "//>>built" + bc.newline + data.text;
+				var result = copyright + "//>>built" + bc.newline + (bc.multiprocess ? data.text : uglify(stripConsole(text), options));
 
 				fs.writeFile(resource.dest, result, resource.encoding, function(err){
 					if(err){
@@ -72,7 +73,7 @@ define([
 			currentIndex = (currentIndex+1) % processes.length;
 		} else {
 			process.nextTick(function(){
-				handleResult({text: uglify(stripConsole(text), options)});
+				handleResult({});
 			});
 		}
 
