@@ -37,7 +37,7 @@ define([
 		amdResources:{},
 
 		closureCompilerPath:"../closureCompiler/compiler.jar",
-		maxOptimizationProcesses:5,
+		maxOptimizationProcesses:-1,//create as many processes as CPUs
 		buildReportDir:".",
 		buildReportFilename:"build-report.txt",
 

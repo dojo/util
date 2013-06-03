@@ -11,14 +11,16 @@ define([
 		throw new Error("Unknown host environment: only nodejs is supported by uglify optimizer.");
 	}
 
-	if(bc.multiprocess){
+	if(bc.maxOptimizationProcesses){
 		var nodeReq = require.nodeRequire,
 			processes = [],
-			cpus = bc.multiprocess < 0 ? nodeReq('os').cpus().length : bc.multiprocess,
 			fork = nodeReq("child_process").fork,
 			proc, jobs = {}, currentIndex = 0, queue = [],
 			worker = require.toUrl("./uglify_worker.js");
-		for(var i = 0; i < cpus; i++){
+		if(bc.maxOptimizationProcesses<0){
+			bc.maxOptimizationProcesses = nodeReq('os').cpus().length;
+		}
+		for(var i = 0; i < bc.maxOptimizationProcesses; i++){
 			proc = fork(worker);
 			proc.on("message", function(data){
 				if(jobs[data.dest]){
@@ -52,7 +54,7 @@ define([
 				if(data.error){
 					throw data.error;
 				}
-				var result = copyright + "//>>built" + bc.newline + (bc.multiprocess ? data.text : uglify(stripConsole(text), options));
+				var result = copyright + "//>>built" + bc.newline + (bc.maxOptimizationProcesses ? data.text : uglify(stripConsole(text), options));
 
 				fs.writeFile(resource.dest, result, resource.encoding, function(err){
 					if(err){
@@ -66,7 +68,7 @@ define([
 			}
 		};
 
-		if(bc.multiprocess){
+		if(bc.maxOptimizationProcesses){
 			jobs[resource.dest] = handleResult;
 			processes[currentIndex].send({text: stripConsole(text),
 				options: options, src: resource.src, dest: resource.dest});

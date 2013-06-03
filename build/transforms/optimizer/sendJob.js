@@ -28,6 +28,9 @@ define([
 		global.process.exit(-1);
 	});
 
+	if(bc.maxOptimizationProcesses < 0){
+		bc.maxOptimizationProcesses = require.nodeRequire('os').cpus().length;
+	}
 	var
 		processesStarted = 0,
 		totalOptimizerOutput = "",
