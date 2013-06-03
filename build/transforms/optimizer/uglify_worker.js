@@ -10,7 +10,12 @@ function factory(uglify){
 			var ast = UglifyJS.parse(code, options);
 			ast.figure_out_scope();
 
-			var compressor = UglifyJS.Compressor(options.compress_options);
+			//by default suppress warnings from uglify2
+			var compress_options = options.compress_options || {};
+			if(!('warnings' in compress_options)){
+				compress_options.warnings = false;
+			}
+			var compressor = UglifyJS.Compressor(compress_options);
 			compressed_ast = ast.transform(compressor);
 			compressed_ast.figure_out_scope();
 
