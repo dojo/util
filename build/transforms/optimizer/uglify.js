@@ -54,7 +54,7 @@ define([
 				if(data.error){
 					throw data.error;
 				}
-				var result = copyright + "//>>built" + bc.newline + (bc.maxOptimizationProcesses ? data.text : uglify(stripConsole(text), options));
+				var result = copyright + "//>>built" + bc.newline + data.text;
 
 				fs.writeFile(resource.dest, result, resource.encoding, function(err){
 					if(err){
@@ -75,7 +75,13 @@ define([
 			currentIndex = (currentIndex+1) % processes.length;
 		} else {
 			process.nextTick(function(){
-				handleResult({});
+				var o = {};
+				try{
+					o.text = uglify(stripConsole(text), options);
+				}catch(e){
+					o.error = e;
+				}
+				handleResult(o);
 			});
 		}
 
