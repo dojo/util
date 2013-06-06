@@ -340,7 +340,7 @@ define([
 			}else{
 				text = insertAbsMid(resource.getText(), resource);
 				if(bc.internStrings){
-					text += getStrings(resource);
+					text = getStrings(resource) + text;
 				}
 			}
 
