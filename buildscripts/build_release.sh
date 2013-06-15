@@ -45,6 +45,12 @@ SOURCE_RELEASE_DIR=$SOURCE_DIR/release
 ALL_REPOS="demos dijit dojo dojox util"
 
 zip="zip -dd -ds 1m -rq"
+
+if [ $(echo $(zip -dd test 2>&1) |grep -c "one action") -eq 1 ]; then
+	# Zip 2.3
+	zip="zip -rq"
+fi
+
 tar="tar --checkpoint=1000 --checkpoint-action=dot"
 
 usage() {
@@ -97,15 +103,17 @@ for REPO in $ALL_REPOS; do
 		VERSION_FILES="$VERSION_FILES _base/kernel.js"
 	fi
 
-	if [ $REPO != "util" ]; then
-		for FILENAME in $VERSION_FILES; do
-			java -jar $UTIL_DIR/../shrinksafe/js.jar $UTIL_DIR/changeVersion.js $VERSION $REVISION $FILENAME
-		done
-
-		# These will be pushed later, once it is confirmed the build was successful, in order to avoid polluting
-		# the origin repository with failed build commits and tags
-		git commit -m "Updating metadata for $VERSION" $VERSION_FILES
+	if [ $REPO == "util" ]; then
+		VERSION_FILES="doh/package.json"
 	fi
+
+	for FILENAME in $VERSION_FILES; do
+		java -jar $UTIL_DIR/../shrinksafe/js.jar $UTIL_DIR/changeVersion.js $VERSION $REVISION $FILENAME
+	done
+
+	# These will be pushed later, once it is confirmed the build was successful, in order to avoid polluting
+	# the origin repository with failed build commits and tags
+	git commit -m "Updating metadata for $VERSION" $VERSION_FILES
 
 	git tag -a -m "Release $VERSION" $VERSION
 done
@@ -178,7 +186,7 @@ fi
 
 echo "Please confirm build success, then press 'y' key to clean up archives, push"
 echo "tags, and upload, or any other key to bail."
-read -s -n 1
+read -p "> "
 
 if [ "$REPLY" != "y" ]; then
 	echo "Aborted."
