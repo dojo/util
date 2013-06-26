@@ -176,8 +176,12 @@
 		};
 	}else{
 		config= {
+			baseUrl: "../..",
 			paths: paths,
-			deps: ["dojo/domReady", "doh"],
+			packages: [
+				{ name: 'doh', location: 'util/doh' }
+			],
+			deps: ["dojo/domReady", "doh/main"],
 			callback: function(domReady, doh){
 				domReady(function(){
 					doh._fixHeight();
