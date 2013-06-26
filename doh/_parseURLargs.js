@@ -176,8 +176,20 @@
 		};
 	}else{
 		config= {
+			// override non-standard behavior of V1 dojo.js, which set baseUrl to dojo dir
+			baseUrl: "../..",
+			tlmSiblingOfDojo: false,
+
 			paths: paths,
-			deps: ["dojo/domReady", "doh"],
+			packages: [
+				{ name: 'doh', location: 'util/doh' },
+
+				// override non-standard behavior of V1 dojo.js which remaps these packages
+				'dojo',
+				'dijit',
+				'dojox'
+			],
+			deps: ["dojo/domReady", "doh/main"],
 			callback: function(domReady, doh){
 				domReady(function(){
 					doh._fixHeight();
