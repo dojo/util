@@ -152,14 +152,12 @@ for REPO in $ALL_REPOS; do
 	REVISION=$(git log -n 1 --format='%h')
 	VERSION_FILES=package.json
 
-	if [ -f "_base/kernel.js" ] ; then
-		kernel="_base/kernel.js";
-	else
-		kernel="_base/_loader/bootstrap.js";
-	fi
-
 	if [ $REPO == "dojo" ]; then
-		VERSION_FILES="$VERSION_FILES $kernel"
+		if [ -f "_base/kernel.js" ] ; then
+			VERSION_FILES="$VERSION_FILES _base/kernel.js"
+		else
+			VERSION_FILES="$VERSION_FILES _base/_loader/bootstrap.js"
+		fi
 	fi
 
 	if [ $REPO == "util" ]; then
