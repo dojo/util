@@ -281,7 +281,7 @@ define([
 				// do a check that all localizations mentioned in the root actually exist
 				var missing = [];
 				for(p in resource.bundleValue){
-					if(p!="root" && !resource.localizedSet[p]){
+					if(p!="root" && resource.bundleValue[p] && !resource.localizedSet[p]){
 						missing.push("'" + p + "'");
 					}
 				}
