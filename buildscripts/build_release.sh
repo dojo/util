@@ -158,7 +158,7 @@ for REPO in $ALL_REPOS; do
 			VERSION_FILES="$VERSION_FILES _base/kernel.js"
 		# Dojo 1.6-
 		elif [ -f "_base/_loader/bootstrap.js" ]; then
-			VERSION_FILES="$VERSION_FILES _base/loader/bootstrap.js"
+			VERSION_FILES="$VERSION_FILES _base/_loader/bootstrap.js"
 		fi
 	fi
 
