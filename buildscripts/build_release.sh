@@ -153,7 +153,13 @@ for REPO in $ALL_REPOS; do
 	VERSION_FILES=package.json
 
 	if [ $REPO == "dojo" ]; then
-		VERSION_FILES="$VERSION_FILES _base/kernel.js"
+		# Dojo 1.7+
+		if [ -f "_base/kernel.js" ]; then
+			VERSION_FILES="$VERSION_FILES _base/kernel.js"
+		# Dojo 1.6-
+		elif [ -f "_base/_loader/bootstrap.js" ]; then
+			VERSION_FILES="$VERSION_FILES _base/loader/bootstrap.js"
+		fi
 	fi
 
 	if [ $REPO == "util" ]; then
