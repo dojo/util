@@ -256,7 +256,15 @@ if [ $CDN ]; then
 	unset TMPFILE EXITCODE
 
 	cd $SOURCE_BUILD_DIR
-	./build.sh action=release profile=standard profile=cdn version=$VERSION releaseName=$CDN_NAME cssOptimize=comments.keepLines optimize=closure layerOptimize=closure stripConsole=normal copyTests=false mini=true
+
+	# Dojo 1.7+
+	if [ -f "profiles/cdn.profile.js" ]; then
+		./build.sh action=release profile=standard profile=cdn version=$VERSION releaseName=$CDN_NAME cssOptimize=comments.keepLines optimize=closure layerOptimize=closure stripConsole=normal copyTests=false mini=true
+	# Dojo 1.6
+	else
+		java -classpath ../shrinksafe/js.jar:../shrinksafe/shrinksafe.jar org.mozilla.javascript.tools.shell.Main build.js profile=standard version=$VERSION releaseName=$CDN_NAME cssOptimize=comments.keepLines optimize=shrinksafe layerOptimize=shrinksafe stripConsole=normal copyTests=false mini=true action=release loader=xdomain xdDojoPath="//ajax.googleapis.com/ajax/libs/dojo/$VERSION" xdDojoScopeName=window[\(typeof\(djConfig\)\!\=\"undefined\"\&\&djConfig.scopeMap\&\&djConfig.scopeMap[0][1]\)\|\|\"dojo\"]
+	fi
+
 	mv $SOURCE_RELEASE_DIR/$CDN_NAME $CDN_OUTPUT_DIR
 	rmdir $SOURCE_RELEASE_DIR
 	echo "Done"
