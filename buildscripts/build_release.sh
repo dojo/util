@@ -42,6 +42,14 @@ done
 
 # Version should be something like 0.9.0-beta or 0.9.0. See http://semver.org.
 VERSION=$1
+
+OLDIFS=$IFS
+IFS="."
+PRE_VERSION=($VERSION)
+IFS=$OLDIFS
+
+PRE_VERSION="${PRE_VERSION[0]}.${PRE_VERSION[1]}.$((PRE_VERSION[2] + 1))-pre"
+
 BRANCH=${BRANCH=master}
 
 # Name used for directory and tar/zip file of prebuilt version
@@ -181,6 +189,15 @@ for REPO in $ALL_REPOS; do
 	fi
 
 	git tag -a -m "Release $VERSION" $VERSION
+
+	if [ -n "$VERSION_FILES" ]; then
+		PRE_REVISION=$(git log -n 1 --format='%h')
+		for FILENAME in $VERSION_FILES; do
+			java -jar $UTIL_DIR/../shrinksafe/js.jar $UTIL_DIR/changeVersion.js $PRE_VERSION $PRE_REVISION $FILENAME
+		done
+
+		git commit -m "Updating source version to $PRE_VERSION" $VERSION_FILES
+	fi
 done
 
 cd $ROOT_DIR
