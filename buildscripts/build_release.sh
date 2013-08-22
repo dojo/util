@@ -150,7 +150,11 @@ for REPO in $ALL_REPOS; do
 	set -e
 
 	REVISION=$(git log -n 1 --format='%h')
-	VERSION_FILES=package.json
+	VERSION_FILES=
+
+	if [ -f "package.json" ]; then
+		VERSION_FILES=package.json
+	fi
 
 	if [ $REPO == "dojo" ]; then
 		# Dojo 1.7+
@@ -166,13 +170,15 @@ for REPO in $ALL_REPOS; do
 		VERSION_FILES="doh/package.json"
 	fi
 
-	for FILENAME in $VERSION_FILES; do
-		java -jar $UTIL_DIR/../shrinksafe/js.jar $UTIL_DIR/changeVersion.js $VERSION $REVISION $FILENAME
-	done
+	if [ -n "$VERSION_FILES" ]; then
+		for FILENAME in $VERSION_FILES; do
+			java -jar $UTIL_DIR/../shrinksafe/js.jar $UTIL_DIR/changeVersion.js $VERSION $REVISION $FILENAME
+		done
 
-	# These will be pushed later, once it is confirmed the build was successful, in order to avoid polluting
-	# the origin repository with failed build commits and tags
-	git commit -m "Updating metadata for $VERSION" $VERSION_FILES
+		# These will be pushed later, once it is confirmed the build was successful, in order to avoid polluting
+		# the origin repository with failed build commits and tags
+		git commit -m "Updating metadata for $VERSION" $VERSION_FILES
+	fi
 
 	git tag -a -m "Release $VERSION" $VERSION
 done
