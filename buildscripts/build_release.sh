@@ -175,7 +175,11 @@ for REPO in $ALL_REPOS; do
 	fi
 
 	if [ $REPO == "util" ]; then
-		VERSION_FILES="doh/package.json"
+		for FILENAME in doh/package.json doh/_rhinoRunner.js doh/mobileRunner.html doh/runner.html doh/_nodeRunner.js; do
+			if [ -f $FILENAME ]; then
+				VERSION_FILES="$VERSION_FILES $FILENAME"
+			fi
+		done
 	fi
 
 	if [ -n "$VERSION_FILES" ]; then

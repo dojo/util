@@ -43,7 +43,7 @@ var
 				/major:\s*\d*,\s*minor:\s*\d*,\s*patch:\s*\d*,\s*flag:\s*".*?"\s*,/g,
 				"major: " + majorValue + ", minor: " + minorValue + ", patch: " + patchValue + ", flag: \"" + flagValue + "\","
 			);
-			fileContents = fileContents.replace(/\$Rev(: \d+ |)\$/, "$Rev: " + revision + " $");
+			fileContents = fileContents.replace(/\$Rev(: [0-9a-f]+ |)\$/, "$Rev: " + revision + " $");
 		}
 
 		return fileContents; //String
