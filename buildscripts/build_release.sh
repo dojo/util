@@ -180,6 +180,10 @@ for REPO in $ALL_REPOS; do
 				VERSION_FILES="$VERSION_FILES $FILENAME"
 			fi
 		done
+
+		if [ -f "build/version.js" ]; then
+			VERSION_FILES="$VERSION_FILES build/version.js"
+		fi
 	fi
 
 	if [ -n "$VERSION_FILES" ]; then
