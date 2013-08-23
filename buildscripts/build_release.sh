@@ -195,9 +195,8 @@ for REPO in $ALL_REPOS; do
 	git tag -a -m "Release $VERSION" $VERSION
 
 	if [ -n "$VERSION_FILES" ]; then
-		PRE_REVISION=$(git log -n 1 --format='%h')
 		for FILENAME in $VERSION_FILES; do
-			java -jar $UTIL_DIR/../shrinksafe/js.jar $UTIL_DIR/changeVersion.js $PRE_VERSION $PRE_REVISION $FILENAME
+			java -jar $UTIL_DIR/../shrinksafe/js.jar $UTIL_DIR/changeVersion.js $PRE_VERSION "" $FILENAME
 		done
 
 		git commit -m "Updating source version to $PRE_VERSION" $VERSION_FILES

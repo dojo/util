@@ -1,9 +1,9 @@
 // Changes the Dojo version in a file. Used during the release process.
 
 var
-	version = new String(arguments[0]),
-	revision = new String(arguments[1]),
-	filename = new String(arguments[2]),
+	version = "" + arguments[0],
+	revision = "" + arguments[1],
+	filename = "" + arguments[2],
 
 	writeFile= function(filename, contents){
 		var
@@ -43,7 +43,7 @@ var
 				/major:\s*\d*,\s*minor:\s*\d*,\s*patch:\s*\d*,\s*flag:\s*".*?"\s*,/g,
 				"major: " + majorValue + ", minor: " + minorValue + ", patch: " + patchValue + ", flag: \"" + flagValue + "\","
 			);
-			fileContents = fileContents.replace(/\$Rev(: [0-9a-f]+ |)\$/, "$Rev: " + revision + " $");
+			fileContents = fileContents.replace(/\$Rev(: [0-9a-f]* )?\$/, revision ? "$Rev: " + revision + " $" : "$Rev$");
 		}
 
 		return fileContents; //String
