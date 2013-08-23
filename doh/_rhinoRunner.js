@@ -21,7 +21,7 @@ define(["doh/runner", "require", "dojo/_base/config"], function(doh, require, co
 	};
 
 	print("\n"+doh._line);
-	print("The Dojo Unit Test Harness, $Rev: 23869 $");
+	print("The Dojo Unit Test Harness, $Rev$");
 	print("Copyright (c) 2011, The Dojo Foundation, All Rights Reserved");
 	for (var tests= [], args= config["commandLineArgs"], i= 0, arg; i<args.length; i++) {
 		arg= (args[i]+"").split("=");
