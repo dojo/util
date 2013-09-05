@@ -7,6 +7,7 @@ define([
 		internSkipList:[],
 		optimize:"",
 		layerOptimize:"shrinksafe",
+		useSourceMaps:1,
 		cssOptimize:"",
 		cssImportIgnore:"",
 		stripConsole:"normal",

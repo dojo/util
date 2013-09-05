@@ -32,7 +32,7 @@ define([
 			closurefromCode,
 			jscomp = 0;
 
-		var ccompile = function(text, dest, optimizeSwitch, copyright){
+		var ccompile = function(text, dest, optimizeSwitch, copyright, useSourceMaps){
 			/*jshint rhino:true */
 			/*global com:false Packages:false */
 			if(!jscomp){
@@ -68,16 +68,18 @@ define([
 
 			// Run the compiler
 			// File name and associated map name
-			var map_tag = "//@ sourceMappingURL=" + destFilename + ".map";
+			var map_tag = useSourceMaps ? bc.newline + "//@ sourceMappingURL=" + destFilename + ".map" : "";
             var compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
             compiler.compile(externSourceFile, jsSourceFile, options);
-            var result = copyright + "//>>built" + bc.newline + compiler.toSource() + bc.newline + map_tag;
+            var result = copyright + "//>>built" + bc.newline + compiler.toSource() + map_tag;
 
-			var sourceMap = compiler.getSourceMap();
-			sourceMap.setWrapperPrefix(copyright + "//>>built");
-			var sb = new java.lang.StringBuffer();
-			sourceMap.appendTo(sb, destFilename);
-			fs.writeFile(dest + ".map", sb.toString(), "utf-8");
+			if(useSourceMaps){
+				var sourceMap = compiler.getSourceMap();
+				sourceMap.setWrapperPrefix(copyright + "//>>built");
+				var sb = new java.lang.StringBuffer();
+				sourceMap.appendTo(sb, destFilename);
+				fs.writeFile(dest + ".map", sb.toString(), "utf-8");
+			}
 
 			return result;
 		};
@@ -86,7 +88,7 @@ define([
 			bc.log("optimize", ["module", resource.mid]);
 			copyright = copyright || "";
 			try{
-				var result = ccompile(stripConsole(text), resource.dest, optimizeSwitch, copyright);
+				var result = ccompile(stripConsole(text), resource.dest, optimizeSwitch, copyright, bc.useSourceMaps);
 				fs.writeFile(resource.dest, result, resource.encoding, function(err){
 					if(err){
 						bc.log("optimizeFailedWrite", ["filename", result.dest]);

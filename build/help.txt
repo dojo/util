@@ -74,11 +74,15 @@ OPTIONS
 
      --optimize <arg>          analogous to --layerOptimize, but applied to non-layer resources
 
+     --useSourceMaps <arg>     create source maps when the Google Closure compiler is used; arg as follows:
+                                   true  => create source maps (default)
+                                   false => don't create source maps
+
      --copyTests <arg>         copy test files and the DOH package; arg as follows:
                                    false => don't copy tests
                                    true  => copy test resources, but don't apply any transforms
                                    build => copy and build tests resources just as if they were normal resources
-     
+
      --mini                    Ignore resources tagged as not mini (e.g. tests, demos dijit/bench, etc.)
      
      -v                        print the program's version number
