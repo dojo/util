@@ -141,6 +141,19 @@
 			robot._run(window.frameElement);
  		}, 0);
 	};
+	
+	// stubs to help FF23+ new security policies
+	window._onKeyboard=function(){
+		setTimeout(function(){
+			robot._onKeyboard();
+		},0);
+	}
+	
+	window._nextKeyGroup=function(size){
+		setTimeout(function(){
+			robot._nextKeyGroup(size);
+		},0);
+	}
 </script>
 </head>
 <body id="robotBody"
