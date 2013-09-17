@@ -488,7 +488,7 @@ public final class DOHRobot extends Applet{
 									_mapKey(c, i, false, true);
 								}
 								// notify DOH that the applet finished init
-								dohrobot.call("_onKeyboard", new Object[]{});
+								window.call("_onKeyboard", new Object[]{});
 							}catch(Exception e){
 								e.printStackTrace();
 							}
@@ -530,7 +530,7 @@ public final class DOHRobot extends Applet{
 					_notified(key, "");
 					return;
 				}
-				dohrobot.call("_nextKeyGroup", new Object[]{ new Integer(vkKeys.size()) });
+				window.call("_nextKeyGroup", new Object[]{ new Integer(vkKeys.size()) });
 				for (int keyindex = 0; keyindex < vkKeys.size(); keyindex++){
 					try{
 						log("Press "
@@ -620,7 +620,7 @@ public final class DOHRobot extends Applet{
 		log("> initKeyboard");
 		// javascript entry point to discover the keyboard
 		if(charMap != null){
-			dohrobot.call("_onKeyboard", new Object[]{});
+			window.call("_onKeyboard", new Object[]{});
 			return;
 		}
 		Runnable thread = new Runnable(){
