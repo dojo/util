@@ -3,6 +3,7 @@ javac -classpath /System/Library/Frameworks/JavaVM.framework/Versions/1.5.0/Home
 
 rm DOHRobot.jar
 jar cvf DOHRobot.jar DOHRobot*.class
+jar umvf manifest.txt DOHRobot.jar
 rm DOHRobot*.class
 
 jarsigner DOHRobot.jar dojo
