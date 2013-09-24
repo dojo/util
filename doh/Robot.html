@@ -144,15 +144,11 @@
 	
 	// stubs to help FF23+ new security policies
 	window._onKeyboard=function(){
-		setTimeout(function(){
-			robot._onKeyboard();
-		},0);
+		robot._onKeyboard();
 	}
 	
 	window._nextKeyGroup=function(size){
-		setTimeout(function(){
-			robot._nextKeyGroup(size);
-		},0);
+		robot._nextKeyGroup(size);
 	}
 </script>
 </head>
