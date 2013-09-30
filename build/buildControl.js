@@ -376,6 +376,36 @@ define([
 				return require.getModuleInfo(mid, referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", [], [], [], true);
 			}
 		};
+		
+		bc.getAmdModule = function(
+				mid,
+				referenceModule
+			){
+				var match = mid.match(/^([^\!]+)\!(.*)$/);
+				if(match){
+					var pluginModuleInfo = bc.getSrcModuleInfo(match[1], referenceModule),
+						pluginModule = pluginModuleInfo &&	bc.amdResources[pluginModuleInfo.mid],
+						pluginId = pluginModule && pluginModule.mid,
+						pluginProc = bc.plugins[pluginId];
+					if(!pluginModule){
+						return 0;
+					}else if(!pluginProc){
+						if(!pluginModule.noBuildResolver){
+							bc.log("missingPluginResolver", ["module", referenceModule.mid, "plugin", pluginId]);
+						}
+						return pluginModule;
+					}else{
+						// flatten the list of modules returned from the plugin
+						var modules = [].concat(pluginProc.start(match[2], referenceModule, bc));
+						return modules.concat.apply([], modules);
+					}
+				}else{
+					var moduleInfo = bc.getSrcModuleInfo(mid, referenceModule),
+						module = moduleInfo && bc.amdResources[moduleInfo.mid];
+					return module;
+				}
+			}
+		
 	})();
 
 

@@ -66,8 +66,7 @@ define(["dojo/regexp"], function(dojoRegExp) {
 				return [];
 			}else{
 				var
-					moduleInfo = bc.getSrcModuleInfo(resolvedId, referenceModule),
-					module = bc.amdResources[moduleInfo.mid];
+					module = bc.getAmdModule(resolvedId, referenceModule);
 				if(module){
 					referenceModule.text = referenceModule.text.replace(regex, resolvedId);
 					return [module];
