@@ -95,7 +95,7 @@ define([
 					sent:[],
 					write:function(src, dest, optimizeSwitch, copyright){
 						proc.sent.push(dest);
-						runner.stdin.write(src + "\n" + dest + "\n" + optimizeSwitch + "\n" + JSON.stringify({ copyright: copyright, options: bc.optimizeOptions }) + "\n");
+						runner.stdin.write(src + "\n" + dest + "\n" + optimizeSwitch + "\n" + JSON.stringify({ copyright: copyright, options: bc.optimizeOptions, useSourceMaps: bc.useSourceMaps }) + "\n");
 					},
 					sink:function(output){
 						proc.tempResults += output;

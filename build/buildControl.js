@@ -581,7 +581,8 @@ define([
 				startTimestamp:1,
 				staticHasFeatures:1,
 				stripConsole:1,
-				trees:1
+				trees:1,
+				useSourceMaps:1
 			};
 			for(var p in toDump){
 				toDump[p] = bc[p];

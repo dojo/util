@@ -84,7 +84,7 @@ function sscompile(src, dest, optimizeSwitch, copyright){
 }
 
 var JSSourceFilefromCode, closurefromCode, jscomp = 0;
-function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions){
+function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSourceMaps){
 	if(!jscomp){
 		JSSourceFilefromCode=java.lang.Class.forName("com.google.javascript.jscomp.JSSourceFile").getMethod("fromCode", [java.lang.String, java.lang.String]);
 		closurefromCode = function(filename,content){
@@ -123,16 +123,18 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions){
 
 	// Run the compiler
 	// File name and associated map name
-	var map_tag = "//@ sourceMappingURL=" + destFilename + ".map",
+	var map_tag = useSourceMaps ? "\n//@ sourceMappingURL=" + destFilename + ".map" : "",
 		compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
 	compiler.compile(externSourceFile, jsSourceFile, options);
-	writeFile(dest, copyright + built + compiler.toSource() + "\n" + map_tag, "utf-8");
+	writeFile(dest, copyright + built + compiler.toSource() + map_tag, "utf-8");
 
-	var sourceMap = compiler.getSourceMap();
-	sourceMap.setWrapperPrefix(copyright + "//>>built");
-	var sb = new java.lang.StringBuffer();
-	sourceMap.appendTo(sb, destFilename);
-	writeFile(dest + ".map", sb.toString(), "utf-8");
+	if(useSourceMaps){
+		var sourceMap = compiler.getSourceMap();
+		sourceMap.setWrapperPrefix(copyright + "//>>built");
+		var sb = new java.lang.StringBuffer();
+		sourceMap.appendTo(sb, destFilename);
+		writeFile(dest + ".map", sb.toString(), "utf-8");
+	}
 }
 
 
@@ -159,7 +161,7 @@ while(1){
 		exception = "";
 	try{
 		if(/closure/.test(optimizeSwitch)){
-			ccompile(src, dest, optimizeSwitch, options.copyright, options.options);
+			ccompile(src, dest, optimizeSwitch, options.copyright, options.options, options.useSourceMaps);
 		}else{
 			sscompile(src, dest, optimizeSwitch, options.copyright);
 		}
