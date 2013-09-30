@@ -165,33 +165,6 @@ define([
 				});
 			},
 
-			getAmdModule = function(
-				mid,
-				referenceModule
-			){
-				var match = mid.match(/^([^\!]+)\!(.*)$/);
-				if(match){
-					var pluginModuleInfo = bc.getSrcModuleInfo(match[1], referenceModule),
-						pluginModule = pluginModuleInfo &&	bc.amdResources[pluginModuleInfo.mid],
-						pluginId = pluginModule && pluginModule.mid,
-						pluginProc = bc.plugins[pluginId];
-					if(!pluginModule){
-						return 0;
-					}else if(!pluginProc){
-						if(!pluginModule.noBuildResolver){
-							bc.log("missingPluginResolver", ["module", resource.mid, "plugin", pluginId]);
-						}
-						return pluginModule;
-					}else{
-						return pluginProc.start(match[2], referenceModule, bc);
-					}
-				}else{
-					var moduleInfo = bc.getSrcModuleInfo(mid, referenceModule),
-						module = moduleInfo && bc.amdResources[moduleInfo.mid];
-					return module;
-				}
-			},
-
 			tagAbsMid = function(absMid){
 				if(absMid && absMid!=resource.mid){
 					bc.log("amdInconsistentMid", ["module", resource.mid, "specified", absMid]);
@@ -627,7 +600,7 @@ define([
 		aggregateDeps.forEach(function(dep){
 			if(!(/^(require|exports|module)$/.test(dep))){
 				try{
-					var module = getAmdModule(dep, resource);
+					var module = bc.getAmdModule(dep, resource);
 					if(lang.isArray(module)){
 						module.forEach(function(module){ deps.push(module); });
 					}else if(module){
