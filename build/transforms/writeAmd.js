@@ -197,22 +197,20 @@ define([
 				getAllAvailableLocales = function(){
 					var set = {},
 						table = [],
+						addLocale = function(loc){
+							if(!set[loc]){
+								table.push(loc);
+								set[loc] = 1;
+							}
+						},
 						readBundle = function(bundle){
 							for(var p in bundle.localizedSet){
-								if(!set[p]){
-									table.push(p);
-									set[p] = 1;
-								}
+								addLocale(p);	
 							}
 						};
 						
 					rootBundles.forEach(readBundle);
-					getFlattenedLocales().forEach(function(p){
-						if(!set[p]){
-							table.push(p);
-							set[p] = 1;
-						}
-					});
+					getFlattenedLocales().forEach(addLocale);
 						
 					return table;
 				},
