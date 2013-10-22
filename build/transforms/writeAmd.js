@@ -240,7 +240,11 @@ define([
 			if(rootBundles.length){
 				getFlattenedBundles(resource, rootBundles);
 				// push an *now into the cache that causes the flattened layer bundles to be loaded immediately
-				cache.push("'*now':function(r){r(['dojo/i18n!*preload*" + getPreloadL10nRootPath(resource.mid) + "*" + json.stringify(bc.localeList) + "*" + json.stringify(getAllAvailableLocales())+ "']);}" + newline);
+				cache.push("'*now':function(r){r(['dojo/i18n!*preload*" + 
+							getPreloadL10nRootPath(resource.mid) + "*" + 
+							json.stringify(getFlattenedLocales()) + "*" +
+							json.stringify(getAllAvailableLocales()) + "']);}" + 
+							newline);
 			}
 
 			// construct the cache text
