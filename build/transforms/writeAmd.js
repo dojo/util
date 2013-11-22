@@ -127,23 +127,42 @@ define([
 			return match[1] + "/nls/" + match[2];
 		},
 
-		flattenRootBundle = function(
-			resource
-		){
+		flattenRootBundle = function(resource){
 			if(resource.flattenedBundles){
 				return;
 			}
 			resource.flattenedBundles = {};
+			var scheduledToFlatten = {};
 			bc.localeList.forEach(function(locale){
-				var accumulator = lang.mixin({}, resource.bundleValue.root);
-				bc.localeList.discreteLocales[locale].forEach(function(discreteLocale){
-					var localizedBundle = resource.localizedSet[discreteLocale];
-					if(localizedBundle && localizedBundle.bundleValue){
-						lang.mixin(accumulator, localizedBundle.bundleValue);
-					}
-				});
-				resource.flattenedBundles[locale] = accumulator;
+				scheduledToFlatten[locale] = 1;
 			});
+			bc.localeList.forEach(function(locale){
+					var accumulator = lang.mixin({}, resource.bundleValue.root);
+					if(!bc.localeList.discreteLocales[locale]){
+						console.log(resource.mid, locale);
+					}else{
+						bc.localeList.discreteLocales[locale].forEach(function(discreteLocale){
+							var localizedBundle = resource.localizedSet[discreteLocale];
+							if(localizedBundle && localizedBundle.bundleValue){
+								lang.mixin(accumulator, localizedBundle.bundleValue);
+							}
+						});
+
+						var set = {};
+						if(locale === "ROOT"){
+							for(var p in resource.localizedSet) set[p] = 1;
+						}else{
+							for(var p in resource.localizedSet) if(!scheduledToFlatten[p] && p.indexOf(locale) == 0 && p.length > locale.length){
+								// p is a more-specific version of locale and it is not scheduled to be flattened itself
+								set[p] = 1;
+							}
+						}
+						accumulator._localized = set;
+					}
+					resource.flattenedBundles[locale] = accumulator;
+				}
+			)
+			;
 		},
 
 		getFlattenedBundles = function(
