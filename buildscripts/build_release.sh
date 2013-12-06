@@ -214,8 +214,8 @@ cd $ROOT_DIR
 # Archive all source except for demos, which are provided separately so people do not have to download them
 # with the source
 echo -n "Archiving source..."
-$zip $OUTPUT_DIR/$SOURCE_NAME.zip $SOURCE_NAME/ -x "*/.git" -x "*/.git/*" -x "$SOURCE_NAME/demos/"
-$tar --exclude="$SOURCE_NAME/demos/" --exclude-vcs -zcf $OUTPUT_DIR/$SOURCE_NAME.tar.gz $SOURCE_NAME/
+$zip $OUTPUT_DIR/$SOURCE_NAME.zip $SOURCE_NAME/ -x "*/.git" -x "*/.git/*" -x "$SOURCE_NAME/demos/*"
+$tar --exclude="$SOURCE_NAME/demos" --exclude-vcs -zcf $OUTPUT_DIR/$SOURCE_NAME.tar.gz $SOURCE_NAME/
 echo "Done"
 
 # Temporarily rename $SOURCE_NAME ($SOURCE_DIR) to $BUILD_NAME to archive demos backwards-compatibly
