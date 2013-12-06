@@ -205,6 +205,8 @@ for REPO in $ALL_REPOS; do
 
 		git commit -m "Updating source version to $PRE_VERSION" $VERSION_FILES
 	fi
+
+	git checkout $VERSION
 done
 
 cd $ROOT_DIR
