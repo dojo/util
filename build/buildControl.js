@@ -212,6 +212,9 @@ define([
 	}
 	if(isString(bc.localeList)){
 		bc.localeList = bc.localeList.split(",");
+		if(bc.localeList.length){
+			bc.localeList = bc.localeList.map(function(locale){ return lang.trim(locale); });
+		}
 	}
 	if(bc.localeList && bc.localeList.length){
 		if(bc.localeList.indexOf("ROOT")==-1){
