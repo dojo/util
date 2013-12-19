@@ -30,7 +30,8 @@ define([
 	if(has("host-rhino")){
 		var JSSourceFilefromCode,
 			closurefromCode,
-			jscomp = 0;
+			jscomp = 0,
+			built = "//>>built" + bc.newline;
 
 		var ccompile = function(text, dest, optimizeSwitch, copyright){
 			/*jshint rhino:true */
@@ -71,10 +72,10 @@ define([
 			var map_tag = "//@ sourceMappingURL=" + destFilename + ".map";
             var compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
             compiler.compile(externSourceFile, jsSourceFile, options);
-            var result = copyright + "//>>built" + bc.newline + compiler.toSource() + bc.newline + map_tag;
+            var result = copyright + built + compiler.toSource() + bc.newline + map_tag;
 
 			var sourceMap = compiler.getSourceMap();
-			sourceMap.setWrapperPrefix(copyright + "//>>built");
+			sourceMap.setWrapperPrefix(copyright + built);
 			var sb = new java.lang.StringBuffer();
 			sourceMap.appendTo(sb, destFilename);
 			fs.writeFile(dest + ".map", sb.toString(), "utf-8");
