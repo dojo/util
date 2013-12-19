@@ -129,7 +129,7 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions){
 	writeFile(dest, copyright + built + compiler.toSource() + "\n" + map_tag, "utf-8");
 
 	var sourceMap = compiler.getSourceMap();
-	sourceMap.setWrapperPrefix(copyright + "//>>built");
+	sourceMap.setWrapperPrefix(copyright + built);
 	var sb = new java.lang.StringBuffer();
 	sourceMap.appendTo(sb, destFilename);
 	writeFile(dest + ".map", sb.toString(), "utf-8");
