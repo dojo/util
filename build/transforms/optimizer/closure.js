@@ -69,7 +69,7 @@ define([
 
 			// Run the compiler
 			// File name and associated map name
-			var map_tag = "//@ sourceMappingURL=" + destFilename + ".map";
+			var map_tag = "//# sourceMappingURL=" + destFilename + ".map";
             var compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
             compiler.compile(externSourceFile, jsSourceFile, options);
             var result = copyright + built + compiler.toSource() + bc.newline + map_tag;

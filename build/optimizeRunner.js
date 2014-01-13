@@ -123,7 +123,7 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions){
 
 	// Run the compiler
 	// File name and associated map name
-	var map_tag = "//@ sourceMappingURL=" + destFilename + ".map",
+	var map_tag = "//# sourceMappingURL=" + destFilename + ".map",
 		compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
 	compiler.compile(externSourceFile, jsSourceFile, options);
 	writeFile(dest, copyright + built + compiler.toSource() + "\n" + map_tag, "utf-8");
