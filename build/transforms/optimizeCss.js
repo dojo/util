@@ -138,7 +138,7 @@ define([
 				return importContents.replace(cssUrlRegExp, function(fullMatch, urlMatch){
 					var fixedUrl = checkSlashes(cleanCssUrlQuotes(urlMatch)),
 						queryString = "",
-						queryStart = fixedUrl.indexOf("?");
+						queryStart = fixedUrl.search(/[?#]/);
 					if(queryStart > 0){
 						queryString = fixedUrl.slice(queryStart);
 						fixedUrl = fixedUrl.slice(0, queryStart);
