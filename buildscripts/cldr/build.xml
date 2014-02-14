@@ -92,7 +92,7 @@
 		<mkdir dir="${json}" />
 	</target>
 
-	<target name="cldr" depends="-fix-config, ldml"
+	<target name="cldr" depends="clean, -fix-config, ldml"
 		description="Transforms LDML from the CLDR into JSON">
 
 		<scriptdef name="removeEmptyOutput" language="javascript">
