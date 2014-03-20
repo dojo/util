@@ -53,6 +53,7 @@ define([], function(){
 		[1, 225, "missingDirDuringDiscovery", "A directory that was scheduled to be read during discovery did not exist."],
 		[1, 226, "missingProfile", "A package without a profile could throw errors or warnings."],
 		[1, 227, "symbolsLeak", "Inserting symbols (by setting the profile variable 'symbol') causes leaks in IE."],
+		[1, 228, "cssOptimizeIgnoredNoResource", "While optimizing a CSS file, an import directive was not expanded because the source for the import was not available to the builder."],
 
 		// error 300-399
 		[1, 300, "dojoHasMissingPlugin", "Missing dojo/has module."],
@@ -115,7 +116,6 @@ define([], function(){
 		[1, 356, "optimizeFailed", "The optimizer threw an exception; the module probably contains syntax errors."],
 		[1, 357, "cssOptimizeUnableToResolveURL", "While optimizing a CSS file, it was impossible to compute the destination location of a relative URL."],
 		[1, 358, "cssOptimizeImproperComment", "While optimizing a CSS file, an improper comment was encountered."],
-		[1, 359, "cssOptimizeIgnoredNoResource", "While optimizing a CSS file, an import directive was not expanded because the source for the import was not available to the builder."],
 
 		// reports 400-499
 		[1, 400, "hasReport", "Has Features Detected"],
