@@ -202,7 +202,7 @@ define(["require", "dojo/has"], function(require, has){
 			}
 			if(bc.resourcesByDest[dest]){
 				// multiple srcs scheduled to write into a single dest
-				if(src != bc.resourcesByDest[dest].src) { // don't squawk if same file
+				if(src !== bc.resourcesByDest[dest].src){ // don't squawk if same file
 					bc.log("outputCollide", ["source-1", src, "source-2", bc.resourcesByDest[dest].src]);
 				}
 				return;
