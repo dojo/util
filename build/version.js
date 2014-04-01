@@ -1,6 +1,6 @@
 define([], function(){
 	var
-		rev = "$Rev$".match(/\d+/),
+		rev = "$Rev$".match(/[0-9a-f]{7,}/),
 		version= {
 			major: 1, minor: 8, patch: 7, flag: "-pre",
 			revision: rev ? rev[0] : NaN,
