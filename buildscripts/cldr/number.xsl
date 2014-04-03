@@ -181,7 +181,7 @@
       </xsl:choose>
 </xsl:template>
 
-<xsl:template name="ignore" match="defaultNumberingSystem | otherNumberingSystems | currencies"></xsl:template>
+<xsl:template name="ignore" match="defaultNumberingSystem | otherNumberingSystems | currencies | miscPatterns"></xsl:template>
 
   <!-- too bad that can only use standard xsl:call-template(name can not be variable) 
          error occurs if use <saxson:call-templates($templateToCall)  /> -->
