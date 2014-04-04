@@ -85,7 +85,8 @@
         </xsl:when>
         <xsl:otherwise>
         <!-- CLDR 1.6+: skip entries in the form of displayName count="" until we implement plurals -->
-            <xsl:for-each select="*[not(@count) and (not(@draft) or (@draft!='provisional' and @draft!='unconfirmed'))]">
+        <!-- skip narrow forms as well --> 
+            <xsl:for-each select="*[not(@count) and (not(@draft) or (@draft!='provisional' and @draft!='unconfirmed')) and not(@alt)]">
 				<xsl:call-template name="insert_comma"/>
                 <xsl:text>
 	</xsl:text>
