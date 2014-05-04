@@ -86,7 +86,7 @@ function sscompile(src, dest, optimizeSwitch, copyright){
 var JSSourceFilefromCode, closurefromCode, jscomp = 0;
 function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSourceMaps){
 	if(!jscomp){
-		JSSourceFilefromCode=java.lang.Class.forName("com.google.javascript.jscomp.JSSourceFile").getMethod("fromCode", [java.lang.String, java.lang.String]);
+		JSSourceFilefromCode=java.lang.Class.forName("com.google.javascript.jscomp.SourceFile").getMethod("fromCode", [java.lang.String, java.lang.String]);
 		closurefromCode = function(filename,content){
 			return JSSourceFilefromCode.invoke(null,[filename,content]);
 		};

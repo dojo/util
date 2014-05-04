@@ -37,7 +37,7 @@ define([
 			/*jshint rhino:true */
 			/*global com:false Packages:false */
 			if(!jscomp){
-				JSSourceFilefromCode = java.lang.Class.forName("com.google.javascript.jscomp.JSSourceFile").getMethod("fromCode", [ java.lang.String, java.lang.String ]);
+				JSSourceFilefromCode = java.lang.Class.forName("com.google.javascript.jscomp.SourceFile").getMethod("fromCode", [ java.lang.String, java.lang.String ]);
 				closurefromCode = function(filename,content){
 					return JSSourceFilefromCode.invoke(null, [filename, content]);
 				};
