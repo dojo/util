@@ -23,6 +23,7 @@ define(["./fs"], function(fs){
 			if(type=="file"){
 				// replacementText gives a filename that holds the replacement text
 				// TODO add type AMD module
+				// TODO: there's no such method as readFileSynch().  It's called readFileSync().  Is this code ever running?
 				replacementText = (cached[filename] = cached[filename] || fs.readFileSynch(replacementText, encoding));
 			}
 			if(searchText instanceof RegExp){
