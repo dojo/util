@@ -89,7 +89,6 @@ define([
 				srcReferencePath = fileUtils.getFilepath(checkSlashes(src)),
 				text = resource.text,
 				imports = [];
-			text = text.replace(/^\uFEFF/, ''); // remove BOM
 			text = removeComments(text, src);
 			text = text.replace(cssImportRegExp, function(fullMatch, urlStart, importUrl, urlEnd, mediaTypes){
 				importUrl = checkSlashes(cleanCssUrlQuotes(importUrl));
