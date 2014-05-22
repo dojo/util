@@ -83,6 +83,7 @@ public final class DOHRobot extends Applet{
 	private int docScreenYMax;
 	private Point margin = null;
 	private boolean mouseSecurity = false;
+	private int dohscreen = -1;
 
 	// The last reported mouse x,y.
 	// If this is different from the real one, something's up.
@@ -125,10 +126,17 @@ public final class DOHRobot extends Applet{
 		public void componentShown(ComponentEvent evt){
 			// sets the security manager to fix a bug in liveconnect in Safari on Mac
 			if(key != -1){ return; }
-			Thread thread = new Thread(){
+			Runnable thread = new Runnable(){
 				public void run(){
 					log("Document root: ~"+applet().getLocationOnScreen().toString());
-					window = (JSObject) JSObject.getWindow(applet());   
+					while(true){
+						try{
+							window = (JSObject) JSObject.getWindow(applet());
+							break;
+						}catch(Exception e){
+							// wait
+						}
+					}
 					AccessController.doPrivileged(new PrivilegedAction(){
 						public Object run(){
 							log("> init Robot");
@@ -158,6 +166,8 @@ public final class DOHRobot extends Applet{
 									securitymanager.checkTopLevelWindow(null);
 									System.setSecurityManager(securitymanager);
 								}
+							}catch(SecurityException e){
+								// OpenJDK is very strict; fail gracefully
 							}catch(Exception e){
 								log("Error calling _init_: "+e.getMessage());
 								key = -2;
@@ -215,12 +225,14 @@ public final class DOHRobot extends Applet{
 		Method getPointerInfo = mouseInfoClass.getMethod("getPointerInfo", new Class[0]);
 		Method getLocation = pointerInfoClass.getMethod("getLocation", new Class[0]);
 		Object pointer=null;
+		Point p=null;
 		try{
 			pointer = getPointerInfo.invoke(pointerInfoClass,new Object[0]);
+			p = (Point)(getLocation.invoke(pointer,new Object[0]));
 		}catch(java.lang.reflect.InvocationTargetException e){
 			e.getTargetException().printStackTrace();
 		}
-		return (Point)(getLocation.invoke(pointer,new Object[0]));
+		return p;
 	}
 	
 	public Point getLocationOnScreen(){
@@ -234,6 +246,7 @@ public final class DOHRobot extends Applet{
 		Point mousePosition=null;
 		try{
 			mousePosition=getDesktopMousePosition();
+			log("Mouse position: "+mousePosition);
 		}catch(Exception e){
 			return true;
 		}
@@ -244,8 +257,10 @@ public final class DOHRobot extends Applet{
 	}
 
 	private boolean isSecure(double key){
+		// make sure key is not unset (-1) or error state (-2) and is the expected key
 		boolean result = this.key != -1 && this.key != -2 && this.key == key;
 		try{
+			// also make sure mouse in good spot
 			result=result&&mouseSecure();
 		}catch(Exception e){
 			e.printStackTrace();
@@ -256,8 +271,10 @@ public final class DOHRobot extends Applet{
 			window.eval("doh.robot._appletDead=true;");
 			log("User aborted test; mouse moved off of browser");
 			alert("User aborted test; mouse moved off of browser.");
+			log("Key secure: false; mouse in bad spot?");
+		}else{
+			log("Key secure: " + result);
 		}
-		log("Key secure: " + result);
 		return result;
 	}
 
@@ -276,11 +293,13 @@ public final class DOHRobot extends Applet{
 							// Seems to have to do with the plugin they compile with rather than the jvm itself because Safari5.0 and FF3.6 still work.
 							p = new Point();
 							int screen=0;
-							int minscreen=-1;
+							dohscreen=-1;
 							int mindifference=Integer.MAX_VALUE;
 							GraphicsDevice[] screens=GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
 							try{
 								for(screen=0; screen<screens.length; screen++){
+									// get origin of screen in Java virtual coordinates
+									Rectangle bounds=screens[screen].getDefaultConfiguration().getBounds();
 									// take picture
 									DisplayMode mode=screens[screen].getDisplayMode();
 									int width=mode.getWidth();
@@ -310,16 +329,17 @@ public final class DOHRobot extends Applet{
 												}
 											}
 											if(difference<mindifference){
-												p.x=x;
-												p.y=y;
+												// convert device coordinates to virtual coordinates by adding screen's origin
+												p.x=x+(int)bounds.getX();
+												p.y=y+(int)bounds.getY();
 												mindifference=difference;
-												minscreen=screen;
+												dohscreen=screen;
 											}
 										}
 									}
 								}
 								// create temp robot to put mouse in right spot
-								robot=new Robot(screens[minscreen]);
+								robot=new Robot(screens[dohscreen]);
 								robot.setAutoWaitForIdle(true);
 							}catch(Exception e){
 								e.printStackTrace();
@@ -343,21 +363,26 @@ public final class DOHRobot extends Applet{
 						try{
 							Thread.sleep(100);
 						}catch(Exception e){};
-						robot.mouseMove(x, y);
+						
 						try{
 							// mouse in right spot; restore control to original robot using browser's preferred coordinates
 							robot = new Robot();
 							robot.setAutoWaitForIdle(true);
+							robot.mouseMove(x, y);
 							Thread.sleep(100);
-						}catch(Exception e){};
-						robot.mousePress(InputEvent.BUTTON1_MASK);
-						try{
-							Thread.sleep(100);
-						}catch(Exception e){}
-						robot.mouseRelease(InputEvent.BUTTON1_MASK);
-						try{
-							Thread.sleep(100);
-						}catch(Exception e){}
+							// click 50 times then abort
+							int i=0;
+							for(i=0; i<50&&!inited; i++){
+								robot.mousePress(InputEvent.BUTTON1_MASK);
+								Thread.sleep(100);
+								robot.mouseRelease(InputEvent.BUTTON1_MASK);
+								Thread.sleep(100);
+								log("mouse clicked");
+							}
+							if(i==50){
+								applet().stop();
+							}
+						}catch(Exception e){ e.printStackTrace(); }
 						log("< _callLoaded Robot");
 						return null;
 					}
@@ -402,7 +427,7 @@ public final class DOHRobot extends Applet{
 	}
 
 	// mouse discovery code
-	public void setDocumentBounds(final double sec, int x, int y, int w, int h) throws Exception{
+	public void setDocumentBounds(final double sec, final int x, final int y, final int w, final int h) throws Exception{
 		// call from JavaScript
 		// tells the Robot where the screen x,y of the upper left corner of the
 		// document are
@@ -412,16 +437,22 @@ public final class DOHRobot extends Applet{
 		if(!isSecure(sec))
 			return;
 		if(!inited){
+			DOHRobot _this=applet();
+			log("initing doc bounds");
 			inited = true;
-			this.lastMouseX = this.docScreenX = x;
-			this.lastMouseY = this.docScreenY = y;
-			this.docScreenXMax = x + w;
-			this.docScreenYMax = y + h;
+			Point location=_this.getLocationOnScreen();
+			_this.lastMouseX = _this.docScreenX = location.x;
+			_this.lastMouseY = _this.docScreenY = location.y;
+			_this.docScreenXMax = _this.docScreenX + w;
+			_this.docScreenYMax = _this.docScreenY + h;
+			log("Doc bounds: "+docScreenX+","+docScreenY+" => "+docScreenXMax+","+docScreenYMax);
 			// compute difference between position and browser edge for future reference
-			this.margin = getLocationOnScreen();
-			this.margin.x -= x;
-			this.margin.y -= y;
+			_this.margin = getLocationOnScreen();
+			_this.margin.x -= x;
+			_this.margin.y -= y;
 			mouseSecurity=true;
+		}else{
+			log("ERROR: tried to reinit bounds?");
 		}
 		log("< setDocumentBounds");
 	}
@@ -1284,7 +1315,9 @@ public final class DOHRobot extends Applet{
 		}
 		public void run(){}
 	}
-	
+
+	// Unclear why we have to fire keypress in a separate thread.
+	// Since delay is no longer used, maybe this code can be simplified.
 	final private class KeyPressThread extends ProfilingThread{
 		private int charCode;
 		private int keyCode;
