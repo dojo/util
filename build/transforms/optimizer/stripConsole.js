@@ -6,9 +6,9 @@ define(["../../buildControl"], function(bc){
 		}else if(bc.stripConsole === "all"){
 			consoleMethods += "|warn|error";
 		}
-		var stripConsoleRe = new RegExp("[^\\.]console\\.(" + consoleMethods + ")\\s*\\(", "g");
+		var stripConsoleRe = new RegExp("([^\\w\\.]|^)((window.)?console\\.(" + consoleMethods + ")\\s*\\()", "g");
 		return function(text){
-			return text.replace(stripConsoleRe, "0 && $&");
+			return text.replace(stripConsoleRe, "$10 && $2");
 		};
 	}else{
 		return function(text){
