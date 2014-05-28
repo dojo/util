@@ -6,9 +6,10 @@ define(["../../buildControl"], function(bc){
 		}else if(bc.stripConsole === "all"){
 			consoleMethods += "|warn|error";
 		}
-		var stripConsoleRe = new RegExp("console\\.(" + consoleMethods + ")\\s*\\(", "g");
+		// Match on "window.console" and plain "console" but not things like "myconsole" or "my.console"
+		var stripConsoleRe = new RegExp("([^\\w\\.]|^)((window.)?console\\.(" + consoleMethods + ")\\s*\\()", "g");
 		return function(text){
-			return text.replace(stripConsoleRe, "0 && $&");
+			return text.replace(stripConsoleRe, "$1 0 && $2");
 		};
 	}else{
 		return function(text){
