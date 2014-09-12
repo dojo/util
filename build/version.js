@@ -1,8 +1,8 @@
 define([], function(){
 	var
-		rev = "$Rev$".match(/[0-9a-f]{7,}/),
+		rev = "$Rev: 8416ffe $".match(/[0-9a-f]{7,}/),
 		version= {
-			major: 1, minor: 10, patch: 1, flag: "-pre",
+			major: 1, minor: 10, patch: 1, flag: "",
 			revision: rev ? rev[0] : NaN,
 			toString: function(){
 				var v= version;
