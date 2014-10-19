@@ -13,7 +13,7 @@ define(["doh/runner"], function(doh) {
 	};
 
 	print("\n"+doh._line);
-	print("The Dojo Unit Test Harness, $Rev: e6bddde $");
+	print("The Dojo Unit Test Harness, $Rev$");
 	print("Copyright (c) 2011, The Dojo Foundation, All Rights Reserved");
 	for (var tests= [], args= doh.config["commandLineArgs"], i= 0, arg; i<args.length; i++) {
 		arg= (args[i]+"").split("=");
