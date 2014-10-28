@@ -5,8 +5,9 @@ define([
 	"./stripConsole",
 	"dojo/_base/lang",
 	"./uglify_worker",
+	"../writeAmd",
 	"require"
-], function(bc, fs, stripConsole, lang, uglify, require){
+], function(bc, fs, stripConsole, lang, uglify, writeAmd, require){
 	if(!uglify){
 		throw new Error("Unknown host environment: only nodejs is supported by uglify optimizer.");
 	}
@@ -38,7 +39,7 @@ define([
 
 		var options = bc.optimizeOptions || {};
 
-		options.filename = resource.src;
+		options.filename = writeAmd.getDestFilename(resource).split("/").pop();
 
 		if(optimizeSwitch.indexOf(".keeplines") > -1){
 			options.gen_options = options.gen_options || {};
@@ -70,14 +71,18 @@ define([
 
 		if(bc.maxOptimizationProcesses){
 			jobs[resource.dest] = handleResult;
-			processes[currentIndex].send({text: stripConsole(text),
-				options: options, src: resource.src, dest: resource.dest});
+			processes[currentIndex].send({
+				text: stripConsole(text),
+				options: options,
+				dest: resource.dest,
+				useSourceMaps: bc.useSourceMaps
+			});
 			currentIndex = (currentIndex+1) % processes.length;
 		} else {
 			process.nextTick(function(){
 				var o = {};
 				try{
-					o.text = uglify(stripConsole(text), options);
+					o.text = uglify(stripConsole(text), options, resource.dest, bc.useSourceMaps);
 				}catch(e){
 					o.error = e;
 				}
