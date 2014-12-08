@@ -560,10 +560,12 @@
 <!-- Sub output routine-->
 <xsl:template name="subSelect">
     <xsl:param name="name"></xsl:param>
-    <xsl:variable name="num" select="count(./$name[not(@draft)])+count(./$name[@draft!='provisional' and @draft!='unconfirmed'])"></xsl:variable>
+    <!-- CLDR 25 introduce alternate for era, we don't want to select them as dojo does not know
+    how to handle them as-is -->
+    <xsl:variable name="num" select="count(./$name[not(@draft) and not(@alt)])+count(./$name[@draft!='provisional' and @draft!='unconfirmed'])"></xsl:variable>
     <xsl:if test="$num>1">
         <xsl:text>[</xsl:text>
-        <xsl:for-each select="$name[not(@draft)] | $name[@draft!='provisional' and @draft!='unconfirmed']">
+        <xsl:for-each select="$name[not(@draft) and not (@alt)] | $name[@draft!='provisional' and @draft!='unconfirmed']">
             <xsl:text>"</xsl:text>
             <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/>
             <xsl:text>"</xsl:text>
@@ -593,11 +595,13 @@
     
 <xsl:template name="subSelect_in_place">
     <xsl:param name="name"></xsl:param>
+    <!-- CLDR 25 introduce alternate for era, we don't want to select them as dojo does not know
+how to handle them as-is -->
     <!--xsl:variable name="num" select="count(./$name[not(@draft)])+count(./$name[@draft!='provisional' and @draft!='unconfirmed'])"></xsl:variable-->
-    <xsl:variable name="num" select="count(./*[name()=$name and (not(@draft) or @draft!='provisional' and @draft!='unconfirmed') and not(@yeartype)])"></xsl:variable>
+    <xsl:variable name="num" select="count(./*[name()=$name and ((not(@draft) and not(@alt)) or @draft!='provisional' and @draft!='unconfirmed') and not(@yeartype)])"></xsl:variable>
     <xsl:text>[</xsl:text>
     <!--xsl:for-each select="$name[not(@draft)] | $name[@draft!='provisional' and @draft!='unconfirmed']"-->
-    <xsl:for-each select="./*[name()=$name and (not(@draft) or @draft!='provisional' and @draft!='unconfirmed') and not(@yeartype)]">        
+    <xsl:for-each select="./*[name()=$name and ((not(@draft) and not(@alt)) or @draft!='provisional' and @draft!='unconfirmed') and not(@yeartype)]">        
         <xsl:choose>
             <xsl:when test="$name='day'">
                 <!--TODO: too bad that assign name can not be variable -->
