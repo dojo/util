@@ -16,5 +16,9 @@
 		"url": "http://bugs.dojotoolkit.org/"
 	},
 	"keywords": ["JavaScript", "Dojo", "Toolkit", "util"],
+        "repository":{
+                "type": "git",
+                "url": "https://github.com/dojo/util.git"
+        },
 	"homepage": "http://dojotoolkit.org/"
 }
