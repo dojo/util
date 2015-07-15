@@ -137,6 +137,20 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 	}
 }
 
+function shutdownClosureExecutorService(){
+	try{
+		var compilerClass = java.lang.Class.forName("com.google.javascript.jscomp.Compiler");
+		var compilerExecutorField = compilerClass.getDeclaredField("compilerExecutor");
+		compilerExecutorField.setAccessible(true);
+		var compilerExecutor = compilerExecutorField.get(compilerClass);
+		compilerExecutor.shutdown();
+	}catch (e){
+		print(e);
+		if("javaException" in e){
+			e.javaException.printStackTrace();
+		}
+	}
+}
 
 var
 	console = new java.io.BufferedReader(new java.io.InputStreamReader(java.lang.System["in"])),
@@ -169,4 +183,8 @@ while(1){
 		exception = ". OPTIMIZER FAILED: " + e;
 	}
 	print("Done (compile time:" + ((new Date()).getTime()-start)/1000 + "s)" + exception);
+}
+
+if (jscomp) {
+	shutdownClosureExecutorService();
 }
