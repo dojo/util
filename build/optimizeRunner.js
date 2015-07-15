@@ -93,6 +93,10 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 		jscomp = com.google.javascript.jscomp;
 	}
 
+	if (!optimizeOptions) {
+		optimizeOptions = {};
+	}
+
 	//Fake extern
 	var externSourceFile = closurefromCode("fakeextern.js", " ");
 
@@ -104,7 +108,9 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 	//Set up options
 	var options = new jscomp.CompilerOptions();
 	for(var k in optimizeOptions){
-		options[k] = optimizeOptions[k];
+		if ("useThreads" !== k){
+			options[k] = optimizeOptions[k];
+		}
 	}
 	// Must have non-null path to trigger source map generation, also fix version
 	options.setSourceMapOutputPath("");
@@ -125,6 +131,19 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 	// File name and associated map name
 	var mapTag = useSourceMaps ? ("\n//# sourceMappingURL=" + destFilename + ".map") : "",
 		compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
+
+	if (!optimizeOptions.useThreads){
+		// https://github.com/google/closure-compiler/blob/v20120917/src/com/google/javascript/jscomp/Compiler.java#L677
+		// disableThreads() means don't use the ExecutorService to run compilation tasks,
+		// which means no 60 second timeout after the final compilation task
+		// (due to the ExecutorService waiting for new tasks that never arrive).
+		// disableThreads() is the default behaviour. A profile has to explicitly enable this with:
+		//   optimizeOptions: {
+		//     useThreads: true
+		//   }
+		compiler.disableThreads();
+	}
+
 	compiler.compile(externSourceFile, jsSourceFile, options);
 	writeFile(dest, copyright + built + compiler.toSource() + mapTag, "utf-8");
 
