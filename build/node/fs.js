@@ -7,6 +7,17 @@ define(["../fileHandleThrottle"], function(fht){
 		writeFileSync:fs.writeFileSync,
 		readdirSync:fs.readdirSync,
 
+		copyFile:function(src, dest, cb){
+			// Use no encoding, as the file may be text or binary.
+			fs.readFile(src, undefined, function(err, contents) {
+				if (err) {
+					cb(err);
+				} else {
+					fs.writeFile(dest, contents, undefined, cb);
+				}
+			});
+		},
+
 		readFile:function(filename, encoding, cb){
 			fht.enqueue(function(){
 				fs.readFile(filename, encoding, function(code){
