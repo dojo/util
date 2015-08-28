@@ -12,6 +12,7 @@ dojo core):
 - dijit
 - dojo
 - dojox
+- themes
 - util
   - buildscripts
 
