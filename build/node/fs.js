@@ -9,12 +9,16 @@ define(["../fileHandleThrottle"], function(fht){
 
 		copyFile:function(src, dest, cb){
 			// Use no encoding, as the file may be text or binary.
-			fs.readFile(src, undefined, function(err, contents) {
-				if (err) {
-					cb(err);
-				} else {
-					fs.writeFile(dest, contents, undefined, cb);
-				}
+			fht.enqueue(function() {
+				fs.readFile(src, undefined, function (err, contents) {
+					if (err) {
+						fht.release();
+						cb(err);
+					} else {
+						fs.writeFile(dest, contents, undefined, cb);
+						fht.release();
+					}
+				});
 			});
 		},
 
