@@ -600,7 +600,7 @@ ready(function(){
 doh.registerGroup("initialize robot", [
 	{
 		name: "load robot",
-		timeout: 20000,
+		timeout: 120000,
 		runTest: function(){
 			// first wait for robot to tell us it's loaded, i.e. that _initRobot() has been called
 			return robot._loaded;
