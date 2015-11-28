@@ -104,6 +104,13 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 	//Set up options
 	var options = new jscomp.CompilerOptions();
 	for(var k in optimizeOptions){
+
+		// some options need to pass as funtion argument
+		if (k === 'languageIn') {
+			options.setLanguageIn(jscomp.CompilerOptions.LanguageMode[optimizeOptions[k]]);
+			continue;
+		}
+
 		options[k] = optimizeOptions[k];
 	}
 	// Must have non-null path to trigger source map generation, also fix version

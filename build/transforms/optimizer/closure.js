@@ -52,7 +52,14 @@ define([
 
 			//Set up options
 			var options = new jscomp.CompilerOptions();
-			lang.mixin(options, bc.optimizeOptions);
+			for(var k in bc.optimizeOptions){
+				// some options need to pass as funtion argument
+				if (k === 'languageIn') {
+					options.setLanguageIn(jscomp.CompilerOptions.LanguageMode[bc.optimizeOptions[k]]);
+					continue;
+				}
+				options[k] = optimizeOptions[k];
+			}
 			// Must have non-null path to trigger source map generation, also fix version
 			options.setSourceMapOutputPath("");
 			options.setSourceMapFormat(jscomp.SourceMap.Format.V3);
