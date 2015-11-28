@@ -58,7 +58,7 @@ define([
 					options.setLanguageIn(jscomp.CompilerOptions.LanguageMode[bc.optimizeOptions[k]]);
 					continue;
 				}
-				options[k] = optimizeOptions[k];
+				options[k] = bc.optimizeOptions[k];
 			}
 			// Must have non-null path to trigger source map generation, also fix version
 			options.setSourceMapOutputPath("");
