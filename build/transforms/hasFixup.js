@@ -110,13 +110,21 @@ define(["../buildControl"], function(bc){
 	return function(resource){
 		resource.text = resource.text.replace(/([^\w\.])has\s*\(\s*["']([^'"]+)["']\s*\)/g, function(match, prefix, featureName){
 			if(featureName in bc.staticHasFeatures){
-				return prefix + " " + bc.staticHasFeatures[featureName] + " ";
+				if(bc.staticHasFeatures[featureName] !== undefined){
+					return prefix + " " + bc.staticHasFeatures[featureName] + " ";
+				}else{
+					return match;
+				}
 			}else{
 				return match;
 			}
 		}).replace(/([^\w\.])((has.add\s*\(\s*)["']([^'"]+)["'])/g, function(match, prefix, hasAdd, notUsed, featureName){
 			if(featureName in bc.staticHasFeatures){
-				return prefix + " " + stringifyString(bc.staticHasFeatures[featureName]) + (bc.staticHasFeatures[featureName] ? " || " : " && " ) + hasAdd;
+				if(bc.staticHasFeatures[featureName] !== undefined){
+					return prefix + " " + stringifyString(bc.staticHasFeatures[featureName]) + (bc.staticHasFeatures[featureName] ? " || " : " && " ) + hasAdd;
+				}else{
+					return match;
+				}
 			}else{
 				return match;
 			}
