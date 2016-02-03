@@ -162,15 +162,7 @@
 
 			deps: ["dohDojo/domReady", "doh"],
 
-			callback: function(domReady, doh){
-				domReady(function(){
-					doh._fixHeight();
-					doh.breakOnError= breakOnError;
-					require(test, function(){
-						doh.run();
-					});
-				});
-			},
+			callback: callback,
 
 			async: async
 		};
@@ -190,18 +182,28 @@
 				'dojox'
 			],
 			deps: ["dojo/domReady", "doh/main"],
-			callback: function(domReady, doh){
-				domReady(function(){
-					doh._fixHeight();
-					doh.breakOnError= breakOnError;
-					require(test, function(){
-						doh.run();
-					});
-				});
-			},
+			callback: callback,
 			async: async,
 			isDebug: 1
 		};
+	}
+	
+	function callback(domReady, doh){
+		domReady(function(){
+			doh._fixHeight();
+			doh.breakOnError= breakOnError;
+			for (var amdTests = [], i = 0, l = test.length; i < l; i++) {
+				var module = test[i];
+				if(/\.html$/.test(module)){
+					doh.register(module, require.toUrl(module), 999999);
+				}else{
+					amdTests.push(module);
+				}
+			}
+			require(amdTests, function(){
+				doh.run();
+			});
+		});
 	}
 	
 	// load all of the dohPlugins
