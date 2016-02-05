@@ -171,6 +171,10 @@ for REPO in $ALL_REPOS; do
 		VERSION_FILES=package.json
 	fi
 
+	if [ -f "bower.json" ]; then
+		VERSION_FILES=bower.json
+	fi
+
 	if [ $REPO == "dojo" ]; then
 		# Dojo 1.7+
 		if [ -f "_base/kernel.js" ]; then
