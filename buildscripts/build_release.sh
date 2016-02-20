@@ -172,7 +172,7 @@ for REPO in $ALL_REPOS; do
 	fi
 
 	if [ -f "bower.json" ]; then
-		VERSION_FILES=bower.json
+		VERSION_FILES="$VERSION_FILES bower.json"
 	fi
 
 	if [ $REPO == "dojo" ]; then
