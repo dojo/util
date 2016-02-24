@@ -33,10 +33,10 @@ var
 		var flagValue  = verSegments[4] || "";
 
 		// Do the final version replacement.
-		if(/package/.test(filename)){
+		if(/(package|bower)/.test(filename)){
 			fileContents = fileContents.replace(
 				/['"](version|dojo|dijit|dojox)['"]\s*\:\s*['"][\w\.\-]+?["']/g,
-				'"$1":"' + version + '"'
+				'"$1": "' + version + '"'
 			);
 		}else{
 			fileContents = fileContents.replace(
