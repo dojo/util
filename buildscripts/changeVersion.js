@@ -36,7 +36,7 @@ var
 		if(/package/.test(filename)){
 			fileContents = fileContents.replace(
 				/['"](version|dojo|dijit|dojox)['"]\s*\:\s*['"][\w\.\-]+?["']/g,
-				'"$1":"' + version + '"'
+				'"$1": "' + version + '"'
 			);
 		}else{
 			fileContents = fileContents.replace(
