@@ -1,6 +1,6 @@
 {
 	"name": "doh",
-	"version": "1.11.0-rc3",
+	"version": "1.11.0-pre",
 	"directories": {
 		"lib": "."
 	},
