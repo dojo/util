@@ -12,6 +12,9 @@ var profile = (function(){
 		},{
 			name:"dijit",
 			location:"./dijit"
+		},{
+			name:"themes",
+			location:"./themes"
 		}],
 
 		selectorEngine:"lite",

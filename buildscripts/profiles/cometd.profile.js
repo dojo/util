@@ -10,6 +10,7 @@ dependencies = {
 
 	prefixes: [
 		[ "dijit", "../dijit" ],
-		[ "dojox", "../dojox" ]
+		[ "dojox", "../dojox" ],
+		[ "themes", "../themes" ]
 	]
 };
