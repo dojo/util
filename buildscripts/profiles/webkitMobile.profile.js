@@ -31,6 +31,10 @@ var profile = {
 		{
 			name: "dojox",
 			location: "./dojox"
+		},
+		{
+			name: "themes",
+			location: "./themes"
 		}
 	],
 
