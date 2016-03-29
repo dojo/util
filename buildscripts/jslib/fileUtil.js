@@ -7,7 +7,7 @@ fileUtil.getLineSeparator = function(){
 	//		Gives the line separator for the platform.
 	//		For web builds override this function.
 	return java.lang.System.getProperty("line.separator"); //Java String
-}
+};
 
 fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilters, /*boolean?*/makeUnixPaths, /*boolean?*/startDirIsJavaObject, /*boolean?*/dontRecurse){
 	// summary:
@@ -38,7 +38,7 @@ fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilt
 						filePath = filePath.replace(/\\/g, "/");
 					}
 				}
-				
+
 				var ok = true;
 				if(regExpInclude){
 					ok = filePath.match(regExpInclude);
@@ -58,7 +58,7 @@ fileUtil.getFilteredFileList = function(/*String*/startDir, /*RegExp*/regExpFilt
 	}
 
 	return files; //Array
-}
+};
 
 
 fileUtil.copyDir = function(/*String*/srcDir, /*String*/destDir, /*RegExp*/regExpFilter, /*boolean?*/onlyCopyNew){
@@ -67,7 +67,7 @@ fileUtil.copyDir = function(/*String*/srcDir, /*String*/destDir, /*RegExp*/regEx
 	//		file should be copied. Returns a list file name strings of the destinations that were copied.
 	var fileNames = fileUtil.getFilteredFileList(srcDir, regExpFilter, true);
 	var copiedFiles = [];
-	
+
 	for(var i = 0; i < fileNames.length; i++){
 		var srcFileName = fileNames[i];
 		var destFileName = srcFileName.replace(srcDir, destDir);
@@ -78,7 +78,7 @@ fileUtil.copyDir = function(/*String*/srcDir, /*String*/destDir, /*RegExp*/regEx
 	}
 
 	return copiedFiles.length ? copiedFiles : null; //Array or null
-}
+};
 
 fileUtil.asyncFixEOLRe= new RegExp(fileUtil.getLineSeparator(), "g");
 
@@ -128,7 +128,7 @@ fileUtil.transformAsyncModule= function(filename, contents) {
 				}else if(req.substring(0, 5) == "i18n!"){
 					bundleMatch = req.match(/i18n\!(.+)\.nls\.(\w+)/);
 					prefix += "dojo.requireLocalization(\"" + bundleMatch[1].replace(/\//g, ".") + "\", \"" +	 bundleMatch[2] +	 "\");" + lineSeparator;
-				}else if(req != "dojo" && req != "dijit" && req != "dojox" && !/^dojo\.lib/.test(req)){
+				}else if(req != "dojo" && req != "dijit" && req != "dojox" && req != "themes" && req != "dojo-themes" && !/^dojo\.lib/.test(req)){
 					prefix += "dojo.require(\"" + req +	"\");" + lineSeparator;
 				}
 			}
@@ -186,9 +186,9 @@ fileUtil.copyFile = function(/*String*/srcFileName, /*String*/destFileName, /*bo
 		srcChannel.close();
 		destChannel.close();
 	}
-	
+
 	return true; //Boolean
-}
+};
 
 fileUtil.readFile = function(/*String*/path, /*String?*/encoding){
 	// summary:
@@ -203,7 +203,7 @@ fileUtil.readFile = function(/*String*/path, /*String?*/encoding){
 
 		// Byte Order Mark (BOM) - The Unicode Standard, version 3.0, page 324
 		// http://www.unicode.org/faq/utf_bom.html
-		
+
 		// Note that when we use utf-8, the BOM should appear as "EF BB BF", but it doesn't due to this bug in the JDK:
 		// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4508058
 		if(line && line.length() && line.charAt(0) === 0xfeff){
@@ -222,27 +222,27 @@ fileUtil.readFile = function(/*String*/path, /*String?*/encoding){
 	}finally{
 		input.close();
 	}
-}
+};
 
 fileUtil.saveUtf8File = function(/*String*/fileName, /*String*/fileContents){
 	// summary:
 	//		saves a file using UTF-8 encoding.
 	fileUtil.saveFile(fileName, fileContents, "utf-8");
-}
+};
 
 fileUtil.saveFile = function(/*String*/fileName, /*String*/fileContents, /*String?*/encoding){
 	// summary:
 	//		saves a file.
 	var outFile = new java.io.File(fileName);
 	var outWriter;
-	
+
 	var parentDir = outFile.getParentFile();
 	if(!parentDir.exists()){
 		if(!parentDir.mkdirs()){
 			throw "Could not create directory: " + parentDir.getAbsolutePath();
 		}
 	}
-	
+
 	if(encoding){
 		outWriter = new java.io.OutputStreamWriter(new java.io.FileOutputStream(outFile), encoding);
 	}else{
@@ -255,7 +255,7 @@ fileUtil.saveFile = function(/*String*/fileName, /*String*/fileContents, /*Strin
 	}finally{
 		os.close();
 	}
-}
+};
 
 fileUtil.deleteFile = function(/*String*/fileName){
 	// summary:
@@ -270,4 +270,4 @@ fileUtil.deleteFile = function(/*String*/fileName){
 		}
 		file["delete"]();
 	}
-}
+};

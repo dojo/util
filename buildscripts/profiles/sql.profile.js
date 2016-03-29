@@ -18,4 +18,4 @@ dependencies = {
 		[ "dijit", "../dijit" ],
 		[ "dojox", "../dojox" ]
 	]
-}
+};
