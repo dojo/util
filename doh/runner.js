@@ -1391,7 +1391,7 @@ doh._runRegFixture = function(/*String*/ groupName, /*Object*/ fixture){
 				try {
 					fixture.tearDown(doh);
 				}catch(e){
-					this.debug("Error tearing down test: "+e.message);
+					doh.debug("Error tearing down test: "+e.message);
 				}
 			}
 			tg.inFlight--;
@@ -1580,7 +1580,7 @@ doh.pause = function(){
 doh.run = function(){
 	// summary:
 	//		begins or resumes the test process.
-	
+
 	this._paused = false;
 	var cg = this._currentGroup;
 	var ct = this._currentTest;
