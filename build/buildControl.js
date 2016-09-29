@@ -64,7 +64,7 @@ define([
 
 		cleanDeprecated = function(o, inputFile){
 			var deprecated = [];
-			for(p in o){
+			for(var p in o){
 				if(/^(log|loader|xdDojoPath|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)){
 					deprecated.push(p);
 					bc.log("inputDeprecated", ["switch", p, inputFile]);
@@ -126,7 +126,7 @@ define([
 					packageInfo.location = catPath(base, packageInfo.name);
 					mixPackage(packageInfo);
 				});
-			};
+			}
 			(src.packages || []).forEach(function(packageInfo){
 					if(isString(packageInfo)){
 						packageInfo = {name:packageInfo};
@@ -272,10 +272,10 @@ define([
 
 			// build up info to tell all about a package; all properties semantically identical to definitions used by dojo loader/bdLoad
 			pack.main = isString(pack.main) ? pack.main : "main";
-			if(pack.main.indexOf("./")==0){
+			if(pack.main.indexOf("./")===0){
 				pack.main = pack.main.substring(2);
 			}
-			if(pack.destMain && pack.destMain.indexOf("./")==0){
+			if(pack.destMain && pack.destMain.indexOf("./")===0){
 				pack.destMain = pack.destMain.substring(2);
 			}
 
@@ -384,7 +384,7 @@ define([
 				return require.getModuleInfo(mid, referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", [], [], [], true);
 			}
 		};
-		
+
 		bc.getAmdModule = function(
 				mid,
 				referenceModule
@@ -412,8 +412,8 @@ define([
 						module = moduleInfo && bc.amdResources[moduleInfo.mid];
 					return module;
 				}
-			}
-		
+			};
+
 	})();
 
 
@@ -548,7 +548,7 @@ define([
 	bc.layerOptimize = fixupOptimize(bc.layerOptimize);
 
 	(function(){
-		var fixedScopeMap = {dojo:"dojo", dijit:"dijit", dojox:"dojox"};
+		var fixedScopeMap = {dojo:"dojo", dijit:"dijit", dojox:"dojox", themes:"themes"};
 		(bc.scopeMap || []).forEach(function(pair){
 			if(!pair[1]){
 				delete fixedScopeMap[pair[0]];
