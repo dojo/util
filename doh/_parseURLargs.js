@@ -190,10 +190,11 @@
 	
 	function callback(domReady, doh){
 		domReady(function(){
+			var amdTests = [], module;
 			doh._fixHeight();
 			doh.breakOnError= breakOnError;
-			for (var amdTests = [], i = 0, l = test.length; i < l; i++) {
-				var module = test[i];
+			for (var i = 0, l = test.length; i < l; i++) {
+				module = test[i];
 				if(/\.html$/.test(module)){
 					doh.register(module, require.toUrl(module), 999999);
 				}else{
