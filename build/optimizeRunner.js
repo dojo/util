@@ -106,6 +106,23 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 	var options = new jscomp.CompilerOptions();
 	var set;
 
+	// Set the closure optimization level, use simple optimizations by default
+	var FLAG_compilation_level = jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS;
+	if (optimizeOptions.compilationLevel) {
+		switch (optimizeOptions.compilationLevel.toUpperCase()) {
+			case "WHITESPACE_ONLY": FLAG_compilation_level = jscomp.CompilationLevel.WHITESPACE_ONLY;
+				break;
+			case "SIMPLE_OPTIMIZATIONS": FLAG_compilation_level = jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS;
+				break;
+			case "ADVANCED_OPTIMIZATIONS": FLAG_compilation_level = jscomp.CompilationLevel.ADVANCED_OPTIMIZATIONS;
+				break;
+		}
+	}
+
+	FLAG_compilation_level.setOptionsForCompilationLevel(options);
+	var FLAG_warning_level = jscomp.WarningLevel.DEFAULT;
+	FLAG_warning_level.setOptionsForWarningLevel(options);
+
 	for(var k in optimizeOptions){
 		// Skip compilation level option
 		if (k === 'compilationLevel') {
@@ -219,22 +236,7 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 		options.prettyPrint = true;
 	}
 
-	// Set the closure optimization level, use simple optimizations by default
-	var FLAG_compilation_level = jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS;
-	if (optimizeOptions.compilationLevel) {
-		switch (optimizeOptions.compilationLevel.toUpperCase()) {
-			case "WHITESPACE_ONLY": FLAG_compilation_level = jscomp.CompilationLevel.WHITESPACE_ONLY;
-				break;
-			case "SIMPLE_OPTIMIZATIONS": FLAG_compilation_level = jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS;
-				break;
-			case "ADVANCED_OPTIMIZATIONS": FLAG_compilation_level = jscomp.CompilationLevel.ADVANCED_OPTIMIZATIONS;
-				break;
-		}
-	}
 
-	FLAG_compilation_level.setOptionsForCompilationLevel(options);
-	var FLAG_warning_level = jscomp.WarningLevel.DEFAULT;
-	FLAG_warning_level.setOptionsForWarningLevel(options);
 
 	//Prevent too-verbose logging output
 	Packages.com.google.javascript.jscomp.Compiler.setLoggingLevel(java.util.logging.Level.SEVERE);
@@ -256,6 +258,7 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 		var sb = new java.lang.StringBuffer();
 		sourceMap.appendTo(sb, destFilename);
 		writeFile(dest + ".map", sb.toString(), "utf-8");
+		writeFile("options.txt", options);
 	}
 }
 
