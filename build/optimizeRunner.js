@@ -243,6 +243,10 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 	// File name and associated map name
 	var mapTag = useSourceMaps ? ("\n//# sourceMappingURL=" + destFilename + ".map") : "",
 		compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
+
+	// force this option to false to prevent overly agressive code elimination (#18919)
+	options.setDeadAssignmentElimination(false);
+
 	compiler.compile(externSourceFile, jsSourceFile, options);
 	writeFile(dest, copyright + built + compiler.toSource() + mapTag, "utf-8");
 
