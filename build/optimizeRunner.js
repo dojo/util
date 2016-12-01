@@ -258,7 +258,6 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 		var sb = new java.lang.StringBuffer();
 		sourceMap.appendTo(sb, destFilename);
 		writeFile(dest + ".map", sb.toString(), "utf-8");
-		writeFile("options.txt", options);
 	}
 }
 
