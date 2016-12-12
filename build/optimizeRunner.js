@@ -123,6 +123,9 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 	var FLAG_warning_level = jscomp.WarningLevel.DEFAULT;
 	FLAG_warning_level.setOptionsForWarningLevel(options);
 
+	// force this option to false to prevent overly agressive code elimination (#18919)
+	options.setDeadAssignmentElimination(false);
+
 	for(var k in optimizeOptions){
 		// Skip compilation level option
 		if (k === 'compilationLevel') {
@@ -236,8 +239,6 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 		options.prettyPrint = true;
 	}
 
-
-
 	//Prevent too-verbose logging output
 	Packages.com.google.javascript.jscomp.Compiler.setLoggingLevel(java.util.logging.Level.SEVERE);
 
@@ -246,8 +247,6 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 	var mapTag = useSourceMaps ? ("\n//# sourceMappingURL=" + destFilename + ".map") : "",
 		compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
 
-	// force this option to false to prevent overly agressive code elimination (#18919)
-	options.setDeadAssignmentElimination(false);
 
 	compiler.compile(externSourceFile, jsSourceFile, options);
 	writeFile(dest, copyright + built + compiler.toSource() + mapTag, "utf-8");
