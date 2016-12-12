@@ -52,6 +52,15 @@ define([
 
 			//Set up options
 			var options = new jscomp.CompilerOptions();
+
+			var FLAG_compilation_level = jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS;
+			FLAG_compilation_level.setOptionsForCompilationLevel(options);
+			var FLAG_warning_level = jscomp.WarningLevel.DEFAULT;
+			FLAG_warning_level.setOptionsForWarningLevel(options);
+
+			// force this option to false to prevent overly agressive code elimination (#18919)
+			options.setDeadAssignmentElimination(false);
+
 			for(var k in bc.optimizeOptions){
 				// some options need to pass as funtion argument
 				if (k === 'languageIn') {
@@ -66,10 +75,7 @@ define([
 			if(optimizeSwitch.indexOf(".keeplines") !== -1){
 				options.prettyPrint = true;
 			}
-			var FLAG_compilation_level = jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS;
-			FLAG_compilation_level.setOptionsForCompilationLevel(options);
-			var FLAG_warning_level = jscomp.WarningLevel.DEFAULT;
-			FLAG_warning_level.setOptionsForWarningLevel(options);
+
 
 			//Prevent too-verbose logging output
 			Packages.com.google.javascript.jscomp.Compiler.setLoggingLevel(java.util.logging.Level.SEVERE);
