@@ -52,7 +52,7 @@ define([
 
 			//Set up options
 			var options = new jscomp.CompilerOptions();
-			var optimizeOptions = bc.optimizeOptions;
+			var optimizeOptions = bc.optimizeOptions || {};
 
 			var FLAG_compilation_level = jscomp.CompilationLevel.SIMPLE_OPTIMIZATIONS;
 			if (optimizeOptions.compilationLevel) {
