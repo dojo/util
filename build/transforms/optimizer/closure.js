@@ -44,7 +44,7 @@ define([
 				jscomp = com.google.javascript.jscomp;
 			}
 			//Fake extern
-			var externSourceFile = closurefromCode("fakeextern.js", " ");
+			var externSourceFile = closurefromCode("fakeextern.js", "function Symbol(description) {}");
 
 			//Set up source input
 			var destFilename = dest.split("/").pop(),
