@@ -6,13 +6,14 @@ usage() {
 	echo "Usage: $0 [-c] [-b branch] [-u username] version"
 	echo
 	echo "-b  Branch to archive. Defaults to 'master'."
+	echo "-t  Include themes repo in release."
 	echo "-u  Username to use for send to downloads.dojotoolkit.org."
 	echo "    If not provided, manual upload is required."
 	echo "-c  Build CDN release as well."
 	exit 1
 }
 
-while getopts cb:u: OPTION; do
+while getopts ctb:u: OPTION; do
 	case $OPTION in
 	c)
 		CDN=1
@@ -22,6 +23,11 @@ while getopts cb:u: OPTION; do
 	b)
 		BRANCH=$OPTARG
 		shift 2
+		OPTIND=1
+		;;
+	t)
+		THEMES=1
+		shift 1
 		OPTIND=1
 		;;
 	u)
@@ -103,7 +109,13 @@ SOURCE_RELEASE_DIR=$SOURCE_DIR/release
 CDN_OUTPUT_DIR=$ROOT_DIR/$CDN_OUTPUT_NAME
 
 # Repositories that are a part of the Dojo Toolkit
-ALL_REPOS="demos dijit dojo dojox themes util"
+
+if [ $THEMES ]; then
+	ALL_REPOS="demos dijit dojo dojox themes util"
+# Dojo 1.10-
+else
+	ALL_REPOS="demos dijit dojo dojox util"
+fi
 
 zip="zip -dd -ds 1m -rq"
 
@@ -392,13 +404,15 @@ cd $ROOT_DIR
 HOST="$USERNAME@downloads.dojotoolkit.org"
 
 echo "Copying to downloads.dojotoolkit.org..."
-scp $OUTPUT_NAME.tar $HOST:/srv/www/vhosts.d/download.dojotoolkit.org
-ssh $HOST "cd /srv/www/vhosts.d/download.dojotoolkit.org && tar -xf $OUTPUT_NAME.tar && rm $OUTPUT_NAME.tar"
+cp $OUTPUT_NAME.tar  /srv/www/vhosts.d/download.dojotoolkit.org
+cd /srv/www/vhosts.d/download.dojotoolkit.org && tar -xf $OUTPUT_NAME.tar && rm $OUTPUT_NAME.tar
+
+cd $ROOT_DIR
 
 if [ $CDN ]; then
-	echo "Copying to archive.dojotoolkit.org..."
-	scp $CDN_OUTPUT_NAME.tar $HOST:/srv/www/vhosts.d/archive.dojotoolkit.org/cdn
-	ssh $HOST "cd /srv/www/vhosts.d/archive.dojotoolkit.org/cdn && tar -xf $CDN_OUTPUT_NAME.tar && rm $CDN_OUTPUT_NAME.tar"
+        echo "Copying to archive.dojotoolkit.org..."
+        cp $CDN_OUTPUT_NAME.tar /srv/www/vhosts.d/archive.dojotoolkit.org/cdn
+        cd /srv/www/vhosts.d/archive.dojotoolkit.org/cdn && tar -xf $CDN_OUTPUT_NAME.tar && rm $CDN_OUTPUT_NAME.tar
 fi
 
 echo "Upload complete. Please remember to update index.html."
