@@ -14,10 +14,10 @@
 		"url": "https://github.com/dojo/util.git"
 	},
 	"dependencies": {
-		"dojo": "1.12.1",
-		"dijit": "1.12.1",
-		"dojox": "1.12.1",
-		"dojo-themes": "1.12.1"
+		"dojo": "1.12.2-pre",
+		"dijit": "1.12.2-pre",
+		"dojox": "1.12.2-pre",
+		"dojo-themes": "1.12.2-pre"
 	},
 	"devDependencies": {
 	}
