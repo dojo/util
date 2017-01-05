@@ -211,7 +211,34 @@ define([
 				cache = [],
 				layer = resource.layer,
 				moduleSet = computeLayerContents(resource, layer.include, layer.exclude),
-				includeLocales = "includeLocales" in layer ? layer.includeLocales : bc.includeLocales;			
+				includeLocales = "includeLocales" in layer ? layer.includeLocales : bc.includeLocales,
+				
+				getAllAvailableLocales = function(){
+					var set = {},
+						table = [],
+						addLocale = function(loc){
+							if(!set[loc]){
+								table.push(loc);
+								set[loc] = 1;
+							}
+						},
+						readBundle = function(bundle){
+							for(var p in bundle.localizedSet){
+								addLocale(p);	
+							}
+						};
+						
+					rootBundles.forEach(readBundle);
+					getFlattenedLocales().forEach(addLocale);
+						
+					return table;
+				},
+				
+				getFlattenedLocales = function(){
+					return bc.localeList.filter(function(locale){
+								return !includeLocales || (includeLocales.indexOf(locale) == -1 && locale != "ROOT");
+							})
+				};
 			for(var p in moduleSet){
 				// always put modules!=resource in the cache; put resource in the cache if it's a boot layer and an explicit resourceText wasn't given
 				if(p!=resource.mid || resourceText===false){
@@ -252,10 +279,11 @@ define([
 			if(rootBundles.length){
 				getFlattenedBundles(resource, rootBundles);
 				// push an *now into the cache that causes the flattened layer bundles to be loaded immediately
-				cache.push("'*now':function(r){r(['dojo/i18n!*preload*" + getPreloadL10nRootPath(resource.mid) + "*" + 
-					json.stringify(bc.localeList.filter(function(locale){
-						return !includeLocales || (includeLocales.indexOf(locale) == -1 && locale != "ROOT");
-					})) + "']);}" + newline);
+				cache.push("'*now':function(r){r(['dojo/i18n!*preload*" + 
+							getPreloadL10nRootPath(resource.mid) + "*" + 
+							json.stringify(getFlattenedLocales()) + "*" +
+							json.stringify(getAllAvailableLocales()) + "']);}" + 
+							newline);
 			}
 
 			// construct the cache text
