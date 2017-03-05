@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 
 <!--
-	Copyright (c) 2004-2011 The Dojo Foundation, Licensed under the Academic
+	Copyright (c) 2004-2017 The JS Foundation, Licensed under the Academic
 	Free License version 2.1 or BSD licenses
 -->
 <project name="dojo" default="cldr" basedir=".">
@@ -26,7 +26,7 @@
 		<available property="saxon9_ok" file="${user.home}/.ant/lib/saxon9.jar" />
 		<available property="resolver_ok" file="${user.home}/.ant/lib/resolver.jar" />
 		<available property="logger_ok" file="${user.home}/.ant/lib/commons-logging-1.1.1.jar" />
-		
+
 		<condition property="config_ok">
 			<and>
 				<isset property="bsf_ok" />
@@ -226,7 +226,7 @@ java.lang.System.out.print(contents);
 		}
 		fs.addOr(orSelector);
 	}
-		
+
 	ds = fs.getDirectoryScanner(project);
 	srcFiles = ds.getIncludedFiles();
 	var destdir = attributes.get("destdir");
