@@ -112,7 +112,7 @@
 		}
 
 	var fs = project.createDataType("fileset");
-	var File=Java.type("java.io.File");
+	var File = Java.type("java.io.File");
 	var dir = new File(attributes.get("dir"));
 	fs.setDir(dir);
 	fs.setIncludes("*.js");
