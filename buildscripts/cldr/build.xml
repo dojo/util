@@ -112,7 +112,8 @@
 		}
 
 	var fs = project.createDataType("fileset");
-	var dir = new java.io.File(attributes.get("dir"));
+	var File = Java.type("java.io.File");
+	var dir = new File(attributes.get("dir"));
 	fs.setDir(dir);
 	fs.setIncludes("*.js");
 	ds = fs.getDirectoryScanner(project);
@@ -122,7 +123,7 @@
 	load.setEncoding("UTF8");
 
 	for (var i=0; i<jsFiles.length; i++) {
-		var srcFile = java.io.File(dir, jsFiles[i]);
+		var srcFile = new File(dir, jsFiles[i]);
 		load.setSrcFile(srcFile);
 		//FIXME: spawn task as separate ant process to avoid stale properties, collisions?
 		var uniqueId = "removeEmptyOutput.json."+dir+"."+i;
@@ -176,6 +177,9 @@ java.lang.System.out.print(contents);
 			<attribute name="destdir"/>
 			<sequential>
 				<xslt includes="@{in}" style="@{style}" destdir="@{destdir}" basedir="@{basedir}" extension=".tmp">
+					<classpath>
+						<pathelement path="${java.class.path}"/>
+					</classpath>
 					<factory name="net.sf.saxon.TransformerFactoryImpl" />
 					<xmlcatalog>
 						<catalogpath path="ldml/catalog" />
@@ -195,7 +199,7 @@ java.lang.System.out.print(contents);
 			<![CDATA[
 	var fs = elements.get("fileset").get(0);
 	var basedir = fs.getDir(project);
-
+	var File = Java.type("java.io.File");
 	var filter = project.getProperty("locales");
 	if(filter){
 		filter = String(filter).replace(/-/g,'_').split(",");
@@ -234,10 +238,10 @@ java.lang.System.out.print(contents);
 	for (i=0; i<srcFiles.length; i++) {
 		var filename = srcFiles[i];
 		var locale = filename.substring(0, filename.indexOf(".")).replace("_","-").toLowerCase();
-		var outdir = new java.io.File(locale == "root" ? destdir : destdir+"/"+locale);
+		var outdir = new File(locale == "root" ? destdir : destdir+"/"+locale);
 
 		var ldml = project.createTask("processLdml");
-		ldml.setDynamicAttribute("in", new java.io.File(filename));
+		ldml.setDynamicAttribute("in", new File(filename));
 		ldml.setDynamicAttribute("destdir", outdir);
 		ldml.setDynamicAttribute("basedir", basedir);
 		ldml.perform();
