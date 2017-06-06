@@ -83,7 +83,7 @@ function sscompile(src, dest, optimizeSwitch, copyright){
 	writeFile(dest, copyright + built + text, "utf-8");
 }
 
-var JSSourceFilefromCode, closurefromCode, jscomp = 0;
+var JSSourceFilefromCode, closurefromCode, compiler, jscomp = 0;
 function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSourceMaps){
 	optimizeOptions = optimizeOptions || {};
 	if(!jscomp){
@@ -244,8 +244,8 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 
 	// Run the compiler
 	// File name and associated map name
-	var mapTag = useSourceMaps ? ("\n//# sourceMappingURL=" + destFilename + ".map") : "",
-		compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
+	var mapTag = useSourceMaps ? ("\n//# sourceMappingURL=" + destFilename + ".map") : "";
+	compiler = new Packages.com.google.javascript.jscomp.Compiler(Packages.java.lang.System.err);
 
 
 	compiler.compile(externSourceFile, jsSourceFile, options);
@@ -265,7 +265,7 @@ function shutdownClosureExecutorService(){
 		var compilerClass = java.lang.Class.forName("com.google.javascript.jscomp.Compiler");
 		var compilerExecutorField = compilerClass.getDeclaredField("compilerExecutor");
 		compilerExecutorField.setAccessible(true);
-		var compilerExecutor = compilerExecutorField.get(compilerClass);
+		var compilerExecutor = compilerExecutorField.get(compiler);
 		compilerExecutor.shutdown();
 	}catch (e){
 		print(e);
