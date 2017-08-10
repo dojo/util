@@ -111,8 +111,8 @@
 			delTask.perform();
 		}
 
+	importClass(java.io.File);
 	var fs = project.createDataType("fileset");
-	var File = Java.type("java.io.File");
 	var dir = new File(attributes.get("dir"));
 	fs.setDir(dir);
 	fs.setIncludes("*.js");
@@ -197,9 +197,9 @@ java.lang.System.out.print(contents);
 			<attribute name="destdir"/>
 			<element name="fileset" type="fileset"/>
 			<![CDATA[
+	importClass(java.io.File);
 	var fs = elements.get("fileset").get(0);
 	var basedir = fs.getDir(project);
-	var File = Java.type("java.io.File");
 	var filter = project.getProperty("locales");
 	if(filter){
 		filter = String(filter).replace(/-/g,'_').split(",");
