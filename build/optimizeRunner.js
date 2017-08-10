@@ -266,6 +266,10 @@ function shutdownClosureExecutorService(){
 		var compilerExecutorField = compilerClass.getDeclaredField("compilerExecutor");
 		compilerExecutorField.setAccessible(true);
 		var compilerExecutor = compilerExecutorField.get(compiler);
+		compilerClass = compilerExecutor.getClass();
+		compilerExecutorField = compilerClass.getDeclaredField("compilerExecutor");
+		compilerExecutorField.setAccessible(true);
+		compilerExecutor = compilerExecutorField.get(compilerExecutor);
 		compilerExecutor.shutdown();
 	}catch (e){
 		print(e);
