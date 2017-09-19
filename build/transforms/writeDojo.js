@@ -12,7 +12,7 @@ define([
 		var
 			getUserConfig = function(){
 				if(!bc.userConfig){
-					return "this.dojoConfig || this.djConfig || this.require || {}";
+					return "function(global){ return global.dojoConfig || global.djConfig || global.require || {}; }";
 				}
 				if(typeof bc.userConfig == "string"){
 					return bc.userConfig;
