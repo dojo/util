@@ -103,7 +103,7 @@ SOURCE_RELEASE_DIR=$SOURCE_DIR/release
 CDN_OUTPUT_DIR=$ROOT_DIR/$CDN_OUTPUT_NAME
 
 # Repositories that are a part of the Dojo Toolkit
-ALL_REPOS="demos dijit dojo dojox themes util"
+ALL_REPOS="demos dijit dojo dojox dijit-themes util"
 
 zip="zip -dd -ds 1m -rq"
 
