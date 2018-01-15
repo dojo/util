@@ -111,7 +111,7 @@ CDN_OUTPUT_DIR=$ROOT_DIR/$CDN_OUTPUT_NAME
 # Repositories that are a part of the Dojo Toolkit
 
 if [ $THEMES ]; then
-	ALL_REPOS="demos dijit dojo dojox themes util"
+	ALL_REPOS="demos dijit dojo dojox dijit-themes util"
 # Dojo 1.10-
 else
 	ALL_REPOS="demos dijit dojo dojox util"
