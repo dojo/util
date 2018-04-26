@@ -110,6 +110,7 @@
 			f.isDirectory() ? delTask.setDir(f) : delTask.setFile(f);
 			delTask.perform();
 		}
+
 	var File=java.io.File;
 	var fs = project.createDataType("fileset");
 	var dir = new File(attributes.get("dir"));
