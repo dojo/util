@@ -110,8 +110,7 @@
 			f.isDirectory() ? delTask.setDir(f) : delTask.setFile(f);
 			delTask.perform();
 		}
-
-	importClass(java.io.File);
+	var File=java.io.File;
 	var fs = project.createDataType("fileset");
 	var dir = new File(attributes.get("dir"));
 	fs.setDir(dir);
@@ -197,7 +196,7 @@ java.lang.System.out.print(contents);
 			<attribute name="destdir"/>
 			<element name="fileset" type="fileset"/>
 			<![CDATA[
-	importClass(java.io.File);
+	var File=java.io.File;
 	var fs = elements.get("fileset").get(0);
 	var basedir = fs.getDir(project);
 	var filter = project.getProperty("locales");
