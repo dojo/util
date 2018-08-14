@@ -3,12 +3,10 @@
 set -e
 
 usage() {
-	echo "Usage: $0 [-c] [-b branch] [-u username] version"
+	echo "Usage: $0 [-c] [-b branch] version"
 	echo
 	echo "-b  Branch to archive. Defaults to 'master'."
 	echo "-t  Include themes repo in release."
-	echo "-u  Username to use for send to downloads.dojotoolkit.org."
-	echo "    If not provided, manual upload is required."
 	echo "-c  Build CDN release as well."
 	exit 1
 }
@@ -28,11 +26,6 @@ while getopts ctb:u: OPTION; do
 	t)
 		THEMES=1
 		shift 1
-		OPTIND=1
-		;;
-	u)
-		USERNAME=$OPTARG
-		shift 2
 		OPTIND=1
 		;;
 	\?)
@@ -355,18 +348,15 @@ else
 	echo "MD5 utility missing; cannot generate checksums"
 fi
 
+# Archive file for download.dojotoolkit.org
 cd $ROOT_DIR
 echo -n "Creating downloads archive..."
 $tar -cf $OUTPUT_NAME.tar $OUTPUT_NAME/
 echo "Done"
 
-if [ "$USERNAME" == "" ]; then
-	echo "Build complete."
-	echo "Files are in: $OUTPUT_DIR"
-	echo "You did not provide a username so you will need to upload manually."
-	exit 0
-fi
+echo "Build complete."
 
+# Confirmaton
 if [ $VERSION_EXISTS -eq 1 ]; then
 	echo "Please confirm build success, then press 'y' key to clean up archives"
 	echo "and upload, or any other key to bail."
@@ -381,6 +371,7 @@ if [ "$REPLY" != "y" ]; then
 	exit 0
 fi
 
+# Flush archives
 echo -n "Cleaning up archives..."
 rm -rf $OUTPUT_DIR
 if [ $CDN ]; then
@@ -399,20 +390,25 @@ else
 	done
 fi
 
+echo "Release is now built and tagged.  There rest from here is paperwork."
+
 cd $ROOT_DIR
 
-HOST="$USERNAME@downloads.dojotoolkit.org"
-
-echo "Copying to downloads.dojotoolkit.org..."
+echo "Copying archive to downloads.dojotoolkit.org..."
 cp $OUTPUT_NAME.tar  /srv/www/vhosts.d/download.dojotoolkit.org
 cd /srv/www/vhosts.d/download.dojotoolkit.org && tar -xf $OUTPUT_NAME.tar && rm $OUTPUT_NAME.tar
 
 cd $ROOT_DIR
 
 if [ $CDN ]; then
-        echo "Copying to archive.dojotoolkit.org..."
+        echo "Copying cdn to archive.dojotoolkit.org..."
         cp $CDN_OUTPUT_NAME.tar /srv/www/vhosts.d/archive.dojotoolkit.org/cdn
         cd /srv/www/vhosts.d/archive.dojotoolkit.org/cdn && tar -xf $CDN_OUTPUT_NAME.tar && rm $CDN_OUTPUT_NAME.tar
 fi
 
-echo "Upload complete. Please remember to update index.html."
+cd $ROOT_DIR
+
+echo "Upload complete. download.dojotoolkit.org should be automatically udpated. archive.dojotoolkit.org/cdn"
+echo "This site should be automagically updated: download.dojotoolkit.org"
+echo "CDNs can be found here: archive.dojotoolkit.org/cdn"
+echo "To deploy to dojotoolkit.org, make sure appropriate changes are done and merged to master, then redeploy."
