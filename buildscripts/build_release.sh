@@ -3,7 +3,7 @@
 set -e
 
 usage() {
-	echo "Usage: $0 [-c] [-b branch] version"
+	echo "Usage: $0 [-c] [-t] [-b branch] version"
 	echo
 	echo "-b  Branch to archive. Defaults to 'master'."
 	echo "-t  Include themes repo in release."
