@@ -408,7 +408,7 @@ fi
 
 cd $ROOT_DIR
 
-echo "Upload complete. download.dojotoolkit.org should be automatically udpated. archive.dojotoolkit.org/cdn"
-echo "This site should be automagically updated: download.dojotoolkit.org"
-echo "CDNs can be found here: archive.dojotoolkit.org/cdn"
-echo "To deploy to dojotoolkit.org, make sure appropriate changes are done and merged to master, then redeploy."
+echo "Upload complete!"
+echo "http://download.dojotoolkit.org should be automatically updated."
+echo "CDN can be found at http://archive.dojotoolkit.org/cdn"
+echo "http://dojotoolkit.org will require a manual update. Make sure the appropriate changes are done and merged to master in the repository, then redeploy."
