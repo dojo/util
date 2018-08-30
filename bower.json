@@ -14,9 +14,9 @@
 		"url": "https://github.com/dojo/util.git"
 	},
 	"dependencies": {
-		"dojo": "1.14.0",
-		"dijit": "1.14.0",
-		"dojox": "1.14.0",
+		"dojo": "1.14.1",
+		"dijit": "1.14.1",
+		"dojox": "1.14.1",
 		"dijit-themes": "1.14.0"
 	},
 	"devDependencies": {
