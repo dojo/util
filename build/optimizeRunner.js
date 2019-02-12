@@ -123,7 +123,7 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 	var FLAG_warning_level = jscomp.WarningLevel.DEFAULT;
 	FLAG_warning_level.setOptionsForWarningLevel(options);
 
-	// force this option to false to prevent overly agressive code elimination (#18919)
+	// force this option to false to prevent overly aggressive code elimination (#18919)
 	options.setDeadAssignmentElimination(false);
 
 	for(var k in optimizeOptions){
@@ -167,11 +167,24 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 
 		if (k === 'checkGlobalThisLevel') {
 			switch (optimizeOptions[k].toUpperCase()) {
-				case 'ERROR': options.setCheckGlobalThisLevel(CheckLevel.ERROR);
+				case 'ERROR': options.setCheckGlobalThisLevel(jscomp.CheckLevel.ERROR);
 					break;
-				case 'WARNING': options.setCheckGlobalThisLevel(CheckLevel.WARNING);
+				case 'WARNING': options.setCheckGlobalThisLevel(jscomp.CheckLevel.WARNING);
 					break;
-				case 'OFF': options.setCheckGlobalThisLevel(CheckLevel.OFF);
+				case 'OFF': options.setCheckGlobalThisLevel(jscomp.CheckLevel.OFF);
+					break;
+			}
+			continue;
+		}
+
+		if (k === 'uselessCode') {
+			var uselessCode = jscomp.DiagnosticGroups.CHECK_USELESS_CODE;
+			switch (optimizeOptions[k].toUpperCase()) {
+				case 'ERROR': options.setWarningLevel(uselessCode, jscomp.CheckLevel.ERROR);
+					break;
+				case 'WARNING': options.setWarningLevel(uselessCode, jscomp.CheckLevel.WARNING);
+					break;
+				case 'OFF': options.setWarningLevel(uselessCode, jscomp.CheckLevel.OFF);
 					break;
 			}
 			continue;
