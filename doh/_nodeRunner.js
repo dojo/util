@@ -21,7 +21,7 @@ define(["doh/runner", "require", "dojo/_base/config"], function(doh, require, co
 	};
 
 	console.log("\n"+doh._line);
-	console.log("The Dojo Unit Test Harness, $Rev$");
+	console.log("The Dojo Unit Test Harness, $Rev: 5d3e84b $");
 	console.log("Copyright (c) 2018, The JS Foundation, All Rights Reserved");
 	console.log("Running with node.js");
 	for (var tests= [], args= config["commandLineArgs"], i= 0, arg; i<args.length; i++) {
