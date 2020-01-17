@@ -125,6 +125,9 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 
 	// force this option to false to prevent overly aggressive code elimination (#18919)
 	options.setDeadAssignmentElimination(false);
+	options.setEmitUseStrict(false);
+	options.setStrictModeInput(false);
+	options.setWarningLevel(jscomp.DiagnosticGroups.ES5_STRICT, jscomp.CheckLevel.WARNING);
 
 	for(var k in optimizeOptions){
 		// Skip compilation level option
