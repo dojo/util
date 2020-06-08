@@ -125,6 +125,9 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 
 	// force this option to false to prevent overly aggressive code elimination (#18919)
 	options.setDeadAssignmentElimination(false);
+	options.setEmitUseStrict(false);
+	options.setStrictModeInput(false);
+	options.setWarningLevel(jscomp.DiagnosticGroups.ES5_STRICT, jscomp.CheckLevel.WARNING);
 
 	for(var k in optimizeOptions){
 		// Skip compilation level option
@@ -275,14 +278,14 @@ function ccompile(src, dest, optimizeSwitch, copyright, optimizeOptions, useSour
 
 function shutdownClosureExecutorService(){
 	try{
-		var compilerClass = java.lang.Class.forName("com.google.javascript.jscomp.Compiler");
-		var compilerExecutorField = compilerClass.getDeclaredField("compilerExecutor");
+		var compilerClass = compiler.getClass();
+		var compilerExecutorField = compilerClass.getDeclaredMethod("getCompilerExecutor");
 		compilerExecutorField.setAccessible(true);
-		var compilerExecutor = compilerExecutorField.get(compiler);
+		var compilerExecutor = compilerExecutorField.invoke(compiler);
 		compilerClass = compilerExecutor.getClass();
-		compilerExecutorField = compilerClass.getDeclaredField("compilerExecutor");
+		compilerExecutorField = compilerClass.getDeclaredMethod("getExecutorService");
 		compilerExecutorField.setAccessible(true);
-		compilerExecutor = compilerExecutorField.get(compilerExecutor);
+		compilerExecutor = compilerExecutorField.invoke(compilerExecutor);
 		compilerExecutor.shutdown();
 	}catch (e){
 		print(e);
