@@ -71,6 +71,9 @@ define([
 
 			// force this option to false to prevent overly agressive code elimination (#18919)
 			options.setDeadAssignmentElimination(false);
+			options.setEmitUseStrict(false);
+			options.setStrictModeInput(false);
+			options.setWarningLevel(jscomp.DiagnosticGroups.ES5_STRICT, jscomp.CheckLevel.WARNING);
 
 			for(var k in optimizeOptions){
 				// Skip compilation level option
