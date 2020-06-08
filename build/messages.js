@@ -236,8 +236,10 @@ define([], function(){
 		optimizerOutput= "",
 
 		logOptimizerOutput = function(text){
-			if(/\sERROR\s/.test(text)){
+			if(/\sERROR\s-\s\[[^\]]+]\s/.test(text)){
 				// the google closure error format
+				// i.e., " ERROR - [JSC_JSDOC_ON_RETURN] "
+				// see https://github.com/google/closure-compiler/blob/35beaa864997442d635875add4d60b7b73be6294/src/com/google/javascript/jscomp/LightweightMessageFormatter.java#L113-L116
 				logOptimizerReportedErrors();
 			}
 			optimizerOutput+= text;
