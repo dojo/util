@@ -549,7 +549,8 @@ define([
 
 	if(/closure/.test(bc.optimize) || /closure/.test(bc.layerOptimize)){
 		bc.optimizeOptions = bc.optimizeOptions || {};
-		bc.optimizeOptions.languageOut = bc.optimizeOptions.languageOut || 'NO_TRANSPILE';
+		bc.optimizeOptions.languageIn = bc.optimizeOptions.languageIn || 'ECMASCRIPT3';
+		bc.optimizeOptions.languageOut = bc.optimizeOptions.languageOut || 'ECMASCRIPT3';
 	}
 
 	(function(){
