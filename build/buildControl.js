@@ -547,6 +547,11 @@ define([
 	bc.optimize = fixupOptimize(bc.optimize);
 	bc.layerOptimize = fixupOptimize(bc.layerOptimize);
 
+	if(/closure/.test(bc.optimize) || /closure/.test(bc.layerOptimize)){
+		bc.optimizeOptions = bc.optimizeOptions || {};
+		bc.optimizeOptions.languageOut = bc.optimizeOptions.languageOut || 'NO_TRANSPILE';
+	}
+
 	(function(){
 		var fixedScopeMap = {dojo:"dojo", dijit:"dijit", dojox:"dojox"};
 		(bc.scopeMap || []).forEach(function(pair){
