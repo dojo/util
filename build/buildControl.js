@@ -547,6 +547,15 @@ define([
 	bc.optimize = fixupOptimize(bc.optimize);
 	bc.layerOptimize = fixupOptimize(bc.layerOptimize);
 
+	if(/closure/.test(bc.optimize) || /closure/.test(bc.layerOptimize)){
+		bc.optimizeOptions = bc.optimizeOptions || {};
+		// ECMASCRIPT_2017 is necessary to avoid throwing errors on block-scoped functions
+		// https://github.com/google/closure-compiler/issues/3189
+		bc.optimizeOptions.languageIn = bc.optimizeOptions.languageIn || 'ECMASCRIPT_2017';
+		// ECMASCRIPT3 is necessary to preserve compatibility with older browsers/JS runtimes
+		bc.optimizeOptions.languageOut = bc.optimizeOptions.languageOut || 'ECMASCRIPT3';
+	}
+
 	(function(){
 		var fixedScopeMap = {dojo:"dojo", dijit:"dijit", dojox:"dojox"};
 		(bc.scopeMap || []).forEach(function(pair){
