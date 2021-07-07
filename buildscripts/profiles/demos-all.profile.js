@@ -115,20 +115,6 @@ dependencies = {
 			]
 		},
 		{
-			// the Survey demo
-			name: "../demos/survey/src.js",
-			dependencies:[
-				"demos.survey.src"
-			]
-		},
-		{
-			// the BabelChat demo
-			name: "../demos/babelChat/src.js",
-			dependencies:[
-				"demos.babelChat.src"
-			]
-		},
-		{
 			name: "../demos/faces/src.js",
 			dependencies:[
 				"demos.faces.src"
