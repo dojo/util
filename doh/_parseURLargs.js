@@ -18,7 +18,7 @@
 			//	 * the AMD module doh/selfTest
 			//	 * the plain old Javascript resource my/path/test.js
 			//
-			["dojo/tests/module"],
+			["dojo/testsDOH/module"],
 
 		paths =
 			// zero to many path items to pass to the AMD loader; provided by semicolon separated values
