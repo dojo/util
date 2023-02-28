@@ -17,7 +17,7 @@
 		"dojo": "1.15.7-pre",
 		"dijit": "1.15.7-pre",
 		"dojox": "1.15.7-pre",
-		"dijit-themes": "1.15.0-pre"
+		"dijit-themes": "1.15.7-pre"
 	},
 	"devDependencies": {
 	}
