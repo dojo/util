@@ -378,7 +378,7 @@
                  </xsl:when>
                  <xsl:otherwise>
                      <xsl:if test="name()!='default'">
-                         <xsl:for-each select=".//pattern[not(@draft)] | 
+                         <xsl:for-each select=".//pattern[not(@draft) and not(@alt)] | 
                           .//pattern[@draft!='provisional' and @draft!='unconfirmed']">
                              <xsl:call-template name="insert_comma"/>
 	'<xsl:value-of select="name(..)"></xsl:value-of>
